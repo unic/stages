@@ -1,6 +1,6 @@
 # Stages
 
-Stages, super flexible wizard and form components for React
+Stages, super flexible and lightweight wizard and form components for React
 
 **This component is currently not production ready!!! Use at your own risk.**
 
