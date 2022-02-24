@@ -1,4 +1,4 @@
-# stages
+# Stages
 
 Stages, super flexible wizard and form components for React
 
