@@ -185,7 +185,7 @@ The wizard component, called Stages, takes multiple forms and creates a wizard o
 
 ```
 import React, { Fragment } from "react";
-import { Stages, Form, Navigation, Progression, HashRouter } from "stages";
+import { Stages, Form, Navigation, Progression, HashRouter } from "react-stages";
 
 <Stages
     initialData={{}}
