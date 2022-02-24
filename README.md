@@ -14,7 +14,7 @@ Installation:
 
 ## The Form Component
 
-The form component is optimized to work together with the wizard component, but you can of course use it for any kind of forms.
+The form component is optimized to work together with the wizard component, but you can of course use it for any kind of forms. It's the backbone to building higly dynamic wizards by constantly being aware on the state of a wizards steps.
 
 A simple form:
 
