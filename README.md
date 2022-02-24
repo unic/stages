@@ -10,7 +10,7 @@ Stages, super flexible wizard and form components for React
 
 Installation:
 
-`npm i stages --save`
+`npm i react-stages --save`
 
 ## The Form Component
 
@@ -19,7 +19,7 @@ The form component is optimized to work together with the wizard component, but 
 A simple form:
 
 ```
-import { Form } from "stages";
+import { Form } from "react-stages";
 
 <Form
     fields={[
