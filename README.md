@@ -377,3 +377,14 @@ Here are all the props each child gets:
 - errors (an object of all validation errors)
 - setStepKey (callback to set the steps key)
 - initializing (flag which indicates if the wizard is being initialized)
+
+The `onNav` callback can act on the following navTypes:
+
+- next (jump to next step)
+- prev (jump to previous step)
+- first (jump to first step)
+- last (jump to last step)
+- lastValid (jump to last valid step)
+- step (jump to specific step)
+
+If validation is activated on Stages (`validateOnStepChange = true`), than onNav will only jump to valid steps.
