@@ -136,6 +136,18 @@ const emailIsValid = (value, config) => {
 
 You can add any kind of fields, even fields which don't update any data. Have a look at the field collections in this package for more examples.
 
+To use one of the example fieldsets, import them like this:
+
+```
+import { plainFields as fields } from "react-stages";
+```
+
+And for simple Bootstrap 5 fields (don't forget to import the Bootstrap styles, read the react-bootstrap instructions for how to do that):
+
+```
+import { bootstrapFields as fields } from "react-stages";
+```
+
 ### Config
 
 In this property you configurate the fields in your form. At a minimum you have to add an `id` and `type`. The id has to be unique and the type references a field you supllied to the form. All other properties can vary based on the fields you supply, but things like `label`  should be added for all of them for accessibility reasons.
@@ -270,7 +282,8 @@ import { Stages, Form, Navigation, Progression, HashRouter } from "react-stages"
 
 For unlimited flexibility, we use render props and component composition everywhere. Let's step through the properties first.
 
-### Initial Data
+
+### Initial Data
 
 Here you can supply initial data to the wizard. This can be useful if you have some storage somehere and want to let the user edit his previous data in the wizard.
 
