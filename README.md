@@ -279,3 +279,78 @@ Data is structured like this:
     }
 }
 ```
+
+Top level being the step keys and than the structure of your form configs.
+
+### Render
+
+The render prop renders the wizard. You can use the default components that come with Stages, as shown below:
+
+```
+render={({ navigationProps, progressionProps, routerProps, steps }) => (
+    <div>
+        <Navigation {...navigationProps} />
+        <Progression {...progressionProps} />
+        {steps}
+        {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
+    </div>
+)}
+```
+
+The `navigationProps` contains everything you need to build your own wizard navigation:
+
+- currentStep (the currently active wizard step)
+- data (current data, you can use it to diusplay step summaries in your navigation)
+- onChangeStep (use this callback to jump to a new step number)
+- errors (the error object, for example to indicate a step which is not valid)
+- lastValidStep (the last step which is valid)
+- keys (an object with all step keys and if they are visible)
+- stepCount (the complete step count)
+
+The `progressionProps` can be used to display wizard progression stats. You get following data:
+
+- stepCount (total amount of steps)
+- validSteps (amount of valid steps)
+- percentage (percentage done)
+
+The `routerProps` can be used either with Stages own HashRouter or with whatever routing you want to supply.
+
+- step (the current step)
+- onChange (callback to change the current step)
+- keys (an object of step keys)
+
+And finally the `steps` prop contains the rendered steps.
+
+### Children
+
+Steps are rendered as children of the Stages component. Rendering is up to you. Have a look at the example how that's done. Normally you render our Form component, but you can render whatever you want isnide your step.
+
+A few important rules:
+
+1. You need to return the step key like this:
+
+```
+const key = setStepKey("myStepKey", index);
+```
+
+2. Right after that you need to return `null` while initializing. This makes sure that the wizard doesn't render steps before it has all the needed information.
+
+```
+if (initializing) return null;
+```
+
+3. If a step doesn't return a form, you need to set some data on it when active to make sure the step becomes `done`:
+
+```
+if (!data || Object.keys(data).length === 0) onChange({visited: true}, {}, index);
+```
+
+4. If you use our form component, you need to connect it to Stages like this:
+
+```
+data={data}
+onChange={onChange}
+isVisible={isActive}
+```
+
+This makes sure only the active step is being rendered and that data always stays in sync.
