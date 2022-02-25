@@ -354,3 +354,15 @@ isVisible={isActive}
 ```
 
 This makes sure only the active step is being rendered and that data always stays in sync.
+
+Here are all the props each child gets:
+
+- data (the current step data)
+- allData (data from all steps)
+- isActive (is this step active)
+- onChange (the callback for all changes. Return the latest data)
+- onNav (can be used for action buttons of the form, for example to navigate to the nbext step. Data is being validated!)
+- index (the index of the current step)
+- errors (an object of all validation errors)
+- setStepKey (callback to set the steps key)
+- initializing (flag which indicates if the wizard is being initialized)
