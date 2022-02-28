@@ -11,3 +11,4 @@ node_modules/
 # Exclude client specific testscase
 src/components/energyschweiz
 src/components/steps/subsidies
+src/Subsidies.js
