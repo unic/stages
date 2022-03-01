@@ -122,7 +122,6 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             <br />
             <div style={{ position: "relative" }}>
                 <label className="form-label" htmlFor="paymentPlan">Einsatz von Mitarbeitenden</label>
-                <small className="text-muted form-text">Lorem ipsum dolor sit amet</small>
                 {fields.paymentPlan ? fields.paymentPlan.map((subFields, index) => (
                     <div key={`paymentPlan-${index}`} style={{ position: "relative" }}>
                         <Row>

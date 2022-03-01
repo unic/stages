@@ -11,7 +11,6 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
         <div>
             <div style={{ position: "relative" }}>
                 <label className="form-label" htmlFor="internalExpenses">Einsatz von Mitarbeitenden</label>
-                <small className="text-muted form-text">Lorem ipsum dolor sit amet</small>
                 {fields.internalExpenses ? fields.internalExpenses.map((subFields, index) => (
                     <div key={`internalExpense-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -36,7 +35,6 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             </div>
             <div style={{ position: "relative" }}>
                 <label className="form-label" htmlFor="otherExpenses">Einsatz von Mitarbeitenden</label>
-                <small className="text-muted form-text">Lorem ipsum dolor sit amet</small>
                 {fields.otherExpenses ? fields.otherExpenses.map((subFields, index) => (
                     <div key={`otherCost-${index}`} style={{ position: "relative" }}>
                         <Row>
