@@ -1,65 +1,68 @@
+import i18n from "../../../energyschweiz/ech-i18n";
+
 const config = locale => {
     return {
         fields: (data) => {
             return [
                 {
                     id: "topic",
-                    label: "Handlungsfeld/Thema des Projekts",
+                    label: i18n.topic[locale],
                     type: "text",
                     isRequired: true
                 },
                 {
                     id: "projectTitle",
-                    label: "Titel des Projekts",
+                    label: i18n.projectTitle[locale],
+                    placeholder: i18n.projectTitle.placeholder[locale],
                     type: "text",
                     isRequired: true
                 },
                 {
                     id: "fromDate",
-                    label: "Projektstart",
+                    label: i18n.fromDate[locale],
                     type: "date",
                     isRequired: true
                 },
                 {
                     id: "toDate",
-                    label: "Projektabschluss",
+                    label: i18n.toDate[locale],
                     type: "date",
                     isRequired: true
                 },
                 {
                     id: "initialSituation",
-                    label: "Ausgangslage",
+                    label: i18n.initialSituation[locale],
                     type: "textarea",
                     isRequired: true
                 },
                 {
                     id: "descriptionAndProcedure",
-                    label: "Beschreibung und Vorgehen",
+                    label: i18n.descriptionAndProcedure[locale],
                     type: "textarea",
                     isRequired: true
                 },
                 {
                     id: "requirements",
-                    label: "Bedarf",
+                    label: i18n.requirements[locale],
                     type: "textarea",
                     isRequired: true
                 },
                 {
                     id: "goals",
-                    label: "Projektziele und Messung",
+                    label: i18n.goals[locale],
                     type: "collection",
                     isRequired: true,
                     init: true,
                     fields: [
                         {
                             id: "goal",
-                            placeholder: "Projektziel (Outputs) *",
+                            placeholder: `${i18n.goals.goal[locale]} *`,
                             type: "text",
                             isRequired: true
                         },
                         {
                             id: "successIndicator",
-                            placeholder: "Messen der Projektzielerreichung (Erfolgsindikatoren) *",
+                            placeholder: `${i18n.goals.successIndicator[locale]} *`,
                             type: "text",
                             isRequired: true
                         }
@@ -67,20 +70,20 @@ const config = locale => {
                 },
                 {
                     id: "impactsAndMeasurements",
-                    label: "Projektwirkungen und Messung",
+                    label: i18n.impactsAndMeasurements[locale],
                     type: "collection",
                     isRequired: true,
                     init: true,
                     fields: [
                         {
                             id: "impact",
-                            placeholder: "Projektwirkungen (Outcomes und Impacts) *",
+                            placeholder: `${i18n.impactsAndMeasurements.impact[locale]} *`,
                             type: "text",
                             isRequired: true
                         },
                         {
                             id: "successIndicator",
-                            placeholder: "Messen der Projektwirkung *",
+                            placeholder: `${i18n.impactsAndMeasurements.successIndicator[locale]} *`,
                             type: "text",
                             isRequired: true
                         }
@@ -88,20 +91,20 @@ const config = locale => {
                 },
                 {
                     id: "targetGroups",
-                    label: "Zielgruppen",
+                    label: i18n.targetGroups[locale],
                     type: "collection",
                     isRequired: true,
                     init: true,
                     fields: [
                         {
                             id: "group",
-                            placeholder: "Zielgruppe *",
+                            placeholder: `${i18n.targetGroups.group[locale]} *`,
                             type: "text",
                             isRequired: true
                         },
                         {
                             id: "groupIdentification",
-                            placeholder: "Ansprache der zielgruppe *",
+                            placeholder: `${i18n.targetGroups.groupIdentification[locale]} *`,
                             type: "text",
                             isRequired: true
                         }
@@ -109,17 +112,17 @@ const config = locale => {
                 },
                 {
                     id: "regionCoverage",
-                    label: "Regionale Abdeckung",
+                    label: i18n.regionCoverage[locale],
                     type: "checkBoxGroup",
                     options: [
-                        { value: "CH_DE", text: "Deutschschweiz" },
-                        { value: "CH_FR", text: "Westschweiz" },
-                        { value: "CH_IT", text: "Italienischsprachige Schweiz" }
+                        { value: "CH_DE", text: i18n.regionCoverage.options.de[locale] },
+                        { value: "CH_FR", text: i18n.regionCoverage.options.fr[locale] },
+                        { value: "CH_IT", text: i18n.regionCoverage.options.it[locale] }
                     ]
                 },
                 {
                     id: "services",
-                    label: "Leistungen",
+                    label: i18n.services[locale],
                     type: "textarea",
                     isRequired: true
                 }

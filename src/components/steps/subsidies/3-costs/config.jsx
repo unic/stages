@@ -1,47 +1,49 @@
+import i18n from "../../../energyschweiz/ech-i18n";
+
 const config = locale => {
     return {
         fields: (data) => {
             return [
                 {
                     id: "internalExpenses",
-                    label: "Interne Personalkosten",
+                    label: i18n.internalExpenses[locale],
                     type: "collection",
                     isRequired: true,
                     init: true,
                     fields: [
                         {
                             id: "date",
-                            placeholder: "Datum",
+                            placeholder: i18n.internalExpenses.date[locale],
                             type: "date"
                         },
                         {
                             id: "milestone",
-                            placeholder: "Meilenstein",
+                            placeholder: i18n.internalExpenses.milestone[locale],
                             type: "text"
                         },
                         {
                             id: "workPackage",
-                            placeholder: "Arbeitspaket",
+                            placeholder: i18n.internalExpenses.workPackage[locale],
                             type: "text"
                         },
                         {
                             id: "function",
-                            placeholder: "Funktion (Mitarbeiter/in)",
+                            placeholder: i18n.internalExpenses.function[locale],
                             type: "text"
                         },
                         {
                             id: "hourlyRate",
-                            placeholder: "Stundensatz (CHF/h)",
+                            placeholder: i18n.internalExpenses.hourlyRate[locale],
                             type: "number"
                         },
                         {
                             id: "hourEffort",
-                            placeholder: "Aufwand (h)",
+                            placeholder: i18n.internalExpenses.hourEffort[locale],
                             type: "number"
                         },
                         {
                             id: "costs",
-                            placeholder: "Kosten (CHF)",
+                            placeholder: i18n.internalExpenses.costs[locale],
                             type: "number",
                             isDisabled: true,
                             computedValue: (data, collection) => {
@@ -56,29 +58,29 @@ const config = locale => {
                 },
                 {
                     id: "otherExpenses",
-                    label: "Übrige Kosten",
+                    label: i18n.otherExpenses[locale],
                     type: "collection",
                     isRequired: true,
                     init: true,
                     fields: [
                         {
                             id: "date",
-                            placeholder: "Datum",
+                            placeholder: i18n.otherExpenses.date[locale],
                             type: "date"
                         },
                         {
                             id: "milestone",
-                            placeholder: "Meilenstein",
+                            placeholder: i18n.otherExpenses.milestone[locale],
                             type: "text"
                         },
                         {
                             id: "workPackage",
-                            placeholder: "Arbeitspaket",
+                            placeholder: i18n.otherExpenses.workPackage[locale],
                             type: "text"
                         },
                         {
                             id: "expenseType",
-                            placeholder: "Kostenart",
+                            placeholder: i18n.otherExpenses.expenseType[locale],
                             type: "select",
                             options: [
                                 { value: "donation", text: "Spende" }
@@ -86,19 +88,19 @@ const config = locale => {
                         },
                         {
                             id: "derivation",
-                            placeholder: "Herleitung der Kosten",
+                            placeholder: i18n.otherExpenses.derivation[locale],
                             type: "text"
                         },
                         {
                             id: "expenses",
-                            placeholder: "Kosten (CHF)",
+                            placeholder: i18n.otherExpenses.expenses[locale],
                             type: "number"
                         }
                     ]
                 },
                 {
                     id: "total",
-                    label: "Total anrechenbare Projektkosten",
+                    label: i18n.total[locale],
                     type: "number",
                     isDisabled: true,
                     required: true,
