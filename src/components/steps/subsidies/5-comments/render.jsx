@@ -1,13 +1,11 @@
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Button from "react-bootstrap/Button";
-
 import AbsoluteRight from "../components/AbsoluteRight";
 import InnerAbsoluteRight from "../components/InnerAbsoluteRight";
 import RemoveCollectionEntry from "../components/RemoveCollectionEntry";
 import AddCollectionEntry from "../components/AddCollectionEntry";
 
-const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
+import i18n from "../../../energyschweiz/ech-i18n";
+
+const FormRenderer = ({ fields, onCollectionAction, data, errors, locale }) => {
     return (
         <div>
             <div style={{ position: "relative" }}>
@@ -20,7 +18,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("uploads", "add")} />
                 </AbsoluteRight>
-                {errors && errors.uploads ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.uploads ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
         </div>
     );

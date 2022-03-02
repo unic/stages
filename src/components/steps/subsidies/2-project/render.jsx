@@ -7,23 +7,25 @@ import RemoveCollectionEntry from "../components/RemoveCollectionEntry";
 import AddCollectionEntry from "../components/AddCollectionEntry";
 import CollectionTooltip from "../components/CollectionTooltip";
 
-const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
+import i18n from "../../../energyschweiz/ech-i18n";
+
+const FormRenderer = ({ fields, onCollectionAction, data, errors, locale }) => {
     return (
         <div>
             <Row>{fields.topic}</Row>
             <Row>{fields.projectTitle}</Row>
             <Row>
-                <label className="form-label">Projektdauer</label>
+                <label className="form-label">{i18n.projectDuration[locale]}</label>
             </Row>
             <Row>
                 <Col>{fields.fromDate}</Col>
                 <Col>{fields.toDate}</Col>
             </Row>
             <Row>{fields.initialSituation}</Row>
-            <Row>{fields.descriptionAndProcedure}</Row>
+            <Row>{fields.scriptionAndProcedure[locale]}</Row>
             <Row>{fields.requirements}</Row>
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="goals">Projektziele und Messung</label>
+                <label className="form-label" htmlFor="goals">{i18n.goals[locale]}</label>
                 {fields.goals ? fields.goals.map((subFields, index) => (
                     <div key={`goal-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -37,10 +39,10 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                     <AddCollectionEntry onClick={() => onCollectionAction("goals", "add")} />
                     <CollectionTooltip text="Test" />
                 </AbsoluteRight>
-                {errors && errors.goals ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.goals ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries}</div> : null}
             </div>
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="impactsAndMeasurements">Projektwirkung und Messung</label>
+                <label className="form-label" htmlFor="impactsAndMeasurements">{i18n.impactsAndMeasurements[locale]}</label>
                 {fields.impactsAndMeasurements ? fields.impactsAndMeasurements.map((subFields, index) => (
                     <div key={`impactsAndMeasurement-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -54,10 +56,10 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                     <AddCollectionEntry onClick={() => onCollectionAction("impactsAndMeasurements", "add")} />
                     <CollectionTooltip text="Test" />
                 </AbsoluteRight>
-                {errors && errors.impactsAndMeasurements ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.impactsAndMeasurements ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="targetGroups">Zielgruppen</label>
+                <label className="form-label" htmlFor="targetGroups">{i18n.targetGroups[locale]}</label>
                 {fields.targetGroups ? fields.targetGroups.map((subFields, index) => (
                     <div key={`targetGroup-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -70,7 +72,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("targetGroups", "add")} />
                 </AbsoluteRight>
-                {errors && errors.targetGroups ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.targetGroups ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <br />
             {fields.regionCoverage}

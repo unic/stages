@@ -8,7 +8,9 @@ import RemoveCollectionEntry from "../components/RemoveCollectionEntry";
 import AddCollectionEntry from "../components/AddCollectionEntry";
 import CollectionTooltip from "../components/CollectionTooltip";
 
-const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
+import i18n from "../../../energyschweiz/ech-i18n";
+
+const FormRenderer = ({ fields, onCollectionAction, data, errors, locale }) => {
     return (
         <div style={{ marginBottom: "32px" }}>
             {fields.requestingOrganisation}
@@ -16,7 +18,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             {fields.responsiblePerson}
             <br />
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="employee">Einsatz von Mitarbeitenden</label>
+                <label className="form-label" htmlFor="employee">{i18n.employees[locale]}</label>
                 {fields.employees ? fields.employees.map((subFields, index) => (
                     <div key={`employee-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -30,13 +32,12 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 ) : null}
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("employees", "add")} />
-                    <CollectionTooltip text="Test" />
                 </AbsoluteRight>
-                {errors["employees"] ? <div style={{ color: "#dc3545" }}>Bitte erfassen Sie mindestens einen Eintrag.</div> : null}
+                {errors["employees"] ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <br />
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="partner">Weitere Projektpartner</label>
+                <label className="form-label" htmlFor="partner">{i18n.projectPartners[locale]}</label>
                 {fields.projectPartners ? fields.projectPartners.map((subFields, index) => (
                     <div key={`projectPartner-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -61,7 +62,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("projectPartners", "add")} />
                 </AbsoluteRight>
-                {errors["projectPartners"] ? <div style={{ color: "#dc3545" }}>Bitte erfassen Sie mindestens einen Eintrag.</div> : null}
+                {errors["projectPartners"] ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <br />
             {fields.projectManager}

@@ -6,11 +6,13 @@ import InnerAbsoluteRight from "../components/InnerAbsoluteRight";
 import RemoveCollectionEntry from "../components/RemoveCollectionEntry";
 import AddCollectionEntry from "../components/AddCollectionEntry";
 
-const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
+import i18n from "../../../energyschweiz/ech-i18n";
+
+const FormRenderer = ({ fields, onCollectionAction, data, errors, locale }) => {
     return (
         <div>
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="internalExpenses">Einsatz von Mitarbeitenden</label>
+                <label className="form-label" htmlFor="internalExpenses">{i18n.internalExpenses[locale]}</label>
                 {fields.internalExpenses ? fields.internalExpenses.map((subFields, index) => (
                     <div key={`internalExpense-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -31,10 +33,10 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("internalExpenses", "add")} />
                 </AbsoluteRight>
-                {errors && errors.internalExpenses ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.internalExpenses ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="otherExpenses">Einsatz von Mitarbeitenden</label>
+                <label className="form-label" htmlFor="otherExpenses">{i18n.otherExpenses[locale]}</label>
                 {fields.otherExpenses ? fields.otherExpenses.map((subFields, index) => (
                     <div key={`otherCost-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -54,7 +56,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("otherExpenses", "add")} />
                 </AbsoluteRight>
-                {errors && errors.otherExpenses ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.otherExpenses ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <br />
             {fields.total}

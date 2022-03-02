@@ -1,16 +1,17 @@
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Button from "react-bootstrap/Button";
 
 import AbsoluteRight from "../components/AbsoluteRight";
 import InnerAbsoluteRight from "../components/InnerAbsoluteRight";
 import RemoveCollectionEntry from "../components/RemoveCollectionEntry";
 import AddCollectionEntry from "../components/AddCollectionEntry";
 
-const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
+import i18n from "../../../energyschweiz/ech-i18n";
+
+const FormRenderer = ({ fields, onCollectionAction, data, errors, locale }) => {
     return (
         <div>
-            <label className="form-label">Projekteinnnahmen</label>
+            <label className="form-label">{i18n.projectIncome[locale]}</label>
             <Row>
                 <Col>{fields.projectIncome[0].firstYear}</Col>
                 <Col>{fields.projectIncome[0].secondYear}</Col>
@@ -24,7 +25,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <Col>{fields.projectIncome[0].total}</Col>
             </Row>
             <br />
-            <label className="form-label">Beantragte Subvention EnergieSchweiz</label>
+            <label className="form-label">{i18n.echSubvention[locale]}</label>
             <Row>
                 <Col>{fields.echSubvention[0].firstYear}</Col>
                 <Col>{fields.echSubvention[0].secondYear}</Col>
@@ -37,7 +38,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <Col lg="3">{fields.echSubvention[0].total}</Col>
             </Row>
             <br />
-            <label className="form-label">Weitere Bundesmittel</label>
+            <label className="form-label">{i18n.governmentFunding[locale]}</label>
             <Row>
                 <Col>{fields.governmentFunding[0].firstYear}</Col>
                 <Col>{fields.governmentFunding[0].secondYear}</Col>
@@ -50,10 +51,8 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <Col lg="3">{fields.governmentFunding[0].total}</Col>
             </Row>
             <br />
-            <label className="form-label">Weitere Förderbeiträge (Kantone, Gemeinden, Hochschulen, Unternehmen)</label>
+            <label className="form-label">{i18n.furtherFundings[locale]}</label>
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="furtherFundings">Einsatz von Mitarbeitenden</label>
-                <small className="text-muted form-text">Lorem ipsum dolor sit amet</small>
                 {fields.furtherFundings ? fields.furtherFundings.map((subFields, index) => (
                     <div key={`furtherFunding-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -73,10 +72,10 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("furtherFundings", "add")} />
                 </AbsoluteRight>
-                {errors && errors.furtherFundings ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.furtherFundings ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <br />
-            <label className="form-label">Finanzielle Eigenleitstungen</label>
+            <label className="form-label">{i18n.ownResources[locale]}</label>
             <Row>
                 <Col>{fields.ownResources[0].firstYear}</Col>
                 <Col>{fields.ownResources[0].secondYear}</Col>
@@ -90,7 +89,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <Col>{fields.ownResources[0].total}</Col>
             </Row>
             <br />
-            <label className="form-label">Unentgeltliche Eigenleistungen</label>
+            <label className="form-label">{i18n.unpaidOwnContributions[locale]}</label>
             <Row>
                 <Col>{fields.unpaidOwnContributions[0].firstYear}</Col>
                 <Col>{fields.unpaidOwnContributions[0].secondYear}</Col>
@@ -104,7 +103,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <Col>{fields.unpaidOwnContributions[0].total}</Col>
             </Row>
             <br />
-            <label className="form-label">Unentgeltliche Leistungen Dritter</label>
+            <label className="form-label">{i18n.thirdPartyContributions[locale]}</label>
             <Row>
                 <Col>{fields.thirdPartyContributions[0].firstYear}</Col>
                 <Col>{fields.thirdPartyContributions[0].secondYear}</Col>
@@ -121,7 +120,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             {fields.restMoney}
             <br />
             <div style={{ position: "relative" }}>
-                <label className="form-label" htmlFor="paymentPlan">Einsatz von Mitarbeitenden</label>
+                <label className="form-label" htmlFor="paymentPlan">{i18n.paymentPlan[locale]}</label>
                 {fields.paymentPlan ? fields.paymentPlan.map((subFields, index) => (
                     <div key={`paymentPlan-${index}`} style={{ position: "relative" }}>
                         <Row>
@@ -136,7 +135,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
                 <AbsoluteRight>
                     <AddCollectionEntry onClick={() => onCollectionAction("paymentPlan", "add")} />
                 </AbsoluteRight>
-                {errors && errors.paymentPlan ? <div style={{ color: "#dc3545" }}>Bitte fügen Sie mindestens einen Programmeintrag hinzu!</div> : null}
+                {errors && errors.paymentPlan ? <div style={{ color: "#dc3545" }}>{i18n.errors.collectionMinEntries[locale]}</div> : null}
             </div>
             <br />
             {fields.justification}
