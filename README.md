@@ -34,20 +34,24 @@ import { Form, plainFields as fields } from "react-stages";
 
 <Form
     fields={fields}
-    config={[
-        {
-            id: "email",
-            label: "Email",
-            type: "email",
-            isRequired: true
-        },
-        {
-            id: "password",
-            label: "Password",
-            type: "password",
-            isRequired: true
+    config={{
+        fields: () => {
+            return [
+                {
+                    id: "email",
+                    label: "Email",
+                    type: "email",
+                    isRequired: true
+                },
+                {
+                    id: "password",
+                    label: "Password",
+                    type: "password",
+                    isRequired: true
+                }
+            ]
         }
-    ]}
+    }}
     render={({ actionProps, fieldProps }) => (
         <>
             <div>
