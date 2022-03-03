@@ -39,12 +39,6 @@ Object.defineProperty(exports, "Stages", {
     return _Stages.default;
   }
 });
-Object.defineProperty(exports, "bootstrapFields", {
-  enumerable: true,
-  get: function get() {
-    return _bootstrap.default;
-  }
-});
 Object.defineProperty(exports, "plainFields", {
   enumerable: true,
   get: function get() {
@@ -65,7 +59,5 @@ var _Form = _interopRequireDefault(require("./form/Form"));
 var _Actions = _interopRequireDefault(require("./form/Actions"));
 
 var _plain = _interopRequireDefault(require("./fieldsets/plain"));
-
-var _bootstrap = _interopRequireDefault(require("./fieldsets/bootstrap"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
