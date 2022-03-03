@@ -29,7 +29,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "microbundle --jsx React.createElement --jsxFragment React.Fragment --jsxImportSource react",
+    "build": "microbundle --jsx React.createElement --jsxFragment React.Fragment --jsxImportSource react --define process.env.NODE_ENV=production",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
