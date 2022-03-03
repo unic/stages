@@ -30,19 +30,10 @@ The form component is optimized to work together with the wizard component, but 
 A simple form:
 
 ```
-import { Form } from "react-stages";
+import { Form, plainFields as fields } from "react-stages";
 
 <Form
-    fields={[
-        email: {
-            component: Input,
-            isValid: emailIsValid
-        },
-        password: {
-            component: Input,
-            isValid: passwordIsValid
-        }
-    ]}
+    fields={fields}
     config={[
         {
             id: "email",
