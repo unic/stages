@@ -1,3 +1,5 @@
+import React from "react";
+
 /*
     This is a default component for a forms action buttons. It is ment as
     a sample on how to build your own, but of course you can use it if it
