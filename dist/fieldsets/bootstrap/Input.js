@@ -9,8 +9,43 @@ var _react = _interopRequireDefault(require("react"));
 
 var _Form = _interopRequireDefault(require("react-bootstrap/Form"));
 
+var _Tooltip = _interopRequireDefault(require("react-bootstrap/Tooltip"));
+
+var _OverlayTrigger = _interopRequireDefault(require("react-bootstrap/OverlayTrigger"));
+
+var _Button = _interopRequireDefault(require("react-bootstrap/Button"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+const InputTooltip = _ref => {
+  let {
+    text
+  } = _ref;
+  return /*#__PURE__*/_react.default.createElement("div", {
+    style: {
+      position: "absolute",
+      content: "",
+      top: "30px",
+      right: "9px"
+    }
+  }, /*#__PURE__*/_react.default.createElement(_OverlayTrigger.default, {
+    placement: "left",
+    overlay: /*#__PURE__*/_react.default.createElement(_Tooltip.default, null, text)
+  }, /*#__PURE__*/_react.default.createElement(_Button.default, {
+    variant: "secondary",
+    style: {
+      borderRadius: "100%",
+      backgroundColor: "#fff",
+      border: "1px #333 solid",
+      fontSize: "11px",
+      fontWeight: "bold",
+      color: "#333",
+      padding: 0,
+      width: "18px",
+      height: "18px"
+    }
+  }, "?")));
+};
 /*
 
 Each field must bring at least:
@@ -30,7 +65,9 @@ Optional:
 - secondaryText
 
 */
-const Input = _ref => {
+
+
+const Input = _ref2 => {
   let {
     id,
     label,
@@ -43,11 +80,15 @@ const Input = _ref => {
     prefix,
     suffix,
     secondaryText,
+    tooltip,
     type
-  } = _ref;
+  } = _ref2;
   return /*#__PURE__*/_react.default.createElement(_Form.default.Group, {
     className: "mb-3",
-    controlId: id
+    controlId: id,
+    style: {
+      position: "relative"
+    }
   }, label ? /*#__PURE__*/_react.default.createElement(_Form.default.Label, null, label, isRequired ? " *" : "") : null, secondaryText ? /*#__PURE__*/_react.default.createElement(_Form.default.Text, {
     className: "text-muted"
   }, secondaryText) : null, prefix ? /*#__PURE__*/_react.default.createElement("span", null, prefix) : null, /*#__PURE__*/_react.default.createElement(_Form.default.Control, {
@@ -59,7 +100,9 @@ const Input = _ref => {
     onChange: e => {
       if (typeof _onChange === "function") _onChange(e.target.value);
     }
-  }), suffix ? /*#__PURE__*/_react.default.createElement("span", null, suffix) : null, error ? /*#__PURE__*/_react.default.createElement(_Form.default.Text, {
+  }), tooltip ? /*#__PURE__*/_react.default.createElement(InputTooltip, {
+    text: tooltip
+  }) : null, suffix ? /*#__PURE__*/_react.default.createElement("span", null, suffix) : null, error ? /*#__PURE__*/_react.default.createElement(_Form.default.Text, {
     className: "text-muted"
   }, "Bitte f\xFCllen Sie dieses Feld aus!") : null);
 };
