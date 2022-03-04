@@ -93,7 +93,7 @@ const Input = ({
             {tooltip ? <InputTooltip text={tooltip} /> : null}
             {suffix ? <span>{suffix}</span> : null}
             {error ? errorRenderer ? errorRenderer(error) : (
-                <Form.Text className="text-muted">Please fill out this field!</Form.Text>
+                <Form.Control.Feedback type="invalid">Please fill out this field!</Form.Control.Feedback>
             ) : null}
         </Form.Group>
     );
