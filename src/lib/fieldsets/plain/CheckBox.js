@@ -32,7 +32,8 @@ const CheckBox = ({
     prefix,
     suffix,
     secondaryText,
-    type
+    type,
+    errorRenderer
 }) => {
     return (
         <div id={id}>
@@ -55,7 +56,9 @@ const CheckBox = ({
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
-            {error ? <div style={{ color: "red" }}>Bitte füllen Sie dieses Feld aus!</div> : null}
+            {error ? errorRenderer ? errorRenderer(error) : (
+                <div style={{ color: "red" }}>Please fill out this field!</div>
+            ) : null}
         </div>
     );
 }

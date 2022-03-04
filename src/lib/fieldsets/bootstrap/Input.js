@@ -72,7 +72,8 @@ const Input = ({
     suffix,
     secondaryText,
     tooltip,
-    type
+    type,
+    errorRenderer
 }) => {
     return (
         <Form.Group className="mb-3" controlId={id} style={{ position: "relative" }}>
@@ -91,7 +92,9 @@ const Input = ({
             />
             {tooltip ? <InputTooltip text={tooltip} /> : null}
             {suffix ? <span>{suffix}</span> : null}
-            {error ? <Form.Text className="text-muted">Bitte füllen Sie dieses Feld aus!</Form.Text> : null}
+            {error ? errorRenderer ? errorRenderer(error) : (
+                <Form.Text className="text-muted">Please fill out this field!</Form.Text>
+            ) : null}
         </Form.Group>
     );
 }

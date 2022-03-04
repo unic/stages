@@ -32,7 +32,8 @@ const CheckBox = ({
     prefix,
     suffix,
     secondaryText,
-    type
+    type,
+    errorRenderer
 }) => {
     return (
         <Form.Group className="mb-3" controlId={id}>
@@ -51,7 +52,9 @@ const CheckBox = ({
             />
             {suffix ? <span>{suffix}</span> : null}
             {secondaryText ? <Form.Text className="text-muted">{secondaryText}</Form.Text> : null}
-            {error ? <Form.Text className="text-muted">Bitte füllen Sie dieses Feld aus!</Form.Text> : null}
+            {error ? errorRenderer ? errorRenderer(error) : (
+                <Form.Text className="text-muted">Please fill out this field!</Form.Text>
+            ) : null}
         </Form.Group>
     );
 }
