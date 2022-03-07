@@ -25,6 +25,12 @@ Installation:
 
 `npm i react-stages --save`
 
+## Component Structure
+
+This is the basic component structure for a wizard:
+
+<img src="https://unpkg.com/react-stages@0.1.19/stages-structure.png" title="Stages Structure" width="100%">
+
 ## The Form Component
 
 The form component is optimized to work together with the wizard component, but you can of course use it for any kind of forms. It's the backbone to building higly dynamic wizards by constantly being aware on the state of a wizards steps.

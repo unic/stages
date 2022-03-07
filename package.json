@@ -11,7 +11,8 @@
   "files": [
     "dist",
     "README.md",
-    "stages-logo.png"
+    "stages-logo.png",
+    "stages-structure.png"
   ],
   "repository": {
     "type": "git",
