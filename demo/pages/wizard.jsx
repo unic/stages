@@ -108,7 +108,7 @@ function WizardPage() {
                                         loading={loading}
                                         fields={<GuestsRenderer {...fieldProps} />}
                                         actions={<Actions
-                                            config={createActionButtonConfig("regular", onNav, onSubmit, data)}
+                                            config={createActionButtonConfig("last", onNav, onSubmit, data)}
                                             {...actionProps}
                                         />}
                                     />

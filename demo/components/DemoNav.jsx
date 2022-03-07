@@ -52,6 +52,11 @@ const DemoNav = () => {
                         <a style={{ color: "#fff" }}>Simple Wizard</a>
                     </Link>
                 </StyledLi>
+                <StyledLi>
+                    <Link href="/slideshow">
+                        <a style={{ color: "#fff" }}>Simple Slideshow</a>
+                    </Link>
+                </StyledLi>
             </ul>  
         </div>
     );
