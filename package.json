@@ -10,7 +10,8 @@
   "source": "./src/lib/index.js",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "stages-logo.png"
   ],
   "repository": {
     "type": "git",
