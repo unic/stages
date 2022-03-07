@@ -1,11 +1,14 @@
+import React, { useState } from "react";
 import { Form, plainFields as fields } from "react-stages";
 import DemoNav from "../components/DemoNav";
 
 function FormPage() {
+    const [data, setData] = useState({});
     return (
         <div>
             <DemoNav />
             <Form
+                data={data}
                 fields={fields}
                 config={{
                     fields: () => {
@@ -41,7 +44,7 @@ function FormPage() {
                         </button>
                     </>
                 )}
-                onChange={payload => console.log("onChange:", payload)}
+                onChange={payload => setData(payload)}
             /> 
         </div>
     );

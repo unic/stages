@@ -13,7 +13,7 @@ const SlideShowContainer = ({ children }) => {
             alignItems: "center",
             color: "#000",
             textAlign: "center",
-            marginTop: "25%",
+            marginTop: "18%",
             fontSize: "2em",
             fontFamily: "Open Sans, Helvetia, sans"
         }}>
