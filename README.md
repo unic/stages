@@ -1,6 +1,6 @@
 # Stages
 
-<img src="https://unpkg.com/stages@0.1.16/stages-logo.png" align="right" title="Stages" width="400">
+<img src="https://unpkg.com/react-stages@0.1.17/stages-logo.png" align="right" title="Stages" width="400">
 
 Stages, super flexible and lightweight wizard and form components for React
 
