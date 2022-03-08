@@ -19,7 +19,7 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
-const Progression = ({ stepCount, validSteps, percentage, data, errors }) => {
+const Progression = ({ data, verbose }) => {
     let correctAnwsers = 0;
     let totalAnswers = 0;
 
@@ -27,10 +27,26 @@ const Progression = ({ stepCount, validSteps, percentage, data, errors }) => {
         correctAnwsers = Number(data.easy.result || 0) + Number(data.medium.result || 0) + Number(data.hard.result || 0);
         totalAnswers = Object.keys(data.easy).length + Object.keys(data.medium).length + Object.keys(data.hard).length - 3;
 
-        if (totalAnswers === 0) return null; 
+        if (totalAnswers === 0) return null;
+        const percentage = Math.round(100 / totalAnswers * correctAnwsers);
+
+        if (verbose) {
+            return (
+                <div>
+                    You have answered {correctAnwsers} out of {totalAnswers} questions correctly. 
+                    That is a {percentage}% success rate.
+                    <br />
+                    {percentage < 50 ? "You could have done better!" : null}
+                    <br />
+                    {percentage < 20 ? "I mean, what the f***?" : null}
+                    <br />
+                    {percentage >= 80 ? "That is really, really good!" : null}
+                </div>
+            );
+        }
 
         return (
-            <div>{correctAnwsers} correctly answered out of {totalAnswers}, {Math.round(100 / totalAnswers * correctAnwsers)}% success rate.</div>
+            <div>{correctAnwsers} correctly answered out of {totalAnswers}, {percentage}% success rate.</div>
         );
     }
 
@@ -137,7 +153,7 @@ function QuizPage() {
                                         loading={loading}
                                         fields={<HardRenderer {...fieldProps} />}
                                         actions={<Actions
-                                            config={createActionButtonConfig("last", onNav, onSubmit, data)}
+                                            config={createActionButtonConfig("regular", onNav, onSubmit, data)}
                                             {...actionProps}
                                         />}
                                     />
@@ -147,6 +163,19 @@ function QuizPage() {
                                 isVisible={isActive}
                             />
                         </Fragment>
+                    );
+                }}
+                {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
+                    const key = setStepKey("results", index);
+                    if (initializing) return null;
+
+                    if (!isActive) return <Fragment key={`step-${key}`}></Fragment>;
+
+                    return (
+                        <div key={`step-${key}`}>
+                            <h2>Congratulations!</h2>
+                            <Progression data={allData} verbose={true} />
+                        </div>
                     );
                 }}
             </Stages>
