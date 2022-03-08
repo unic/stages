@@ -19,7 +19,8 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
-const Progression = ({ stepCount, validSteps, percentage }) => {
+const Progression = ({ stepCount, validSteps, percentage, data, errors }) => {
+    console.log({ stepCount, validSteps, percentage, data, errors });
     return (
         <div>{`${validSteps} / ${stepCount} (${Math.round(percentage)}%)`}</div>
     );

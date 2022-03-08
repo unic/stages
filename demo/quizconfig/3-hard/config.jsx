@@ -46,6 +46,18 @@ const config = {
                 isRequired: true,
                 isDisabled: !!data.q9,
                 errorRenderer: errorRenderer
+            },
+            {
+                id: "result3",
+                type: "text",
+                isDisabled: true,
+                computedValue: data => {
+                    let correctAnwsers = 0;
+                    if (data.q7 && data.q7 === "c") correctAnwsers++;
+                    if (data.q8 && data.q8 === "b") correctAnwsers++;
+                    if (data.q9 && data.q9 === "c") correctAnwsers++;
+                    return correctAnwsers;
+                }
             }
         ];
     }
