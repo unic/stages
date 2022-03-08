@@ -20,7 +20,6 @@ const FormLayout = ({ loading, fields, actions }) => <div>
 </div>;
 
 const Progression = ({ stepCount, validSteps, percentage, data, errors }) => {
-    console.log({ stepCount, validSteps, percentage, data, errors });
     let correctAnwsers = 0;
     let totalAnswers = 0;
 
@@ -110,7 +109,7 @@ function QuizPage() {
                                         loading={loading}
                                         fields={<MediumRenderer {...fieldProps} />}
                                         actions={<Actions
-                                            config={createActionButtonConfig("last", onNav, onSubmit, data)}
+                                            config={createActionButtonConfig("regular", onNav, onSubmit, data)}
                                             {...actionProps}
                                         />}
                                     />
@@ -138,7 +137,7 @@ function QuizPage() {
                                         loading={loading}
                                         fields={<HardRenderer {...fieldProps} />}
                                         actions={<Actions
-                                            config={createActionButtonConfig("first", onNav, onSubmit, data)}
+                                            config={createActionButtonConfig("last", onNav, onSubmit, data)}
                                             {...actionProps}
                                         />}
                                     />
