@@ -48,7 +48,7 @@ const config = {
                 errorRenderer: errorRenderer
             },
             {
-                id: "result1",
+                id: "result",
                 type: "text",
                 isDisabled: true,
                 computedValue: data => {

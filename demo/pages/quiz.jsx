@@ -21,9 +21,21 @@ const FormLayout = ({ loading, fields, actions }) => <div>
 
 const Progression = ({ stepCount, validSteps, percentage, data, errors }) => {
     console.log({ stepCount, validSteps, percentage, data, errors });
-    return (
-        <div>{`${validSteps} / ${stepCount} (${Math.round(percentage)}%)`}</div>
-    );
+    let correctAnwsers = 0;
+    let totalAnswers = 0;
+
+    if (data && data.easy && data.medium && data.hard) {
+        correctAnwsers = Number(data.easy.result || 0) + Number(data.medium.result || 0) + Number(data.hard.result || 0);
+        totalAnswers = Object.keys(data.easy).length + Object.keys(data.medium).length + Object.keys(data.hard).length - 3;
+
+        if (totalAnswers === 0) return null; 
+
+        return (
+            <div>{correctAnwsers} correctly answered out of {totalAnswers}, {Math.round(100 / totalAnswers * correctAnwsers)}% success rate.</div>
+        );
+    }
+
+    return null;
 };
 
 function QuizPage() {
