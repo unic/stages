@@ -1,5 +1,5 @@
 import React, { Fragment } from "react";
-import { Stages, Form, Actions, Navigation, Progression, HashRouter, plainFields as fields } from "react-stages";
+import { Stages, Form, Actions, HashRouter, plainFields as fields } from "react-stages";
 import DemoNav from "../components/DemoNav";
 
 import {
@@ -18,6 +18,12 @@ const FormLayout = ({ loading, fields, actions }) => <div>
         </>
     )}
 </div>;
+
+const Progression = ({ stepCount, validSteps, percentage }) => {
+    return (
+        <div>{`${validSteps} / ${stepCount} (${Math.round(percentage)}%)`}</div>
+    );
+};
 
 function QuizPage() {
 

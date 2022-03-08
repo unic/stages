@@ -209,7 +209,9 @@ const Stages = ({
             currentStep,
             stepCount,
             validSteps,
-            percentage: 100 / stepCount * validSteps
+            percentage: 100 / stepCount * validSteps,
+            data,
+            errors
         };
     };
 
