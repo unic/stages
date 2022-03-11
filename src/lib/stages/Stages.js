@@ -170,7 +170,7 @@ const Stages = ({
     */
     const onChangeStep = step => {
         const lastValidStep = calculateLastValidStep();
-        if (lastValidStep + 1 >= step) setCurrentStep(step);
+        if (lastValidStep + 1 >= step || validateOnStepChange === false) setCurrentStep(step);
     };
 
     /*
