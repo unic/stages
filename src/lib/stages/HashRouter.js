@@ -47,7 +47,7 @@ const HashRouter = ({ step, onChange, keys }) => {
                 onChange(index);
             }
         } else {
-            setHash(`#/${getHashFromIndex(0)}`);
+            setHash(`#/${getHashFromIndex(step)}`);
         }
     };
 
