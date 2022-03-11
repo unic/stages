@@ -406,3 +406,16 @@ The `onNav` callback can act on the following navTypes:
 - step (jump to specific step)
 
 If validation is activated on Stages (`validateOnStepChange = true`), than onNav will only jump to valid steps.
+
+### Debug your steps
+
+While developing steps, it can be tiresome to always step through the wizard and enter valid data to get to specific step. There is however a simple way to force Stages to always jump to a certain step:
+
+```
+<Stages
+    initialStep={1}
+    validateOnStepChange={false}
+>
+    ...
+</Stages>
+```
