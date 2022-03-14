@@ -47,9 +47,9 @@ const Form = ({
 
             // Is the data entered valid, check with default field function and optionally with custom validation:
             const isValid = field.type !== "collection" && fields[field.type].isValid(data[field.id], field);
-            const fieldIsValid = field.type !== "collection" && field.customValidation ? field.customValidation(data[field.id], field, isValid) : isValid;
+            const fieldIsValid = field.type !== "collection" && field.customValidation ? field.customValidation({ data: data[field.id], allData: data, field, isValid }) : isValid;
 
-            // Regular non collection feilds:
+            // Regular non collection fields:
             if (field.type !== "collection" && !fieldIsValid) {
                 if (!firstErrorField) firstErrorField = field.id;
                 errors[field.id] = {
