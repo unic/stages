@@ -11,7 +11,7 @@ const TextAreaTooltip = ({ text }) => {
                 position: "absolute",
                 content: "",
                 top: "30px",
-                right: "9px"
+                right: "20px"
             }}
         >
             <OverlayTrigger

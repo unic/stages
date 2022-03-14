@@ -4,14 +4,14 @@ import Tooltip from "react-bootstrap/Tooltip";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Button from "react-bootstrap/Button";
 
-const InputTooltip = ({ text }) => {
+const InputTooltip = ({ text, hasLabel }) => {
     return (
         <div
             style={{
                 position: "absolute",
                 content: "",
-                top: "30px",
-                right: "9px"
+                top: hasLabel ? "30px" : "5px",
+                right: hasLabel ? "20px" : "10px"
             }}
         >
             <OverlayTrigger
@@ -90,7 +90,7 @@ const Input = ({
                     if (typeof onChange === "function") onChange(e.target.value);
                 }}
             />
-            {tooltip ? <InputTooltip text={tooltip} /> : null}
+            {tooltip ? <InputTooltip text={tooltip} hasLabel={!!label} /> : null}
             {suffix ? <span>{suffix}</span> : null}
             {error ? errorRenderer ? errorRenderer(error) : (
                 <Form.Control.Feedback type="invalid">Please fill out this field!</Form.Control.Feedback>
