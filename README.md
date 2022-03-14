@@ -153,7 +153,7 @@ import { bootstrapFields as fields } from "react-stages";
 
 ### Config
 
-In this property you configurate the fields in your form. At a minimum you have to add an `id` and `type`. The id has to be unique and the type references a field you supllied to the form. All other properties can vary based on the fields you supply, but things like `label`  should be added for all of them for accessibility reasons.
+In this property you configurate the fields in your form. At a minimum you have to add an `id` and `type`. The id has to be unique and the type references a field you supllied to the form. All other properties can vary based on the fields you supply, but things like `label` should be added for all of them for accessibility reasons.
 
 A special type of field is the `collection` type. It creates an array of grouped fields. An example config:
 
@@ -287,7 +287,6 @@ import { Stages, Form, Navigation, Progression, HashRouter } from "react-stages"
 
 For unlimited flexibility, we use render props and component composition everywhere. Let's step through the properties first.
 
-
 ### Initial Data
 
 Here you can supply initial data to the wizard. This can be useful if you have some storage somehere and want to let the user edit his previous data in the wizard.
@@ -418,4 +417,32 @@ While developing steps, it can be tiresome to always step through the wizard and
 >
     ...
 </Stages>
+```
+
+### Add custom validations to your field
+
+Sometimes validation has to be on a per field basis. In the example below, we check that the fromDate isn't after the toDate:
+
+```
+{
+    id: 'fromDate',
+    label: "From",
+    type: 'date',
+    isRequired: true,
+},
+{
+    id: 'toDate',
+    label: "To",
+    type: 'date',
+    isRequired: true,
+    customValidation: ({ data, allData, fieldConfig, isValid }) => {
+        if (allData.fromDate && data) {
+            const fromDate = new Date(allData.fromDate);
+            const toDate = new Date(data);
+            // Make sure fromDate isn't bigger than toDate:
+            if (fromDate > toDate) return false;
+        }
+        return isValid;
+    },
+}
 ```
