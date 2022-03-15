@@ -5,10 +5,7 @@ const config = {
                 id: "username",
                 label: "Username",
                 type: "text",
-                isRequired: true,
-                customValidation: (value, config, isValid) => {
-                    return isValid && value === value.replace(/[^A-Za-z0-9]/g, ""); // only valid if alphanumeric
-                }
+                isRequired: true
             },
             {
                 id: "email",

@@ -45,14 +45,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },
@@ -106,14 +108,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },
@@ -166,14 +170,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },
@@ -224,14 +230,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },
@@ -278,14 +286,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },
@@ -332,14 +342,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },
@@ -386,14 +398,16 @@ const config = (locale) => {
               isDisabled: true,
               computedValue: (data, itemData) => {
                 let result = 0;
-                if (itemData.firstYear)
-                  result = result + Number(itemData.firstYear);
-                if (itemData.secondYear)
-                  result = result + Number(itemData.secondYear);
-                if (itemData.thirdYear)
-                  result = result + Number(itemData.thirdYear);
-                if (itemData.fourthYear)
-                  result = result + Number(itemData.fourthYear);
+                if (itemData) {
+                  if (itemData.firstYear)
+                    result = result + Number(itemData.firstYear);
+                  if (itemData.secondYear)
+                    result = result + Number(itemData.secondYear);
+                  if (itemData.thirdYear)
+                    result = result + Number(itemData.thirdYear);
+                  if (itemData.fourthYear)
+                    result = result + Number(itemData.fourthYear);
+                }
                 return result !== 0 ? result : '';
               },
             },

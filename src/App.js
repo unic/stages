@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useState } from "react";
 import { Stages, Navigation, Progression, HashRouter } from "./lib/stages";
 import { Form, Actions } from "./lib/form";
 import fields from "./lib/fieldsets/plain";
@@ -29,6 +29,10 @@ function App() {
               { factor1: 3, factor2: 7 }
           ]
       }
+  };
+
+  const handleChange = (data, errors) => {
+    console.log({data, errors});
   };
 
   const onSubmit = data => {
@@ -65,6 +69,7 @@ function App() {
           <h1>Wizard</h1>
           <Stages
               initialData={initialData}
+              onChange={({ data, errors }) => handleChange(data, errors)}
               render={({ navigationProps, progressionProps, routerProps, steps }) => (
                   <div>
                       <Navigation {...navigationProps} />

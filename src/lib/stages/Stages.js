@@ -19,7 +19,8 @@ const Stages = ({
     initialData,
     initialStep,
     render,
-    validateOnStepChange
+    validateOnStepChange,
+    onChange
 }) => {
     const [data, setData] = useState(initialData);
     const [activeChildren, setActiveChildren] = useState([]);
@@ -50,7 +51,7 @@ const Stages = ({
     /*
         This function is called by step forms and updates data and errors.
     */
-    const onChange = (changedData, stepErrors, id) => {
+    const handleOnChange = (changedData, stepErrors, id) => {
         const key = keys && keys[id] ? keys[id].key : id;
 
         errors[id] = stepErrors;
@@ -58,6 +59,7 @@ const Stages = ({
 
         data[key] = changedData;
         setData(Object.assign({}, data));
+        onChange({ data, errors });
     };
 
     /*
@@ -88,7 +90,7 @@ const Stages = ({
             children.map((item, index) => item({
                 data: getStepData(index),
                 allData: data,
-                onChange,
+                onChange: handleOnChange,
                 onNav,
                 isActive: index === currentStep,
                 index,
