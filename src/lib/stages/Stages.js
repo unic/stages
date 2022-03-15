@@ -59,7 +59,8 @@ const Stages = ({
 
         data[key] = changedData;
         setData(Object.assign({}, data));
-        onChange({ data, errors });
+        
+        if (typeof onChange === "function") onChange({ data, errors });
     };
 
     /*
