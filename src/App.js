@@ -20,19 +20,27 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
+export const getStateFromLocalStorage = () => {
+	if (typeof localStorage !== "undefined") {
+		const stringifiedStoredState = localStorage.getItem("stages-demo-app") || "{}";
+		const storedState = JSON.parse(stringifiedStoredState);
+		return storedState;
+	}
+	return {};
+};
+
+export const saveStateToLocalStorage = (state = {}) => {
+	if (typeof localStorage !== "undefined") {
+		const stringifiedState = JSON.stringify(state);
+		localStorage.setItem("stages-demo-app", stringifiedState);
+	}
+};
+
 function App() {
-  const initialData = {
-      basics: {
-          email: "test@unic.com",
-          username: "Superman",
-          maths: [
-              { factor1: 3, factor2: 7 }
-          ]
-      }
-  };
+  const initialData = getStateFromLocalStorage();
 
   const handleChange = (data, errors) => {
-    console.log({data, errors});
+    saveStateToLocalStorage(data);
   };
 
   const onSubmit = data => {
@@ -112,7 +120,7 @@ function App() {
                   const key = setStepKey("guests", index);
                   if (initializing) return null;
 
-                  if (allData.basics.password === "test1234") return null;
+                  if (allData.basics && allData.basics.password === "test1234") return null;
 
                   return (
                       <Fragment key={`step-${key}`}>
