@@ -38,7 +38,7 @@ const Form = ({
         This function checks for all validation errors, based on each field types validation method
         and the fields config.
     */
-    const validationErrors = () => {
+    const validationErrors = (isUserAction) => {
         let errors = {};
         let firstErrorField;
 
@@ -83,7 +83,7 @@ const Form = ({
         });
 
         // Jump to the first field which has an error:
-        if (firstErrorField && isVisible) {
+        if (firstErrorField && isVisible && isUserAction) {
             const element = document.getElementById(firstErrorField);
             if (element && !isElementInViewport(element)) element.scrollIntoView();
         }
@@ -242,7 +242,7 @@ const Form = ({
         or just the supplied callback.
     */
     const handleActionClick = (callback, validate) => {
-        let errors = validate ? validationErrors() : {};
+        let errors = validate ? validationErrors(true) : {};
         setErrors(errors);
         if (Object.keys(errors).length === 0) callback();
     };
