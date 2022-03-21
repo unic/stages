@@ -57,10 +57,12 @@ function WizardPage() {
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
-                    <div>
-                        <Navigation {...navigationProps} />
-                        <Progression {...progressionProps} />
-                        {steps}
+                    <div class="pure-g">
+                        <div class="pure-u-1-5" style={{ marginTop: "64px" }}>
+                            <Navigation {...navigationProps} />
+                            <Progression {...progressionProps} /> 
+                        </div>
+                        <div class="pure-u-4-5">{steps}</div>
                         {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
                     </div>
                 )}
