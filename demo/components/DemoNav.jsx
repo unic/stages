@@ -16,7 +16,6 @@ const StyledLi = ({ children }) => {
 };
 
 const MenuItem = React.forwardRef(({ onClick, href, children, active }, ref) => {
-    console.log(active);
     return (
         <a href={href} onClick={onClick} ref={ref} style={{
             textDecoration: "none",
