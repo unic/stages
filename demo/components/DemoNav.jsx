@@ -1,10 +1,12 @@
+import React from "react";
 import Link from 'next/link';
+import { useRouter } from "next/router";
 
 const StyledLi = ({ children }) => {
     return (
         <li
             style={{
-                padding: "4px 8px",
+                padding: "4px 0px 4px 8px",
                 margin: "0 8px"
             }}
         >
@@ -13,7 +15,20 @@ const StyledLi = ({ children }) => {
     );
 };
 
+const MenuItem = React.forwardRef(({ onClick, href, children, active }, ref) => {
+    console.log(active);
+    return (
+        <a href={href} onClick={onClick} ref={ref} style={{
+            textDecoration: "none",
+            color: active ? "#fff" : "#ccc",
+            cursor: "pointer"
+        }}>{children}</a>
+    );
+});
+
 const DemoNav = () => {
+    const router = useRouter();
+
     return (
         <div
             style={{
@@ -29,10 +44,10 @@ const DemoNav = () => {
                 style={{
                     float: "left",
                     margin: 0,
-                    padding: "4px 8px",
+                    padding: "4px 14px",
                     fontSize: "16px",
                     minHeight: "20px",
-                    background: "#666"
+                    background: "#d30"
                 }}
             >Stages Demos</h1>
             <ul style={{
@@ -44,22 +59,22 @@ const DemoNav = () => {
             }}>
                 <StyledLi>
                     <Link href="/">
-                        <a style={{ color: "#fff", textDecoration: "none" }}>Simple Form</a>
+                        <MenuItem active={router.pathname === "/"}>Simple Form</MenuItem>
                     </Link>
                 </StyledLi>
                 <StyledLi>
                     <Link href="/wizard">
-                        <a style={{ color: "#fff", textDecoration: "none" }}>Simple Wizard</a>
+                        <MenuItem  active={router.pathname === "/wizard"}>Simple Wizard</MenuItem>
                     </Link>
                 </StyledLi>
                 <StyledLi>
                     <Link href="/slideshow">
-                        <a style={{ color: "#fff", textDecoration: "none" }}>Simple Slideshow</a>
+                        <MenuItem active={router.pathname === "/slideshow"}>Simple Slideshow</MenuItem>
                     </Link>
                 </StyledLi>
                 <StyledLi>
                     <Link href="/quiz">
-                        <a style={{ color: "#fff", textDecoration: "none" }}>Quiz</a>
+                        <MenuItem active={router.pathname === "/quiz"}>Quiz</MenuItem>
                     </Link>
                 </StyledLi>
             </ul>  
