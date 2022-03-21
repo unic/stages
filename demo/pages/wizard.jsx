@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Stages, Form, Actions, Navigation, Progression, HashRouter, plainFields as fields } from "react-stages";
-import DemoNav from "../components/DemoNav";
+import Layout from "../components/Layout";
 
 import {
     basicsConfig, guestsConfig,
@@ -13,7 +13,9 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     ) : (
         <>
             {fields}
+            <br />
             <hr />
+            <br />
             {actions}
         </>
     )}
@@ -51,8 +53,7 @@ function WizardPage() {
     };
 
     return (
-        <div>
-            <DemoNav />
+        <Layout>
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -121,8 +122,7 @@ function WizardPage() {
                     );
                 }}
             </Stages>
-        </div>
-
+        </Layout>
     );
 };
   

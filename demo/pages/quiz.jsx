@@ -1,6 +1,6 @@
 import React, { Fragment } from "react";
 import { Stages, Form, Actions, HashRouter, plainFields as fields } from "react-stages";
-import DemoNav from "../components/DemoNav";
+import Layout from "../components/Layout";
 
 import {
     easyConfig, mediumConfig, hardConfig,
@@ -13,7 +13,9 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     ) : (
         <>
             {fields}
+            <br />
             <hr />
+            <br />
             {actions}
         </>
     )}
@@ -69,8 +71,7 @@ function QuizPage() {
     };
 
     return (
-        <div>
-            <DemoNav />
+        <Layout>
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -179,8 +180,7 @@ function QuizPage() {
                     );
                 }}
             </Stages>
-        </div>
-
+        </Layout>
     );
 };
   
