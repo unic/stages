@@ -15,9 +15,26 @@ const Layout = ({ children }) => {
             <DemoNav />
             <div
                 style={{
-                    margin: "32px"
+                    margin: "32px",
+                    position: "relative"
                 }}
             >
+                <div
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        width: "240px",
+                        padding: "8px",
+                        fontSize: "14px",
+                        color: "#944",
+                        border: "1px #baa solid",
+                        borderRadius: "4px",
+                        background: "#fee"
+                    }}
+                >
+                    <strong>Note:</strong> Stages comes without styles, you have to bring your own!
+                </div>
                 {children}
             </div>
         </> 
