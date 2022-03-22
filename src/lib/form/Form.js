@@ -67,6 +67,9 @@ const Form = ({
             } else if (field.type === "collection") {
                 field.fields.forEach(subField => {
                     data[field.id] && data[field.id].forEach((dataEntry, index) => {
+                        // Don't check fields if the collection isn't required and the object is empty:
+                        if (field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
+
                         // Is the data entered valid, check with default field function and optionally with custom validation:
                         const isValid = fields[subField.type] && fields[subField.type].isValid(dataEntry[subField.id], subField);
                         const fieldIsValid = subField.customValidation ? subField.customValidation(dataEntry[subField.id], subField, isValid) : isValid;
