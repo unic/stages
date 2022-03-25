@@ -1,6 +1,7 @@
 import React, { Fragment } from "react";
-import { Stages, Form, Actions, Navigation, Progression, HashRouter, plainFields as fields } from "react-stages";
+import { Stages, Form, Actions, Progression, HashRouter, plainFields as fields } from "react-stages";
 import Layout from "../components/Layout";
+import WizardNavigation from "../components/WizardNavigation";
 
 import {
     basicsConfig, guestsConfig,
@@ -59,7 +60,7 @@ function WizardPage() {
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
                     <div class="pure-g">
                         <div class="pure-u-1-5" style={{ marginTop: "64px" }}>
-                            <Navigation {...navigationProps} />
+                            <WizardNavigation {...navigationProps} />
                             <Progression {...progressionProps} /> 
                         </div>
                         <div class="pure-u-4-5">{steps}</div>
