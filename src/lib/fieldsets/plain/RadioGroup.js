@@ -67,7 +67,7 @@ const RadioGroup = ({
             ) : null}
         </div>
     );
-}
+};
 
 export const isValid = (value, config) => {
     if (config.isRequired && (value === "" || typeof value === "undefined")) return false;

@@ -2,6 +2,12 @@ const errorRenderer = error => (
     <div style={{ color: "red" }}>Please answer this question!</div>
 );
 
+const QuestionResult = ({ data, correct }) => (
+    <div style={{ marginTop: "4px", color: data === correct ? "#f00" : "#693", height: "16px" }}>
+        {data ? data === correct ? "Correct!" : "Wrong!" : ""}
+    </div>
+);
+
 const config = {
     fields: (data) => {
         return [
@@ -13,7 +19,7 @@ const config = {
                     { value: "b", text: "The price of diamonds is kept artificially high." },
                     { value: "c", text: "The Dalai Lama worked for the CIA." }
                 ],
-                secondaryText: data.q1 ? data.q1 === "a" ? "Correct!" : "Wrong!" : "",
+                secondaryText: <QuestionResult data={data.q1} correct="a" />,
                 type: "radio",
                 isRequired: true,
                 isDisabled: !!data.q1,
@@ -27,7 +33,7 @@ const config = {
                     { value: "b", text: "One GigaByte?" },
                     { value: "c", text: "One PetaByte?" } // correct
                 ],
-                secondaryText: data.q2 ? data.q2 === "c" ? "Correct!" : "Wrong!" : "",
+                secondaryText: <QuestionResult data={data.q2} correct="c" />,
                 type: "radio",
                 isRequired: true,
                 isDisabled: !!data.q2,
@@ -41,7 +47,7 @@ const config = {
                     { value: "b", text: "Thomas Edison" },
                     { value: "c", text: "Hippolyte Pixii" } // correct
                 ],
-                secondaryText: data.q3 ? data.q3 === "c" ? "Correct!" : "Wrong!" : "",
+                secondaryText: <QuestionResult data={data.q3} correct="c" />,
                 type: "radio",
                 isRequired: true,
                 isDisabled: !!data.q3,

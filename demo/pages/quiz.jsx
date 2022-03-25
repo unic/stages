@@ -7,6 +7,55 @@ import {
     EasyRenderer, MediumRenderer, HardRenderer
 } from "../quizconfig";
 
+fields.radio.component = ({
+    id,
+    label,
+    value,
+    options,
+    onChange,
+    error,
+    isRequired,
+    isDisabled,
+    prefix,
+    suffix,
+    secondaryText,
+    errorRenderer
+}) => {
+    return (
+        <div id={id}>
+            {label ? <label>{label}</label> : null}
+            <div>
+                {prefix ? <span>{prefix}</span> : null}
+                {options.map(option => {
+                    return (
+                        <span key={`${id}-${option.value}`} style={{ marginRight: "12px" }}>
+                            <input
+                                type="radio"
+                                name={id}
+                                id={`${id}-${option.value}`}
+                                value={option.value}
+                                checked={value === option.value}
+                                disabled={!!isDisabled}
+                                onChange={() => {/* to make React and IE happy */}}
+                                onClick={e => {
+                                    if (typeof onChange === "function") onChange(option.value);
+                                }}
+                                style={{ marginRight: "4px" }}
+                            />
+                            <label htmlFor={`${id}-${option.value}`}>{option.text}</label>
+                        </span>
+                    );
+                })}
+                {suffix ? <span>{suffix}</span> : null}
+            </div>
+            {secondaryText ? <div>{secondaryText}</div> : null}
+            {error ? errorRenderer ? errorRenderer(error) : (
+                <div style={{ color: "red" }}>Please fill out this field!</div>
+            ) : null}
+        </div>
+    );
+};
+
 const FormLayout = ({ loading, fields, actions }) => <div>
     {loading ? (
         <div>Loading data, please wait ...</div>
@@ -75,9 +124,9 @@ function QuizPage() {
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
-                    <div>
-                        <Progression {...progressionProps} />
-                        {steps}
+                    <div style={{ position: "relative" }}>
+                        <div style={{ position: "absolute", top: "-32px" }}><Progression {...progressionProps} /></div>
+                        <div style={{ marginTop: "64px" }}>{steps}</div>
                         {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
                     </div>
                 )}
