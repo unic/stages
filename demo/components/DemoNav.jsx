@@ -62,6 +62,11 @@ const DemoNav = () => {
                     </Link>
                 </StyledLi>
                 <StyledLi>
+                    <Link href="/collections">
+                        <MenuItem active={router.pathname === "/"}>Collections</MenuItem>
+                    </Link>
+                </StyledLi>
+                <StyledLi>
                     <Link href="/wizard">
                         <MenuItem  active={router.pathname === "/wizard"}>Simple Wizard</MenuItem>
                     </Link>

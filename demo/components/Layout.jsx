@@ -22,7 +22,7 @@ const Layout = ({ children }) => {
                 <div
                     style={{
                         position: "absolute",
-                        top: 0,
+                        top: "-24px",
                         right: 0,
                         width: "240px",
                         padding: "8px",
