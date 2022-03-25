@@ -5,10 +5,7 @@ const config = {
                 id: "username",
                 label: "Username",
                 type: "text",
-                isRequired: true,
-                customValidation: (value, config, isValid) => {
-                    return isValid && value === value.replace(/[^A-Za-z0-9]/g, ""); // only valid if alphanumeric
-                }
+                isRequired: true
             },
             {
                 id: "email",
@@ -47,39 +44,6 @@ const config = {
                     { value: "A", text: "Lose Yourself" },
                     { value: "B", text: "Stan" },
                     { value: "C", text: "8 Mile" }
-                ]
-            },
-            {
-                id: "maths",
-                label: "Maths",
-                type: "collection",
-                init: true,
-                min: 2,
-                max: 5,
-                fields: [
-                    {
-                        id: "factor1",
-                        label: "Factor 1",
-                        type: "number"
-                    },
-                    {
-                        id: "factor2",
-                        label: "Factor 2",
-                        type: "number"
-                    },
-                    {
-                        id: "result",
-                        label: "Result of Factor 1 x Factor 2",
-                        type: "number",
-                        isDisabled: true,
-                        computedValue: (data, itemData) => {
-                            let result = 0;
-                            if (itemData.factor1 && itemData.factor2) {
-                                result = Number(itemData.factor1) * Number(itemData.factor2);
-                            }
-                            return result !== 0 ? result : "";
-                        }
-                    }
                 ]
             }
         ];

@@ -63,7 +63,7 @@ const DemoNav = () => {
                 </StyledLi>
                 <StyledLi>
                     <Link href="/collections">
-                        <MenuItem active={router.pathname === "/"}>Collections</MenuItem>
+                        <MenuItem active={router.pathname === "/collections"}>Collections</MenuItem>
                     </Link>
                 </StyledLi>
                 <StyledLi>

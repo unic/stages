@@ -35,7 +35,9 @@ const Layout = ({ children }) => {
                 >
                     <strong>Note:</strong> Stages comes without styles, you have to bring your own!
                 </div>
-                {children}
+                <div style={{ maxWidth: "800px" }}>
+                    {children}
+                </div>
             </div>
         </> 
     );
