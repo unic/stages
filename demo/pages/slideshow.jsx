@@ -1,7 +1,7 @@
 import React, { Fragment } from "react";
 import UseKey from 'react-use/lib/component/UseKey';
 import { Stages, Progression, HashRouter } from "react-stages";
-import Layout from "../components/Layout";
+import SlideshowLayout from "../components/SlideshowLayout";
 
 const SlideShowContainer = ({ children }) => {
     return (
@@ -63,7 +63,7 @@ const NextNav = ({ children }) => {
 
 function SlideshowPage() {
     return (
-        <Layout>
+        <SlideshowLayout>
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -135,7 +135,7 @@ function SlideshowPage() {
                     );
                 }}
             </Stages>
-        </Layout>
+        </SlideshowLayout>
     );
 };
   
