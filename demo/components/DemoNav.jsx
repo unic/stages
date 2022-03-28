@@ -72,6 +72,11 @@ const DemoNav = () => {
                     </Link>
                 </StyledLi>
                 <StyledLi>
+                    <Link href="/asyncdata">
+                        <MenuItem active={router.pathname === "/asyncdata"}>Async Data</MenuItem>
+                    </Link>
+                </StyledLi>
+                <StyledLi>
                     <Link href="/wizard">
                         <MenuItem  active={router.pathname === "/wizard"}>Simple Wizard</MenuItem>
                     </Link>
