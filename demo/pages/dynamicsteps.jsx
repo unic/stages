@@ -4,9 +4,9 @@ import Layout from "../components/Layout";
 import WizardNavigation from "../components/WizardNavigation";
 
 import {
-    basicsConfig, guestsConfig,
-    BasicsRenderer, GuestsRenderer
-} from "../testconfig";
+    step1Config, step2Config, step3Config,
+    Step1Renderer, Step2Renderer, Step3Renderer
+} from "../dynamicconfig";
 
 const FormLayout = ({ loading, fields, actions }) => <div>
     {loading ? (
@@ -35,6 +35,14 @@ function WizardPage() {
                 type: "primary",
                 validate: true,
                 onClick: () => onNav("next")
+            }];
+        }
+        if (type === "only") {
+            return [{
+                title: "Submit",
+                type: "primary",
+                validate: true,
+                onClick: () => onSubmit(data)
             }];
         }
         return [
@@ -69,22 +77,25 @@ function WizardPage() {
                 )}
             >
                 {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
-                    const key = setStepKey("basics", index);
+                    const key = setStepKey("step1", index);
                     if (initializing) return null;
+                    
+                    let stepType = "first";
+                    if (allData.step1 && !allData.step1.step2 && !allData.step1.step3) stepType = "only";
 
                     return (
                         <Fragment key={`step-${key}`}>
-                            {isActive ? <h2>Basics:</h2> : null}
+                            {isActive ? <h2>Step 1:</h2> : null}
                             <Form
                                 id={index}
                                 data={data}
-                                config={basicsConfig}
+                                config={step1Config}
                                 render={({ actionProps, fieldProps, loading }) => (
                                     <FormLayout
                                         loading={loading}
-                                        fields={<BasicsRenderer {...fieldProps} />}
+                                        fields={<Step1Renderer {...fieldProps} />}
                                         actions={<Actions
-                                            config={createActionButtonConfig("first", onNav, onSubmit, data)}
+                                            config={createActionButtonConfig(stepType, onNav, onSubmit, data)}
                                             {...actionProps}
                                         />}
                                     />
@@ -97,20 +108,55 @@ function WizardPage() {
                     );
                 }}
                 {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
-                    const key = setStepKey("guests", index);
+                    const key = setStepKey("step2", index);
                     if (initializing) return null;
+
+                    if (allData.step1 && !allData.step1.step2) return null;
+
+                    let stepType = "regular";
+                    if (allData.step1 && !allData.step1.step3) stepType = "last";
 
                     return (
                         <Fragment key={`step-${key}`}>
-                            {isActive ? <h2>Guests:</h2> : null}
+                            {isActive ? <h2>Step 2:</h2> : null}
                             <Form
                                 id={index}
                                 data={data}
-                                config={guestsConfig}
+                                config={step2Config}
                                 render={({ actionProps, fieldProps, loading }) => (
                                     <FormLayout
                                         loading={loading}
-                                        fields={<GuestsRenderer {...fieldProps} />}
+                                        fields={<Step2Renderer {...fieldProps} />}
+                                        actions={<Actions
+                                            config={createActionButtonConfig(stepType, onNav, onSubmit, data)}
+                                            {...actionProps}
+                                        />}
+                                    />
+                                )}
+                                fields={fields}
+                                onChange={onChange}
+                                isVisible={isActive}
+                            />
+                        </Fragment>
+                    );
+                }}
+                {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
+                    const key = setStepKey("step3", index);
+                    if (initializing) return null;
+
+                    if (allData.step1 && !allData.step1.step3) return null;
+
+                    return (
+                        <Fragment key={`step-${key}`}>
+                            {isActive ? <h2>Step 3:</h2> : null}
+                            <Form
+                                id={index}
+                                data={data}
+                                config={step3Config}
+                                render={({ actionProps, fieldProps, loading }) => (
+                                    <FormLayout
+                                        loading={loading}
+                                        fields={<Step3Renderer {...fieldProps} />}
                                         actions={<Actions
                                             config={createActionButtonConfig("last", onNav, onSubmit, data)}
                                             {...actionProps}
