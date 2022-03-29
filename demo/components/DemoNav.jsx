@@ -6,8 +6,10 @@ const StyledLi = ({ children }) => {
     return (
         <li
             style={{
-                padding: "4px 0px 4px 8px",
-                margin: "0 8px"
+                padding: "4px 8px",
+                margin: "8px 0 0 8px",
+                whiteSpace: "nowrap",
+                background: "#555"
             }}
         >
             {children}
@@ -35,25 +37,26 @@ const DemoNav = () => {
                 color: "#eee",
                 padding: 0,
                 marginBottom: "32px",
-                minHeight: "28px",
                 fontFamily: "Helvetica, Arial, Sans"
             }}
         >
             <h1
                 style={{
                     float: "left",
-                    margin: 0,
-                    padding: "4px 14px",
+                    padding: "5px 14px 6px 16px",
                     fontSize: "16px",
-                    minHeight: "20px",
-                    background: "#d30"
+                    lineHeight: "14px",
+                    height: "100%",
+                    background: "#d30",
+                    margin: "8px"
                 }}
-            >Stages Demos</h1>
+            >Stages Demos:</h1>
             <ul style={{
                 listStyleType: "none",
                 display: "flex",
+                flexWrap: "wrap",
                 margin: 0,
-                padding: "2px 0",
+                padding: "0 0 8px 0",
                 lineHeight: "1"
             }}>
                 <StyledLi>
