@@ -20,6 +20,12 @@ const config = {
                 isRequired: true
             },
             {
+                id: "onlyNumbers",
+                label: "Only numbers",
+                type: "text",
+                filter: value => value.replace(/\D/g,'')
+            },
+            {
                 id: "signedIn",
                 label: "eingelloged bleiben?",
                 type: "checkbox"

@@ -156,11 +156,17 @@ const Form = ({
     */
     const handleChange = (fieldKey, value, index) => {
         let newData = Object.assign({}, data);
+
+        const filterValue = v => {
+            const field = find(parsedFieldConfig, { id: fieldKey });
+            if (field && typeof field.filter === "function") return field.filter(value);
+            return v;
+        };
         
         if (Array.isArray(fieldKey)) {
-            newData[fieldKey[0]][index][fieldKey[1]] = value;
+            newData[fieldKey[0]][index][fieldKey[1]] = filterValue(value);
         } else {
-            newData[fieldKey] = value;
+            newData[fieldKey] = filterValue(value);
         }
 
         // Now run over all computed value fields to recalculate all dynamic data:

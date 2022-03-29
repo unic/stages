@@ -199,6 +199,17 @@ A special type of field is the `collection` type. It creates an array of grouped
 
 The `computedValue` property above can be added to all fields, it let's you compute values taking data from the other fields or like in this example, the data of the specific collection entry.
 
+Additionally you have a 'filter' property which you can use to filter the value automatically on change, for example to limit an input to only number like in this example field config:
+
+```
+{
+    id: "onlyNumbers",
+    label: "Only numbers",
+    type: "text",
+    filter: value => value.replace(/\D/g,'')
+}
+```
+
 ### Render
 
 The render property finally renders the form. You get two properties with it, `actionProps` and `fieldProps`. They contain helpers for actions, for example to only execute them if the form is valid, and `fieldProps` that contains all the rendered fields.
