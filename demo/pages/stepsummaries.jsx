@@ -2,12 +2,12 @@ import React, { Fragment } from "react";
 import { Stages, Form, Actions, Progression, HashRouter, plainFields as fields } from "react-stages";
 import Layout from "../components/Layout";
 
+import Navigation from "../components/WizardNavigationWithSummaries";
+
 import {
     basicsConfig, guestsConfig, programConfig,
     BasicsRenderer, GuestsRenderer, ProgramRenderer
 } from "../testconfig";
-
-import Navigation from "../components/WizardNavigation";
 
 const FormLayout = ({ loading, fields, actions }) => <div>
     {loading ? (
@@ -56,6 +56,10 @@ function WizardPage() {
 
     return (
         <Layout>
+            <h3>
+                This wizard is a copy of the simple wizard demo, but has a custom navigation 
+                component which summarises the data entered in each step.
+            </h3>
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
