@@ -54,19 +54,19 @@ function FormPage() {
                 render={({ actionProps, fieldProps }) => (
                     <>
                         <h3>Dynamic requirements:</h3>
-                        <div class="pure-g">
-                            <div class="pure-u-12-24">{fieldProps.fields.field1}</div>
-                            <div class="pure-u-12-24">{fieldProps.fields.field2}</div>
+                        <div className="pure-g">
+                            <div className="pure-u-12-24">{fieldProps.fields.field1}</div>
+                            <div className="pure-u-12-24">{fieldProps.fields.field2}</div>
                         </div>
                         <h3>Dynamicly disabled fields:</h3>
-                        <div class="pure-g">
-                            <div class="pure-u-12-24">{fieldProps.fields.field3}</div>
-                            <div class="pure-u-12-24">{fieldProps.fields.field4}</div>
+                        <div className="pure-g">
+                            <div className="pure-u-12-24">{fieldProps.fields.field3}</div>
+                            <div className="pure-u-12-24">{fieldProps.fields.field4}</div>
                         </div>
                         <h3>Dynamic labels:</h3>
-                        <div class="pure-g">
-                            <div class="pure-u-12-24">{fieldProps.fields.name}</div>
-                            <div class="pure-u-12-24">{fieldProps.fields.age}</div>
+                        <div className="pure-g">
+                            <div className="pure-u-12-24">{fieldProps.fields.name}</div>
+                            <div className="pure-u-12-24">{fieldProps.fields.age}</div>
                         </div>
                         <br />
                         <p>
