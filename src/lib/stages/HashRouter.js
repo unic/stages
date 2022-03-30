@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useHash, useMount } from 'react-use';
 import findIndex from "lodash.findindex";
 
@@ -7,10 +7,10 @@ import findIndex from "lodash.findindex";
     It will fallback to numbers if you don't supply keys to
     Stages.
 
-    With keys: #/mystep
-    With numbers: #/1
+    With keys: #!mystep
+    With numbers: #!1
 */
-const HashRouter = ({ step, onChange, keys, prefix }) => {
+const HashRouter = ({ step, onChange, keys, prefix, hashFormat = "#!" }) => {
     const [hash, setHash] = useHash();
     const [isMounted, setIsMounted] = useState(false);
 
@@ -26,9 +26,9 @@ const HashRouter = ({ step, onChange, keys, prefix }) => {
 
     const getIndexFromHash = hash => {
         // hash can be a number or id:
-        // #/mystep
-        // #/1
-        const hashSplit = hash.split("#/");
+        // #!mystep
+        // #!1
+        const hashSplit = hash.split(hashFormat);
         if (hashSplit.length === 2) {
             const hashStr = hashSplit[1];
             if (isPositiveInteger(hashStr)) {
@@ -40,14 +40,14 @@ const HashRouter = ({ step, onChange, keys, prefix }) => {
     };
 
     const handleHashes = () => {
-        if (hash.indexOf("#/") !== -1) {
+        if (hash.indexOf(hashFormat) !== -1) {
             const index = getIndexFromHash(hash);
             if (index !== -1) {
-                setHash(`#/${getHashFromIndex(index)}`);
+                setHash(`${hashFormat}${getHashFromIndex(index)}`);
                 onChange(index);
             }
         } else {
-            setHash(`#/${getHashFromIndex(step)}`);
+            setHash(`${hashFormat}${getHashFromIndex(step)}`);
         }
     };
 
@@ -59,7 +59,7 @@ const HashRouter = ({ step, onChange, keys, prefix }) => {
 
     useEffect(() => {
         if (isMounted) {
-            setHash(`#/${getHashFromIndex(step)}`);
+            setHash(`${hashFormat}${getHashFromIndex(step)}`);
         }
     }, [step]);
 
