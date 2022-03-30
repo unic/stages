@@ -360,6 +360,12 @@ The `routerProps` can be used either with Stages own HashRouter or with whatever
 - onChange (callback to change the current step)
 - keys (an object of step keys)
 
+The HashRouter has options for a `prefix` and a `hashFormat`. Per default the `hashFormat` is a Google hashbang like `#!step1`, but you can easily change it to a non hashbang like this:
+
+```
+<HashRouter {...routerProps} hashFormat="#" />
+```
+
 And finally the `steps` prop contains the rendered steps.
 
 ### Children
