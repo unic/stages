@@ -158,9 +158,15 @@ const Form = ({
         let newData = Object.assign({}, data);
 
         const filterValue = v => {
-            const field = find(parsedFieldConfig, { id: fieldKey });
+            let field;
+            if (Array.isArray(fieldKey)) {
+                const rootField = find(parsedFieldConfig, { id: fieldKey[0] });
+                field = find(rootField.fields, { id: fieldKey[1] });
+            } else {
+                field = find(parsedFieldConfig, { id: fieldKey });
+            }
             if (field && typeof field.filter === "function") return field.filter(value);
-            return v;
+                return v;
         };
         
         if (Array.isArray(fieldKey)) {

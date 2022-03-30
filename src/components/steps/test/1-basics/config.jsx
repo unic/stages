@@ -63,7 +63,8 @@ const config = {
                     {
                         id: "factor1",
                         label: "Factor 1",
-                        type: "number"
+                        type: "text",
+                        filter: value => value.replace(/\D/g,'')
                     },
                     {
                         id: "factor2",
