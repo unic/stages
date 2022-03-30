@@ -15,6 +15,7 @@ const FormRenderer = ({ fields, onCollectionAction, data }) => {
             <br />
             {fields.onTheRadio}
             <br />
+            {fields.test}
             <fieldset>
                 {fields.maths ? fields.maths.map((subFields, index) => (
                     <div key={`math-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>

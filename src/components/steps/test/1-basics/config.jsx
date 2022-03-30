@@ -31,6 +31,14 @@ const config = {
                 type: "checkbox"
             },
             {
+                id: "test",
+                type: "dummy",
+                customValidation: ({ allData }) => {
+                    return allData.onlyNumbers || allData.signedIn;
+                },
+                errorRenderer: (error) => <div style={{ color: "#f30" }}>Please fill out at least one of the fields "Only numbers" or "signed in".</div>,
+            },
+            {
                 id: "duration",
                 label: "Cookie löschen nach",
                 type: "select",
