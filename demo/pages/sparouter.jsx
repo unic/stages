@@ -13,11 +13,11 @@ function SPAPage() {
             <Stages
                 validateOnStepChange={false}
                 render={({ navigationProps, routerProps, steps }) => (
-                    <div class="pure-g">
-                        <div class="pure-u-1-5" style={{ marginTop: "64px" }}>
+                    <div className="pure-g">
+                        <div className="pure-u-1-5" style={{ marginTop: "64px" }}>
                             <Navigation {...navigationProps} />
                         </div>
-                        <div class="pure-u-4-5">{steps}</div>
+                        <div className="pure-u-4-5">{steps}</div>
                         {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
                     </div>
                 )}
