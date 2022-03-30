@@ -147,11 +147,7 @@ To use one of the example fieldsets, import them like this:
 import { plainFields as fields } from "react-stages";
 ```
 
-And for simple Bootstrap 5 fields (don't forget to import the Bootstrap styles, read the react-bootstrap instructions for how to do that):
-
-```
-import { bootstrapFields as fields } from "react-stages";
-```
+Look into the source for additional simple Bootstrap 5 fields (don't forget to import the Bootstrap styles, read the react-bootstrap instructions for how to do that). In the future we will publish packages for fieldsets.
 
 ### Config
 
