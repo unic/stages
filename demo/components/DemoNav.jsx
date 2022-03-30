@@ -124,6 +124,11 @@ const DemoNav = () => {
                         <MenuItem active={router.pathname === "/quiz"}>Quiz</MenuItem>
                     </Link>
                 </StyledLi>
+                <StyledLi>
+                    <Link href="/sparouter">
+                        <MenuItem active={router.pathname === "/sparouter"}>SPA Router</MenuItem>
+                    </Link>
+                </StyledLi>
             </ul>  
         </div>
     );

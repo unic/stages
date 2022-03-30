@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import findIndex from "lodash.findindex";
 
 /*
     The Stages component is your main component to build everything from simple wizards
@@ -59,7 +60,7 @@ const Stages = ({
 
         data[key] = changedData;
         setData(Object.assign({}, data));
-        
+
         if (typeof onChange === "function") onChange({ data, errors });
     };
 
@@ -160,6 +161,9 @@ const Stages = ({
         if (navType === "lastValid") newStepNr = calculateLastValidStep();
         if (navType === "step" && keys[nr] && keys[nr].visible) {
             newStepNr = Number(nr);
+        } else if (navType === "step" && typeof nr === "string") {
+            const index = findIndex(keys, { key: nr });
+            if (index > -1) newStepNr = Number(nr);
         }
 
         if (newStepNr < 0) newStepNr = 0;
