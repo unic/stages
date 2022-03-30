@@ -10,7 +10,7 @@ import findIndex from "lodash.findindex";
     With keys: #/mystep
     With numbers: #/1
 */
-const HashRouter = ({ step, onChange, keys }) => {
+const HashRouter = ({ step, onChange, keys, prefix }) => {
     const [hash, setHash] = useHash();
     const [isMounted, setIsMounted] = useState(false);
 
@@ -21,7 +21,7 @@ const HashRouter = ({ step, onChange, keys }) => {
 
     const getHashFromIndex = stepIndex => {
         if (keys && keys[stepIndex]) return keys[stepIndex].key;
-        return `step-${stepIndex}`;
+        return prefix ? `${prefix}-${stepIndex}` : stepIndex;
     };
 
     const getIndexFromHash = hash => {
