@@ -64,6 +64,12 @@ function App() {
               onClick: () => onNav("prev")
           },
           {
+              title: "Basics (Step 1)",
+              type: "secondary",
+              validate: false,
+              onClick: () => onNav("step", "basics")
+          },
+          {
               title: type === "last" ? "Submit" : "Next",
               type: "primary",
               validate: true,

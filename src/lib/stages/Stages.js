@@ -163,7 +163,7 @@ const Stages = ({
             newStepNr = Number(nr);
         } else if (navType === "step" && typeof nr === "string") {
             const index = findIndex(keys, { key: nr });
-            if (index > -1) newStepNr = Number(nr);
+            if (index > -1) newStepNr = index;
         }
 
         if (newStepNr < 0) newStepNr = 0;
