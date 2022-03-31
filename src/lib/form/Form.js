@@ -235,7 +235,7 @@ const Form = ({
                     render={({ fieldProps }) => React.createElement(field.render, fieldProps)}
                     fields={fields}
                     id={`${id}-${field.id}`}
-                    onChnage={value => handleChange(field.id, value)}
+                    onChange={value => handleChange(field.id, value)}
                     data={data && data[field.id]}
                 />
             );
