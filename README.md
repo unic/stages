@@ -466,7 +466,7 @@ Sometimes validation has to be on a per field basis. In the example below, we ch
 
 ### Form recursion with subforms
 
-Note: This feature is currently experimental and has no field validation!
+Note: This feature is currently experimental and has no field validation! Still useful however, you could for example make this field dynamic (only rendered if a checkbox has been marked), and have async data loaded in this subform, so preventing loading the data if the subform isn't rendered.
 
 To include a complete form as a field in another form, with data propagation, create a `subform` field like this:
 
