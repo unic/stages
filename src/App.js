@@ -101,7 +101,7 @@ function App() {
                       <Fragment key={`step-${key}`}>
                           {isActive ? <h2>Basics:</h2> : null}
                           <Form
-                              id={index}
+                              id={key}
                               data={data}
                               config={basicsConfig}
                               render={({ actionProps, fieldProps, loading }) => (
@@ -132,7 +132,7 @@ function App() {
                       <Fragment key={`step-${key}`}>
                           {isActive ? <h2>Guests:</h2> : null}
                           <Form
-                              id={index}
+                              id={key}
                               data={data}
                               config={guestsConfig}
                               render={({ actionProps, fieldProps, loading }) => (
@@ -180,7 +180,7 @@ function App() {
                       <Fragment key={`step-${key}`}>
                           {isActive ? <h2>Program:</h2> : null}
                           <Form
-                              id={index}
+                              id={key}
                               data={data}
                               config={programConfig}
                               render={({ actionProps, fieldProps, loading }) => (
