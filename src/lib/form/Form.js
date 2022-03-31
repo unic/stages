@@ -229,7 +229,14 @@ const Form = ({
             }
         // Create subforms:
         } else if (field.type === "subform") {
-            renderedFields[field.id] = <Form config={field.config} render={field.render} fields={fields} id={`${id}-${field.id}`} />;
+            renderedFields[field.id] = (
+                <Form
+                    config={field.config}
+                    render={({ fieldProps }) => React.createElement(field.render, fieldProps)}
+                    fields={fields}
+                    id={`${id}-${field.id}`}
+                />
+            );
         }
     });
 
