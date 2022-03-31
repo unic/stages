@@ -243,7 +243,7 @@ import { Stages, Form, Navigation, Progression, HashRouter } from "react-stages"
             <Fragment key={`step-${key}`}>
                 {isActive ? <h2>Basics:</h2> : null}
                 <Form
-                    id={index}
+                    id={key}
                     data={data}
                     config={basicsConfig}
                     render={({ actionProps, fieldProps, loading }) => (
@@ -271,7 +271,7 @@ import { Stages, Form, Navigation, Progression, HashRouter } from "react-stages"
             <Fragment key={`step-${key}`}>
                 {isActive ? <h2>Guests:</h2> : null}
                 <Form
-                    id={index}
+                    id={key}
                     data={data}
                     config={guestsConfig}
                     render={({ actionProps, fieldProps, loading }) => (
@@ -461,3 +461,21 @@ Sometimes validation has to be on a per field basis. In the example below, we ch
     },
 }
 ```
+
+### Form recursion with subforms
+
+Note: This feature is currently experimental and has no field validation!
+
+To include a complete form as a field in another form, with data propagation, create a `subform` field like this:
+
+```
+{
+    id: "address",
+    type: "subform",
+    config: addressConfig,
+    render: AddressRender
+}
+```
+
+Where `config` and `render` works the same way as the same properties on the Form component. The data is automatically 
+synced to the root component, which means you can create ulimited deep data/form structures.
