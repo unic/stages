@@ -34,6 +34,8 @@ const Form = ({
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
     const renderedFields = {};
 
+    const isReservedType = type => type === "collection" || type === "subform";
+
     /*
         This function checks for all validation errors, based on each field types validation method
         and the fields config.
@@ -43,14 +45,14 @@ const Form = ({
         let firstErrorField;
 
         parsedFieldConfig.forEach(field => {
-            if (!fields[field.type] && field.type !== "collection") return;
+            if (!fields[field.type] && !isReservedType(field.type)) return;
 
             // Is the data entered valid, check with default field function and optionally with custom validation:
-            const isValid = field.type !== "collection" && fields[field.type].isValid(data[field.id], field);
-            const fieldIsValid = field.type !== "collection" && field.customValidation ? field.customValidation({ data: data[field.id], allData: data, fieldConfig: field, isValid }) : isValid;
+            const isValid = !isReservedType(field.type) && fields[field.type].isValid(data[field.id], field);
+            const fieldIsValid = !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: data[field.id], allData: data, fieldConfig: field, isValid }) : isValid;
 
-            // Regular non collection fields:
-            if (field.type !== "collection" && !fieldIsValid) {
+            // Regular non reserved type fields:
+            if (!isReservedType(field.type) && !fieldIsValid) {
                 if (!firstErrorField) firstErrorField = field.id;
                 errors[field.id] = {
                     value: data[field.id],
@@ -186,10 +188,10 @@ const Form = ({
         with the correct data in them.
     */
     parsedFieldConfig.forEach(field => {
-        if (!fields[field.type] && field.type !== "collection") return; // Ignore field types which don't exist!
+        if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
 
         // Create regular fields:
-        if (field.type !== "collection") {
+        if (!isReservedType(field.type)) {
             renderedFields[field.id] = React.createElement(
                 fields[field.type].component,
                 Object.assign({
@@ -201,7 +203,7 @@ const Form = ({
                 }, field)
             );
         // Create collections:
-        } else {
+        } else if (field.type === "collection") {
             if (!Array.isArray(renderedFields[field.id])) renderedFields[field.id] = [];
 
             // Add existing entries:
@@ -225,6 +227,9 @@ const Form = ({
                     renderedFields[field.id].push(subRenderedFields);
                 });
             }
+        // Create subforms:
+        } else if (field.type === "subform") {
+            renderedFields[field.id] = <Form config={field.config} render={field.render} fields={fields} id={`${id}-${field.id}`} />;
         }
     });
 

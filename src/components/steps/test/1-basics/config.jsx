@@ -1,3 +1,32 @@
+const addressConfig = {
+    fields: () => {
+        return [
+            {
+                id: "prename",
+                label: "Prename",
+                type: "text",
+                isRequired: true
+            },
+            {
+                id: "lastname",
+                label: "Lastname",
+                type: "text",
+                isRequired: true
+            },
+        ];
+    }
+};
+
+const AddressRender = ({ fields }) => {
+    return (
+        <div>
+            {fields.prename}
+            <br />
+            {fields.lastname}
+        </div>
+    );
+};
+
 const config = {
     fields: (data) => {
         return [
@@ -18,6 +47,14 @@ const config = {
                 label: "Password",
                 type: "password",
                 isRequired: true
+            },
+            {
+                id: "address",
+                type: "subform",
+                config: addressConfig,
+                render: AddressRender,
+                isRequired: true,
+                isDisabled: false
             },
             {
                 id: "onlyNumbers",

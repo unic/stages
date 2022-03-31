@@ -7,6 +7,8 @@ const FormRenderer = ({ fields, onCollectionAction, data }) => {
             <br />
             {fields.password}
             <br />
+            {fields.address}
+            <br />
             {fields.onlyNumbers}
             <br />
             {fields.signedIn}
