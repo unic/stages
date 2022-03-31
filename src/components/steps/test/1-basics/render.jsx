@@ -1,4 +1,4 @@
-const FormRenderer = ({ fields, onCollectionAction, data }) => {
+const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
     return (
         <div>
             {fields.username}
@@ -31,6 +31,7 @@ const FormRenderer = ({ fields, onCollectionAction, data }) => {
                     </div>)
                 ) : null}
                 <button type="button" onClick={() => onCollectionAction("maths", "add")}>+</button>
+                {errors && errors.maths ? <div style={{ color: "red", marginTop: "8px" }}>Please add at least one entry and entries have to be uniq.</div> : null}
             </fieldset>
         </div>
     );

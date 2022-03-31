@@ -104,6 +104,8 @@ const config = {
                 init: true,
                 min: 2,
                 max: 5,
+                isRequired: true,
+                uniqEntries: true,
                 fields: [
                     {
                         id: "factor1",

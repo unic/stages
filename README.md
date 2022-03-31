@@ -162,6 +162,8 @@ A special type of field is the `collection` type. It creates an array of grouped
         label: "Maths",
         type: "collection",
         init: true,
+        isRequired: true,
+        uniqEntries: true,
         min: 2,
         max: 5,
         fields: [

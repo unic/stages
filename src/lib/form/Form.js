@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import find from "lodash.find";
+import uniqWith from "lodash.uniqwith";
 
 const isElementInViewport = el => {
     const rect = el.getBoundingClientRect();
@@ -84,6 +85,16 @@ const Form = ({
                         }
                     });
                 });
+            }
+
+            if (field.type === "collection" && field.uniqEntries && data[field.id]) {
+                // Add error if collection entries are not unique!
+                if (uniqWith(data[field.id], (arrVal, othVal) => JSON.stringify(arrVal) === JSON.stringify(othVal)).length !== data[field.id].length) {
+                    errors[field.id] = {
+                        value: data[field.id],
+                        field
+                    };
+                }
             }
         });
 
