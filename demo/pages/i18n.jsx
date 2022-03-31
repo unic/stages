@@ -101,7 +101,7 @@ function WizardPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>{i18n.steps.one.name[locale]}:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={step1Config(locale, i18n)}
                                 render={({ actionProps, fieldProps, loading }) => (
@@ -129,7 +129,7 @@ function WizardPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>{i18n.steps.two.name[locale]}:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={step2Config(locale, i18n)}
                                 render={({ actionProps, fieldProps, loading }) => (

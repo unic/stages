@@ -139,7 +139,7 @@ function QuizPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Easy questions:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={easyConfig}
                                 render={({ actionProps, fieldProps, loading }) => (
@@ -167,7 +167,7 @@ function QuizPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Medium difficulty questions:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={mediumConfig}
                                 render={({ actionProps, fieldProps, loading }) => (
@@ -195,7 +195,7 @@ function QuizPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Hard questions:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={hardConfig}
                                 render={({ actionProps, fieldProps, loading }) => (

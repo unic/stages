@@ -87,7 +87,7 @@ function WizardPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Step 1:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={step1Config}
                                 render={({ actionProps, fieldProps, loading }) => (
@@ -120,7 +120,7 @@ function WizardPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Step 2:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={step2Config}
                                 render={({ actionProps, fieldProps, loading }) => (
@@ -150,7 +150,7 @@ function WizardPage() {
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Step 3:</h2> : null}
                             <Form
-                                id={index}
+                                id={key}
                                 data={data}
                                 config={step3Config}
                                 render={({ actionProps, fieldProps, loading }) => (
