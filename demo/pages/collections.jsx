@@ -191,6 +191,27 @@ function CollectionsPage() {
                                     }
                                 ]
                             },
+                            {
+                                id: "collection8",
+                                type: "collection",
+                                isRequired: true,
+                                uniqEntries: true,
+                                init: true,
+                                fields: [
+                                    {
+                                        id: "field1",
+                                        label: "Field 1",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "field2",
+                                        label: "Field 2",
+                                        type: "text",
+                                        isRequired: false
+                                    }
+                                ]
+                            },
                         ]
                     }
                 }}
@@ -243,6 +264,13 @@ function CollectionsPage() {
                                 title="Computed data on individual items:"
                                 description="You can compute field values based on data of the same item. Try it out by adding numbers and additional collection items!"
                                 collectionKey="collection7"
+                                fieldProps={fieldProps}
+                                errors={fieldProps.errors}
+                            />
+                            <Collection
+                                title="Force entries to be uniq:"
+                                description="Sometimes you only want uniq entries in a collection. With the isUniq property you can force Stages to validate that. Add two entries with the same values and submit to see the error:"
+                                collectionKey="collection8"
                                 fieldProps={fieldProps}
                                 errors={fieldProps.errors}
                             />
