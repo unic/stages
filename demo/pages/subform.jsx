@@ -63,7 +63,7 @@ const AddressRender = ({ fields }) => {
 function InceptionPage() {
     const [data, setData] = useState({
         billingSame: true,
-        shipingSame: true
+        shippingSame: true
     });
     return (
         <Layout>
@@ -103,15 +103,15 @@ function InceptionPage() {
 
                         fieldConfig.push(
                             {
-                                id: "shipingSame",
+                                id: "shippingSame",
                                 label: "Same as main address?",
                                 type: "checkbox"
                             }
                         );
-                        if (!data.shipingSame) {
+                        if (!data.shippingSame) {
                             fieldConfig.push(
                                 {
-                                    id: "shipingAddress",
+                                    id: "shippingAddress",
                                     type: "subform",
                                     config: addressConfig,
                                     render: AddressRender
@@ -140,10 +140,10 @@ function InceptionPage() {
                             {fieldProps.fields.billingAddress}
                             <br />
                             <hr />
-                            <h3>Shiping Address:</h3>
-                            {fieldProps.fields.shipingSame}
+                            <h3>Shipping Address:</h3>
+                            {fieldProps.fields.shippingSame}
                             <br />
-                            {fieldProps.fields.shipingAddress}
+                            {fieldProps.fields.shippingAddress}
                         </div>
                         <br />
                         <hr />
