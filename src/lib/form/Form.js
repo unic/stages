@@ -26,8 +26,11 @@ const Form = ({
     onChange,
     isVisible,
     isDisabled,
-    id
+    id,
+    onValidation,
+    parentRunValidation
 }) => {
+    const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [asyncData, setAsyncData] = useState();
     const [errors, setErrors] = useState({});
@@ -105,6 +108,25 @@ const Form = ({
         }
 
         return errors;
+    };
+
+    // To make sure that subforms are being validated, we have to run validation each time validation is being run on the parent component:
+    useEffect(() => {
+        if (typeof onValidation === "function" && parentRunValidation) {
+            let errors = validationErrors(true);
+            setErrors(errors);
+            onValidation(errors);
+        }
+    }, [onValidation]);
+
+    /*
+        This is the callback which sub forms call to bubble up validation errors from within the subform.
+    */
+    const handleSubValidation = (subId, subErrors) => {
+        validationErrors(true);
+        if (subErrors && Object.keys(subErrors).length > 0) {
+            errors[subId] = subErrors;
+        }
     };
 
     /*
@@ -247,6 +269,8 @@ const Form = ({
                     fields={fields}
                     id={`${id}-${field.id}`}
                     onChange={(value, subErrors) => handleChange(field.id, value)}
+                    onValidation={errors => handleSubValidation(field.id, errors)}
+                    parentRunValidation={runValidation}
                     data={data && data[field.id]}
                 />
             );
@@ -282,9 +306,17 @@ const Form = ({
         or just the supplied callback.
     */
     const handleActionClick = (callback, validate) => {
+        if (validate) {
+            setRunValidation(true);
+            setTimeout(() => setRunValidation(false), 0);
+        }
         let errors = validate ? validationErrors(true) : {};
         setErrors(errors);
-        if (Object.keys(errors).length === 0) callback();
+
+        // A zero second timout is needed to make sure sub form errors become available in the parent component
+        setTimeout(() => {
+            if (Object.keys(errors).length === 0) callback();
+        }, 0);
     };
 
     // If the form isn't visible, render nothing (this is needed for the Wizards step validation):
@@ -306,7 +338,9 @@ Form.propTypes = {
     onChange: PropTypes.func,
     isVisible: PropTypes.bool,
     isDisabled: PropTypes.bool,
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    onValidation: PropTypes.func,
+    parentRunValidation: PropTypes.bool
 };
 
 Form.defaultProps = {
