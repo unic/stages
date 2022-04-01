@@ -466,8 +466,6 @@ Sometimes validation has to be on a per field basis. In the example below, we ch
 
 ### Form recursion with subforms
 
-Note: This feature is currently experimental and has no field validation! Still useful however, you could for example make this field dynamic (only rendered if a checkbox has been marked), and have async data loaded in this subform, so preventing loading the data if the subform isn't rendered.
-
 To include a complete form as a field in another form, with data propagation, create a `subform` field like this:
 
 ```
@@ -479,5 +477,6 @@ To include a complete form as a field in another form, with data propagation, cr
 }
 ```
 
-Where `config` and `render` works the same way as the same properties on the Form component. The data is automatically 
-synced to the root component, which means you can create ulimited deep data/form structures.
+Where `config` and `render` works the same way as the same properties on the Form component. The data and errors are automatically 
+synced up to the parent and root components, which means you can create ulimited deep data/form structures. This can be very useful if you 
+for example have a subform which needs to load async data but is not always shown, to prevent loading that data even if there's no need for it.
