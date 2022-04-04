@@ -190,7 +190,7 @@ const Stages = ({
 
         Object.keys(errors).forEach(index => {
             const keysIndex = findIndex(keys, { key: index });
-            if ((Object.keys(errors[index]).length === 0 || !keys[keysIndex].visible) && !stepFailed) {
+            if ((Object.keys(errors[index]).length === 0 || (keysIndex > -1 && !keys[keysIndex].visible)) && !stepFailed) {
                 lastValidStep = Number(index);
             } else {
                 stepFailed = true;
