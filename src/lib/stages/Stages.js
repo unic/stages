@@ -100,7 +100,7 @@ const Stages = ({
                 setStepKey
             })).filter((item, index) => {
                 const isVisible = item !== null;
-                keys[index].visible = isVisible;
+                if (keys[index]) keys[index].visible = isVisible;
                 return isVisible;
             })
         );
