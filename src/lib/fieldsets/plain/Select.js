@@ -26,6 +26,7 @@ const Select = ({
     value,
     options,
     onChange,
+    onBlur,
     error,
     placeholder,
     isRequired,
@@ -49,6 +50,9 @@ const Select = ({
                     required={!!isRequired}
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
+                    }}
+                    onChange={e => {
+                        if (typeof onBlur === "function") onBlur(e.target.value);
                     }}
                 >
                     {options.map(option => <option value={option.value} key={option.value}>{option.text}</option>)}

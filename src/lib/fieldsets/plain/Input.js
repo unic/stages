@@ -25,6 +25,7 @@ const Input = ({
     label,
     value,
     onChange,
+    onBlur,
     error,
     placeholder,
     isRequired,
@@ -49,6 +50,9 @@ const Input = ({
                     required={!!isRequired}
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
+                    }}
+                    onBlur={e => {
+                        if (typeof onBlur === "function") onBlur(e.target.value);
                     }}
                 />
                 {suffix ? <span>{suffix}</span> : null}

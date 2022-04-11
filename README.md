@@ -216,6 +216,18 @@ The render property finally renders the form. You get two properties with it, `a
 
 And last but not least, the onChange prop is triggered everytime new data is added.
 
+### validateOn
+
+You can select the validation behaviour of a form with the `validateOn` prop. Per default, it will only validate on actions, 
+for example on submit, but you add different events which than trigger validation. In the example below, validation will happen on 
+form actions and on blur:
+
+```
+validateOn={["action", "blur"]}
+```
+
+You have following options to choose from, you can add as many of them as you like: `action`, `blur`, `change` and `collectionAction`.
+
 ## The Wizard Component
 
 The wizard component, called Stages, takes multiple forms and creates a wizard out of them. Here's an example with two steps:

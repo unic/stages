@@ -117,6 +117,7 @@ function App() {
                               fields={fields}
                               onChange={onChange}
                               isVisible={isActive}
+                              validateOn={["action", "blur"]}
                           />
                       </Fragment>
                   );
@@ -148,6 +149,7 @@ function App() {
                               fields={fields}
                               onChange={onChange}
                               isVisible={isActive}
+                              validateOn={["action", "blur"]}
                           />
                       </Fragment>
                   );
@@ -196,6 +198,7 @@ function App() {
                               fields={fields}
                               onChange={onChange}
                               isVisible={isActive}
+                              validateOn={["action", "blur"]}
                           />
                       </Fragment>
                   );

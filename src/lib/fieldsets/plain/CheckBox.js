@@ -25,6 +25,7 @@ const CheckBox = ({
     label,
     value,
     onChange,
+    onBlur,
     error,
     placeholder,
     isRequired,
@@ -51,6 +52,7 @@ const CheckBox = ({
                     onChange={() => {/* to make React and IE happy */}}
                     onClick={e => {
                         if (typeof onChange === "function") onChange(e.target.checked ? true : false);
+                        if (typeof onBlur === "function") onBlur(e.target.checked ? true : false);
                     }}
                 />
                 {suffix ? <span>{suffix}</span> : null}

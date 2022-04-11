@@ -28,7 +28,8 @@ const Form = ({
     isDisabled,
     id,
     onValidation,
-    parentRunValidation
+    parentRunValidation,
+    validateOn
 }) => {
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -38,41 +39,44 @@ const Form = ({
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
     const renderedFields = {};
 
+    // Helper function to detect reserved field types:
     const isReservedType = type => type === "collection" || type === "subform";
 
     /*
         This function checks for all validation errors, based on each field types validation method
         and the fields config.
     */
-    const validationErrors = (isUserAction) => {
+    const validationErrors = (isUserAction, validationData) => {
         let errors = {};
         let firstErrorField;
+
+        if (!validationData) validationData = data;
 
         parsedFieldConfig.forEach(field => {
             if (!fields[field.type] && !isReservedType(field.type)) return;
 
             // Is the data entered valid, check with default field function and optionally with custom validation:
-            const isValid = !isReservedType(field.type) && fields[field.type].isValid(data[field.id], field);
-            const fieldIsValid = !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: data[field.id], allData: data, fieldConfig: field, isValid }) : isValid;
+            const isValid = !isReservedType(field.type) && fields[field.type].isValid(validationData[field.id], field);
+            const fieldIsValid = !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: validationData[field.id], allData: validationData, fieldConfig: field, isValid }) : isValid;
 
             // Regular non reserved type fields:
             if (!isReservedType(field.type) && !fieldIsValid) {
                 if (!firstErrorField) firstErrorField = field.id;
                 errors[field.id] = {
-                    value: data[field.id],
+                    value: validationData[field.id],
                     field
                 };
             // Collections which are required (need to have at least one entry!):
-            } else if (field.type === "collection" && field.isRequired && (!data[field.id] || data[field.id].length === 0 || data[field.id].length === 1 && Object.keys(data[field.id][0]).length === 0)) {
+            } else if (field.type === "collection" && field.isRequired && (!validationData[field.id] || validationData[field.id].length === 0 || validationData[field.id].length === 1 && Object.keys(validationData[field.id][0]).length === 0)) {
                 if (!firstErrorField) firstErrorField = field.id;
                 errors[field.id] = {
-                    value: data[field.id],
+                    value: validationData[field.id],
                     field
                 };
             // Collections which are not required will only be checked if data has been added:
             } else if (field.type === "collection") {
                 field.fields.forEach(subField => {
-                    data[field.id] && data[field.id].forEach((dataEntry, index) => {
+                    validationData[field.id] && validationData[field.id].forEach((dataEntry, index) => {
                         // Don't check fields if the collection isn't required and the object is empty:
                         if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
@@ -82,7 +86,7 @@ const Form = ({
 
                         if (fields[subField.type] && !fieldIsValid) {
                             errors[`${field.id}-${index}-${subField.id}`] = {
-                                value: data[field.id],
+                                value: validationData[field.id],
                                 subField
                             };
                         }
@@ -90,11 +94,11 @@ const Form = ({
                 });
             }
 
-            if (field.type === "collection" && field.uniqEntries && data[field.id]) {
+            if (field.type === "collection" && field.uniqEntries && validationData[field.id]) {
                 // Add error if collection entries are not unique!
-                if (uniqWith(data[field.id], (arrVal, othVal) => JSON.stringify(arrVal) === JSON.stringify(othVal)).length !== data[field.id].length) {
+                if (uniqWith(validationData[field.id], (arrVal, othVal) => JSON.stringify(arrVal) === JSON.stringify(othVal)).length !== validationData[field.id].length) {
                     errors[field.id] = {
-                        value: data[field.id],
+                        value: validationData[field.id],
                         field
                     };
                 }
@@ -191,6 +195,7 @@ const Form = ({
     */
     const handleChange = (fieldKey, value, index) => {
         let newData = Object.assign({}, data);
+        let newErrors;
 
         const filterValue = v => {
             let field;
@@ -213,7 +218,24 @@ const Form = ({
         // Now run over all computed value fields to recalculate all dynamic data:
         newData = computeValues(parsedFieldConfig, newData);
 
+        // Only validate if change validation is enabled:
+        if (validateOn.indexOf("change") > -1) {
+            newErrors = validationErrors(false, newData);
+            setErrors(newErrors);
+        }
+
         onChange(newData, validationErrors(), id);
+    };
+
+    /*
+        This function is called on each fields onBlur. It only runs validation 
+        if validation is enabled for blur events.
+    */
+    const handleBlur = (fieldKey, value, index) => {    
+        // Only validate if blur validation is enabled:
+        if (validateOn.indexOf("blur") > -1) {
+            setErrors(validationErrors(false, data));
+        }
     };
 
     /*
@@ -232,7 +254,8 @@ const Form = ({
                     value: data[field.id],
                     error: errors[field.id],
                     isDisabled: isDisabled || field.isDisabled,
-                    onChange: value => handleChange(field.id, value)
+                    onChange: value => handleChange(field.id, value),
+                    onBlur: value => handleBlur(field.id, value)
                 }, field)
             );
         // Create collections:
@@ -252,7 +275,8 @@ const Form = ({
                                     value: dataEntry[subField.id],
                                     error: errors[`${field.id}-${index}-${subField.id}`],
                                     isDisabled: isDisabled || subField.isDisabled,
-                                    onChange: value => handleChange([field.id, subField.id], value, index)
+                                    onChange: value => handleChange([field.id, subField.id], value, index),
+                                    onBlur: value => handleBlur([field.id, subField.id], value, index)
                                 }, subField)
                             )
                         }
@@ -272,6 +296,9 @@ const Form = ({
                     onValidation={errors => handleSubValidation(field.id, errors)}
                     parentRunValidation={runValidation}
                     data={data && data[field.id]}
+                    isVisible={isVisible}
+                    isDisabled={isDisabled}
+                    validateOn={validateOn}
                 />
             );
         }
@@ -286,6 +313,7 @@ const Form = ({
         const field = find(parsedFieldConfig, { id: fieldKey });
         const minEntries = field && field.min ? Number(field.min) : 0;
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
+        let newErrors;
 
         // This will addd a new entry to the collection:
         if (action === "add") {
@@ -298,7 +326,13 @@ const Form = ({
             if (minEntries < newData[fieldKey].length) newData[fieldKey].splice(index, 1);
         }
 
-        onChange(newData, validationErrors(), id);
+        // Only validate if collection action validation is enabled:
+        if (validateOn.indexOf("collectionAction") > -1) {
+            newErrors = validationErrors();
+            setErrors(newErrors);
+        }
+
+        onChange(newData, newErrors || validationErrors(), id);
     };
 
     /*
@@ -306,12 +340,15 @@ const Form = ({
         or just the supplied callback.
     */
     const handleActionClick = (callback, validate) => {
-        if (validate) {
-            setRunValidation(true);
-            setTimeout(() => setRunValidation(false), 0);
+        // Only validate if action validation is enabled (which is the default):
+        if (validateOn.indexOf("action") > -1) {
+            if (validate) {
+                setRunValidation(true);
+                setTimeout(() => setRunValidation(false), 0);
+            }
+            let errors = validate ? validationErrors(true) : {};
+            setErrors(errors);
         }
-        let errors = validate ? validationErrors(true) : {};
-        setErrors(errors);
 
         // A zero second timout is needed to make sure sub form errors become available in the parent component
         setTimeout(() => {
@@ -340,14 +377,16 @@ Form.propTypes = {
     isDisabled: PropTypes.bool,
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     onValidation: PropTypes.func,
-    parentRunValidation: PropTypes.bool
+    parentRunValidation: PropTypes.bool,
+    validateOn: PropTypes.array
 };
 
 Form.defaultProps = {
     data: {},
     onChange: () => {},
     isVisible: true,
-    isDisabled: false
+    isDisabled: false,
+    validateOn: ["action"]
 };
 
 export default Form;
