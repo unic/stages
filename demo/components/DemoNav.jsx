@@ -95,6 +95,11 @@ const DemoNav = () => {
                     </Link>
                 </StyledLi>
                 <StyledLi>
+                    <Link href="/validateon">
+                        <MenuItem active={router.pathname === "/validateon"}>Validate On</MenuItem>
+                    </Link>
+                </StyledLi>
+                <StyledLi>
                     <Link href="/subform">
                         <MenuItem active={router.pathname === "/subform"}>Subform</MenuItem>
                     </Link>
