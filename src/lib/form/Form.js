@@ -125,7 +125,7 @@ const Form = ({
             const element = document.getElementById(firstErrorField);
             if (element && !isElementInViewport(element)) element.scrollIntoView();
         }
-        
+
         return errors;
     };
 
@@ -205,12 +205,21 @@ const Form = ({
     };
 
     /*
+        This function returns the field configuration for a specific field, given the key of that field (or keys for collection fields)
+    */
+    const getConfigForField = fieldKey => {
+        let fieldConfig = {};
+        if (typeof fieldKey === "string") fieldConfig = find(parsedFieldConfig, { id: fieldKey });
+        if (Array.isArray(fieldKey) && fieldKey.length > 1) fieldConfig = find(parsedFieldConfig, { id: fieldKey[0] });
+        return fieldConfig;
+    };
+
+    /*
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
     */
     const handleChange = (fieldKey, value, index) => {
         let newData = Object.assign({}, data);
-        let newErrors;
 
         const filterValue = v => {
             let field;
@@ -235,8 +244,8 @@ const Form = ({
 
         // Only validate if change validation is enabled:
         if (validateOn.indexOf("change") > -1) {
-            newErrors = validationErrors(false, newData);
-            setErrors(newErrors);
+            const result = validateField(getConfigForField(fieldKey), newData, errors);
+            setErrors(result.errors);
         }
 
         onChange(newData, validationErrors(), id);
@@ -250,14 +259,8 @@ const Form = ({
         // Only validate if blur validation is enabled:
         if (validateOn.indexOf("blur") > -1) {
             let newData = Object.assign({}, data);
-            let fieldConfig = {};
-
-            if (typeof fieldKey === "string") fieldConfig = find(parsedFieldConfig, { id: fieldKey });
-            if (Array.isArray(fieldKey) && fieldKey.length > 1) fieldConfig = find(parsedFieldConfig, { id: fieldKey[0] });
-
-            const result = validateField(fieldConfig, newData, errors);
+            const result = validateField(getConfigForField(fieldKey), newData, errors);
             setErrors(result.errors);
-            
             onChange(newData, result.errors, id);
         }
     };
