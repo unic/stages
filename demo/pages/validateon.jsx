@@ -109,7 +109,7 @@ function FormPage() {
                 onChange={payload => setData(payload)}
             />
             <br /><br />
-            <h3>Validate on chnage (and submit):</h3>
+            <h3>Validate on change (and submit):</h3>
             <Form
                 data={data}
                 fields={fields}
