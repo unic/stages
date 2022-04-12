@@ -210,7 +210,8 @@ Additionally you have a 'filter' property which you can use to filter the value 
 
 ### Render
 
-The render property finally renders the form. You get two properties with it, `actionProps` and `fieldProps`. They contain helpers for actions, for example to only execute them if the form is valid, and `fieldProps` that contains all the rendered fields.
+The render property finally renders the form. You get two properties with it, `actionProps` and `fieldProps`. They contain helpers for actions, for example to only execute them if the form is valid, and `fieldProps` that contains all the rendered fields. Additionally both
+properties contain info on if data has changed in the form, with the `isDirty` prop.
 
 ### onChange
 

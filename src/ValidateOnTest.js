@@ -57,7 +57,7 @@ function App() {
                 }
             }}
             render={({ actionProps, fieldProps }) => (
-                <>
+                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
                     <div className="pure-g">
                         <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                         <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -72,7 +72,7 @@ function App() {
                     >
                         Submit
                     </button>
-                </>
+                </div>
             )}
             onChange={payload => setData(payload)}
         />
@@ -107,7 +107,7 @@ function App() {
                 }
             }}
             render={({ actionProps, fieldProps }) => (
-                <>
+                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
                     <div className="pure-g">
                         <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                         <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -122,7 +122,7 @@ function App() {
                     >
                         Submit
                     </button>
-                </>
+                </div>
             )}
             onChange={payload => setData(payload)}
         />
@@ -157,7 +157,7 @@ function App() {
                 }
             }}
             render={({ actionProps, fieldProps }) => (
-                <>
+                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
                     <div className="pure-g">
                         <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                         <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -172,7 +172,7 @@ function App() {
                     >
                         Submit
                     </button>
-                </>
+                </div>
             )}
             onChange={payload => setData(payload)}
         />

@@ -105,6 +105,7 @@ function App() {
                               data={data}
                               config={basicsConfig}
                               render={({ actionProps, fieldProps, loading }) => (
+                                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
                                   <FormLayout
                                       loading={loading}
                                       fields={<BasicsRenderer {...fieldProps} />}
@@ -113,6 +114,7 @@ function App() {
                                           {...actionProps}
                                       />}
                                   />
+                                </div>
                               )}
                               fields={fields}
                               onChange={onChange}
@@ -137,6 +139,7 @@ function App() {
                               data={data}
                               config={guestsConfig}
                               render={({ actionProps, fieldProps, loading }) => (
+                                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
                                   <FormLayout
                                       loading={loading}
                                       fields={<GuestsRenderer {...fieldProps} />}
@@ -145,6 +148,7 @@ function App() {
                                           {...actionProps}
                                       />}
                                   />
+                                </div>
                               )}
                               fields={fields}
                               onChange={onChange}
@@ -186,6 +190,7 @@ function App() {
                               data={data}
                               config={programConfig}
                               render={({ actionProps, fieldProps, loading }) => (
+                                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
                                   <FormLayout
                                       loading={loading}
                                       fields={<ProgramRenderer {...fieldProps} />}
@@ -194,6 +199,7 @@ function App() {
                                           {...actionProps}
                                       />}
                                   />
+                                </div>
                               )}
                               fields={fields}
                               onChange={onChange}

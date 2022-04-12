@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import find from "lodash.find";
 import uniqWith from "lodash.uniqwith";
+import isEqual from "lodash.isequal";
 
 const isElementInViewport = el => {
     const rect = el.getBoundingClientRect();
@@ -31,6 +32,8 @@ const Form = ({
     parentRunValidation,
     validateOn
 }) => {
+    const [isDirty, setIsDirty] = useState(false);
+    const [initialData, setInitialData] = useState(false);
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [asyncData, setAsyncData] = useState();
@@ -38,6 +41,11 @@ const Form = ({
     const [loading, setLoading] = useState(false);
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
     const renderedFields = {};
+
+    // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
+    useEffect(() => {
+        if (data && !initialData) setInitialData(data);
+    }, [data]);
 
     // Helper function to detect reserved field types:
     const isReservedType = type => type === "collection" || type === "subform";
@@ -220,6 +228,7 @@ const Form = ({
     */
     const handleChange = (fieldKey, value, index) => {
         let newData = Object.assign({}, data);
+        let newValue;
 
         const filterValue = v => {
             let field;
@@ -232,11 +241,23 @@ const Form = ({
             if (field && typeof field.filter === "function") return field.filter(value);
                 return v;
         };
+
+        newValue = filterValue(value);
         
         if (Array.isArray(fieldKey)) {
-            newData[fieldKey[0]][index][fieldKey[1]] = filterValue(value);
+            if (newValue) {
+                newData[fieldKey[0]][index][fieldKey[1]] = newValue;
+            } else {
+                // Remove if false, to make sure isDirty is calculated correctly!
+                delete newData[fieldKey[0]][index][fieldKey[1]];
+            }
         } else {
-            newData[fieldKey] = filterValue(value);
+            if (newValue) {
+                newData[fieldKey] = newValue;
+            } else {
+                // Remove if false, to make sure isDirty is calculated correctly!
+                delete newData[fieldKey];
+            }
         }
 
         // Now run over all computed value fields to recalculate all dynamic data:
@@ -247,6 +268,9 @@ const Form = ({
             const result = validateField(getConfigForField(fieldKey), newData, errors);
             setErrors(result.errors);
         }
+
+        // Set the isDirty flag correctly:
+        if (initialData) setIsDirty(!isEqual(newData, initialData));
 
         onChange(newData, validationErrors(), id);
     };
@@ -388,8 +412,8 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: { handleActionClick, isDisabled },
-        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData },
+        actionProps: { handleActionClick, isDisabled, isDirty },
+        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty },
         loading
     }) : null;
 };
