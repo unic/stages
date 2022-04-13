@@ -227,6 +227,7 @@ const Form = ({
         and run the validation on the new data (which is sent to the onChange, as well).
     */
     const handleChange = (fieldKey, value, index) => {
+        const fieldConfig = getConfigForField(fieldKey);
         let newData = Object.assign({}, data);
         let newValue;
 
@@ -264,8 +265,8 @@ const Form = ({
         newData = computeValues(parsedFieldConfig, newData);
 
         // Only validate if change validation is enabled:
-        if (validateOn.indexOf("change") > -1) {
-            const result = validateField(getConfigForField(fieldKey), newData, errors);
+        if (validateOn.indexOf("change") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("change") > -1)) {
+            const result = validateField(fieldConfig, newData, errors);
             setErrors(result.errors);
         }
 
@@ -280,10 +281,12 @@ const Form = ({
         if validation is enabled for blur events.
     */
     const handleBlur = (fieldKey, index) => {    
+        const fieldConfig = getConfigForField(fieldKey);
+
         // Only validate if blur validation is enabled:
-        if (validateOn.indexOf("blur") > -1) {
+        if (validateOn.indexOf("blur") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("blur") > -1)) {
             let newData = Object.assign({}, data);
-            const result = validateField(getConfigForField(fieldKey), newData, errors);
+            const result = validateField(fieldConfig, newData, errors);
             setErrors(result.errors);
             onChange(newData, result.errors, id);
         }

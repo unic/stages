@@ -229,6 +229,9 @@ validateOn={["action", "blur"]}
 
 You have following options to choose from, you can add as many of them as you like: `action`, `blur`, `change` and `collectionAction`.
 
+You can set `validateOn` individually on single fields, as well. As an example, you could have a form that validates fields on blur, but 
+than validates the password field on change, as well, to immediately inform the user if the field is save enough.
+
 ## The Wizard Component
 
 The wizard component, called Stages, takes multiple forms and creates a wizard out of them. Here's an example with two steps:

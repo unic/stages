@@ -40,7 +40,8 @@ const config = {
                 id: "email",
                 label: "Email",
                 type: "email",
-                isRequired: true
+                isRequired: true,
+                validateOn: ["action", "change"]
             },
             {
                 id: "password",
