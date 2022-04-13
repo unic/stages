@@ -12,7 +12,8 @@ const Dummy = ({
     error,
     isRequired,
     secondaryText,
-    errorRenderer
+    errorRenderer,
+    ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     if (label || secondaryText || error) {
         return (

@@ -34,7 +34,8 @@ const config = {
                 id: "username",
                 label: "Username",
                 type: "text",
-                isRequired: true
+                isRequired: true,
+                className: "test"
             },
             {
                 id: "email",

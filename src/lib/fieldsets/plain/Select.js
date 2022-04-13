@@ -34,7 +34,8 @@ const Select = ({
     prefix,
     suffix,
     secondaryText,
-    errorRenderer
+    errorRenderer,
+    ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
         <div id={id}>
