@@ -1,0 +1,23 @@
+{
+  "name": "stages-docs",
+  "version": "1.0.0",
+  "description": "Documentation for Stages",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next",
+    "start": "next start",
+    "build": "next build"
+  },
+  "keywords": [
+    "stages"
+  ],
+  "author": "Fredi Bach",
+  "license": "MIT",
+  "dependencies": {
+    "next": "^12.1.5",
+    "nextra": "^1.1.0",
+    "nextra-theme-docs": "^1.2.6",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}
