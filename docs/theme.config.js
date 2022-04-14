@@ -7,7 +7,7 @@ export default {
     titleSuffix: 'Stages Documentation',
     nextLinks: true,
     prevLinks: true,
-    search: true,
+    search: false,
     customSearch: null, // customizable, you can use algolia for example
     darkMode: true,
     footer: true,
