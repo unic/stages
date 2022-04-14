@@ -1,5 +1,9 @@
 {
     "index": "Introduction",
     "architecture": "Architecture",
-    "installation": "Installation"
-  }
+    "installation": "Installation",
+    "form": "Form Component",
+    "fields": "Field Components",
+    "stages": "Stages Component",
+    "i18n": "Internationalization (i18n)"
+}
