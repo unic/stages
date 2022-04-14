@@ -2,6 +2,7 @@ import React from "react";
 
 export default {
     projectLink: 'https://github.com/unic/stages', // GitHub link in the navbar
+    github: 'https://github.com/unic/stages', // GitHub link in the navbar
     docsRepositoryBase: 'https://github.com/unic/stages', // base URL for the docs repository
     titleSuffix: 'Stages Documentation',
     nextLinks: true,
