@@ -9,6 +9,7 @@ Stages, super flexible and lightweight (42.7 KB minified, 15.9 KB GZipd) wizard 
 > There are many wizard and form libraries out there so why should you choose this one? This wizard is different. No styles. No fixed layouts. Not even fixed behaviour! You want to put your wizard steps into an accordion? Go for it! You want to jump back to step 2 after step 4 and then display slightly different data based on data added on step 3? Go for it! You want a step with zero input fields, one that just displays information? Go for it! You don’t even want to build a wizard but a quiz which tells you how many questions you’ve got right? Go for it! You finally want a slideshow where all slides fit into your set duration? You can build it with Stages! You have such a complicated project that everything is custom? No ballast with this one! No styles to overwrite! This wizard is different because it makes building complicated things simple, by combining a few well thought out simple, but super flexible building blocks without pressing you into a corset of limitations. It’s meant to build wizards, but it can be used to build a thousand other things and make those things great with little effort.
 
 [Demos](https://stages-demo.vercel.app/)
+[Docs (WIP)](https://stages-docs.vercel.app/)
 
 ## Possible Usecases:
 
