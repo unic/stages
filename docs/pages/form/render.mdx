@@ -1,1 +1,42 @@
 # Render
+
+The `render` prop receives the processed fields from the `config` and lets you decide 
+how to render them to the user. This could look like this:
+
+```
+<Form
+    ...
+    render={({ actionProps, fieldProps }) => (
+        <>
+            <div>
+                {fieldProps.fields.email}
+                <br />
+                {fieldProps.fields.password}
+            </div>
+            <hr />
+            <button
+                type="button"
+                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+            >
+                Submit
+            </button>
+        </>
+    )}
+/>
+```
+
+You get two render properties which are essentially two collection of properties for two different parts of a form.
+
+- **fieldProps**: This contain the renderer fields, props for handling collections and some additional stuff
+    - **fields**: An object of rendered fields where the id is the key of the object
+    - **onCollectionAction**: A callback to act on collections, like add a new entry or remove an existing one
+    - **data**: The current form data
+    - **errors**: The error object, being used mainly for collection errors
+    - **asyncData**: All the data loaded from the `asyncDataLoader` function in the config
+    - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
+- **actionProps**:
+    - **handleActionClick**: A callback to process a form action
+    - **isDisabled**: Actions can be disabled, for example if data has to be valid
+    - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
+
+Read the page about collections and actions to get more details on those two features.
