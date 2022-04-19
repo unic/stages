@@ -1,1 +1,58 @@
 # Basics
+
+The Form component can be used on it's own, or in combination with the Stages component. Used on it's own, 
+it is a very feature rich form component.
+
+This is how you use it:
+
+```
+import { Form, plainFields as fields } from "react-stages";
+
+<Form
+    fields={fields}
+    config={{
+        fields: () => {
+            return [
+                {
+                    id: "email",
+                    label: "Email",
+                    type: "email",
+                    isRequired: true
+                },
+                {
+                    id: "password",
+                    label: "Password",
+                    type: "password",
+                    isRequired: true
+                }
+            ]
+        }
+    }}
+    render={({ actionProps, fieldProps }) => (
+        <>
+            <div>
+                {fieldProps.fields.email}
+                <br />
+                {fieldProps.fields.password}
+            </div>
+            <hr />
+            <button
+                type="button"
+                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+            >
+                Submit
+            </button>
+        </>
+    )}
+/>
+```
+
+Looks a little complicated at first, but only because the form component is built for flexibility and doesn't render any components on its own. You have to supply all the components!
+
+## The three main properties
+
+- **fields:** This contains all your field components and default field validation, as a start you can import the plain fields
+- **config:** This one expects a function which return an array of field configurations, you need to set at least `id` and `type` on each field
+- **render:** The render function is where you take all the processed fields, and output them in whatever layout you desire
+
+More detailed info about them on the next pages.
