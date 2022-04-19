@@ -1,1 +1,84 @@
 # Configs
+
+The `config` property is an object which has currently two properties:
+
+- **fields**: A function which returns an array of field configurations
+- **asyncDataLoader**: A function which returns a promise with data loaded from an API
+
+## Fields Configuration
+
+A field configuration looks something like this:
+
+```
+<Form
+    config={{
+        fields: () => {
+            return [
+                {
+                    id: "email",
+                    label: "Email",
+                    type: "email",
+                    isRequired: true
+                },
+                {
+                    id: "password",
+                    label: "Password",
+                    type: "password",
+                    isRequired: true
+                }
+            ]
+        }
+    }}
+    ...
+/>
+```
+
+It's a function because it can be dynamic, based on data you've entered:
+
+```
+<Form
+    config={{
+        fields: (data) => {
+            return [
+                {
+                    id: "email",
+                    label: "Email",
+                    type: "email",
+                    isRequired: !data.isLoggedIn
+                },
+                {
+                    id: "password",
+                    label: "Password",
+                    type: "password",
+                    isRequired: true
+                }
+            ]
+        }
+    }}
+    ...
+/>
+```
+
+Each object in the array needs at least this two properties:
+
+- **id**: This defines how the property in the data object is named
+- **type**: This is the key of the field type. The field type needs to exist in the fields object, otherwise nothing is rendered.
+
+For accessiibility reasons, you normally have at least another required property, `label`, which adds a label to the field.
+
+Other often used properties:
+
+- **value**: You can set the value directly here. For computed value, use the computedValue prop
+- **options**: An array with options for a select or a radio group, usually an object with `value` and `text` props
+- **placeholder**: A placeholder for input fields
+- **isRequired**: Is the field required? This will be automatically validated for you by the Form component
+- **isDisabled**: Is the field disabled? If yes, set it with this property. Normally used for fields with computed values
+- **prefix**: A text which is show right before the field, in the same line
+- **suffix**: A text which is show right after the field, in the same line
+- **secondaryText**: A descriptive text usually shown right below the label
+
+Additionally, Stages comes with a few special properties which are field inependent:
+
+- **errorRenderer**: A custom error renderer, to make errors look nice
+- **computedValue**: You can compute a value dynamically based on the current form data
+- **filter**: You can filter all user input with a filter function
