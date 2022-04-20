@@ -1,1 +1,30 @@
 # Custom Errors
+
+Every field comes with a simple error renderer, mostly just checking if a required field was filled out. Ideally 
+you want to be more precise than just showing "Please fill out this field!" as the default error renderrer does. This 
+is where custom errors are useful. You can set them up like this (using some Bootstrap for the formatting):
+
+```
+import Form from 'react-bootstrap/Form';
+
+const FieldError = ({ customText }) => (
+  <Form.Control.Feedback type="invalid">
+    {customText || "Please fill out this field!"}
+  </Form.Control.Feedback>
+);
+```
+
+And than later in the form config:
+
+```
+{
+    id: "email",
+    label: "Email",
+    type: "email",
+    isRequired: true,
+    customValidation: ({ data, isValid }) => {
+        return; // Add your huge custom email validation regex here!
+    },
+    errorRenderer: (error) => FieldError({ customText: "Please enter a valid email address." }),
+}
+```
