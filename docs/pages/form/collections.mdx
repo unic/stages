@@ -1,1 +1,119 @@
 # Collections
+
+A collection is a powerfull built in field type which craetes an array / list of grouped fields. If you for example 
+want to collect a list of participants for a dinner, you could set that up like this in the config:
+
+```
+{
+    id: "participants",
+    type: "collection",
+    isRequired: true,
+    init: true,
+    fields: [
+        {
+            id: "name",
+            label: "Name",
+            type: "text",
+            isRequired: true
+        },
+        {
+            id: "vegan",
+            label: "Is vegan?",
+            type: "checkbox"
+        }
+    ]
+}
+```
+
+And than render it like this:
+
+```
+render={({ fieldProps, errors }) => {
+    return (
+        <>
+            <div>
+
+                {fieldProps.fields.participants ? fieldProps.fields.participants.map((subFields, index) => (
+                    <div key={`participants-${index}`}>
+
+                        {subFields.name}
+                        <br />
+
+                        {subFields.vegan}
+                        <br />
+
+                        <button
+                            type="button"
+                            onClick={() => fieldProps.onCollectionAction("participants", "remove", index)}
+                        >
+                            Remove entry
+                        </button>
+
+                    </div>)
+                ) : null}
+
+                <button
+                    type="button"
+                    onClick={() => fieldProps.onCollectionAction("participants", "add")}
+                >
+                    Add entry
+                </button>
+
+            </div>
+
+            {errors && errors.participants ? (
+                <div style={{ color: "red" }}>
+                    Please add at least one entry!
+                </div>
+            ) : null}
+        </>
+    );
+}}
+```
+
+Collection have following options:
+
+- **id**: This will be the key for the array in the data structure
+- **isRequired**: If this is set, than at least one entry has to be added
+- **init**: If this is true, one initial empty entry will be set
+- **min**: Add a number for the minimum amount of entries
+- **max**: Add a number for the maximum amount of entries
+- **uniqEntries**: If true, all entries have to be uniq
+
+## Computed Collections
+
+Sometimes you want to compute values based on the data of the individual collection entries, you can do this with 
+the `itemData` on the `computedValue` function:
+
+```
+{
+    id: "factorials",
+    type: "collection",
+    init: true,
+    fields: [
+        {
+            id: "factor1",
+            label: "Factor 1",
+            type: "number"
+        },
+        {
+            id: "factor2",
+            label: "Factor 2",
+            type: "number"
+        },
+        {
+            id: "result",
+            label: "Result of Factor 1 x Factor 2",
+            type: "number",
+            isDisabled: true,
+            computedValue: (data, itemData) => {
+                let result = 0;
+                if (itemData.factor1 && itemData.factor2) {
+                    result = Number(itemData.factor1) * Number(itemData.factor2);
+                }
+                return result !== 0 ? result : "";
+            }
+        }
+    ]
+}
+```

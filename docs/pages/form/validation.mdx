@@ -30,6 +30,32 @@ This could look soemthing like this:
 }
 ```
 
+The above mentioned date range custom validation:
+
+```
+{
+    id: 'fromDate',
+    label: "From",
+    type: 'date',
+    isRequired: true
+},
+{
+    id: 'toDate',
+    label: "To",
+    type: 'date',
+    isRequired: true,
+    customValidation: ({ data, allData, fieldConfig, isValid }) => {
+        if (allData.fromDate && data) {
+            const fromDate = new Date(allData.fromDate);
+            const toDate = new Date(data);
+            // Make sure fromDate isn't bigger than toDate:
+            if (fromDate > toDate) return false;
+        }
+        return isValid;
+    }
+}
+```
+
 The `isValid` variable in the `customValidation` function tells you what the type based validation of the field returns, which 
 means you don't have to check for the `isRequired` property again.
 
