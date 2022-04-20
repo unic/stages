@@ -1,1 +1,90 @@
 # Form Recursion
+
+Whole forms can become included as a field with the subform type that comes built it, creating form recursion, aka Form Inception.
+
+In the example below, we first create a configuration and a render for an address form and than include that multiple times as a subform.
+
+```
+const addressConfig = {
+    fields: () => {
+        return [
+            {
+                id: "name",
+                label: "Name",
+                type: "text",
+                isRequired: true
+            },
+            {
+                id: "street",
+                label: "Street & Nr",
+                type: "text",
+                isRequired: true
+            },
+            {
+                id: "poBox",
+                label: "P.O. Box",
+                type: "text",
+                isRequired: false
+            },
+            {
+                id: "postalcode",
+                label: "Postalcode",
+                type: "text",
+                isRequired: true
+            },
+            {
+                id: "city",
+                label: "City",
+                type: "text",
+                isRequired: true
+            }
+        ];
+    }
+};
+
+const AddressRender = ({ fields }) => {
+    return (
+        <div>
+            <div className="pure-g">
+                <div className="pure-u-24-24">{fields.name}</div>
+            </div>
+            <br />
+            <div className="pure-g">
+                <div className="pure-u-12-24">{fields.street}</div>
+                <div className="pure-u-12-24">{fields.poBox}</div>
+            </div>
+            <br />
+            <div className="pure-g">
+                <div className="pure-u-12-24">{fields.postalcode}</div>
+                <div className="pure-u-12-24">{fields.city}</div>
+            </div>
+        </div>
+    );
+};
+```
+
+Than we can include the address form like this multiple times in our config:
+
+```
+{
+    id: "address1",
+    type: "subform",
+    config: addressConfig,
+    render: AddressRender
+},
+{
+    id: "address2",
+    type: "subform",
+    config: addressConfig,
+    render: AddressRender
+},
+{
+    id: "address3",
+    type: "subform",
+    config: addressConfig,
+    render: AddressRender
+}
+```
+
+This can be very useful if you have a sales form, where shipping address and invoice address can be different, but you don't want 
+to config the same fields and render twice.
