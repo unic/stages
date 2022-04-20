@@ -6,9 +6,9 @@
     "validation": "Validation",
     "collections": "Collections",
     "computedvalues": "Computed Values",
+    "filteredvalues": "Filtered Values",
     "asyncdata": "Async Data",
     "customerrors": "Custom Errors",
-    "customvalidation": "Custom Validation",
     "dynamicfields": "Dynamic Fields",
     "formrecursion": "Form Recursion"
 }
