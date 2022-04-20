@@ -1,1 +1,41 @@
 # Async Data
+
+Sometimes a form needs data which is initially loaded before the form can be used.
+
+Here's an example where we populate select options by loading users from an API:
+
+```
+<Form
+    config={{
+        asyncDataLoader: async () => {
+            const response = await axios.get('https://jsonplaceholder.typicode.com/users');
+            return {
+                users: response && response.data || []
+            };
+        },
+        fields: (data, asyncData) => {
+            const users = asyncData && asyncData.users ? asyncData.users.map(item => {
+                return {
+                    value: item.id,
+                    text: `${item.name} (${item.email})`
+                };
+            }) : [];
+
+            users.unshift({ value: "", text: "Please select ..." });
+
+            return [
+                {
+                    id: "user",
+                    label: "Choose user:",
+                    type: "select",
+                    options: users,
+                    isRequired: true
+                }
+            ];
+        }
+    }}
+    ...
+/>
+```
+
+When used inside a wizard (Stages), the data is only loaded when entering the step and cached between step changes (like prev and next).
