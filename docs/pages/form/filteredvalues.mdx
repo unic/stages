@@ -1,1 +1,24 @@
 # Filtered Values
+
+Sometimes it's useful to limit user inputs to certain characters or formats. This can be achieved 
+with the filter property like this:
+
+```
+{
+    id: "onlyNumbers",
+    label: "Only positive integers allowed",
+    type: "text",
+    filter: value => value.replace(/\D/g, '')
+}
+```
+
+Here's an example with floats:
+
+```
+{
+    id: "onlyNumbers",
+    label: "Only positive floats allowed",
+    type: "text",
+    filter: value => value.replace(/[^0-9.]/g, '')
+}
+```
