@@ -1,1 +1,75 @@
 # Dynamic Fields
+
+Field configurations can be dynamic, based on previously entered data. Here are a few examples:
+
+```
+<Form
+    config={{
+        fields: (data) => {
+            return [
+                {
+                    id: "field1",
+                    label: "Field 1",
+                    type: "text"
+                },
+                {
+                    id: "field2",
+                    label: "Field 2",
+                    secondaryText: "This field is only required if Field 1 is populated. Add something to the first field to see this field getting required.",
+                    type: "text",
+                    isRequired: data.field1
+                },
+                {
+                    id: "field3",
+                    label: "Field 3",
+                    type: "text"
+                },
+                {
+                    id: "field4",
+                    label: "Field 4",
+                    secondaryText: "This field is only enabled if Field 3 is populated.",
+                    type: "text",
+                    isDisabled: !data.field3
+                },
+                {
+                    id: "name",
+                    label: "Name",
+                    type: "text",
+                    isRequired: true
+                },
+                {
+                    id: "age",
+                    label: data.name ? `What is the age of ${data.name}?` : "Age",
+                    secondaryText: "The label of this field is dynamic.",
+                    type: "number"
+                }
+            ]
+        }
+    }}
+    ...
+/>
+```
+
+You can do the same in the render function, for example if you want to hide a group of fields if a checkbox above isn't checked:
+
+```
+<Form
+    render={({ fieldProps }) => (
+        <div>
+            {fieldProps.fields.myCheckbox}
+            <br />
+            {fieldProps.data.myCheckbox ? (
+                <div>
+                    {fieldProps.fields.groupField1}
+                    <br />
+                    {fieldProps.fields.groupField2}
+                    ...
+                </div>
+            ) : null}
+        </div>
+    )}
+    ...
+/>
+```
+
+However, be careful to not make a form to dynamic, this can be irritating for the user and hard to test.
