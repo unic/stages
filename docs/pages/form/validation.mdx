@@ -39,3 +39,40 @@ You get following variables in the `customValidation` function:
 - **allData**: All the data of the form
 - **fieldConfig**: The configuration for the field
 - **isValid**: The default type based validation (a boolean)
+
+## Validation Events
+
+Per default, validation happens on actions which have validation switched on, eq:
+
+```
+actionProps.handleActionClick(onSubmit, true);
+```
+
+But you can set it up however you want, using the `validateOn` property on the Form component, which accepts an array of event types.
+
+```
+<Form
+    validateOn={["action", "blur"]}
+    ...
+/>
+```
+
+You have following options:
+
+- **action**: This is the default, validation on form actions
+- **blur**: This probably is the second most used, validation on input blur (or click on elemnts that don't support blur)
+- **change**: This is the most busy, validating on every change of the fields values
+- **collectionAction**: And this one validates on collection actions, like add or delete an entry
+
+Additionally, you can set this behaviour on each field individually, like this:
+
+```
+{
+    id: "password",
+    label: "Password",
+    type: "password",
+    validateOn: ["change"]
+}
+```
+
+Which can be very useful for things like the password feild above, if you want dynamically show how save it is and if it's save enough.
