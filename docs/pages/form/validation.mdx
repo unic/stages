@@ -1,1 +1,41 @@
 # Validation
+
+Each field in a form can have two types of validation. The first one is based on the field type 
+and comes with the included field set. All it normally does is check if a required field is filled 
+out. Here's an example of such a type validation for plain Input fields:
+
+```
+const isValid = (value, config) => {
+    if (config.isRequired && (value === "" || typeof value === "undefined")) return false;
+    return true;
+};
+```
+
+More complicated field types can have more complicated default validations, for example a date range 
+field would validate that the "from date" is before the "to date".
+
+Additionally, you can validate on a per field basis, using the `customValidation` property in a field config. 
+This could look soemthing like this:
+
+```
+{
+    id: "username",
+    label: "Username",
+    type: "text",
+    isRequired: true,
+    customValidation: ({ data, isValid }) => {
+        return isValid && data.replace(/[^a-z0-9-]/gi, "") === data;
+    },
+    errorRenderer: (error) => <div style={{ color: "#f30" }}><br />Please fill out this field. Only alphanumeric values and '-' is allowed.</div>,
+}
+```
+
+The `isValid` variable in the `customValidation` function tells you what the type based validation of the field returns, which 
+means you don't have to check for the `isRequired` property again.
+
+You get following variables in the `customValidation` function:
+
+- **data**: The data of this specific field
+- **allData**: All the data of the form
+- **fieldConfig**: The configuration for the field
+- **isValid**: The default type based validation (a boolean)
