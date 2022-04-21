@@ -27,7 +27,7 @@ const Stages = ({
     const [activeChildren, setActiveChildren] = useState([]);
     const [errors, setErrors] = useState({});
     const [currentStep, setCurrentStep] = useState(initialStep || 0);
-    const [keys, setKeys] = useState([]); // Todo: Keys need a isHidden property so we can hide steps correctly!
+    const [keys, setKeys] = useState([]);
 
     /*
         Get only the data for a specific step.

@@ -1,1 +1,49 @@
 # Render
+
+Stages on its own doesn't render anything. Here's how you render a basic layout using the sample components for the navigation and progression:
+
+```
+import { Stages, Navigation, Progression, HashRouter } from "react-stages";
+
+...
+
+<Stages
+    render={({ navigationProps, progressionProps, routerProps, steps }) => (
+        <div>
+            <div>
+                <Navigation {...navigationProps} />
+                <Progression {...progressionProps} /> 
+            </div>
+            <div>{steps}</div>
+            {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
+        </div>
+    )}
+>
+    ...
+</Stages>
+```
+
+All the render props you get:
+
+- **navigationProps**: These contain all the info to render a step navigation
+    - **currentStep**: The current step index
+    - **data**: The complete wizard data, usefull to render small step summaries
+    - **onChangeStep**: Use this callback to set a new step
+    - **errors**: All the validation errors, in case you want to display invalid steps differently
+    - **keys**: An array of all the step keys. Each step is an object containing `key` and `visible` properties.
+    - **stepCount**: The amount of steps
+    - **lastValidStep**: The last valid step index
+- **progressionProps**:
+    - **currentStep**: The current step index
+    - **stepCount**: The amount of steps
+    - **validSteps**: The amount of valid steps
+    - **percentage**: The percentage of valid steps
+    - **data**: The complete wizard data
+    - **errors**: All the validation errors
+- **routerProps**:
+    - **step**: The current step
+    - **onChange**: Handler to change step
+    - **keys**: All the keys
+- **steps**: This are the rendered steps (in normal usage, the currently active step)
+
+Check the example Navigation and Progreess components for how the properties are used.
