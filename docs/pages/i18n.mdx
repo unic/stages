@@ -1,1 +1,32 @@
 # Internationalization (i18n)
+
+As Stages doesn't render anything on it's own, internationalization can be done directly in your render props.
+
+For the Form configs, there's one simple trick to inject the locale and i18n texts, wrap it in an additional 
+function like this:
+
+```
+const config = (locale, i18n) => {
+    return {
+        fields: () => {
+            return [
+                {
+                    id: "field1",
+                    label: i18n.fields.field1.label[locale],
+                    type: "text",
+                    isRequired: true,
+                    errorRenderer: (error) => FieldError({ error, locale, i18n })
+                },
+                {
+                    id: "field2",
+                    label: i18n.fields.field2.label[locale],
+                    type: "text",
+                    errorRenderer: (error) => FieldError({ error, locale, i18n })
+                }
+            ];
+        }
+    };
+};
+```
+
+Have a look at the source code for the i18n demo for some other implementation details.

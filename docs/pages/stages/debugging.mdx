@@ -1,1 +1,37 @@
 # Debugging
+
+Debugging a big wizard, with multiple steps can be tireome. Entering the data again and again, just to get to that last step where 
+you had an error isn't a nice developing experience. This is why we added features to make working on a specific step easier. More 
+debugging features will follow.
+
+What we do first, is force the wizard to a certain step and disable validation on step changes:
+
+```
+<Stages
+    initialStep={3}
+    validateOnStepChange={false}
+    ...
+>
+    ...
+</Stages>
+```
+
+Additionally you can add initial data which helps you debug the specific step:
+
+```
+<Stages
+    initialData={{
+        step3: {
+            someField: "Test data ...",
+            someOtherField: "Bla, bla ..."
+        }
+    }}
+    initialStep={3}
+    validateOnStepChange={false}
+    ...
+>
+    ...
+</Stages>
+```
+
+This is of course helpful in automated test, as well. Just make sure that you run your interface tests after Stages has initialized.
