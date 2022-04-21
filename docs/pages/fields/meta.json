@@ -1,5 +1,6 @@
 {
     "basics": "Basics",
+    "fieldsets": "Field Sets",
     "properties": "Properties",
-    "fieldsets": "Field Sets"
+    "defaultvalidation": "Default Validation"
 }

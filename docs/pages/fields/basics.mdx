@@ -1,1 +1,18 @@
 # Basics
+
+Forms are made out of fields. The idea is that you bring your own fields, but there's a plain fieldset 
+you can start with. This is how you include the plain fieldset:
+
+```
+import { Form, plainFields as fields } from "react-stages";
+
+...
+
+<Form
+    fields={fields}
+    ...
+/>
+```
+
+We plan to release complete fieldsets in the future for popular component libraries and if you create a nice fieldset, 
+please let us know and we'll link to it from here.
