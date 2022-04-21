@@ -1,1 +1,26 @@
 # Dynamic Steps
+
+Steps can be completely dynamic. What does that mean? Let's say you have a checkbox on the first step 
+which asks the user if he has a second income and a whole step to declare all the info for that second income. 
+Now you only want to display that step in the navigation if he checked that checkbox. This can be achieved easily by 
+returning `null` inside that step if the checkbox value is `false`. Here's an example:
+
+```
+<Stages
+    ...
+>
+    {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
+        const key = setStepKey("step2", index);
+        if (initializing) return null;
+
+        if (allData.step1 && !allData.step1.declareSecondIncome) return null;
+
+        return (
+            <Form
+                ...
+            />
+        );
+    }}
+```
+
+As you can see, all we have to do is use the data from step one to decide if step two should be rendered. Otherwise we return `null`.

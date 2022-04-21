@@ -1,1 +1,46 @@
 # Navigation
+
+Stages comes with a very basic example navigation component. It's really ment as an inspiration on how to build your 
+own custom navigation component. Here's an example source:
+
+```
+const Navigation = ({ currentStep, data, onChangeStep, errors, lastValidStep, keys, stepCount }) => {
+    const items = [];
+
+    for (let i = 0; i < keys.length; i++) {
+        if (keys && keys[i] && keys[i].visible) {
+            const stepName = keys && keys[i] ? keys[i].key : `Step ${i + 1}`;
+
+            if (currentStep === i) {
+                // The current step:
+                items.push(
+                    <li key={stepName}>
+                        <strong>{stepName}</strong>
+                    </li>
+                );
+            } else if ((lastValidStep > -1 && lastValidStep + 1 < i) || lastValidStep === -1 && i > 0) {
+                // A step which can't be navigated to right now:
+                items.push(
+                    <li key={stepName}>
+                        <i>{stepName}</i>
+                    </li>
+                );
+            } else {
+                // A step which can be navigated to:
+                items.push(
+                    <li key={stepName} onClick={() => onChangeStep(i)}>
+                        {stepName}
+                    </li>
+                );
+            }
+        }
+    }
+
+    return (
+        <ul>{items}</ul>
+    );
+};
+```
+
+It's really just one example. You can build step navigations a thousand ways. For example use the `data` object 
+to render little step summaries.

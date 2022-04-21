@@ -1,1 +1,27 @@
 # Routing
+
+Stages comes with a default hash router. It's fully optional. Stages can function without a router, or 
+you can add your own router if you like.
+
+The router is added inside the render prop like this:
+
+```
+<Stages
+    render={({ navigationProps, progressionProps, routerProps, steps }) => (
+        <div>
+            ...
+            {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
+        </div>
+    )}
+>
+    ...
+</Stages>
+```
+
+Additionally to the mapped `routerProps`, you can set:
+
+- **prefix**: A hash prefix, for example if you want the word step in front of the step key: `#!step-basisc`
+- **hashFormat**: Per default, the Hashrouter will use a hasbang like this: `#!`
+
+Definitely check out the source code of the default hash router if you want to use your own routing solution, or if you want 
+to make it work inside an app that is already using hash routing.
