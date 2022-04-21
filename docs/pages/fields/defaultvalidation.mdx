@@ -1,1 +1,23 @@
 # Default Validation
+
+Each field type needs to have a default field validation. For a basic Input field, this could look like this:
+
+```
+export const isValid = (value, config) => {
+    if (config.isRequired && (value === "" || typeof value === "undefined")) return false;
+    return true;
+};
+```
+
+The minimum a field validation function has to do, is check if the user has entered anything if the field is required. 
+More complicated fields should implement additional checks for the validity of the entered data. An email field should 
+for example check if the entered string is a valid email address. A date range picker should check if the "to date" is 
+after the "from date" and so on ...
+
+When you write your validation function, always have in mind, that this is the default validation, it should be specific 
+to the type, and not specific to an individual field. For those, you define a custom validation in the Form config. So don't 
+do anything like this in the default validation:
+
+```
+if (config.id === "companyEmail" && value.indexOf("mycompanydomain.com") === -1) return false;
+```

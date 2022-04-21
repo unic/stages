@@ -1,0 +1,89 @@
+# A Field Component
+
+Let's have a look at a basic field component from our example plain field set:
+
+```
+const Input = ({
+    id,
+    label,
+    value,
+    onChange,
+    onBlur,
+    error,
+    placeholder,
+    isRequired,
+    isDisabled,
+    prefix,
+    suffix,
+    secondaryText,
+    type,
+    errorRenderer,
+    ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
+}) => {
+    return (
+        <div id={id}>
+            {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
+            <div>
+                {prefix ? <span>{prefix}</span> : null}
+                <input
+                    name={id}
+                    value={value || ""}
+                    placeholder={placeholder}
+                    type={type || "text"}
+                    disabled={!!isDisabled}
+                    required={!!isRequired}
+                    onChange={e => {
+                        if (typeof onChange === "function") onChange(e.target.value);
+                    }}
+                    onBlur={e => {
+                        if (typeof onBlur === "function") onBlur(e.target.value);
+                    }}
+                />
+                {suffix ? <span>{suffix}</span> : null}
+            </div>
+            {secondaryText ? <div>{secondaryText}</div> : null}
+            {error ? errorRenderer ? errorRenderer(error) : (
+                <div style={{ color: "red" }}>Please fill out this field!</div>
+            ) : null}
+        </div>
+    );
+}
+```
+
+Let's first go through the properties:
+
+- **id**: This is the field id, the same as the key in the forms data structure
+- **label**: The label for the field, important for accessibility
+- **value**: The fields value, a string in this case
+- **onChange**: The required change handler which is used to update the forms data
+- **onBlur**: The on blur handler, which triggers on blur validation
+- **error**: The error messages if the field didn't validate
+- **placeholder**: A field placeholder, this one is specific to the Input field
+- **isRequired**: A boolean which tells you if the field is required or not
+- **isDisabled**: A boolean which tells you if the field is disabled
+- **prefix**: A prefix which should be render right before the field in the same line
+- **suffix**: A suffix which should be render right after the field in the same line
+- **secondaryText**: A secondary text which is usually rendered right below the label
+- **type**: The field type, which you only need if the field component renders different field types
+- **errorRenderer**: A custom error rendering component
+- **...props**: Additional props from the config, this could for example be a custom className if your field set supports those
+
+And a few important things about the form render.
+
+1. The `id` prop is used to scroll to the first invalid field on Form actions. If you don't add it as an id on your markup, this functionality will not work.
+2. For full flexibility, always make sure the custom `errorRenderer` is used when available
+3. For some fields, `onChange` and `onBlur` will be the same thing, in that case you should still trigger both
+4. As Stages doesn't render any markup, making your form accessible is your job, make sure you set the right properties in your markup!
+5. If your component doesn't have a default behaviour for being disabled, you still need to make sure it is disabled, this could for example be done like this:
+
+```
+<div
+    id={id}
+    style={isDisabled ? {
+        opacity: "0.3",
+        pointerEvents: "none"
+    } : {}}
+>
+    ...
+</div>
+```
