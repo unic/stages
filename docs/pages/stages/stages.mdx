@@ -1,1 +1,134 @@
 # Stages
+
+Let's have a closer look at the props for Stages and the children render prop.
+
+Stages itself has following props:
+
+- **initialData**: You can prefill the wizard with data using this prop
+- **initialStep**: As with the data, you can set which step should be displayed initially
+- **render**: Here you define how the wizard is rendered
+- **validateOnStepChange**: For debugging purposes it is sometimes usefull to disable validation on step change
+- **onChange**: Listen to data changes by adding a function here
+
+Each child is given a bunch of render props, these are:
+
+- **data**: The current step data
+- **allData**: Data from all steps
+- **onChange**: Change handler to connect the Form with the Wizard component
+- **onNav**: A function to call to trigger a step navigation (can be declined if step isn't valid)
+- **isActive**: Is this the currently active step?
+- **index**: The step index, counted from zero
+- **errors**: All the validation errors
+- **setStepKey**: A function you should call initially to set the step key
+- **initializing**: This is true while Stages is initializing and gathering all the step keys
+
+Let's analyse a single Stages child on it's own:
+
+```
+<Stages
+    ...
+>
+    {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
+        const key = setStepKey("basics", index);
+        if (initializing) return null;
+
+        return (
+            <Fragment key={`step-${key}`}>
+                {isActive ? <h2>Basics:</h2> : null}
+                <Form
+                    id={key}
+                    data={data}
+                    onChange={onChange}
+                    isVisible={isActive}
+                    ...
+                />
+            </Fragment>
+        );
+    }}
+</Stages>
+```
+
+After desctructuring all the render props, this is the first line:
+
+```
+const key = setStepKey("basics", index);
+```
+
+What this line does, is set the step key, `basics` in this case. This will be used for the route hash if you're using a router, and 
+the it will be used as the key which groups all the data collected in this step. So data could look something like this:
+
+```
+{
+    basics: {
+        projectName: "Test",
+        dueDate: "2022-12-12"
+    }
+}
+```
+
+And the url could look like this while you're on this step (if you use the Hashrouter with its default settings):
+
+```
+https://mydomain.com/mywizard#!basics
+```
+
+The second line inside the child:
+
+```
+if (initializing) return null;
+```
+
+This makes sure, that the form is not rendered during the initialization phase.
+
+And finally we return our rendered form, where we connect the data and handlers so that it can be controlled by Stages:
+
+```
+return (
+    <Fragment key={`step-${key}`}>
+        {isActive ? <h2>Basics:</h2> : null}
+        <Form
+            id={key}
+            data={data}
+            onChange={onChange}
+            isVisible={isActive}
+            ...
+        />
+    </Fragment>
+);
+```
+
+We use the `isActive` prop to hide the headline. Don't hide the whole form, or data will not be validated while the step is invisible.
+
+Btw, you don't have to render a form in a step. You can regular markup, as well. This can be usefull for example if you have 
+a summary step at the end of your wizard, where data is only nicely summaries, but no data input happens. Here's an example of 
+such a step:
+
+```
+{({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing }) => {
+    const key = setStepKey("empty", index);
+    if (initializing) return null;
+
+    if (!isActive) return <Fragment key={`step-${key}`}></Fragment>;
+
+    // Validate this step on mount by adding random data to this steps data:
+    if (!data || Object.keys(data).length === 0) onChange({visited: true}, {}, index);
+
+    return (
+        <div key={`step-${key}`}>
+            <h2>An empty Step</h2>
+            <p>You don't need to put froms on a step!</p>
+            <button type="button" onClick={() => onNav("prev")}>Prev</button>
+            <button type="button" onClick={() => onNav("next")}>Next</button>
+        </div>
+    );
+}}
+```
+
+Notice that we still return an empty fragment if the step is inactive. This is needed, otherwise React throws an error.
+And to make sure Stages knows that the step has been visited, we set some dummy data on this step:
+
+```
+if (!data || Object.keys(data).length === 0) onChange({visited: true}, {}, index);
+```
+
+This makes sure that the last valid step is the correct one.
