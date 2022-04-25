@@ -63,12 +63,16 @@ const Stages = ({
         setData(Object.assign({}, data));
 
         if (typeof onChange === "function") onChange({ data, errors });
+    };
 
-        // If there is a logging function registered on the window (Stages browser extension), send data to it:
+    /*
+        If there is a logging function registered on the window (Stages browser extension), send data to it:
+    */
+    useEffect(() => {
         if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
             window.stagesLogging({ id: uniqId, keys, data, errors, currentStep }); 
         }
-    };
+    }, [keys, data, errors, currentStep]);
 
     /*
         Run through steps first to get all the keys:

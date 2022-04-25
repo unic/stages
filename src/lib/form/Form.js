@@ -48,6 +48,15 @@ const Form = ({
         if (data && !initialData) setInitialData(data);
     }, [data]);
 
+    /*
+        If there is a logging function registered on the window (Stages browser extension), send data to it:
+    */
+    useEffect(() => {
+        if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
+            window.stagesLogging({ id: uniqId, data, errors, isDirty, loading, parsedFieldConfig }); 
+        }
+    }, [data, errors, isDirty, loading]);
+
     // Helper function to detect reserved field types:
     const isReservedType = type => type === "collection" || type === "subform";
 
@@ -275,11 +284,6 @@ const Form = ({
         if (initialData) setIsDirty(!isEqual(newData, initialData));
 
         onChange(newData, validationErrors(), id);
-
-        // If there is a logging function registered on the window (Stages browser extension), send data to it:
-        if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
-            window.stagesLogging({ id: uniqId, data, errors, isDirty, loading, parsedFieldConfig }); 
-        }
     };
 
     /*
