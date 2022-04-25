@@ -32,6 +32,7 @@ const Form = ({
     parentRunValidation,
     validateOn
 }) => {
+    const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
     const [initialData, setInitialData] = useState(false);
     const [runValidation, setRunValidation] = useState(false);
@@ -274,6 +275,11 @@ const Form = ({
         if (initialData) setIsDirty(!isEqual(newData, initialData));
 
         onChange(newData, validationErrors(), id);
+
+        // If there is a logging function registered on the window (Stages browser extension), send data to it:
+        if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
+            window.stagesLogging({ id: uniqId, data, errors, isDirty, loading, parsedFieldConfig }); 
+        }
     };
 
     /*

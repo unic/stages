@@ -23,6 +23,7 @@ const Stages = ({
     validateOnStepChange,
     onChange
 }) => {
+    const [uniqId] = useState(`stages-${+ new Date()}`);
     const [data, setData] = useState(initialData);
     const [activeChildren, setActiveChildren] = useState([]);
     const [errors, setErrors] = useState({});
@@ -62,6 +63,11 @@ const Stages = ({
         setData(Object.assign({}, data));
 
         if (typeof onChange === "function") onChange({ data, errors });
+
+        // If there is a logging function registered on the window (Stages browser extension), send data to it:
+        if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
+            window.stagesLogging({ id: uniqId, keys, data, errors, currentStep }); 
+        }
     };
 
     /*
