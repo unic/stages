@@ -25,8 +25,6 @@ const DemoDebugger = () => {
 
     if (Object.keys(data).length === 0) return null;
 
-    console.log("rerender");
-
     return (
         <div
             style={{
