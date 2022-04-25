@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import DemoNav from "./DemoNav";
+import DemoDebugger from "./DemoDebugger";
 
 const Layout = ({ children }) => {
     return (
@@ -24,7 +25,7 @@ const Layout = ({ children }) => {
                         position: "absolute",
                         top: "-24px",
                         right: 0,
-                        width: "240px",
+                        width: "280px",
                         padding: "8px",
                         fontSize: "14px",
                         color: "#944",
@@ -35,6 +36,7 @@ const Layout = ({ children }) => {
                 >
                     <strong>Note:</strong> Stages comes without styles, you have to bring your own!
                 </div>
+                <DemoDebugger />
                 <div style={{ maxWidth: "900px" }}>
                     {children}
                 </div>
