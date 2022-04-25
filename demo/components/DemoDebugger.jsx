@@ -6,7 +6,7 @@ const DemoDebugger = () => {
     const [showDebugger, setShowDebugger] = useState(false);
 
     const getData = (eventData) => {
-        const newData = {...data};
+        const newData = Object.assign(data, {});
         newData[eventData.id] = eventData;
         setData(newData);
     };
