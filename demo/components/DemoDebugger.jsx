@@ -8,7 +8,7 @@ const DemoDebugger = () => {
     const getData = (eventData) => {
         const newData = Object.assign(data, {});
         newData[eventData.id] = eventData;
-        setData(newData);
+        setData({...newData});
     };
 
     useEffect(() => {
@@ -24,6 +24,8 @@ const DemoDebugger = () => {
     };
 
     if (Object.keys(data).length === 0) return null;
+
+    console.log("rerender");
 
     return (
         <div
