@@ -12,6 +12,16 @@ Stages has been highly inspired by libraries like [Radix](https://www.radix-ui.c
 and uses render props and component composition for maximum flexibility. It originated from a wizard we've built at [Unic](https://www.unic.com/) for a big 
 client project, a wizard which was highly dynamic and demanded high flexibility from the wizard setup.
 
+## Design Goals
+
+To summarizy the design goals:
+
+- The two main components, Stages and Form, don't render anything, they just give you render props
+- Configuration and rendering is always separated
+- Configuration is always dynamic, not static
+- Everything can be ovrwritten per field if needed, like validation, error rendering, visibility etc.
+- No component framework lockin, you can bring your own components
+
 ## Basic Component Structure
 
 <Image src="/architecture.png" alt="Architecture" width="830" height="590" />
