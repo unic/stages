@@ -283,7 +283,7 @@ const Form = ({
         // Set the isDirty flag correctly:
         if (initialData) setIsDirty(!isEqual(newData, initialData));
 
-        onChange(newData, validationErrors(), id);
+        onChange(newData, validationErrors(), id, fieldKey, index);
     };
 
     /*
@@ -298,7 +298,7 @@ const Form = ({
             let newData = Object.assign({}, data);
             const result = validateField(fieldConfig, newData, errors);
             setErrors(result.errors);
-            onChange(newData, result.errors, id);
+            onChange(newData, result.errors, id, fieldKey, index);
         }
     };
 
@@ -396,7 +396,7 @@ const Form = ({
             setErrors(newErrors);
         }
 
-        onChange(newData, newErrors || validationErrors(), id);
+        onChange(newData, newErrors || validationErrors(), id, fieldKey, index);
     };
 
     /*
