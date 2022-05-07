@@ -283,6 +283,11 @@ const Form = ({
         // Set the isDirty flag correctly:
         if (initialData) setIsDirty(!isEqual(newData, initialData));
 
+        // If there are any fields to be cleared, do that now:
+        if (fieldConfig.clearFields && Array.isArray(fieldConfig.clearFields)) {
+            fieldConfig.clearFields.forEach(field => delete newData[field]);
+        }
+
         onChange(newData, validationErrors(), id, fieldKey, index);
     };
 
@@ -295,10 +300,9 @@ const Form = ({
 
         // Only validate if blur validation is enabled:
         if (validateOn.indexOf("blur") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("blur") > -1)) {
-            let newData = Object.assign({}, data);
-            const result = validateField(fieldConfig, newData, errors);
+            const result = validateField(fieldConfig, data, errors);
             setErrors(result.errors);
-            onChange(newData, result.errors, id, fieldKey, index);
+            onChange(data, result.errors, id, fieldKey, index);
         }
     };
 

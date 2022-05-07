@@ -83,7 +83,7 @@ function App() {
           <h1>Wizard</h1>
           <Stages
               initialData={initialData}
-              onChange={({ data, errors }) => handleChange(data, errors)}
+              onChange={({data, errors}) => handleChange(data, errors)}
               render={({ navigationProps, progressionProps, routerProps, steps }) => (
                   <div>
                       <Navigation {...navigationProps} />
@@ -105,7 +105,7 @@ function App() {
                               data={data}
                               config={basicsConfig}
                               render={({ actionProps, fieldProps, loading }) => (
-                                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
+                                <div>
                                   <FormLayout
                                       loading={loading}
                                       fields={<BasicsRenderer {...fieldProps} />}
@@ -139,7 +139,7 @@ function App() {
                               data={data}
                               config={guestsConfig}
                               render={({ actionProps, fieldProps, loading }) => (
-                                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
+                                <div>
                                   <FormLayout
                                       loading={loading}
                                       fields={<GuestsRenderer {...fieldProps} />}
@@ -190,7 +190,7 @@ function App() {
                               data={data}
                               config={programConfig}
                               render={({ actionProps, fieldProps, loading }) => (
-                                <div style={{ border: fieldProps.isDirty ? "4px #f30 solid" : "none" }}>
+                                <div>
                                   <FormLayout
                                       loading={loading}
                                       fields={<ProgramRenderer {...fieldProps} />}

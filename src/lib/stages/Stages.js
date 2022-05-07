@@ -54,15 +54,16 @@ const Stages = ({
         This function is called by step forms and updates data and errors.
     */
     const handleOnChange = (changedData, stepErrors, id) => {
+        const newData = Object.assign({}, data);
         const key = keys && keys[id] ? keys[id].key : id;
 
         errors[id] = stepErrors;
         setErrors(Object.assign({}, errors));
 
-        data[key] = changedData;
-        setData(Object.assign({}, data));
+        newData[key] = changedData;
+        setData(Object.assign({}, newData));
 
-        if (typeof onChange === "function") onChange({ data, errors });
+        if (typeof onChange === "function") onChange({ data: newData, errors });
     };
 
     /*

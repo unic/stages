@@ -54,7 +54,6 @@ const RadioGroup = ({
                                 onChange={() => {/* to make React and IE happy */}}
                                 onClick={e => {
                                     if (typeof onChange === "function") onChange(option.value);
-                                    if (typeof onBlur === "function") onBlur(option.value);
                                 }}
                             />
                             <label htmlFor={`${id}-${option.value}`}>{option.text}</label>
