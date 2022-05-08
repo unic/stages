@@ -212,6 +212,52 @@ function CollectionsPage() {
                                     }
                                 ]
                             },
+                            {
+                                id: "collection9",
+                                type: "collection",
+                                isRequired: true,
+                                init: "food",
+                                fields: {
+                                    food: [
+                                        {
+                                            id: "name",
+                                            label: "Food Name",
+                                            type: "text",
+                                            isRequired: true
+                                        },
+                                        {
+                                            id: "calories",
+                                            label: "Calories",
+                                            type: "text"
+                                        }
+                                    ],
+                                    drink: [
+                                        {
+                                            id: "name",
+                                            label: "Drink Name",
+                                            type: "text",
+                                            isRequired: true
+                                        },
+                                        {
+                                            id: "alcohol",
+                                            label: "Alcohol Percentage",
+                                            type: "text"
+                                        },
+                                        {
+                                            id: "fullName",
+                                            label: "Full Name",
+                                            type: "text",
+                                            isDisabled: true,
+                                            computedValue: (data, itemData) => {
+                                                if (itemData.alcohol) {
+                                                    return `${itemData.name} ${itemData.alcohol}%`;
+                                                }
+                                                return itemData.name;
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
                         ]
                     }
                 }}
@@ -274,6 +320,27 @@ function CollectionsPage() {
                                 fieldProps={fieldProps}
                                 errors={fieldProps.errors}
                             />
+                            <h3>Union Type Collections</h3>
+                            <p>These ones can have multiple different field configs, here "food" and "drink". When you add an entry, you have to choose the type which you want to add.</p>
+                            <div className="pure-g" style={{ border: "1px #ccc dashed" }}>
+                                <div className="pure-u-4-5">
+                                    {fieldProps.fields.collection9 ? fieldProps.fields.collection9.map((subFields, index) => (
+                                        <div key={`meal-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px", position: "relative" }} className="pure-g">
+                                            <div className="pure-u-8-24">{subFields.name}</div>
+                                            <div className="pure-u-16-24">{subFields.calories || subFields.alcohol}</div>
+                                            {subFields.fullName ? <div className="pure-u-8-24"><br />{subFields.fullName}</div> : null}
+                                            <button type="button" onClick={() => fieldProps.onCollectionAction("collection9", "remove", index)} style={{ position: "absolute", right: "8px" }}>-</button>
+                                        </div>)
+                                    ) : null}
+                                    <div className="pure-u-1-5">
+                                        <br />
+                                        <button type="button" onClick={() => fieldProps.onCollectionAction("collection9", "add", "food")}>+ Food</button> 
+                                        {" "}
+                                        <button type="button" onClick={() => fieldProps.onCollectionAction("collection9", "add", "drink")}>+ Drink</button>
+                                    </div>
+                                    {fieldProps.errors && fieldProps.errors.collection9 ? <div style={{ color: "red" }}>Please add at least one meal!</div> : null}
+                                </div>
+                            </div>
                         </div>
                         <br />
                         <hr />
