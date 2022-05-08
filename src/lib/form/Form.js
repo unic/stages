@@ -86,23 +86,47 @@ const Form = ({
             };
         // Collections which are not required will only be checked if data has been added:
         } else if (field.type === "collection") {
-            field.fields.forEach(subField => {
+            if (Array.isArray(field.fields)) {
+                field.fields.forEach(subField => {
+                    validationData[field.id] && validationData[field.id].forEach((dataEntry, index) => {
+                        // Don't check fields if the collection isn't required and the object is empty:
+                        if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
+
+                        // Is the data entered valid, check with default field function and optionally with custom validation:
+                        const isValid = fields[subField.type] && fields[subField.type].isValid(dataEntry[subField.id], subField);
+                        const fieldIsValid = subField.customValidation ? subField.customValidation(dataEntry[subField.id], subField, isValid) : isValid;
+
+                        if (fields[subField.type] && !fieldIsValid) {
+                            errors[`${field.id}-${index}-${subField.id}`] = {
+                                value: validationData[field.id],
+                                subField
+                            };
+                        }
+                    });
+                });
+            } else {
+                // This is a union type collection, so we need to get the validation config inside the types object:
                 validationData[field.id] && validationData[field.id].forEach((dataEntry, index) => {
                     // Don't check fields if the collection isn't required and the object is empty:
                     if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
-                    // Is the data entered valid, check with default field function and optionally with custom validation:
-                    const isValid = fields[subField.type] && fields[subField.type].isValid(dataEntry[subField.id], subField);
-                    const fieldIsValid = subField.customValidation ? subField.customValidation(dataEntry[subField.id], subField, isValid) : isValid;
+                    if (field.fields[dataEntry.__typename]) {
+                        const subFields = field.fields[dataEntry.__typename];
+                        subFields.forEach(subField => {
+                            // Is the data entered valid, check with default field function and optionally with custom validation:
+                            const isValid = fields[subField.type] && fields[subField.type].isValid(dataEntry[subField.id], subField);
+                            const fieldIsValid = subField.customValidation ? subField.customValidation(dataEntry[subField.id], subField, isValid) : isValid;
 
-                    if (fields[subField.type] && !fieldIsValid) {
-                        errors[`${field.id}-${index}-${subField.id}`] = {
-                            value: validationData[field.id],
-                            subField
-                        };
+                            if (fields[subField.type] && !fieldIsValid) {
+                                errors[`${field.id}-${index}-${subField.id}`] = {
+                                    value: validationData[field.id],
+                                    subField
+                                };
+                            }
+                        });
                     }
                 });
-            });
+            }
         }
 
         if (field.type === "collection" && field.uniqEntries && validationData[field.id]) {
@@ -179,7 +203,14 @@ const Form = ({
                 // Init collections if needed (will add empty object so the row is rendered):
                 if (!newData[field.id] || newData[field.id].length === 0) newData[field.id] = [];
                 for (let i = newData[field.id].length; i < minEntries; i++) {
-                    newData[field.id].push({});
+                    if (typeof field.init === "string") {
+                        // Init union types with a specific type:
+                        newData[field.id].push({
+                            __typename: field.init
+                        });
+                    } else {
+                        newData[field.id].push({});
+                    }
                 }
             }
         });
@@ -210,13 +241,30 @@ const Form = ({
                 data[field.id] = field.computedValue(data);
             }
             if (field.type === "collection") {
-                field.fields.forEach(subField => {
-                    if (typeof subField.computedValue === "function") {
-                        data[field.id].forEach((dataEntry, index) => {
-                            data[field.id][index][subField.id] = subField.computedValue(data, data[field.id][index]);
-                        });
-                    }
-                });
+                if (Array.isArray(field.fields)) {
+                    field.fields.forEach(subField => {
+                        if (typeof subField.computedValue === "function") {
+                            data[field.id].forEach((dataEntry, index) => {
+                                data[field.id][index][subField.id] = subField.computedValue(data, data[field.id][index]);
+                            });
+                        }
+                    });
+                } else {
+                    // This is a union type collection, so we need to loop differently:
+                    data[field.id].forEach((dataEntry, index) => {
+                        if (data[field.id][index].__typename) {
+                            const unionType = data[field.id][index].__typename;
+                            if (field.fields[unionType]) {
+                                const subFields = field.fields[unionType];
+                                subFields.forEach(subField => {
+                                    if (typeof subField.computedValue === "function") {
+                                        data[field.id][index][subField.id] = subField.computedValue(data, data[field.id][index]);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
             }
         });
         return data;
@@ -329,26 +377,47 @@ const Form = ({
         // Create collections:
         } else if (field.type === "collection") {
             if (!Array.isArray(renderedFields[field.id])) renderedFields[field.id] = [];
-
             // Add existing entries:
             if (data[field.id]) {
                 data[field.id].forEach((dataEntry, index) => {
                     const subRenderedFields = {};
-                    field.fields.forEach(subField => {
-                        if (fields[subField.type]) {
-                            subRenderedFields[subField.id] = React.createElement(
-                                fields[subField.type].component,
-                                Object.assign({
-                                    key: `${field.id}-${index}-${subField.id}`,
-                                    value: dataEntry[subField.id],
-                                    error: errors[`${field.id}-${index}-${subField.id}`],
-                                    isDisabled: isDisabled || subField.isDisabled,
-                                    onChange: value => handleChange([field.id, subField.id], value, index),
-                                    onBlur: () => handleBlur([field.id, subField.id], index)
-                                }, subField)
-                            )
+                    if (Array.isArray(field.fields)) {
+                        field.fields.forEach(subField => {
+                            if (fields[subField.type]) {
+                                subRenderedFields[subField.id] = React.createElement(
+                                    fields[subField.type].component,
+                                    Object.assign({
+                                        key: `${field.id}-${index}-${subField.id}`,
+                                        value: dataEntry[subField.id],
+                                        error: errors[`${field.id}-${index}-${subField.id}`],
+                                        isDisabled: isDisabled || subField.isDisabled,
+                                        onChange: value => handleChange([field.id, subField.id], value, index),
+                                        onBlur: () => handleBlur([field.id, subField.id], index)
+                                    }, subField)
+                                )
+                            }
+                        });
+                    } else {
+                        // This is a union type collection, so we need to infer the type so we can select the right field config:
+                        if (dataEntry.__typename && field.fields[dataEntry.__typename]) {
+                            // This entries type was found, so render it:
+                            field.fields[dataEntry.__typename].forEach(subField => {
+                                if (fields[subField.type]) {
+                                    subRenderedFields[subField.id] = React.createElement(
+                                        fields[subField.type].component,
+                                        Object.assign({
+                                            key: `${field.id}-${index}-${subField.id}`,
+                                            value: dataEntry[subField.id],
+                                            error: errors[`${field.id}-${index}-${subField.id}`],
+                                            isDisabled: isDisabled || subField.isDisabled,
+                                            onChange: value => handleChange([field.id, subField.id], value, index),
+                                            onBlur: () => handleBlur([field.id, subField.id], index)
+                                        }, subField)
+                                    )
+                                }
+                            });
                         }
-                    });
+                    }
                     renderedFields[field.id].push(subRenderedFields);
                 });
             }
@@ -383,10 +452,15 @@ const Form = ({
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
         let newErrors;
 
-        // This will addd a new entry to the collection:
+        // This will add a new entry to the collection:
         if (action === "add") {
             if (!Array.isArray(newData[fieldKey])) newData[fieldKey] = [];
-            if (maxEntries > newData[fieldKey].length) newData[fieldKey].push({});
+            if (typeof index === "string" && field.fields[index]) {
+                // This is a union type collection, we're adding a specific entry:
+                if (maxEntries > newData[fieldKey].length) newData[fieldKey].push({__typename: index});
+            } else {
+                if (maxEntries > newData[fieldKey].length) newData[fieldKey].push({});
+            }
         }
 
         // This will remove a specific entry in the collection:
