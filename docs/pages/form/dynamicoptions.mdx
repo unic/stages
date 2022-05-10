@@ -23,10 +23,10 @@ You can do that by defining `dynamicOptions` like this:
         events: ["init", "change"],
         loader: async (data) => {
             if (!data || !data.post) {
-                return {
+                return [{
                     value: "",
                     text: "Select a posts comment ..."
-                };
+                }];
             }
             const response = await axios.get(`...api/posts/${data.post}/comments`);
             return response.data.map(comment => {
