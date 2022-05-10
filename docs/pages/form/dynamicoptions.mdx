@@ -1,0 +1,47 @@
+# Dynamic Options
+
+Sometimes you need select or radiogroup options which are dynamically loaded based on some other fields content. 
+You can do that by defining `dynamicOptions` like this:
+
+```
+{
+    id: "post",
+    label: "Choose a post:",
+    type: "select",
+    options: posts,
+    isRequired: true
+},
+{
+    id: "comment",
+    label: "Comment",
+    type: "select",
+    options: [{
+        value: "", text: "Select a posts comment ..."
+    }],
+    dynamicOptions: {
+        watchFields: ['post'],
+        events: ["init", "change"],
+        loader: async (data) => {
+            if (!data || !data.post) {
+                return {
+                    value: "",
+                    text: "Select a posts comment ..."
+                };
+            }
+            const response = await axios.get(`...api/posts/${data.post}/comments`);
+            return response.data.map(comment => {
+                return {
+                    value: comment.id, text: comment.name
+                }
+            });
+        }
+    },
+    isRequired: true
+}
+```
+
+The `dynamicOptions` propery in the fields config has following options, which are all required:
+
+- **watchFields**: An array of field ids which should be watched for changes
+- **events**: An array of events of the watched fields which should trigger the loader
+- **loader**: A function which returns the new options
