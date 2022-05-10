@@ -37,7 +37,7 @@ export const saveStateToLocalStorage = (state = {}) => {
 };
 
 function App() {
-    const [data, setData] = useState({});
+    const [data, setData] = useState({ post: 3 });
 
     const handleChange = (data, errors) => {
         setData(data);

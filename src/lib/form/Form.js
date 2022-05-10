@@ -37,6 +37,7 @@ const Form = ({
     const [initialData, setInitialData] = useState(false);
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
+    const [optionsLoaded, setOptionsLoaded] = useState({});
     const [asyncData, setAsyncData] = useState();
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -190,6 +191,16 @@ const Form = ({
         }
     };
 
+    // Create the dynamic options for a specific field
+    const createDynamicOptions = async (field, optionsConfig) => {
+        if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
+            const options = await optionsConfig.loader(data);
+            const newLoadedOptions = Object.assign({}, optionsLoaded);
+            newLoadedOptions[field] = options;
+            setOptionsLoaded(newLoadedOptions);
+        }
+    };
+
     /*
         Initialize collections if needed and run the validation (needed for
         the wizard to find out which steps are valid).
@@ -226,6 +237,15 @@ const Form = ({
                 setDataLoaded(true);
                 setLoading(false);
             })();
+        }
+
+        if (isVisible) {
+            // Check if a field has dynamic options and needs to initialize them:
+            parsedFieldConfig.forEach(field => {
+                if (field.dynamicOptions && field.dynamicOptions.events && field.dynamicOptions.events.indexOf("init") > -1) {
+                    createDynamicOptions(field.id, field.dynamicOptions);
+                }
+            });
         }
 
         onChange(newData, validationErrors(), id); // will trigger validations even with no inits
@@ -336,6 +356,19 @@ const Form = ({
             fieldConfig.clearFields.forEach(field => delete newData[field]);
         }
 
+        // Check if a field has dynamic options which have to be loaded:
+        parsedFieldConfig.forEach(field => {
+            if (
+                field.dynamicOptions && 
+                field.dynamicOptions.events && 
+                field.dynamicOptions.events.indexOf("change") > -1 && 
+                field.dynamicOptions.watchFields && 
+                field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
+            ) {
+                createDynamicOptions(field.id, field.dynamicOptions);
+            }
+        });
+
         onChange(newData, validationErrors(), id, fieldKey, index);
     };
 
@@ -352,6 +385,19 @@ const Form = ({
             setErrors(result.errors);
             onChange(data, result.errors, id, fieldKey, index);
         }
+
+        // Check if a field has dynamic options which have to be loaded:
+        parsedFieldConfig.forEach(field => {
+            if (
+                field.dynamicOptions && 
+                field.dynamicOptions.events && 
+                field.dynamicOptions.events.indexOf("blur") > -1 && 
+                field.dynamicOptions.watchFields && 
+                field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
+            ) {
+                createDynamicOptions(field.id, field.dynamicOptions);
+            }
+        });
     };
 
     /*
@@ -360,6 +406,8 @@ const Form = ({
     */
     parsedFieldConfig.forEach(field => {
         if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
+
+        if (optionsLoaded[field.id]) field.options = optionsLoaded[field.id];
 
         // Create regular fields:
         if (!isReservedType(field.type)) {

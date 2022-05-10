@@ -9,6 +9,8 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             <br />
             {fields.username}
             <br />
+            {fields.post} {fields.comment}
+            <br />
             <h3>Meals:</h3>
             <fieldset>
                 {fields.meals ? fields.meals.map((subFields, index) => (

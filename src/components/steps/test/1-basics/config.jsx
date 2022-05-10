@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const addressConfig = {
     fields: () => {
         return [
@@ -28,7 +30,21 @@ const AddressRender = ({ fields }) => {
 };
 
 const config = {
-    fields: (data) => {
+    asyncDataLoader: async () => {
+        const response = await axios.get('https://jsonplaceholder.typicode.com/posts');
+        return {
+            posts: response && response.data || []
+        };
+    },
+    fields: (data, asyncData) => {
+        const posts = asyncData && asyncData.posts ? asyncData.posts.map(item => {
+            return {
+                value: item.id,
+                text: item.title
+            };
+        }) : [];
+        posts.unshift({ value: "", text: "Select a post ..." });
+
         return [
             {
                 id: "country",
@@ -52,6 +68,35 @@ const config = {
                 id: "city",
                 label: "City",
                 type: "text",
+                isRequired: true
+            },
+            {
+                id: "post",
+                label: "Choose a post:",
+                type: "select",
+                options: posts,
+                isRequired: true
+            },
+            {
+                id: "comment",
+                label: "Comment",
+                type: "select",
+                options: [{
+                    value: "", text: "Select a posts comment ..."
+                }],
+                dynamicOptions: {
+                    watchFields: ['post'],
+                    events: ["init", "change"],
+                    loader: async (data) => {
+                        if (!data || !data.post) return { value: "", text: "Select a posts comment ..." };
+                        const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.post}/comments`);
+                        return response.data.map(comment => {
+                            return {
+                                value: comment.id, text: comment.name
+                            }
+                        });
+                    }
+                },
                 isRequired: true
             },
             {
