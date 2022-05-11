@@ -45,6 +45,7 @@ function AsyncPage() {
                                 dynamicOptions: {
                                     watchFields: ['post'],
                                     events: ["init", "change"],
+                                    enableCaching: true,
                                     loader: async (data) => {
                                         if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
                                         const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.post}/comments`);
