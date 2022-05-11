@@ -38,6 +38,7 @@ const Form = ({
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [optionsLoaded, setOptionsLoaded] = useState({});
+    const [optionsCache, setOptionsCache] = useState({});
     const [asyncData, setAsyncData] = useState();
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -194,9 +195,36 @@ const Form = ({
     // Create the dynamic options for a specific field
     const createDynamicOptions = async (field, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
-            const options = await optionsConfig.loader(updatedData);
-            const newLoadedOptions = Object.assign({}, optionsLoaded);
+            console.log({ watchFields: optionsConfig.watchFields });
+
+            const cacheKeyValues = {};
+            let newOptionsCache;
+            let newLoadedOptions;
+            let cacheKey;
+            let options;
+
+            if (optionsConfig.enableCaching) {
+                newOptionsCache = Object.assign({}, optionsCache);
+                optionsConfig.watchFields.forEach(f => {
+                    if (updatedData[f]) cacheKeyValues[f] = updatedData[f];
+                });
+                cacheKey = `${field}-${JSON.stringify(cacheKeyValues)}`;
+            }
+
+            if (optionsConfig.enableCaching && newOptionsCache[cacheKey]) {
+                options = newOptionsCache[cacheKey];
+            } else {
+                options = await optionsConfig.loader(updatedData);
+            }
+
+            if (optionsConfig.enableCaching) {
+                newOptionsCache[cacheKey] = options;
+                setOptionsCache(newOptionsCache);
+            }
+
+            newLoadedOptions = Object.assign({}, optionsLoaded);
             newLoadedOptions[field] = options;
+
             setOptionsLoaded(newLoadedOptions);
         }
     };
