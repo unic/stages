@@ -21,6 +21,7 @@ You can do that by defining `dynamicOptions` like this:
     dynamicOptions: {
         watchFields: ['post'],
         events: ["init", "change"],
+        enableCaching: true,
         loader: async (data) => {
             if (!data || !data.post) {
                 return [{
@@ -45,3 +46,4 @@ The `dynamicOptions` propery in the fields config has following options, which a
 - **watchFields**: An array of field ids which should be watched for changes
 - **events**: An array of events of the watched fields which should trigger the loader
 - **loader**: A function which returns the new options
+- **enableCaching**: Set this to `true` if you want loaded options to be cached to reduce api calls
