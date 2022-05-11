@@ -192,9 +192,9 @@ const Form = ({
     };
 
     // Create the dynamic options for a specific field
-    const createDynamicOptions = async (field, optionsConfig) => {
+    const createDynamicOptions = async (field, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
-            const options = await optionsConfig.loader(data);
+            const options = await optionsConfig.loader(updatedData);
             const newLoadedOptions = Object.assign({}, optionsLoaded);
             newLoadedOptions[field] = options;
             setOptionsLoaded(newLoadedOptions);
@@ -243,7 +243,7 @@ const Form = ({
             // Check if a field has dynamic options and needs to initialize them:
             parsedFieldConfig.forEach(field => {
                 if (field.dynamicOptions && field.dynamicOptions.events && field.dynamicOptions.events.indexOf("init") > -1) {
-                    createDynamicOptions(field.id, field.dynamicOptions);
+                    createDynamicOptions(field.id, field.dynamicOptions, newData);
                 }
             });
         }
@@ -365,7 +365,7 @@ const Form = ({
                 field.dynamicOptions.watchFields && 
                 field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
             ) {
-                createDynamicOptions(field.id, field.dynamicOptions);
+                createDynamicOptions(field.id, field.dynamicOptions, newData);
             }
         });
 
@@ -395,7 +395,7 @@ const Form = ({
                 field.dynamicOptions.watchFields && 
                 field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
             ) {
-                createDynamicOptions(field.id, field.dynamicOptions);
+                createDynamicOptions(field.id, field.dynamicOptions, data);
             }
         });
     };
