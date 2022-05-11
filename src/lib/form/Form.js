@@ -195,14 +195,13 @@ const Form = ({
     // Create the dynamic options for a specific field
     const createDynamicOptions = async (field, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
-            console.log({ watchFields: optionsConfig.watchFields });
-
             const cacheKeyValues = {};
             let newOptionsCache;
             let newLoadedOptions;
             let cacheKey;
             let options;
 
+            // Handle caching of loaded options if enabled:
             if (optionsConfig.enableCaching) {
                 newOptionsCache = Object.assign({}, optionsCache);
                 optionsConfig.watchFields.forEach(f => {
@@ -211,6 +210,7 @@ const Form = ({
                 cacheKey = `${field}-${JSON.stringify(cacheKeyValues)}`;
             }
 
+            // Load async data or use the cache:
             if (optionsConfig.enableCaching && newOptionsCache[cacheKey]) {
                 options = newOptionsCache[cacheKey];
             } else {
