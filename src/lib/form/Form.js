@@ -433,14 +433,16 @@ const Form = ({
         with the correct data in them.
     */
     parsedFieldConfig.forEach(field => {
+        const cleanedField = Object.assign({}, field);
         if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
 
-        if (optionsLoaded[field.id]) field.options = optionsLoaded[field.id];
+        if (optionsLoaded[field.id]) cleanedField.options = optionsLoaded[field.id];
 
         // Remove special props from field before rendering:
-        delete field.computedValue;
-        delete field.filter;
-        delete field.clearFields;
+        delete cleanedField.computedValue;
+        delete cleanedField.filter;
+        delete cleanedField.clearFields;
+        delete cleanedField.dynamicOptions;
 
         // Create regular fields:
         if (!isReservedType(field.type)) {
@@ -453,7 +455,7 @@ const Form = ({
                     isDisabled: isDisabled || field.isDisabled,
                     onChange: value => handleChange(field.id, value),
                     onBlur: () => handleBlur(field.id)
-                }, field)
+                }, cleanedField)
             );
         // Create collections:
         } else if (field.type === "collection") {
