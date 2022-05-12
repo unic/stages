@@ -437,6 +437,11 @@ const Form = ({
 
         if (optionsLoaded[field.id]) field.options = optionsLoaded[field.id];
 
+        // Remove special props from field before rendering:
+        delete field.computedValue;
+        delete field.filter;
+        delete field.clearFields;
+
         // Create regular fields:
         if (!isReservedType(field.type)) {
             renderedFields[field.id] = React.createElement(
