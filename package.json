@@ -1,7 +1,7 @@
 {
   "name": "react-stages",
   "description": "Stages, super flexible wizard and form components for React",
-  "version": "0.3.17",
+  "version": "0.3.18",
   "author": "Fredi Bach",
   "license": "MIT",
   "private": false,
