@@ -339,9 +339,9 @@ const Form = ({
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
     */
-    const handleChange = (fieldKey, value, index) => {
+    const handleChange = (fieldKey, value, index, outsideData) => {
         const fieldConfig = getConfigForField(fieldKey);
-        let newData = Object.assign({}, data);
+        let newData = Object.assign({}, outsideData || data);
         let newValue;
 
         const filterValue = v => {
