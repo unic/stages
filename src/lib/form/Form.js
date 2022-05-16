@@ -225,7 +225,7 @@ const Form = ({
             if (optionsConfig.enableCaching && optionsCache[cacheKey]) {
                 options = optionsCache[cacheKey];
             } else {
-                options = await optionsConfig.loader(updatedData);
+                options = await optionsConfig.loader(updatedData, handleChange);
             }
 
             if (optionsConfig.enableCaching) {

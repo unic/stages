@@ -90,10 +90,12 @@ const config = {
                     enableCaching: true,
                     loader: async (data) => {
                         if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
-                        const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.post}/comments`);
-                        return response.data.map(comment => {
+                        console.log(`${data.post}.1 start`);
+                        const response = await axios.get(`https://fakeql.com/fragilegraphql/3f6450ed0949588b5fe109a740272754?query={users{id,firstname,age}}`);
+                        console.log(`${data.post}.1 end`);
+                        return response.data.data.users.map(entry => {
                             return {
-                                value: comment.id, text: comment.name
+                                value: entry.id, text: entry.firstname
                             }
                         });
                     }
@@ -113,10 +115,12 @@ const config = {
                     enableCaching: true,
                     loader: async (data) => {
                         if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
-                        const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.post}/comments`);
-                        return response.data.map(comment => {
+                        console.log(`${data.post}.2 start`);
+                        const response = await axios.get(`https://fakeql.com/fragilegraphql/3f6450ed0949588b5fe109a740272754?query={users{id,firstname,age}}`);
+                        console.log(`${data.post}.2 end`);
+                        return response.data.data.users.map(entry => {
                             return {
-                                value: comment.id, text: comment.name
+                                value: entry.id, text: entry.firstname
                             }
                         });
                     }
