@@ -192,18 +192,29 @@ const Form = ({
         }
     };
 
+    // Helper state function so we always get the latest options cache when updating from callback:
+    const updateOptionsCache = (key, options) => {
+        setOptionsCache(latestCache => {
+            return Object.assign({}, latestCache, {[key]: options});
+        });
+    };
+
+    // Helper state function so we always get the latest options loaded when updating from callback:
+    const updateOptionsLoaded = (key, options) => {
+        setOptionsLoaded(latestCache => {
+            return Object.assign({}, latestCache, {[key]: options});
+        });
+    };
+
     // Create the dynamic options for a specific field
     const createDynamicOptions = async (field, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
             const cacheKeyValues = {};
-            let newOptionsCache;
-            let newLoadedOptions;
             let cacheKey;
             let options;
 
             // Handle caching of loaded options if enabled:
             if (optionsConfig.enableCaching) {
-                newOptionsCache = Object.assign({}, optionsCache);
                 optionsConfig.watchFields.forEach(f => {
                     if (updatedData[f]) cacheKeyValues[f] = updatedData[f];
                 });
@@ -211,21 +222,17 @@ const Form = ({
             }
 
             // Load async data or use the cache:
-            if (optionsConfig.enableCaching && newOptionsCache[cacheKey]) {
-                options = newOptionsCache[cacheKey];
+            if (optionsConfig.enableCaching && optionsCache[cacheKey]) {
+                options = optionsCache[cacheKey];
             } else {
                 options = await optionsConfig.loader(updatedData);
             }
 
             if (optionsConfig.enableCaching) {
-                newOptionsCache[cacheKey] = options;
-                setOptionsCache(newOptionsCache);
+                updateOptionsCache(cacheKey, options);
             }
 
-            newLoadedOptions = Object.assign({}, optionsLoaded);
-            newLoadedOptions[field] = options;
-
-            setOptionsLoaded(newLoadedOptions);
+            updateOptionsLoaded(field, options);
         }
     };
 

@@ -9,7 +9,7 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             <br />
             {fields.username}
             <br />
-            {fields.post} {fields.comment}
+            {fields.post} {fields.comment1} {fields.comment2}
             <br />
             <h3>Meals:</h3>
             <fieldset>

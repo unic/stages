@@ -78,14 +78,37 @@ const config = {
                 isRequired: true
             },
             {
-                id: "comment",
-                label: "Comment",
+                id: "comment1",
+                label: "Comment 1",
                 type: "select",
                 options: [{
                     value: "", text: "Select a posts comment ..."
                 }],
                 dynamicOptions: {
                     watchFields: ['post'],
+                    events: ["init", "change"],
+                    enableCaching: true,
+                    loader: async (data) => {
+                        if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
+                        const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.post}/comments`);
+                        return response.data.map(comment => {
+                            return {
+                                value: comment.id, text: comment.name
+                            }
+                        });
+                    }
+                },
+                isRequired: true
+            },
+            {
+                id: "comment2",
+                label: "Comment 2",
+                type: "select",
+                options: [{
+                    value: "", text: "Select another posts comment ..."
+                }],
+                dynamicOptions: {
+                    watchFields: ['post', 'comment'],
                     events: ["init", "change"],
                     enableCaching: true,
                     loader: async (data) => {
