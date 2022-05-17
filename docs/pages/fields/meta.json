@@ -2,5 +2,6 @@
     "basics": "Basics",
     "fieldsets": "Field Sets",
     "fieldcomponent": "A Field Component",
-    "defaultvalidation": "Default Validation"
+    "defaultvalidation": "Default Validation",
+    "mapping": "Mapping"
 }

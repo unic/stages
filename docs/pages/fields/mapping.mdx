@@ -1,0 +1,61 @@
+# Mapping
+
+Stages can work with pretty much any field component, but often you have to map the properties 
+first to make them work.
+
+Here's an example of using Downshift with Stages:
+
+```
+const MappedAutocomplete = (props) => {
+  const mappedProps = { ...props };
+  mappedProps.disabled = props.isDisabled;
+  mappedProps.value = props.value || '';
+  delete mappedProps.isDisabled;
+  delete mappedProps.isRequired;
+  return (
+    <Downshift
+        onChange={(selection) => props.onChange(selection)}
+        itemToString={(item) => (item ? item.value : '')}
+    >
+      {({
+          getInputProps,
+          getItemProps,
+          getMenuProps,
+          isOpen,
+          inputValue,
+          highlightedIndex,
+          selectedItem
+      }) => {
+        const inputProps = getInputProps();
+        inputProps.value = isOpen ? inputValue : props.value || '';
+        return (
+          <div>
+            <Input {...(inputProps as any)} />
+            <div
+                {...getMenuProps({}, { suppressRefError: true })}
+                className={styles.downshiftMenu}
+            >
+              {isOpen
+                ? props.options
+                    .filter((item) => !inputValue || item.includes(inputValue))
+                    .map((item, index) => {
+                      const itemProps = getItemProps({
+                        key: item,
+                        index,
+                        item
+                      });
+                      return (
+                        <div {...itemProps} key={item}>
+                          {item}
+                        </div>
+                      );
+                    })
+                : null}
+            </div>
+          </div>
+        );
+      }}
+    </Downshift>
+  );
+};
+```
