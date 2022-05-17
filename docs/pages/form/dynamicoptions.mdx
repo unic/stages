@@ -46,4 +46,44 @@ The `dynamicOptions` propery in the fields config has following options, which a
 - **watchFields**: An array of field ids which should be watched for changes
 - **events**: An array of events of the watched fields which should trigger the loader
 - **loader**: A function which returns the new options
+    - **data props**: This contains the latest data of the form, normally used for the API call params
+    - **handleChange prop**: Sometimes it's useful to set data of other fields with what the api call returned, use this callback to do that
 - **enableCaching**: Set this to `true` if you want loaded options to be cached to reduce api calls
+
+An example for a more complicated loader:
+
+```
+const loadCities = async (data, handleChange) => {
+
+    // Return empty options if not all required values are set:
+
+    if (
+        !data || 
+        !data.country || 
+        !data.postalCode || 
+        !isValidPostalCode(data.country, data.postalCode)
+    ) return [];
+
+
+    // Load all cities for this code:
+
+    const cities = await api('cities', {
+      country: data.country,
+      postalCode: data.postalCode
+    });
+
+
+    // If there is only one city for this postalcode, directly
+    // set the city (there can be multiple locations for one code).
+    // We call handleChange so that the loader for the streets options
+    // is automatically triggered:
+
+    if (cities.length === 1) {
+      data.city = cities[0];
+      handleChange('city', data.city, undefined, data);
+      setData(data);
+    }
+
+    return cities;
+  };
+```
