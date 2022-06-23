@@ -1,5 +1,5 @@
 import React, { Fragment, useState } from "react";
-import { Stages, Navigation, Progression, HashRouter } from "./lib/stages";
+import { Stages, Navigation, Progression, HashRouter, Debugger } from "./lib/stages";
 import { Form, Actions } from "./lib/form";
 import fields from "./lib/fieldsets/plain";
 
@@ -79,26 +79,29 @@ function App() {
     };
 
     return (
-        <Form
-            id="basics"
-            data={data}
-            config={basicsConfig}
-            render={({ actionProps, fieldProps, loading }) => (
-                <div>
-                    <FormLayout
-                        loading={loading}
-                        fields={<BasicsRenderer {...fieldProps} />}
-                        actions={<Actions
-                            config={createActionButtonConfig("first", () => {}, onSubmit, data)}
-                            {...actionProps}
-                        />}
-                    />
-                </div>
-            )}
-            fields={fields}
-            onChange={handleChange}
-            validateOn={["action", "blur"]}
-        />
+        <>
+            <Form
+                id="basics"
+                data={data}
+                config={basicsConfig}
+                render={({ actionProps, fieldProps, loading }) => (
+                    <div>
+                        <FormLayout
+                            loading={loading}
+                            fields={<BasicsRenderer {...fieldProps} />}
+                            actions={<Actions
+                                config={createActionButtonConfig("first", () => {}, onSubmit, data)}
+                                {...actionProps}
+                            />}
+                        />
+                    </div>
+                )}
+                fields={fields}
+                onChange={handleChange}
+                validateOn={["action", "blur"]}
+            />
+            <Debugger />
+        </>
     );
 
     /*
