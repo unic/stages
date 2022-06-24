@@ -35,3 +35,21 @@ Additionally you can add initial data which helps you debug the specific step:
 ```
 
 This is of course helpful in automated test, as well. Just make sure that you run your interface tests after Stages has initialized.
+
+## Debugger Component
+
+Stages comes with a componnet which helps you debug things. Use it like this:
+
+```
+import { Debugger } from "./lib/stages";
+
+...
+
+return (
+    <>
+        <Form ... />
+        <Debugger />
+    </>
+);
+
+```
