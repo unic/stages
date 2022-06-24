@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import beautify from 'json-beautify';
+import get from "lodash.get";
 
 const Debugger = () => {
     const [data, setData] = useState({});
     const [selection, setSelection] = useState({});
+    const [paths, setPaths] = useState({});
     const [showDebugger, setShowDebugger] = useState(false);
 
     const getData = (eventData) => {
@@ -54,7 +56,7 @@ const Debugger = () => {
             {showDebugger ? Object.keys(data).map(key => {
                 const keySplit = key.split("-");
                 keySplit.pop();
-                const output = beautify(data[selection.key][selection.tab], null, 2);
+                const output = beautify(paths[key] ? get(data[selection.key][selection.tab], paths[key] || "") : data[selection.key][selection.tab], null, 2);
                 return (
                     <div key={`${key}-${selection.tab}`}>
                         <h3 style={{
@@ -123,12 +125,28 @@ const Debugger = () => {
                                 Field Config
                             </li>
                         </ul>
+                        <input value={paths[key] || ""} placeholder="your.data.filter.path" onChange={e => {
+                            const newPaths = Object.assign({}, paths);
+                            newPaths[key] = e.target.value;
+                            setPaths(newPaths);
+                        }} style={{
+                            width: "calc(100% - 12px)",
+                            minWidth: "calc(100% - 12px)",
+                            maxWidth: "calc(100% - 12px)",
+                            fontSize: "12px",
+                            border: "1px #ccc solid",
+                            background: "#fbfbfb",
+                            marginTop: "4px",
+                            padding: "4px",
+                            overflowX: "scroll",
+                            whiteSpace: "pre"
+                        }} />
                         {selection && selection.key === key ? (
                             <textarea readOnly style={{
                                 width: "calc(100% - 8px)",
                                 minWidth: "calc(100% - 8px)",
                                 maxWidth: "calc(100% - 8px)",
-                                height: "50vh",
+                                height: "200px",
                                 fontSize: "10px",
                                 border: "1px #ccc solid",
                                 background: "#fbfbfb",
