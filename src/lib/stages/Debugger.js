@@ -54,6 +54,7 @@ const Debugger = () => {
             {showDebugger ? Object.keys(data).map(key => {
                 const keySplit = key.split("-");
                 keySplit.pop();
+                const output = beautify(data[selection.key][selection.tab], null, 2);
                 return (
                     <div key={`${key}-${selection.tab}`}>
                         <h3 style={{
@@ -133,8 +134,8 @@ const Debugger = () => {
                                 background: "#fbfbfb",
                                 marginTop: "8px",
                                 overflowX: "scroll",
-                                whiteSpace: "nowrap"
-                            }} value={beautify(data[selection.key][selection.tab], null, 2)} />
+                                whiteSpace: "pre"
+                            }} value={output} />
                         ) : null}
                     </div>
                 );
