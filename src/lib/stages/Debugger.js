@@ -4,21 +4,31 @@ import get from "lodash.get";
 
 const Debugger = () => {
     const [data, setData] = useState({});
+    const [logHistory, setLogHistory] = useState({});
     const [selection, setSelection] = useState({});
     const [paths, setPaths] = useState({});
     const [showDebugger, setShowDebugger] = useState(false);
 
-    const getData = (eventData) => {
-        const newData = Object.assign(data, {});
-        const firstKey = Object.keys(newData)[0];
-        newData[eventData.id] = eventData;
-        setData({...newData});
-        setSelection(sel => {
-            return {
-                key: !sel.key ? firstKey : sel.key,
-                tab: !sel.tab ? "data" : sel.tab
-            };
-        });
+    const getData = (eventData, uniqId) => {
+        if (typeof eventData === "string") {
+            if (!logHistory[uniqId]) logHistory[uniqId] = [];
+            logHistory[uniqId].push({
+                action: eventData,
+                time: + new Date()
+            });
+            setLogHistory(logHistory);
+        } else {
+            const newData = Object.assign(data, {});
+            const firstKey = Object.keys(newData)[0];
+            newData[eventData.id] = eventData;
+            setData({...newData});
+            setSelection(sel => {
+                return {
+                    key: !sel.key ? firstKey : sel.key,
+                    tab: !sel.tab ? "data" : sel.tab
+                };
+            });
+        }
     };
 
     useEffect(() => {
@@ -56,7 +66,12 @@ const Debugger = () => {
             {showDebugger ? Object.keys(data).map(key => {
                 const keySplit = key.split("-");
                 keySplit.pop();
-                const output = beautify(paths[key] ? get(data[selection.key][selection.tab], paths[key] || "") : data[selection.key][selection.tab], null, 2);
+                let output = "";
+                if (selection.tab === "logs") {
+                    output = logHistory[selection.key] ? logHistory[selection.key].map(l => `${l.time}: ${l.action}`).join("\n") : "";
+                } else {
+                    output = beautify(paths[key] ? get(data[selection.key][selection.tab], paths[key] || "") : data[selection.key][selection.tab], null, 2);
+                }
                 return (
                     <div key={`${key}-${selection.tab}`}>
                         <h3 style={{
@@ -123,6 +138,12 @@ const Debugger = () => {
                                 onClick={() => setSelection({key: key, tab: "parsedFieldConfig"})}
                             >
                                 Field Config
+                            </li>
+                            <li
+                                style={{ cursor: "pointer", padding: 0, margin: 0, color: selection.key === key && selection.tab === "logs" ? "#f30" : "#000" }}
+                                onClick={() => setSelection({key: key, tab: "logs"})}
+                            >
+                                Logs
                             </li>
                         </ul>
                         <input value={paths[key] || ""} placeholder="your.data.filter.path" onChange={e => {

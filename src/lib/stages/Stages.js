@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import findIndex from "lodash.findindex";
 
+const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
+
 /*
     The Stages component is your main component to build everything from simple wizards
     to complicated dynamic multi stage form constructs. Some of it's possible usecases:
@@ -57,6 +59,8 @@ const Stages = ({
         const newData = Object.assign({}, data);
         const key = keys && keys[id] ? keys[id].key : id;
 
+        if (isDebugging()) window.stagesLogging(`Handle onChange for "${key}"`, uniqId);
+
         errors[id] = stepErrors;
         setErrors(Object.assign({}, errors));
 
@@ -70,7 +74,7 @@ const Stages = ({
         If there is a logging function registered on the window (Stages browser extension), send data to it:
     */
     useEffect(() => {
-        if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
+        if (isDebugging()) {
             window.stagesLogging({ id: uniqId, keys, data, errors, currentStep }); 
         }
     }, [keys, data, errors, currentStep]);
@@ -79,6 +83,7 @@ const Stages = ({
         Run through steps first to get all the keys:
     */
     useEffect(() => {
+        if (isDebugging()) window.stagesLogging(`Init Stages`, uniqId);
         children.map((item, index) => item({
             index,
             setStepKey,
@@ -128,6 +133,8 @@ const Stages = ({
     */
     const onNav = (navType, nr) => {
         let newStepNr = currentStep;
+
+        if (isDebugging()) window.stagesLogging(`On nav "${navType}" -> "${nr}"`, uniqId);
         
         if (navType === "next") {
             // Find the next step that is visible:
@@ -188,6 +195,7 @@ const Stages = ({
     */
     const onChangeStep = step => {
         const lastValidStep = calculateLastValidStep();
+        if (isDebugging()) window.stagesLogging(`On change step "${step}"`, uniqId);
         if (lastValidStep + 1 >= step || validateOnStepChange === false) setCurrentStep(step);
     };
 

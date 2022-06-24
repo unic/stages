@@ -15,6 +15,8 @@ const isElementInViewport = el => {
     );
 }
 
+const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
+
 /*
     This is the form component used in Stages. You can use it for individual steps in a wizard
     or on it's own for one stage forms.
@@ -47,14 +49,17 @@ const Form = ({
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
-        if (data && !initialData) setInitialData(data);
+        if (data && !initialData) {
+            if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
+            setInitialData(data);
+        }
     }, [data]);
 
     /*
         If there is a logging function registered on the window (Stages browser extension), send data to it:
     */
     useEffect(() => {
-        if (typeof window !== "undefined" && typeof window.stagesLogging === "function") {
+        if (isDebugging()) {
             window.stagesLogging({ id: uniqId, data, errors, isDirty, loading, parsedFieldConfig }); 
         }
     }, [data, errors, isDirty, loading]);
@@ -66,6 +71,8 @@ const Form = ({
         This function is used to validate one single field. It returns the updated error and firstErrorField object
     */
     const validateField = (field, validationData, errors, firstErrorField) => {
+        if (isDebugging()) window.stagesLogging(`Validate field "${field.id}"`, uniqId);
+
         // Is the data entered valid, check with default field function and optionally with custom validation:
         const isValid = !isReservedType(field.type) && fields[field.type].isValid(validationData[field.id], field);
         const fieldIsValid = !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: validationData[field.id], allData: validationData, fieldConfig: field, isValid }) : isValid;
@@ -176,6 +183,7 @@ const Form = ({
     // To make sure that subforms are being validated, we have to run validation each time validation is being run on the parent component:
     useEffect(() => {
         if (typeof onValidation === "function" && parentRunValidation) {
+            if (isDebugging()) window.stagesLogging(`Get errors on validation`, uniqId);
             let errors = validationErrors(true);
             setErrors(errors);
             onValidation(errors);
@@ -186,6 +194,7 @@ const Form = ({
         This is the callback which sub forms call to bubble up validation errors from within the subform.
     */
     const handleSubValidation = (subId, subErrors) => {
+        if (isDebugging()) window.stagesLogging(`Get sub form errors for sub id "${subId}"`, uniqId);
         validationErrors(true);
         if (subErrors && Object.keys(subErrors).length > 0) {
             errors[subId] = subErrors;
@@ -194,6 +203,7 @@ const Form = ({
 
     // Helper state function so we always get the latest options cache when updating from callback:
     const updateOptionsCache = (key, options) => {
+        if (isDebugging()) window.stagesLogging(`Update options cache for "${key}"`, uniqId);
         setOptionsCache(latestCache => {
             return Object.assign({}, latestCache, {[key]: options});
         });
@@ -201,6 +211,7 @@ const Form = ({
 
     // Helper state function so we always get the latest options loaded when updating from callback:
     const updateOptionsLoaded = (key, options) => {
+        if (isDebugging()) window.stagesLogging(`Update options loaded for "${key}"`, uniqId);
         setOptionsLoaded(latestCache => {
             return Object.assign({}, latestCache, {[key]: options});
         });
@@ -212,6 +223,8 @@ const Form = ({
             const cacheKeyValues = {};
             let cacheKey;
             let options;
+
+            if (isDebugging()) window.stagesLogging(`Create dynamic options for field "${field}"`, uniqId);
 
             // Handle caching of loaded options if enabled:
             if (optionsConfig.enableCaching) {
@@ -243,6 +256,8 @@ const Form = ({
     useEffect(() => {
         let newData = Object.assign({}, data);
         
+        if (isDebugging()) window.stagesLogging(`Is visible change to "${isVisible ? "visible" : "invisible"}"`, uniqId);
+
         parsedFieldConfig.forEach(field => {
             if (field.type === "collection" && field.init) {
                 const minEntries = field.min ? Number(field.min) : 1;
@@ -344,6 +359,8 @@ const Form = ({
         let newData = Object.assign({}, outsideData || data);
         let newValue;
 
+        if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
+
         const filterValue = v => {
             let field;
             if (Array.isArray(fieldKey)) {
@@ -411,8 +428,10 @@ const Form = ({
         This function is called on each fields onBlur. It only runs validation 
         if validation is enabled for blur events.
     */
-    const handleBlur = (fieldKey, index) => {    
+    const handleBlur = (fieldKey, index) => {
         const fieldConfig = getConfigForField(fieldKey);
+
+        if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
         // Only validate if blur validation is enabled:
         if (validateOn.indexOf("blur") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("blur") > -1)) {
@@ -542,6 +561,8 @@ const Form = ({
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
         let newErrors;
 
+        if (isDebugging()) window.stagesLogging(`On collection action "${fieldKey}"`, uniqId);
+
         // This will add a new entry to the collection:
         if (action === "add") {
             if (!Array.isArray(newData[fieldKey])) newData[fieldKey] = [];
@@ -572,6 +593,8 @@ const Form = ({
         or just the supplied callback.
     */
     const handleActionClick = (callback, validate) => {
+        if (isDebugging()) window.stagesLogging(`Handle action click`, uniqId);
+
         // Only validate if action validation is enabled (which is the default):
         if (validateOn.indexOf("action") > -1) {
             if (validate) {
