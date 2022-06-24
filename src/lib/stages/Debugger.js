@@ -123,7 +123,7 @@ const Debugger = () => {
                             </li>
                         </ul>
                         {selection && selection.key === key ? (
-                            <textarea style={{
+                            <textarea readOnly style={{
                                 width: "calc(100% - 8px)",
                                 minWidth: "calc(100% - 8px)",
                                 maxWidth: "calc(100% - 8px)",
@@ -134,7 +134,7 @@ const Debugger = () => {
                                 marginTop: "8px",
                                 overflowX: "scroll",
                                 whiteSpace: "nowrap"
-                            }} defaultValue={beautify(data[selection.key][selection.tab], null, 2)} />
+                            }} value={beautify(data[selection.key][selection.tab], null, 2)} />
                         ) : null}
                     </div>
                 );

@@ -132,49 +132,6 @@ const config = {
                 label: "Username",
                 type: "text",
                 isRequired: true
-            },
-            {
-                id: "meals",
-                type: "collection",
-                isRequired: true,
-                init: "food",
-                fields: {
-                    food: [
-                        {
-                            id: "name",
-                            label: "Food Name",
-                            type: "text",
-                            isRequired: true
-                        },
-                        {
-                            id: "calories",
-                            label: "Calories",
-                            type: "text"
-                        }
-                    ],
-                    drink: [
-                        {
-                            id: "name",
-                            label: "Drink Name",
-                            type: "text",
-                            isRequired: true
-                        },
-                        {
-                            id: "alcohol",
-                            label: "Alcohol Percentage",
-                            type: "text"
-                        },
-                        {
-                            id: "fullName",
-                            label: "Full Name",
-                            type: "text",
-                            isDisabled: true,
-                            computedValue: (data, itemData) => {
-                                return `${itemData.name} ${itemData.alcohol}%`;
-                            }
-                        }
-                    ]
-                }
             }
         ];
     }
