@@ -85,7 +85,7 @@ const Debugger = () => {
                                 fontSize: "11px",
                                 padding: "1px 4px"
                             }}>errors</span> : null}
-                            {!data[key].loading ? <span style={{
+                            {data[key].loading ? <span style={{
                                 display: "inline-block",
                                 position: "absolute",
                                 top: "5px",
