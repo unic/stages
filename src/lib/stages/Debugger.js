@@ -119,7 +119,7 @@ const Debugger = () => {
                             display: "flex",
                             margin: "8px 0 0 0",
                             padding: 0,
-                            gap: "8px"
+                            gap: "24px"
                         }}>
                             <li
                                 style={{ cursor: "pointer", padding: 0, margin: 0, color: selection.key === key && selection.tab === "data" ? "#f30" : "#000" }}
