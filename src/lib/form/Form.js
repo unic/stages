@@ -180,6 +180,15 @@ const Form = ({
         return errors;
     };
 
+    /*
+        This function can be used to gather form errors without populating the error object, 
+        which can be useful in certain cases where you don't want to display errors on the fields 
+        but for example disabling submission of the form
+    */
+    const silentlyGetValidationErrors = () => {
+        return validationErrors(false);
+    };
+
     // To make sure that subforms are being validated, we have to run validation each time validation is being run on the parent component:
     useEffect(() => {
         if (typeof onValidation === "function" && parentRunValidation) {
@@ -616,7 +625,7 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: { handleActionClick, isDisabled, isDirty },
+        actionProps: { handleActionClick, isDisabled, isDirty, silentlyGetValidationErrors },
         fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty },
         loading
     }) : null;
