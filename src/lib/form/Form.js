@@ -17,6 +17,8 @@ const isElementInViewport = el => {
 
 const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
 
+const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
+
 /*
     This is the form component used in Stages. You can use it for individual steps in a wizard
     or on it's own for one stage forms.
@@ -233,6 +235,11 @@ const Form = ({
             let cacheKey;
             let options;
 
+            // Variables used to prevent race conditions with the async options calls:
+            const newNr = typeof latestOptionsRequestIDsPerField[field] === "number" ? latestOptionsRequestIDsPerField[field] + 1 : 0;
+            let nrAfterAsyncCall = newNr;
+            latestOptionsRequestIDsPerField[field] = newNr;
+
             if (isDebugging()) window.stagesLogging(`Create dynamic options for field "${field}"`, uniqId);
 
             // Handle caching of loaded options if enabled:
@@ -248,13 +255,18 @@ const Form = ({
                 options = optionsCache[cacheKey];
             } else {
                 options = await optionsConfig.loader(updatedData, handleChange);
+                nrAfterAsyncCall = latestOptionsRequestIDsPerField[field];
             }
 
             if (optionsConfig.enableCaching) {
                 updateOptionsCache(cacheKey, options);
             }
 
-            updateOptionsLoaded(field, options);
+
+            // Only update options if this is the latest option call for this field:
+            if (nrAfterAsyncCall === newNr) {
+                updateOptionsLoaded(field, options);
+            }
         }
     };
 
