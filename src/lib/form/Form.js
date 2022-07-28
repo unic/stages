@@ -426,7 +426,12 @@ const Form = ({
 
         // If there are any fields to be cleared, do that now:
         if (fieldConfig.clearFields && Array.isArray(fieldConfig.clearFields)) {
-            fieldConfig.clearFields.forEach(field => delete newData[field]);
+            const newOptionsLoaded = Object.assign({}, optionsLoaded);
+            fieldConfig.clearFields.forEach((field) => {
+                delete newData[field];
+                delete newOptionsLoaded[field];
+            });
+            setOptionsLoaded(newOptionsLoaded);
         }
 
         // Check if a field has dynamic options which have to be loaded:
