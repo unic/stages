@@ -462,7 +462,7 @@ const Form = ({
         // Only validate if blur validation is enabled:
         if (validateOn.indexOf("blur") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("blur") > -1)) {
             const result = validateField(fieldConfig, data, errors);
-            setErrors(result.errors);
+            setErrors(Object.assign({}, result.errors));
             onChange(data, result.errors, id, fieldKey, index);
         }
 
