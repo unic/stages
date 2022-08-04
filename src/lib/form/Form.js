@@ -441,7 +441,11 @@ const Form = ({
                 field.dynamicOptions.events && 
                 field.dynamicOptions.events.indexOf("change") > -1 && 
                 field.dynamicOptions.watchFields && 
-                field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
+                field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1 && 
+                (!fieldConfig.dynamicOptions ||
+                    (fieldConfig.dynamicOptions &&
+                      optionsLoaded[fieldConfig.id] &&
+                      optionsLoaded[fieldConfig.id].indexOf(newData[fieldConfig.id]) > -1))
             ) {
                 createDynamicOptions(field.id, field.dynamicOptions, newData);
             }
