@@ -62,7 +62,8 @@ const config = {
                 id: "postalcode",
                 label: "Postalcode",
                 type: "text",
-                isRequired: true
+                isRequired: true,
+                cleanUp: value => value.trim()
             },
             {
                 id: "city",

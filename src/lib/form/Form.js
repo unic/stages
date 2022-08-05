@@ -461,14 +461,21 @@ const Form = ({
     */
     const handleBlur = (fieldKey, index) => {
         const fieldConfig = getConfigForField(fieldKey);
+        const newData = Object.assign({}, data);
 
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
+        // Run field cleanUp function if one is set:
+        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function") {
+            newData[fieldConfig.id] = fieldConfig.cleanUp(newData[fieldConfig.id]);
+            onChange(newData, validationErrors(), id, fieldKey, index);
+        }
+
         // Only validate if blur validation is enabled:
         if (validateOn.indexOf("blur") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("blur") > -1)) {
-            const result = validateField(fieldConfig, data, errors);
+            const result = validateField(fieldConfig, newData, errors);
             setErrors(Object.assign({}, result.errors));
-            onChange(data, result.errors, id, fieldKey, index);
+            onChange(newData, result.errors, id, fieldKey, index);
         }
 
         // Check if a field has dynamic options which have to be loaded:
@@ -480,7 +487,7 @@ const Form = ({
                 field.dynamicOptions.watchFields && 
                 field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
             ) {
-                createDynamicOptions(field.id, field.dynamicOptions, data);
+                createDynamicOptions(field.id, field.dynamicOptions, newData);
             }
         });
     };
