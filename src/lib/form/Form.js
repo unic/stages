@@ -266,6 +266,9 @@ const Form = ({
             // Only update options if this is the latest option call for this field:
             if (nrAfterAsyncCall === newNr) {
                 updateOptionsLoaded(field, options);
+                if (optionsConfig.onOptionsChange && typeof optionsConfig.onOptionsChange === "function") {
+                    optionsConfig.onOptionsChange(options, updatedData, handleChange);
+                }
             }
         }
     };
