@@ -19,6 +19,9 @@ const isDebugging = () => typeof window !== "undefined" && typeof window.stagesL
 
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
 
+let lastOnChange = 0; // Used to throttle onChange validations
+let timeoutRef; // Timeout ref used to throttle onChange validations
+
 /*
     This is the form component used in Stages. You can use it for individual steps in a wizard
     or on it's own for one stage forms.
@@ -34,7 +37,8 @@ const Form = ({
     id,
     onValidation,
     parentRunValidation,
-    validateOn
+    validateOn,
+    throttleWait
 }) => {
     const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
@@ -379,6 +383,17 @@ const Form = ({
         and run the validation on the new data (which is sent to the onChange, as well).
     */
     const handleChange = (fieldKey, value, index, outsideData) => {
+        let throttleValidation = false;
+        const timestamp = +new Date();
+
+        if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
+            if (timeoutRef) clearTimeout(timeoutRef);
+            timeoutRef = setTimeout(() => handleChange(fieldKey, value, index, outsideData), 100);
+            throttleValidation = true;
+        }
+
+        if (!throttleValidation || lastOnChange === 0) lastOnChange = timestamp;
+
         const fieldConfig = getConfigForField(fieldKey);
         let newData = Object.assign({}, outsideData || data);
         let newValue;
@@ -418,8 +433,13 @@ const Form = ({
         // Now run over all computed value fields to recalculate all dynamic data:
         newData = computeValues(parsedFieldConfig, newData);
 
-        // Only validate if change validation is enabled:
-        if (validateOn.indexOf("change") > -1 || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("change") > -1)) {
+        // Only validate if change or throttledChange validation is enabled:
+        if (
+            validateOn.indexOf('change') > -1 ||
+            (fieldConfig.validateOn && fieldConfig.validateOn.indexOf('change') > -1) ||
+            (validateOn.indexOf('throttledChange') && !throttleValidation) ||
+            (fieldConfig.validateOn && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation)
+        ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(result.errors);
         }
@@ -465,6 +485,8 @@ const Form = ({
     const handleBlur = (fieldKey, index) => {
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, data);
+
+        lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 

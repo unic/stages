@@ -63,13 +63,17 @@ const config = {
                 label: "Postalcode",
                 type: "text",
                 isRequired: true,
-                cleanUp: value => value.trim()
+                cleanUp: value => value.trim(),
+                validateOn: ["change", "blur", "action"],
+                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
             },
             {
                 id: "city",
                 label: "City",
                 type: "text",
-                isRequired: true
+                isRequired: true,
+                validateOn: ["throttledChange", "blur", "action"],
+                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
             },
             {
                 id: "post",
