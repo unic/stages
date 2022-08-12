@@ -382,17 +382,17 @@ const Form = ({
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
     */
-    const handleChange = (fieldKey, value, index, outsideData) => {
+    const handleChange = (fieldKey, value, index, outsideData, syntheticCall = false) => {
         let throttleValidation = false;
         const timestamp = +new Date();
 
         if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
             if (timeoutRef) clearTimeout(timeoutRef);
-            timeoutRef = setTimeout(() => handleChange(fieldKey, value, index, outsideData), 100);
+            timeoutRef = setTimeout(() => handleChange(fieldKey, value, index, outsideData, true), 100);
             throttleValidation = true;
         }
 
-        if (!throttleValidation || lastOnChange === 0) lastOnChange = timestamp;
+        if (!syntheticCall) lastOnChange = timestamp;
 
         const fieldConfig = getConfigForField(fieldKey);
         let newData = Object.assign({}, outsideData || data);
