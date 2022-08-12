@@ -35,6 +35,9 @@ You can do that by defining `dynamicOptions` like this:
                     value: comment.id, text: comment.name
                 }
             });
+        },
+        onOptionsChange: (options, updatedData, handleChange) => {
+            // do something with new options
         }
     },
     isRequired: true
@@ -49,6 +52,7 @@ The `dynamicOptions` propery in the fields config has following options, which a
     - **data props**: This contains the latest data of the form, normally used for the API call params
     - **handleChange prop**: Sometimes it's useful to set data of other fields with what the api call returned, use this callback to do that
 - **enableCaching**: Set this to `true` if you want loaded options to be cached to reduce api calls
+- **onOptionsChange**: Callback which will be called right after the loader received the new options
 
 An example for a more complicated loader:
 
