@@ -76,6 +76,14 @@ const config = {
                 customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
             },
             {
+                id: "city2",
+                label: "City on Blur validated",
+                type: "text",
+                isRequired: true,
+                validateOn: ["blur", "action"],
+                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
+            },
+            {
                 id: "post",
                 label: "Choose a post:",
                 type: "select",

@@ -437,7 +437,7 @@ const Form = ({
         if (
             validateOn.indexOf('change') > -1 ||
             (fieldConfig.validateOn && fieldConfig.validateOn.indexOf('change') > -1) ||
-            (validateOn.indexOf('throttledChange') && !throttleValidation) ||
+            (validateOn.indexOf('throttledChange') > -1 && !throttleValidation) ||
             (fieldConfig.validateOn && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation)
         ) {
             const result = validateField(fieldConfig, newData, errors);
