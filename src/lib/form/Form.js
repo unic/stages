@@ -552,7 +552,9 @@ const Form = ({
                 Object.assign({
                     key: field.id,
                     value: data[field.id],
+                    initialValue: initialData[field.id],
                     error: errors[field.id],
+                    isDirty: !!dirtyFields[field.id],
                     isDisabled: isDisabled || field.isDisabled,
                     onChange: value => handleChange(field.id, value),
                     onBlur: () => handleBlur(field.id)
