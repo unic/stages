@@ -42,6 +42,7 @@ const Form = ({
 }) => {
     const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
+    const [dirtyFields, setDirtyFields] = useState({});
     const [initialData, setInitialData] = useState(false);
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -66,9 +67,9 @@ const Form = ({
     */
     useEffect(() => {
         if (isDebugging()) {
-            window.stagesLogging({ id: uniqId, data, errors, isDirty, loading, parsedFieldConfig }); 
+            window.stagesLogging({ id: uniqId, data, errors, isDirty, dirtyFields, loading, parsedFieldConfig }); 
         }
-    }, [data, errors, isDirty, loading]);
+    }, [data, errors, isDirty, dirtyFields, loading]);
 
     // Helper function to detect reserved field types:
     const isReservedType = type => type === "collection" || type === "subform";
@@ -444,8 +445,19 @@ const Form = ({
             setErrors(result.errors);
         }
 
-        // Set the isDirty flag correctly:
-        if (initialData) setIsDirty(!isEqual(newData, initialData));
+        // Set the isDirty flag and per field object:
+        if (initialData) {
+            setIsDirty(!isEqual(newData, initialData));
+            if (!isEqual(newData[fieldKey], initialData[fieldKey])) {
+                dirtyFields[fieldKey] = {
+                    oldData: initialData[fieldKey],
+                    newData: newData[fieldKey]
+                };
+            } else if (typeof dirtyFields[fieldKey] !== "undefined") {
+                delete dirtyFields[fieldKey];
+            }
+            setDirtyFields(dirtyFields);
+        }
 
         // If there are any fields to be cleared, do that now:
         if (fieldConfig.clearFields && Array.isArray(fieldConfig.clearFields)) {
@@ -679,8 +691,8 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: { handleActionClick, isDisabled, isDirty, silentlyGetValidationErrors },
-        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty },
+        actionProps: { handleActionClick, isDisabled, isDirty, dirtyFields, silentlyGetValidationErrors },
+        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty, dirtyFields },
         loading
     }) : null;
 };
