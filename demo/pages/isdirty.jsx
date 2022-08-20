@@ -34,11 +34,18 @@ function FormPage() {
                             this example, the border becomes red when the form becomes dirty, and returns to grey as soon as the 
                             data returns to the initial values. This can be very useful to decide if a save is necessary or not.
                         </p>
+                        <p>
+                            Additionally, you can track each field individually, which is shown in this demo with a red border around it.
+                        </p>
                         <br />
                         <div>
-                            {fieldProps.fields.email}
+                            <div style={{ border: fieldProps.dirtyFields.email ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
+                                {fieldProps.fields.email}
+                            </div>
                             <br />
-                            {fieldProps.fields.password}
+                            <div style={{ border: fieldProps.dirtyFields.password ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
+                                {fieldProps.fields.password}
+                            </div>
                         </div>
                         <br />
                         <hr />

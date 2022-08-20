@@ -34,9 +34,11 @@ You get two render properties which are essentially two collection of properties
     - **errors**: The error object, being used mainly for collection errors
     - **asyncData**: All the data loaded from the `asyncDataLoader` function in the config
     - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
+    - **dirtyFields**: An object which contains keys for all dirty fields. Object props are `oldValue` and `newValue`
 - **actionProps**:
     - **handleActionClick**: A callback to process a form action
     - **isDisabled**: Actions can be disabled, for example if data has to be valid
     - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
+    - **dirtyFields**: An object which contains keys for all dirty fields. Object props are `oldValue` and `newValue`
 
 Read the page about collections and actions to get more details on those two features.
