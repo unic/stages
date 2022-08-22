@@ -44,7 +44,7 @@ The above mentioned date range custom validation:
     label: "To",
     type: 'date',
     isRequired: true,
-    customValidation: ({ data, allData, fieldConfig, isValid }) => {
+    customValidation: ({ data, allData, fieldConfig, isValid, isDirty }) => {
         if (allData.fromDate && data) {
             const fromDate = new Date(allData.fromDate);
             const toDate = new Date(data);
@@ -65,6 +65,7 @@ You get following variables in the `customValidation` function:
 - **allData**: All the data of the form
 - **fieldConfig**: The configuration for the field
 - **isValid**: The default type based validation (a boolean)
+- **isDirty**: In case you only want to validate dirty fields (a boolean)
 
 ## Validation Events
 
