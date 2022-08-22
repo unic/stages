@@ -30,21 +30,7 @@ const AddressRender = ({ fields }) => {
 };
 
 const config = {
-    asyncDataLoader: async () => {
-        const response = await axios.get('https://jsonplaceholder.typicode.com/posts');
-        return {
-            posts: response && response.data || []
-        };
-    },
     fields: (data, asyncData) => {
-        const posts = asyncData && asyncData.posts ? asyncData.posts.map(item => {
-            return {
-                value: item.id,
-                text: item.title
-            };
-        }) : [];
-        posts.unshift({ value: "", text: "Select a post ..." });
-
         return [
             {
                 id: "country",
@@ -65,7 +51,10 @@ const config = {
                 isRequired: true,
                 cleanUp: value => value.trim(),
                 validateOn: ["change", "blur", "action"],
-                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
+                customValidation: ({ data, allData, isValid }) => {
+                    if (isValid && data.length % 2 === 1) return "UNEVEN";
+                    return isValid;
+                }
             },
             {
                 id: "city",
@@ -84,67 +73,22 @@ const config = {
                 customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
             },
             {
-                id: "post",
-                label: "Choose a post:",
-                type: "select",
-                options: posts,
-                isRequired: true
-            },
-            {
-                id: "comment1",
-                label: "Comment 1",
-                type: "select",
-                options: [{
-                    value: "", text: "Select a posts comment ..."
-                }],
-                dynamicOptions: {
-                    watchFields: ['post'],
-                    events: ["init", "change"],
-                    enableCaching: true,
-                    loader: async (data) => {
-                        if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
-                        console.log(`${data.post}.1 start`);
-                        const response = await axios.get(`https://fakeql.com/fragilegraphql/3f6450ed0949588b5fe109a740272754?query={users{id,firstname,age}}`);
-                        console.log(`${data.post}.1 end`);
-                        return response.data.data.users.map(entry => {
-                            return {
-                                value: entry.id, text: entry.firstname
-                            }
-                        });
+                id: "collection1",
+                type: "collection",
+                fields: [
+                    {
+                        id: "field1",
+                        label: "Field 1",
+                        type: "text",
+                        isRequired: true
+                    },
+                    {
+                        id: "field2",
+                        label: "Field 2",
+                        type: "text",
+                        isRequired: false
                     }
-                },
-                isRequired: true
-            },
-            {
-                id: "comment2",
-                label: "Comment 2",
-                type: "select",
-                options: [{
-                    value: "", text: "Select another posts comment ..."
-                }],
-                dynamicOptions: {
-                    watchFields: ['post', 'comment'],
-                    events: ["init", "change"],
-                    enableCaching: true,
-                    loader: async (data) => {
-                        if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
-                        console.log(`${data.post}.2 start`);
-                        const response = await axios.get(`https://fakeql.com/fragilegraphql/3f6450ed0949588b5fe109a740272754?query={users{id,firstname,age}}`);
-                        console.log(`${data.post}.2 end`);
-                        return response.data.data.users.map(entry => {
-                            return {
-                                value: entry.id, text: entry.firstname
-                            }
-                        });
-                    }
-                },
-                isRequired: true
-            },
-            {
-                id: "username",
-                label: "Username",
-                type: "text",
-                isRequired: true
+                ]
             }
         ];
     }

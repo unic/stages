@@ -74,6 +74,12 @@ const Form = ({
     // Helper function to detect reserved field types:
     const isReservedType = type => type === "collection" || type === "subform";
 
+    // Is a specific field valid based on current data:
+    const isFieldValid = (field, fieldData) => {
+        const isValid = !isReservedType(field.type) && fields[field.type].isValid(fieldData[field.id], field);
+        return !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: fieldData[field.id], allData: fieldData, fieldConfig: field, isValid }) : isValid;
+    };
+
     /*
         This function is used to validate one single field. It returns the updated error and firstErrorField object
     */
@@ -81,17 +87,17 @@ const Form = ({
         if (isDebugging()) window.stagesLogging(`Validate field "${field.id}"`, uniqId);
 
         // Is the data entered valid, check with default field function and optionally with custom validation:
-        const isValid = !isReservedType(field.type) && fields[field.type].isValid(validationData[field.id], field);
-        const fieldIsValid = !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: validationData[field.id], allData: validationData, fieldConfig: field, isValid }) : isValid;
+        const fieldIsValid = isFieldValid(field, validationData);
 
         if (errors[field.id]) delete errors[field.id];
 
         // Regular non reserved type fields:
-        if (!isReservedType(field.type) && !fieldIsValid) {
+        if (!isReservedType(field.type) && fieldIsValid !== true) {
             if (!firstErrorField) firstErrorField = field.id;
             errors[field.id] = {
                 value: validationData[field.id],
-                field
+                field,
+                errorCode: fieldIsValid !== false ? fieldIsValid : undefined
             };
         // Collections which are required (need to have at least one entry!):
         } else if (field.type === "collection" && field.isRequired && (!validationData[field.id] || validationData[field.id].length === 0 || validationData[field.id].length === 1 && Object.keys(validationData[field.id][0]).length === 0)) {
@@ -109,13 +115,13 @@ const Form = ({
                         if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
                         // Is the data entered valid, check with default field function and optionally with custom validation:
-                        const isValid = fields[subField.type] && fields[subField.type].isValid(dataEntry[subField.id], subField);
-                        const fieldIsValid = subField.customValidation ? subField.customValidation(dataEntry[subField.id], subField, isValid) : isValid;
+                        const fieldIsValid = isFieldValid(subField, dataEntry);
 
-                        if (fields[subField.type] && !fieldIsValid) {
+                        if (fields[subField.type] && fieldIsValid !== true) {
                             errors[`${field.id}-${index}-${subField.id}`] = {
                                 value: validationData[field.id],
-                                subField
+                                subField,
+                                errorCode: fieldIsValid !== false ? fieldIsValid : undefined
                             };
                         }
                     });
@@ -130,13 +136,13 @@ const Form = ({
                         const subFields = field.fields[dataEntry.__typename];
                         subFields.forEach(subField => {
                             // Is the data entered valid, check with default field function and optionally with custom validation:
-                            const isValid = fields[subField.type] && fields[subField.type].isValid(dataEntry[subField.id], subField);
-                            const fieldIsValid = subField.customValidation ? subField.customValidation(dataEntry[subField.id], subField, isValid) : isValid;
+                            const fieldIsValid = isFieldValid(subField, dataEntry);
 
-                            if (fields[subField.type] && !fieldIsValid) {
+                            if (fields[subField.type] && fieldIsValid !== true) {
                                 errors[`${field.id}-${index}-${subField.id}`] = {
                                     value: validationData[field.id],
-                                    subField
+                                    subField,
+                                    errorCode: fieldIsValid !== false ? fieldIsValid : undefined
                                 };
                             }
                         });
