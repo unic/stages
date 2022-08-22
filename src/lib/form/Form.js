@@ -77,7 +77,13 @@ const Form = ({
     // Is a specific field valid based on current data:
     const isFieldValid = (field, fieldData) => {
         const isValid = !isReservedType(field.type) && fields[field.type].isValid(fieldData[field.id], field);
-        return !isReservedType(field.type) && field.customValidation ? field.customValidation({ data: fieldData[field.id], allData: fieldData, fieldConfig: field, isValid }) : isValid;
+        return !isReservedType(field.type) && field.customValidation ? field.customValidation({
+            data: fieldData[field.id],
+            allData: fieldData,
+            fieldConfig: field,
+            isValid,
+            fieldIsDirty: typeof dirtyFields[field.id] !== "undefined"
+        }) : isValid;
     };
 
     /*

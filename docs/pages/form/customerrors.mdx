@@ -23,9 +23,31 @@ And than later in the form config:
     type: "email",
     isRequired: true,
     customValidation: ({ data, isValid }) => {
-        return; // Add your huge custom email validation regex here!
+        return true; // Add your huge custom email validation regex here!
     },
     errorRenderer: (error) => FieldError({ customText: "Please enter a valid email address." }),
+}
+```
+
+If you return false, the field is invalid. Additionally you can return an error code, which than shows up in the error object 
+as `errorCode`. This make it possible to display different error messgaes based on your custom validation.
+
+```
+{
+    id: "email",
+    label: "Email",
+    type: "email",
+    isRequired: true,
+    customValidation: ({ data, isValid }) => {
+        if (notValidEmailExpression) return "NOT_AN_EMAIL";
+        if (bannedDomainLookup) return "BANNED_DOMAIN";
+        return isValid; // Add your huge custom email validation regex here!
+    },
+    errorRenderer: (error) => {
+      if (error.errorCode === "NOT_AN_EMAIL") return FieldError({ customText: "Please enter a valid email address." });
+      if (error.errorCode === "BANNED_DOMAIN") return FieldError({ customText: "This email provider has been banned." });
+      return FieldError({ customText: "Please enter an email address." });
+    },
 }
 ```
 
