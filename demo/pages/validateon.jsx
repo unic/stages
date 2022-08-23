@@ -219,6 +219,49 @@ function FormPage() {
                 )}
                 onChange={payload => setData4(payload)}
             />
+            <br /><br />
+            <h3>Dynamic validation based on length of input, first only on blur, than after five characters on change:</h3>
+            <Form
+                id="form4"
+                data={data4}
+                fields={fields}
+                validateOn={["action", "throttledChange"]}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "dynamicValidate",
+                                label: "Valid on even length (2, 4, 6 ...)",
+                                type: "text",
+                                isRequired: true,
+                                cleanUp: value => value.trim(),
+                                validateOn: ({ data, fieldIsDirty, fieldConfig }) => data && data.length > 5 ? ["change", "blur", "action"] : ["blur", "action"],
+                                customValidation: ({ data, allData, isValid }) => {
+                                    if (isValid && data.length % 2 === 1) return "UNEVEN";
+                                    return isValid;
+                                }
+                            },
+                        ]
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => (
+                    <>
+                        <div className="pure-g">
+                            <div className="pure-u-8-24">{fieldProps.fields.dynamicValidate}</div>
+                        </div>
+                        <br />
+                        <hr />
+                        <br />
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                    </>
+                )}
+                onChange={payload => setData4(payload)}
+            />
         </Layout>
     );
 };
