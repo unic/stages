@@ -448,10 +448,14 @@ const Form = ({
 
         // Only validate if change or throttledChange validation is enabled:
         if (
-            (!fieldConfig.validateOn && validateOn.indexOf('change') > -1) ||
-            (fieldConfig.validateOn && fieldConfig.validateOn.indexOf('change') > -1) ||
-            (!fieldConfig.validateOn && validateOn.indexOf('throttledChange') > -1 && !throttleValidation) ||
-            (fieldConfig.validateOn && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation)
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('change') > -1) ||
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('change') > -1) ||
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1 && !throttleValidation) ||
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation) || 
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('change') > -1) ||
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('change') > -1) ||
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('throttledChange') > -1 && !throttleValidation) ||
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('throttledChange') > -1 && !throttleValidation)
         ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(result.errors);
@@ -521,7 +525,12 @@ const Form = ({
         }
 
         // Only validate if blur validation is enabled:
-        if ((!fieldConfig.validateOn && validateOn.indexOf("blur") > -1) || (fieldConfig.validateOn && fieldConfig.validateOn.indexOf("blur") > -1)) {
+        if (
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf("blur") > -1) || 
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf("blur") > -1) || 
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf("blur") > -1) || 
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf("blur") > -1)
+        ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(Object.assign({}, result.errors));
             onChange(newData, result.errors, id, fieldKey, index);

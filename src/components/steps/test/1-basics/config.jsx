@@ -50,7 +50,7 @@ const config = {
                 type: "text",
                 isRequired: true,
                 cleanUp: value => value.trim(),
-                validateOn: ["change", "blur", "action"],
+                validateOn: ({ data, fieldIsDirty, fieldConfig }) => data && data.length > 5 ? ["change", "blur", "action"] : ["blur", "action"],
                 customValidation: ({ data, allData, isValid }) => {
                     if (isValid && data.length % 2 === 1) return "UNEVEN";
                     return isValid;
@@ -61,8 +61,11 @@ const config = {
                 label: "City",
                 type: "text",
                 isRequired: true,
-                validateOn: ["throttledChange", "blur", "action"],
-                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
+                validateOn: data.city && data.city.length > 5 ? ["change", "blur", "action"] : ["blur", "action"],
+                customValidation: ({ data, allData, isValid }) => {
+                    if (isValid && data.length % 2 === 1) return "UNEVEN";
+                    return isValid;
+                }
             },
             {
                 id: "city2",
