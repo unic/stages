@@ -103,4 +103,24 @@ Additionally, you can set this behaviour on each field individually, like this:
 }
 ```
 
-Which can be very useful for things like the password feild above, if you want dynamically show how save it is and if it's save enough.
+Which can be very useful for things like the password field above, if you want dynamically show how save it is and if it's save enough.
+
+And for really complex validation behaviour, you can use a callaback to decide when to validate:
+
+```
+{
+    id: "dynamicValidate",
+    label: "Valid on even length (2, 4, 6 ...)",
+    type: "text",
+    isRequired: true,
+    validateOn: ({ data, fieldIsDirty, fieldConfig }) => {
+        return data && data.length > 5 ? ["change", "blur", "action"] : ["blur", "action"];
+    },
+    customValidation: ({ data, allData, isValid }) => {
+        if (isValid && data.length % 2 === 1) return "UNEVEN";
+        return isValid;
+    }
+}
+```
+
+[Related Demo](https://stages-demo.vercel.app/validateon)
