@@ -26,6 +26,7 @@ const Input = ({
     value,
     onChange,
     onBlur,
+    onFocus,
     error,
     placeholder,
     isRequired,
@@ -51,6 +52,9 @@ const Input = ({
                     required={!!isRequired}
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
+                    }}
+                    onFocus={e => {
+                        if (typeof onFocus === "function") onFocus(e.target.value);
                     }}
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur(e.target.value);

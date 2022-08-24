@@ -51,6 +51,8 @@ const Form = ({
     const [asyncData, setAsyncData] = useState();
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [focusedField, setFocusedField] = useState();
+    const [lastFocusedField, setLastFocusedField] = useState();
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
     const renderedFields = {};
 
@@ -67,9 +69,9 @@ const Form = ({
     */
     useEffect(() => {
         if (isDebugging()) {
-            window.stagesLogging({ id: uniqId, data, errors, isDirty, dirtyFields, loading, parsedFieldConfig }); 
+            window.stagesLogging({ id: uniqId, data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading, parsedFieldConfig }); 
         }
-    }, [data, errors, isDirty, dirtyFields, loading]);
+    }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 
     // Helper function to detect reserved field types:
     const isReservedType = type => type === "collection" || type === "subform";
@@ -82,6 +84,7 @@ const Form = ({
             allData: fieldData,
             fieldConfig: field,
             isValid,
+            fieldHasFocus: focusedField && focusedField.key === field.id,
             fieldIsDirty: typeof dirtyFields[field.id] !== "undefined"
         }) : isValid;
     };
@@ -507,10 +510,20 @@ const Form = ({
     };
 
     /*
+        This function is called on each fields onFocus. It is currently used 
+        to track which field has focus and what the last field in focus was.
+    */
+    const handleFocus = (fieldKey, index) => {
+        setFocusedField({ key: fieldKey, index });
+        setLastFocusedField({ key: fieldKey, index });
+    };
+
+    /*
         This function is called on each fields onBlur. It only runs validation 
         if validation is enabled for blur events.
     */
     const handleBlur = (fieldKey, index) => {
+        setFocusedField();
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, data);
 
@@ -578,6 +591,7 @@ const Form = ({
                     isDirty: !!dirtyFields[field.id],
                     isDisabled: isDisabled || field.isDisabled,
                     onChange: value => handleChange(field.id, value),
+                    onFocus: () => handleFocus(field.id),
                     onBlur: () => handleBlur(field.id)
                 }, cleanedField)
             );
@@ -599,6 +613,7 @@ const Form = ({
                                         error: errors[`${field.id}-${index}-${subField.id}`],
                                         isDisabled: isDisabled || subField.isDisabled,
                                         onChange: value => handleChange([field.id, subField.id], value, index),
+                                        onFocus: () => handleFocus([field.id, subField.id], index),
                                         onBlur: () => handleBlur([field.id, subField.id], index)
                                     }, subField)
                                 )
@@ -618,6 +633,7 @@ const Form = ({
                                             error: errors[`${field.id}-${index}-${subField.id}`],
                                             isDisabled: isDisabled || subField.isDisabled,
                                             onChange: value => handleChange([field.id, subField.id], value, index),
+                                            onFocus: () => handleFocus([field.id, subField.id], index),
                                             onBlur: () => handleBlur([field.id, subField.id], index)
                                         }, subField)
                                     )
@@ -714,8 +730,8 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: { handleActionClick, isDisabled, isDirty, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty, dirtyFields },
+        actionProps: { handleActionClick, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
+        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
         loading
     }) : null;
 };
