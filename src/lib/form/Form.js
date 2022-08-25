@@ -84,7 +84,7 @@ const Form = ({
             allData: fieldData,
             fieldConfig: field,
             isValid,
-            fieldHasFocus: focusedField && focusedField.key === field.id,
+            fieldHasFocus: !!(focusedField && focusedField.key === field.id),
             fieldIsDirty: typeof dirtyFields[field.id] !== "undefined"
         }) : isValid;
     };
