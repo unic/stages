@@ -449,16 +449,24 @@ const Form = ({
         // Now run over all computed value fields to recalculate all dynamic data:
         newData = computeValues(parsedFieldConfig, newData);
 
+        // prepare the params for the validateOnCallback:
+        const validateOnParams = {
+            data: newData[fieldKey],
+            fieldIsDirty: !!dirtyFields[fieldKey],
+            fieldConfig,
+            fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
+        };
+
         // Only validate if change or throttledChange validation is enabled:
         if (
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('change') > -1) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('change') > -1) ||
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1 && !throttleValidation) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation) || 
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('change') > -1) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('change') > -1) ||
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('throttledChange') > -1 && !throttleValidation) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf('throttledChange') > -1 && !throttleValidation)
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('change') > -1) ||
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('change') > -1) ||
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation) ||
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation)
         ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(result.errors);
