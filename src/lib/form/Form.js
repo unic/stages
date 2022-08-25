@@ -545,12 +545,20 @@ const Form = ({
             onChange(newData, validationErrors(), id, fieldKey, index);
         }
 
+        // prepare the params for the validateOnCallback:
+        const validateOnParams = {
+            data: newData[fieldKey],
+            fieldIsDirty: !!dirtyFields[fieldKey],
+            fieldConfig,
+            fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
+        };
+
         // Only validate if blur validation is enabled:
         if (
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf("blur") > -1) || 
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf("blur") > -1) || 
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf("blur") > -1) || 
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn({data: newData[fieldKey], fieldIsDirty: !!dirtyFields[fieldKey], fieldConfig}).indexOf("blur") > -1)
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf("blur") > -1) || 
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf("blur") > -1)
         ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(Object.assign({}, result.errors));
