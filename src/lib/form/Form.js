@@ -300,7 +300,7 @@ const Form = ({
     const limitedOnChange = (newData, errors, id, fieldKey, index) => {
         let newLastOnChangeData;
         try {
-            newLastOnChangeData = stringify({ newData, errors, id, fieldKey, index });
+            newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey, index });
         } catch(error) {};
         if (newLastOnChangeData !== lastOnChangeData) {
             onChange(newData, errors, id, fieldKey, index);

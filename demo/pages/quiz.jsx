@@ -13,13 +13,16 @@ fields.radio.component = ({
     value,
     options,
     onChange,
+    onBlur,
+    onFocus,
     error,
     isRequired,
     isDisabled,
     prefix,
     suffix,
     secondaryText,
-    errorRenderer
+    errorRenderer,
+    ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
         <div id={id}>
@@ -38,7 +41,14 @@ fields.radio.component = ({
                                 disabled={!!isDisabled}
                                 onChange={() => {/* to make React and IE happy */}}
                                 onClick={e => {
-                                    if (typeof onChange === "function") onChange(option.value);
+                                    if (typeof onChange === "function") {
+                                        onChange(option.value);
+                                    }
+                                }}
+                                onFocus={e => {
+                                    if (typeof onFocus === "function") {
+                                        onFocus(e.target.value);
+                                    }
                                 }}
                                 style={{ marginRight: "4px" }}
                             />

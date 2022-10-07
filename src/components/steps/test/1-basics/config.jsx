@@ -92,6 +92,18 @@ const config = {
                         isRequired: false
                     }
                 ]
+            },
+            {
+                id: "q1",
+                label: "Question 1: What is biggest?",
+                options: [
+                    { value: "a", text: "Earth" },
+                    { value: "b", text: "Moon" },
+                    { value: "c", text: "Sun" } // correct
+                ],
+                type: "radio",
+                isRequired: true,
+                isDisabled: !!data.q1
             }
         ];
     }
