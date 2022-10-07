@@ -36,8 +36,7 @@ function FormPage() {
                                 id: "atLeastOne",
                                 type: "dummy",
                                 customValidation: ({ allData }) => {
-                                    console.log({ allData });
-                                    return allData.field1 || allData.field2;
+                                    return !!allData.field1 || !!allData.field2;
                                 },
                                 errorRenderer: (error) => <div style={{ color: "#f30" }}><br />Please fill out at least one of the two fields.</div>,
                             },
