@@ -40,7 +40,7 @@ function App() {
     const [data, setData] = useState({});
 
     const handleChange = (data, errors) => {
-        console.log("handle change", data, errors);
+        console.log("handle change", {data, errors});
         setData(data);
     };
 

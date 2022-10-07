@@ -415,6 +415,7 @@ const Form = ({
     */
     const handleChange = (fieldKey, value, index, outsideData, syntheticCall = false) => {
         let throttleValidation = false;
+        let newErrors;
         const timestamp = +new Date();
 
         if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
@@ -484,7 +485,8 @@ const Form = ({
             (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation)
         ) {
             const result = validateField(fieldConfig, newData, errors);
-            setErrors(result.errors);
+            newErrors = Object.assign({}, errors, result.errors);
+            setErrors(newErrors);
         }
 
         // Set the isDirty flag and per field object:
@@ -529,7 +531,7 @@ const Form = ({
             }
         });
 
-        limitedOnChange(newData, validationErrors(), id, fieldKey, index);
+        limitedOnChange(newData, newErrors || errors, id, fieldKey, index);
     };
 
     /*
@@ -557,7 +559,7 @@ const Form = ({
         // Run field cleanUp function if one is set:
         if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && newData[fieldConfig.id]) {
             newData[fieldConfig.id] = fieldConfig.cleanUp(newData[fieldConfig.id]);
-            limitedOnChange(newData, validationErrors(), id, fieldKey, index);
+            limitedOnChange(newData, errors, id, fieldKey, index);
         }
 
         // prepare the params for the validateOnCallback:
@@ -576,7 +578,7 @@ const Form = ({
             (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf("blur") > -1)
         ) {
             const result = validateField(fieldConfig, newData, errors);
-            setErrors(Object.assign({}, result.errors));
+            setErrors(Object.assign({}, errors, result.errors));
             limitedOnChange(newData, result.errors, id, fieldKey, index);
         }
 
