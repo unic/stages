@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import find from "lodash.find";
 import uniqWith from "lodash.uniqwith";
 import isEqual from "lodash.isequal";
+import stringify from "fast-json-stable-stringify";
 
 const isElementInViewport = el => {
     const rect = el.getBoundingClientRect();
@@ -21,6 +22,8 @@ const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions i
 
 let lastOnChange = 0; // Used to throttle onChange validations
 let timeoutRef; // Timeout ref used to throttle onChange validations
+
+let lastOnChangeData; // Used to prevent unnessesary onChange callbacks
 
 /*
     This is the form component used in Stages. You can use it for individual steps in a wizard
@@ -162,7 +165,7 @@ const Form = ({
 
         if (field.type === "collection" && field.uniqEntries && validationData[field.id]) {
             // Add error if collection entries are not unique!
-            if (uniqWith(validationData[field.id], (arrVal, othVal) => JSON.stringify(arrVal) === JSON.stringify(othVal)).length !== validationData[field.id].length) {
+            if (uniqWith(validationData[field.id], (arrVal, othVal) => stringify(arrVal) === stringify(othVal)).length !== validationData[field.id].length) {
                 errors[field.id] = {
                     value: validationData[field.id],
                     field
@@ -267,7 +270,7 @@ const Form = ({
                 optionsConfig.watchFields.forEach(f => {
                     if (updatedData[f]) cacheKeyValues[f] = updatedData[f];
                 });
-                cacheKey = `${field}-${JSON.stringify(cacheKeyValues)}`;
+                cacheKey = `${field}-${stringify(cacheKeyValues)}`;
             }
 
             // Load async data or use the cache:
@@ -290,6 +293,18 @@ const Form = ({
                     optionsConfig.onOptionsChange(options, updatedData, handleChange);
                 }
             }
+        }
+    };
+
+    // Improve the on change handler so that only real changes are bubbled up!
+    const limitedOnChange = (newData, errors, id, fieldKey, index) => {
+        let newLastOnChangeData;
+        try {
+            newLastOnChangeData = stringify({ newData, errors, id, fieldKey, index });
+        } catch(error) {};
+        if (newLastOnChangeData !== lastOnChangeData) {
+            onChange(newData, errors, id, fieldKey, index);
+            lastOnChangeData = newLastOnChangeData;
         }
     };
 
@@ -342,7 +357,7 @@ const Form = ({
             });
         }
 
-        onChange(newData, validationErrors(), id); // will trigger validations even with no inits
+        limitedOnChange(newData, validationErrors(), id); // will trigger validations even with no inits
     }, [isVisible]);
 
     /*
@@ -514,7 +529,7 @@ const Form = ({
             }
         });
 
-        onChange(newData, validationErrors(), id, fieldKey, index);
+        limitedOnChange(newData, validationErrors(), id, fieldKey, index);
     };
 
     /*
@@ -542,7 +557,7 @@ const Form = ({
         // Run field cleanUp function if one is set:
         if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && newData[fieldConfig.id]) {
             newData[fieldConfig.id] = fieldConfig.cleanUp(newData[fieldConfig.id]);
-            onChange(newData, validationErrors(), id, fieldKey, index);
+            limitedOnChange(newData, validationErrors(), id, fieldKey, index);
         }
 
         // prepare the params for the validateOnCallback:
@@ -562,7 +577,7 @@ const Form = ({
         ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(Object.assign({}, result.errors));
-            onChange(newData, result.errors, id, fieldKey, index);
+            limitedOnChange(newData, result.errors, id, fieldKey, index);
         }
 
         // Check if a field has dynamic options which have to be loaded:
@@ -715,7 +730,7 @@ const Form = ({
             setErrors(newErrors);
         }
 
-        onChange(newData, newErrors || validationErrors(), id, fieldKey, index);
+        limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey, index);
     };
 
     /*
