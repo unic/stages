@@ -7,6 +7,7 @@ function FormPage() {
     const [data2, setData2] = useState({});
     const [data3, setData3] = useState({});
     const [data4, setData4] = useState({});
+    const [data5, setData5] = useState({});
     return (
         <Layout>
             <p>
@@ -261,6 +262,70 @@ function FormPage() {
                     </>
                 )}
                 onChange={payload => setData4(payload)}
+            />
+            <br /><br />
+            <h3>Custom validation event:</h3>
+            <p>
+                In this example, the form is validated on change, but the city field, is validated on countryChange, which 
+                is defined as "only validate on change, if country is selected and has less than 3 characters".
+            </p>
+            <Form
+                id="form4"
+                data={data5}
+                fields={fields}
+                customEvents={{
+                    'countryChange': ({ data, dirtyFields, optionsLoaded, asyncData, errors, focusedField, triggeringEvent }) => {
+                        if (data.country && triggeringEvent === "change") return true;
+                        return false;
+                    }
+                }}
+                validateOn={["change"]}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "country",
+                                label: "Country",
+                                type: "select",
+                                options: [
+                                    { value: "", text: "Please select ..." },
+                                    { value: "CH", text: "Switzerland" },
+                                    { value: "DE", text: "Germany" },
+                                    { value: "AT", text: "Austria" }
+                                ],
+                            },
+                            {
+                                id: "city",
+                                label: "City (at least 3 chars)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["countryChange"],
+                                customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length > 3
+                            },
+                        ]
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => (
+                    <>
+                        <div className="pure-g">
+                            <div className="pure-u-8-24">{fieldProps.fields.country}</div>
+                        </div>
+                        <br />
+                        <div className="pure-g">
+                            <div className="pure-u-8-24">{fieldProps.fields.city}</div>
+                        </div>
+                        <br />
+                        <hr />
+                        <br />
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                    </>
+                )}
+                onChange={payload => setData5(payload)}
             />
         </Layout>
     );
