@@ -44,7 +44,7 @@ The above mentioned date range custom validation:
     label: "To",
     type: 'date',
     isRequired: true,
-    customValidation: ({ data, allData, fieldConfig, isValid, isDirty }) => {
+    customValidation: ({ data, allData, fieldConfig, isValid, isDirty, triggeringEvent }) => {
         if (allData.fromDate && data) {
             const fromDate = new Date(allData.fromDate);
             const toDate = new Date(data);
@@ -66,6 +66,7 @@ You get following variables in the `customValidation` function:
 - **fieldConfig**: The configuration for the field
 - **isValid**: The default type based validation (a boolean)
 - **isDirty**: In case you only want to validate dirty fields (a boolean)
+- **triggeringEvent**: The event which triggered this validation, for example `change`, `blur` or `action` or your custom event
 
 ## Validation Events
 
@@ -91,6 +92,7 @@ You have following options:
 - **change**: This is the most busy, validating on every change of the fields values
 - **throttledChange**: This is a throttled version of the change event (default: 400ms). To change the default, use the `throttleWait` property on the Form component.
 - **collectionAction**: And this one validates on collection actions, like add or delete an entry
+- **yourCustomEventName**: If you have defined a custom event on the Form, you can use it here
 
 Additionally, you can set this behaviour on each field individually, like this:
 
@@ -122,5 +124,27 @@ And for really complex validation behaviour, you can use a callaback to decide w
     }
 }
 ```
+
+## Custom Events
+
+In very complicated forms, if you need to validate for example on blur and change, but very specifically based on entered data, you 
+can define a custom event.
+
+This can look like this (a more specific change event):
+
+```
+<Form>
+    customEvents={{
+        'autocompleteChange': ({ data, dirtyFields, optionsLoaded, asyncData, errors, focusedField, triggeringEvent }) => {
+            if (data.country && triggeringEvent === "change") return true;
+            return false;
+        }
+    }}
+    validateOn={["action", "autocompleteChange"]}
+</Form>
+```
+
+Basically return true for all states where this event should be called and than use the key in one of your 
+validateOn arrays, either on the Form or an individual field.
 
 [Related Demo](https://stages-demo.vercel.app/validateon)
