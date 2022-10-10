@@ -301,8 +301,7 @@ function FormPage() {
                                 isRequired: true,
                                 validateOn: ["countryChange", "change"],
                                 customValidation: ({ data, allData, isValid, triggeringEvent }) => {
-                                    console.log({triggeringEvent});
-                                    if (triggeringEvent.indexOf("countryChange") > -1) return isValid && data.length > 3;
+                                    if (triggeringEvent === "countryChange") return isValid && data.length > 3;
                                     return isValid;
                                 }
                             },
