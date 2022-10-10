@@ -413,17 +413,19 @@ const Form = ({
     const getActiveCustomEvents = (triggeringEvent, eventData) => {
         const activeCustomEvents = [];
 
-        Object.keys(customEvents).forEach(key => {
-            if (typeof customEvents[key] === "function" && customEvents[key]({
-                data: eventData,
-                dirtyFields,
-                optionsLoaded,
-                asyncData,
-                errors,
-                focusedField,
-                triggeringEvent
-            })) activeCustomEvents.push(key);
-        });
+        if (typeof customEvents === "object") {
+            Object.keys(customEvents).forEach(key => {
+                if (typeof customEvents[key] === "function" && customEvents[key]({
+                    data: eventData,
+                    dirtyFields,
+                    optionsLoaded,
+                    asyncData,
+                    errors,
+                    focusedField,
+                    triggeringEvent
+                })) activeCustomEvents.push(key);
+            });
+        }
 
         return activeCustomEvents;
     };
