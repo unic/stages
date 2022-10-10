@@ -41,7 +41,8 @@ const Form = ({
     onValidation,
     parentRunValidation,
     validateOn,
-    throttleWait
+    throttleWait,
+    customEvents
 }) => {
     const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
@@ -409,6 +410,24 @@ const Form = ({
         return fieldConfig;
     };
 
+    const getActiveCustomEvents = (triggeringEvent, eventData) => {
+        const activeCustomEvents = [];
+
+        Object.keys(customEvents).forEach(key => {
+            if (typeof customEvents[key] === "function" && customEvents[key]({
+                data: eventData,
+                dirtyFields,
+                optionsLoaded,
+                asyncData,
+                errors,
+                focusedField,
+                triggeringEvent
+            })) activeCustomEvents.push(key);
+        });
+
+        return activeCustomEvents;
+    };
+
     /*
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
@@ -473,6 +492,9 @@ const Form = ({
             fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
         };
 
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("change", newData);
+
         // Only validate if change or throttledChange validation is enabled:
         if (
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('change') > -1) ||
@@ -482,7 +504,9 @@ const Form = ({
             (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('change') > -1) ||
             (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('change') > -1) ||
             (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation)
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation) ||
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
             const result = validateField(fieldConfig, newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
@@ -570,12 +594,17 @@ const Form = ({
             fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
         };
 
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("blur", newData);
+
         // Only validate if blur validation is enabled:
         if (
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf("blur") > -1) || 
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf("blur") > -1) || 
             (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf("blur") > -1) || 
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf("blur") > -1)
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf("blur") > -1) ||
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
             const result = validateField(fieldConfig, newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
@@ -742,8 +771,14 @@ const Form = ({
     const handleActionClick = (callback, validate) => {
         if (isDebugging()) window.stagesLogging(`Handle action click`, uniqId);
 
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("action", data);
+
         // Only validate if action validation is enabled (which is the default):
-        if (validateOn.indexOf("action") > -1) {
+        if (
+            (Array.isArray(validateOn) && validateOn.indexOf("action") > -1) || 
+            (Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1))
+        ) {
             if (validate) {
                 setRunValidation(true);
                 setTimeout(() => setRunValidation(false), 0);

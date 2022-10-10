@@ -76,6 +76,13 @@ const config = {
                 customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
             },
             {
+                id: "city3",
+                label: "City on custom event validated",
+                type: "text",
+                isRequired: true,
+                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
+            },
+            {
                 id: "collection1",
                 type: "collection",
                 fields: [

@@ -34,6 +34,8 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             <br />
             {fields.city2}
             <br />
+            {fields.city3}
+            <br />
             {fields.q1}
             <br />
             <Collection

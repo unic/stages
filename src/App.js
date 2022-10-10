@@ -99,7 +99,13 @@ function App() {
                 )}
                 fields={fields}
                 onChange={handleChange}
-                validateOn={["action", "blur"]}
+                customEvents={{
+                    'autocompleteChange': ({ data, dirtyFields, optionsLoaded, asyncData, errors, focusedField, triggeringEvent }) => {
+                        if (data.country && triggeringEvent === "change") return true;
+                        return false;
+                    }
+                }}
+                validateOn={["action", "autocompleteChange"]}
             />
             <Debugger />
         </>
