@@ -299,8 +299,12 @@ function FormPage() {
                                 label: "City (at least 3 chars)",
                                 type: "text",
                                 isRequired: true,
-                                validateOn: ["countryChange"],
-                                customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length > 3
+                                validateOn: ["countryChange", "change"],
+                                customValidation: ({ data, allData, isValid, triggeringEvent }) => {
+                                    console.log({triggeringEvent});
+                                    if (triggeringEvent.indexOf("countryChange") > -1) return isValid && data.length > 3;
+                                    return isValid;
+                                }
                             },
                         ]
                     }
