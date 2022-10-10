@@ -80,7 +80,7 @@ const config = {
                 label: "City on custom event validated",
                 type: "text",
                 isRequired: true,
-                customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
+                customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length % 2 === 1
             },
             {
                 id: "collection1",

@@ -81,7 +81,7 @@ const Form = ({
     const isReservedType = type => type === "collection" || type === "subform";
 
     // Is a specific field valid based on current data:
-    const isFieldValid = (field, fieldData) => {
+    const isFieldValid = (field, fieldData, triggeringEvent) => {
         const isValid = !isReservedType(field.type) && fields[field.type].isValid(fieldData[field.id], field);
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
             data: fieldData[field.id],
@@ -89,18 +89,19 @@ const Form = ({
             fieldConfig: field,
             isValid,
             fieldHasFocus: !!(focusedField && focusedField.key === field.id),
-            fieldIsDirty: typeof dirtyFields[field.id] !== "undefined"
+            fieldIsDirty: typeof dirtyFields[field.id] !== "undefined",
+            triggeringEvent
         }) : isValid;
     };
 
     /*
         This function is used to validate one single field. It returns the updated error and firstErrorField object
     */
-    const validateField = (field, validationData, errors, firstErrorField) => {
+    const validateField = (field, triggeringEvent, validationData, errors, firstErrorField) => {
         if (isDebugging()) window.stagesLogging(`Validate field "${field.id}"`, uniqId);
 
         // Is the data entered valid, check with default field function and optionally with custom validation:
-        const fieldIsValid = isFieldValid(field, validationData);
+        const fieldIsValid = isFieldValid(field, validationData, triggeringEvent);
 
         if (errors[field.id]) delete errors[field.id];
 
@@ -128,7 +129,7 @@ const Form = ({
                         if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
                         // Is the data entered valid, check with default field function and optionally with custom validation:
-                        const fieldIsValid = isFieldValid(subField, dataEntry);
+                        const fieldIsValid = isFieldValid(subField, dataEntry, triggeringEvent);
 
                         if (fields[subField.type] && fieldIsValid !== true) {
                             errors[`${field.id}-${index}-${subField.id}`] = {
@@ -149,7 +150,7 @@ const Form = ({
                         const subFields = field.fields[dataEntry.__typename];
                         subFields.forEach(subField => {
                             // Is the data entered valid, check with default field function and optionally with custom validation:
-                            const fieldIsValid = isFieldValid(subField, dataEntry);
+                            const fieldIsValid = isFieldValid(subField, dataEntry, triggeringEvent);
 
                             if (fields[subField.type] && fieldIsValid !== true) {
                                 errors[`${field.id}-${index}-${subField.id}`] = {
@@ -192,7 +193,7 @@ const Form = ({
 
         parsedFieldConfig.forEach(field => {
             if (!fields[field.type] && !isReservedType(field.type)) return;
-            const result = validateField(field, validationData, errors, firstErrorField);
+            const result = validateField(field, "action", validationData, errors, firstErrorField);
             errors = result.errors;
             firstErrorField = result.firstErrorField;
         });
@@ -510,7 +511,7 @@ const Form = ({
             (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
-            const result = validateField(fieldConfig, newData, errors);
+            const result = validateField(fieldConfig, "change", newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
             setErrors(newErrors);
         }
@@ -608,7 +609,7 @@ const Form = ({
             (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
-            const result = validateField(fieldConfig, newData, errors);
+            const result = validateField(fieldConfig, "blur", newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
             limitedOnChange(newData, result.errors, id, fieldKey, index);
         }
