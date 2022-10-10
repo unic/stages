@@ -431,6 +431,11 @@ const Form = ({
         return activeCustomEvents;
     };
 
+    const arrayToStringIfOnlyOneEntry = arr => {
+        if (Array.isArray(arr) && arr.length === 1) return arr[0];
+        return arr;
+    };
+
     /*
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
@@ -503,7 +508,7 @@ const Form = ({
             (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
-            const result = validateField(fieldConfig, activeCustomEvents, newData, errors);
+            const result = validateField(fieldConfig, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
             setErrors(newErrors);
         } else if (
@@ -610,7 +615,7 @@ const Form = ({
             (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
-            const result = validateField(fieldConfig, activeCustomEvents, newData, errors);
+            const result = validateField(fieldConfig, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
             limitedOnChange(newData, result.errors, id, fieldKey, index);
         } else if (
