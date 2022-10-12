@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import find from "lodash.find";
 import uniqWith from "lodash.uniqwith";
 import isEqual from "lodash.isequal";
+import get from "lodash.get";
 import stringify from "fast-json-stable-stringify";
 
 const isElementInViewport = el => {
@@ -15,6 +16,34 @@ const isElementInViewport = el => {
         rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
     );
 }
+
+const getFieldPaths = (fieldConfig, data) => {
+    const paths = [];
+
+    const getPathsForPath = (path = "", renderPath) => {
+        const thisConfig = path ? get(fieldConfig, path) : fieldConfig;
+        if (Array.isArray(thisConfig)) {
+            thisConfig.forEach((item, index) => {
+                if (item.type === "collection") {
+                    const thisData = renderPath ? get(data, renderPath) : data[item.id];
+                    if (thisData && Array.isArray(thisData)) {
+                        thisData.forEach((colItem, colIndex) => {
+                            getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}[${colIndex}]` : `${item.id}[${colIndex}]`);
+                        });
+                    }
+                } else if (item.type === "group") {
+                    getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}.${item.id}` : item.id);
+                } else {
+                    paths.push(renderPath ? `${renderPath}.${item.id}` : item.id);
+                }
+            });
+        }
+    }
+
+    getPathsForPath();
+
+    return paths;
+};
 
 const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
 
@@ -59,6 +88,9 @@ const Form = ({
     const [lastFocusedField, setLastFocusedField] = useState();
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
     const renderedFields = {};
+    const fieldPaths = getFieldPaths(parsedFieldConfig, data);
+
+    console.log({ fieldPaths });
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {

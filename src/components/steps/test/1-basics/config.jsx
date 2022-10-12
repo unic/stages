@@ -97,6 +97,30 @@ const config = {
                         label: "Field 2",
                         type: "text",
                         isRequired: false
+                    },
+                    {
+                        id: "colGroup",
+                        type: "group",
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "collection1",
+                                type: "collection",
+                                fields: [
+                                    {
+                                        id: "field1",
+                                        label: "Field 1",
+                                        type: "text",
+                                        isRequired: true
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },
@@ -111,6 +135,42 @@ const config = {
                 type: "radio",
                 isRequired: true,
                 isDisabled: !!data.q1
+            },
+            {
+                id: "group1",
+                type: "group",
+                fields: [
+                    {
+                        id: "field1",
+                        label: "Field 1",
+                        type: "text",
+                        isRequired: true
+                    },
+                    {
+                        id: "field2",
+                        label: "Field 2",
+                        type: "text",
+                        isRequired: false
+                    },
+                    {
+                        id: "subgroup1",
+                        type: "group",
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    }
+                ]
             }
         ];
     }

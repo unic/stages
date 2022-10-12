@@ -38,6 +38,12 @@ const FormRenderer = ({ fields, onCollectionAction, data, errors }) => {
             <br />
             {fields.q1}
             <br />
+            {/*
+            {fields.group1.field1}
+            <br />
+            {fields.group1.field2}
+            <br />
+            */}
             <Collection
                 title="Simple, non required, non initialized collection:"
                 description="User can add as many entries or as little as he wishes. No minimum or maximum requirements. And no entry is initialized."

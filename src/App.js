@@ -37,7 +37,23 @@ export const saveStateToLocalStorage = (state = {}) => {
 };
 
 function App() {
-    const [data, setData] = useState({});
+    const [data, setData] = useState({
+        postalcode: "5600",
+        collection1: [
+            {
+                field1: "Test1",
+                field2: "Test2",
+                colGroup: {
+                    field1: "Subtest1",
+                    collection1: [
+                        {
+                            field1: "Bla"
+                        }
+                    ]
+                }
+            }
+        ]
+    });
 
     const handleChange = (data, errors) => {
         console.log("handle change", {data, errors});
