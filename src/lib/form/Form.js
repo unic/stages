@@ -510,20 +510,11 @@ const Form = ({
 
         newValue = filterValue(value);
         
-        if (Array.isArray(fieldKey)) {
-            if (newValue) {
-                newData[fieldKey[0]][index][fieldKey[1]] = newValue;
-            } else {
-                // Remove if false, to make sure isDirty is calculated correctly!
-                delete newData[fieldKey[0]][index][fieldKey[1]];
-            }
+        if (newValue) {
+            set(newData, fieldKey, newValue);
         } else {
-            if (newValue) {
-                newData[fieldKey] = newValue;
-            } else {
-                // Remove if false, to make sure isDirty is calculated correctly!
-                delete newData[fieldKey];
-            }
+            // Remove if false, to make sure isDirty is calculated correctly!
+            set(newData, fieldKey, undefined);
         }
 
         // Now run over all computed value fields to recalculate all dynamic data:
