@@ -25,10 +25,14 @@ const getFieldPaths = (fieldConfig, data) => {
         if (Array.isArray(thisConfig)) {
             thisConfig.forEach((item, index) => {
                 if (item.type === "collection") {
-                    const thisData = renderPath ? get(data, renderPath) : data[item.id];
+                    const thisData = renderPath ? get(data, `${renderPath}.${item.id}`) : data[item.id];
                     if (thisData && Array.isArray(thisData)) {
                         thisData.forEach((colItem, colIndex) => {
-                            getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}[${colIndex}]` : `${item.id}[${colIndex}]`);
+                            getPathsForPath(
+                                `${path}[${index}].fields`, renderPath ?
+                                    `${renderPath}.${item.id}[${colIndex}]` : 
+                                    `${item.id}[${colIndex}]`
+                            );
                         });
                     }
                 } else if (item.type === "group") {
