@@ -4,6 +4,7 @@ import find from "lodash.find";
 import uniqWith from "lodash.uniqwith";
 import isEqual from "lodash.isequal";
 import get from "lodash.get";
+import set from "lodash.set";
 import stringify from "fast-json-stable-stringify";
 
 const isElementInViewport = el => {
@@ -689,10 +690,38 @@ const Form = ({
     const createRenderedFields = () => {
         const renderedFields = {};
 
-        fieldPaths.forEach(fieldPath => {
+        const createField = (fieldConfig, fieldData) => {
+            const cleanedField = Object.assign({}, fieldConfig);
 
+            if (optionsLoaded[fieldConfig.id]) cleanedField.options = optionsLoaded[fieldConfig.id];
+
+            // Remove special props from field before rendering:
+            delete cleanedField.computedValue;
+            delete cleanedField.filter;
+            delete cleanedField.clearFields;
+            delete cleanedField.dynamicOptions;
+
+            return React.createElement(
+                fields[fieldConfig.type].component,
+                Object.assign({
+                    key: fieldConfig.id,
+                    value: fieldData,
+                    initialValue: initialData[fieldConfig.id],
+                    error: errors[fieldConfig.id],
+                    isDirty: !!dirtyFields[fieldConfig.id],
+                    isDisabled: isDisabled || fieldConfig.isDisabled,
+                    onChange: value => handleChange(fieldConfig.id, value),
+                    onFocus: () => handleFocus(fieldConfig.id),
+                    onBlur: () => handleBlur(fieldConfig.id)
+                }, cleanedField)
+            );
+        };
+
+        fieldPaths.forEach(fieldPath => {
+            set(renderedFields, fieldPath.path, createField(fieldPath.config, fieldPath.data));
         });
 
+        /*
         parsedFieldConfig.forEach(field => {
             const cleanedField = Object.assign({}, field);
             if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
@@ -789,6 +818,7 @@ const Form = ({
                 );
             }
         });
+        */
 
         return renderedFields;
     };
