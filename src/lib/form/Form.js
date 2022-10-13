@@ -339,13 +339,13 @@ const Form = ({
     };
 
     // Improve the on change handler so that only real changes are bubbled up!
-    const limitedOnChange = (newData, errors, id, fieldKey, index) => {
+    const limitedOnChange = (newData, errors, id, fieldKey) => {
         let newLastOnChangeData;
         try {
-            newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey, index });
+            newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey });
         } catch(error) {};
         if (newLastOnChangeData !== lastOnChangeData) {
-            onChange(newData, errors, id, fieldKey, index);
+            onChange(newData, errors, id, fieldKey);
             lastOnChangeData = newLastOnChangeData;
         }
     };
@@ -477,14 +477,14 @@ const Form = ({
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
     */
-    const handleChange = (fieldKey, value, index, outsideData, syntheticCall = false) => {
+    const handleChange = (fieldKey, value, outsideData, syntheticCall = false) => {
         let throttleValidation = false;
         let newErrors;
         const timestamp = +new Date();
 
         if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
             if (timeoutRef) clearTimeout(timeoutRef);
-            timeoutRef = setTimeout(() => handleChange(fieldKey, value, index, outsideData, true), 100);
+            timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 100);
             throttleValidation = true;
         }
 
@@ -596,7 +596,7 @@ const Form = ({
             }
         });
 
-        limitedOnChange(newData, newErrors || errors, id, fieldKey, index);
+        limitedOnChange(newData, newErrors || errors, id, fieldKey);
     };
 
     /*
@@ -612,7 +612,7 @@ const Form = ({
         This function is called on each fields onBlur. It only runs validation 
         if validation is enabled for blur events.
     */
-    const handleBlur = (fieldKey, index) => {
+    const handleBlur = (fieldKey) => {
         setFocusedField();
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, data);
@@ -624,12 +624,12 @@ const Form = ({
         // Run field cleanUp function if one is set:
         if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && newData[fieldConfig.id]) {
             newData[fieldConfig.id] = fieldConfig.cleanUp(newData[fieldConfig.id]);
-            limitedOnChange(newData, errors, id, fieldKey, index);
+            limitedOnChange(newData, errors, id, fieldKey);
         }
 
         // prepare the params for the validateOnCallback:
         const validateOnParams = {
-            data: newData[fieldKey],
+            data: get(newData, fieldKey),
             fieldIsDirty: !!dirtyFields[fieldKey],
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
@@ -645,7 +645,7 @@ const Form = ({
         ) {
             const result = validateField(fieldConfig, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
-            limitedOnChange(newData, result.errors, id, fieldKey, index);
+            limitedOnChange(newData, result.errors, id, fieldKey);
         } else if (
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf("blur") > -1) || 
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf("blur") > -1) || 
@@ -654,7 +654,7 @@ const Form = ({
         ) {
             const result = validateField(fieldConfig, "blur", newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
-            limitedOnChange(newData, result.errors, id, fieldKey, index);
+            limitedOnChange(newData, result.errors, id, fieldKey);
         }
 
         // Check if a field has dynamic options which have to be loaded:
@@ -846,7 +846,7 @@ const Form = ({
             setErrors(newErrors);
         }
 
-        limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey, index);
+        limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey);
     };
 
     /*
