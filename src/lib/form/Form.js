@@ -91,7 +91,6 @@ const Form = ({
     const [focusedField, setFocusedField] = useState();
     const [lastFocusedField, setLastFocusedField] = useState();
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
-    const renderedFields = {};
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
 
     console.log({ fieldPaths });
@@ -683,63 +682,46 @@ const Form = ({
         Create the rendered fields object, which contain the correct React components together
         with the correct data in them.
     */
-    parsedFieldConfig.forEach(field => {
-        const cleanedField = Object.assign({}, field);
-        if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
+    const createRenderedFields = () => {
+        const renderedFields = {};
 
-        if (optionsLoaded[field.id]) cleanedField.options = optionsLoaded[field.id];
+        parsedFieldConfig.forEach(field => {
+            const cleanedField = Object.assign({}, field);
+            if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
 
-        // Remove special props from field before rendering:
-        delete cleanedField.computedValue;
-        delete cleanedField.filter;
-        delete cleanedField.clearFields;
-        delete cleanedField.dynamicOptions;
+            if (optionsLoaded[field.id]) cleanedField.options = optionsLoaded[field.id];
 
-        // Create regular fields:
-        if (!isReservedType(field.type)) {
-            renderedFields[field.id] = React.createElement(
-                fields[field.type].component,
-                Object.assign({
-                    key: field.id,
-                    value: data[field.id],
-                    initialValue: initialData[field.id],
-                    error: errors[field.id],
-                    isDirty: !!dirtyFields[field.id],
-                    isDisabled: isDisabled || field.isDisabled,
-                    onChange: value => handleChange(field.id, value),
-                    onFocus: () => handleFocus(field.id),
-                    onBlur: () => handleBlur(field.id)
-                }, cleanedField)
-            );
-        // Create collections:
-        } else if (field.type === "collection") {
-            if (!Array.isArray(renderedFields[field.id])) renderedFields[field.id] = [];
-            // Add existing entries:
-            if (data[field.id]) {
-                data[field.id].forEach((dataEntry, index) => {
-                    const subRenderedFields = {};
-                    if (Array.isArray(field.fields)) {
-                        field.fields.forEach(subField => {
-                            if (fields[subField.type]) {
-                                subRenderedFields[subField.id] = React.createElement(
-                                    fields[subField.type].component,
-                                    Object.assign({
-                                        key: `${field.id}-${index}-${subField.id}`,
-                                        value: dataEntry[subField.id],
-                                        error: errors[`${field.id}-${index}-${subField.id}`],
-                                        isDisabled: isDisabled || subField.isDisabled,
-                                        onChange: value => handleChange([field.id, subField.id], value, index),
-                                        onFocus: () => handleFocus([field.id, subField.id], index),
-                                        onBlur: () => handleBlur([field.id, subField.id], index)
-                                    }, subField)
-                                )
-                            }
-                        });
-                    } else {
-                        // This is a union type collection, so we need to infer the type so we can select the right field config:
-                        if (dataEntry.__typename && field.fields[dataEntry.__typename]) {
-                            // This entries type was found, so render it:
-                            field.fields[dataEntry.__typename].forEach(subField => {
+            // Remove special props from field before rendering:
+            delete cleanedField.computedValue;
+            delete cleanedField.filter;
+            delete cleanedField.clearFields;
+            delete cleanedField.dynamicOptions;
+
+            // Create regular fields:
+            if (!isReservedType(field.type)) {
+                renderedFields[field.id] = React.createElement(
+                    fields[field.type].component,
+                    Object.assign({
+                        key: field.id,
+                        value: data[field.id],
+                        initialValue: initialData[field.id],
+                        error: errors[field.id],
+                        isDirty: !!dirtyFields[field.id],
+                        isDisabled: isDisabled || field.isDisabled,
+                        onChange: value => handleChange(field.id, value),
+                        onFocus: () => handleFocus(field.id),
+                        onBlur: () => handleBlur(field.id)
+                    }, cleanedField)
+                );
+            // Create collections:
+            } else if (field.type === "collection") {
+                if (!Array.isArray(renderedFields[field.id])) renderedFields[field.id] = [];
+                // Add existing entries:
+                if (data[field.id]) {
+                    data[field.id].forEach((dataEntry, index) => {
+                        const subRenderedFields = {};
+                        if (Array.isArray(field.fields)) {
+                            field.fields.forEach(subField => {
                                 if (fields[subField.type]) {
                                     subRenderedFields[subField.id] = React.createElement(
                                         fields[subField.type].component,
@@ -755,30 +737,53 @@ const Form = ({
                                     )
                                 }
                             });
+                        } else {
+                            // This is a union type collection, so we need to infer the type so we can select the right field config:
+                            if (dataEntry.__typename && field.fields[dataEntry.__typename]) {
+                                // This entries type was found, so render it:
+                                field.fields[dataEntry.__typename].forEach(subField => {
+                                    if (fields[subField.type]) {
+                                        subRenderedFields[subField.id] = React.createElement(
+                                            fields[subField.type].component,
+                                            Object.assign({
+                                                key: `${field.id}-${index}-${subField.id}`,
+                                                value: dataEntry[subField.id],
+                                                error: errors[`${field.id}-${index}-${subField.id}`],
+                                                isDisabled: isDisabled || subField.isDisabled,
+                                                onChange: value => handleChange([field.id, subField.id], value, index),
+                                                onFocus: () => handleFocus([field.id, subField.id], index),
+                                                onBlur: () => handleBlur([field.id, subField.id], index)
+                                            }, subField)
+                                        )
+                                    }
+                                });
+                            }
                         }
-                    }
-                    renderedFields[field.id].push(subRenderedFields);
-                });
+                        renderedFields[field.id].push(subRenderedFields);
+                    });
+                }
+            // Create subforms:
+            } else if (field.type === "subform") {
+                renderedFields[field.id] = (
+                    <Form
+                        config={field.config}
+                        render={({ fieldProps }) => React.createElement(field.render, fieldProps)}
+                        fields={fields}
+                        id={`${id}-${field.id}`}
+                        onChange={(value, subErrors) => handleChange(field.id, value)}
+                        onValidation={errors => handleSubValidation(field.id, errors)}
+                        parentRunValidation={runValidation}
+                        data={data && data[field.id]}
+                        isVisible={isVisible}
+                        isDisabled={isDisabled}
+                        validateOn={validateOn}
+                    />
+                );
             }
-        // Create subforms:
-        } else if (field.type === "subform") {
-            renderedFields[field.id] = (
-                <Form
-                    config={field.config}
-                    render={({ fieldProps }) => React.createElement(field.render, fieldProps)}
-                    fields={fields}
-                    id={`${id}-${field.id}`}
-                    onChange={(value, subErrors) => handleChange(field.id, value)}
-                    onValidation={errors => handleSubValidation(field.id, errors)}
-                    parentRunValidation={runValidation}
-                    data={data && data[field.id]}
-                    isVisible={isVisible}
-                    isDisabled={isDisabled}
-                    validateOn={validateOn}
-                />
-            );
-        }
-    });
+        });
+
+        return renderedFields;
+    };
 
     /*
         This function handles adding and removing collection entries. It is
@@ -853,7 +858,7 @@ const Form = ({
     // Render all the render props:
     return render ? render({
         actionProps: { handleActionClick, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: renderedFields, onCollectionAction, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
+        fieldProps: { fields: createRenderedFields(), onCollectionAction, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
         loading
     }) : null;
 };
