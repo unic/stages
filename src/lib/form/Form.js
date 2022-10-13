@@ -690,10 +690,10 @@ const Form = ({
     const createRenderedFields = () => {
         const renderedFields = {};
 
-        const createField = (fieldConfig, fieldData) => {
+        const createField = (fieldConfig, fieldData, path) => {
             const cleanedField = Object.assign({}, fieldConfig);
 
-            if (optionsLoaded[fieldConfig.id]) cleanedField.options = optionsLoaded[fieldConfig.id];
+            if (optionsLoaded[fieldConfig.id]) cleanedField.options = optionsLoaded[path];
 
             // Remove special props from field before rendering:
             delete cleanedField.computedValue;
@@ -704,21 +704,21 @@ const Form = ({
             return React.createElement(
                 fields[fieldConfig.type].component,
                 Object.assign({
-                    key: fieldConfig.id,
+                    key: path,
                     value: fieldData,
-                    initialValue: initialData[fieldConfig.id],
-                    error: errors[fieldConfig.id],
-                    isDirty: !!dirtyFields[fieldConfig.id],
+                    initialValue: initialData[path],
+                    error: errors[path],
+                    isDirty: !!dirtyFields[path],
                     isDisabled: isDisabled || fieldConfig.isDisabled,
-                    onChange: value => handleChange(fieldConfig.id, value),
-                    onFocus: () => handleFocus(fieldConfig.id),
-                    onBlur: () => handleBlur(fieldConfig.id)
+                    onChange: value => handleChange(path, value),
+                    onFocus: () => handleFocus(path),
+                    onBlur: () => handleBlur(path)
                 }, cleanedField)
             );
         };
 
         fieldPaths.forEach(fieldPath => {
-            set(renderedFields, fieldPath.path, createField(fieldPath.config, fieldPath.data));
+            set(renderedFields, fieldPath.path, createField(fieldPath.config, fieldPath.data, fieldPath.path));
         });
 
         /*
