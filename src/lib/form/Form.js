@@ -445,10 +445,7 @@ const Form = ({
         This function returns the field configuration for a specific field, given the key of that field (or keys for collection fields)
     */
     const getConfigForField = fieldKey => {
-        let fieldConfig = {};
-        if (typeof fieldKey === "string") fieldConfig = find(parsedFieldConfig, { id: fieldKey });
-        if (Array.isArray(fieldKey) && fieldKey.length > 1) fieldConfig = find(parsedFieldConfig, { id: fieldKey[0] });
-        return fieldConfig;
+        return fieldPaths[fieldKey] ? fieldPaths[fieldKey].config : {};
     };
 
     const getActiveCustomEvents = (triggeringEvent, eventData) => {
