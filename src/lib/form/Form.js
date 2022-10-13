@@ -114,7 +114,7 @@ const Form = ({
     }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 
     // Helper function to detect reserved field types:
-    const isReservedType = type => type === "collection" || type === "subform";
+    const isReservedType = type => type === "collection" || type === "subform" || type === "group";
 
     // Is a specific field valid based on current data:
     const isFieldValid = (field, fieldData, triggeringEvent) => {
