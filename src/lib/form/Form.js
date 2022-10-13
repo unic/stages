@@ -38,7 +38,11 @@ const getFieldPaths = (fieldConfig, data) => {
                 } else if (item.type === "group") {
                     getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}.${item.id}` : item.id);
                 } else {
-                    paths.push(renderPath ? `${renderPath}.${item.id}` : item.id);
+                    paths.push({
+                        path: renderPath ? `${renderPath}.${item.id}` : item.id,
+                        config: item,
+                        data: get(data, renderPath ? `${renderPath}.${item.id}` : item.id)
+                    });
                 }
             });
         }
@@ -684,6 +688,10 @@ const Form = ({
     */
     const createRenderedFields = () => {
         const renderedFields = {};
+
+        fieldPaths.forEach(fieldPath => {
+
+        });
 
         parsedFieldConfig.forEach(field => {
             const cleanedField = Object.assign({}, field);
