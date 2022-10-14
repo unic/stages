@@ -118,9 +118,10 @@ const config = {
                                 fields: [
                                     {
                                         id: "field1",
-                                        label: "Field 1 (has custom validation onChange)",
+                                        label: "Field 1 (has custom validation onChange and is filtered)",
                                         type: "text",
                                         isRequired: true,
+                                        filter: value => value.replace(/\D/g,''),
                                         customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length % 2 === 1,
                                         validateOn: ["action", "change"]
                                     }

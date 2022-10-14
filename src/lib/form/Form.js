@@ -98,13 +98,11 @@ const Form = ({
     const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
 
-    console.log({ fieldPaths });
-
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
         if (data && !initialData) {
             if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
-            setInitialData(data);
+            setInitialData(JSON.parse(stringify(data)));
         }
     }, [data]);
 
@@ -139,7 +137,6 @@ const Form = ({
         This function is used to validate one single field. It returns the updated error and firstErrorField object
     */
     const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
-        console.log("validateField", fieldKey);
         const field = find(fieldPaths, { path: fieldKey }).config;
         if (isDebugging()) window.stagesLogging(`Validate field "${field.id}"`, uniqId);
 
@@ -512,7 +509,7 @@ const Form = ({
 
         // prepare the params for the validateOnCallback:
         const validateOnParams = {
-            data: newData[fieldKey],
+            data: get(newData, fieldKey),
             fieldIsDirty: !!dirtyFields[fieldKey],
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
@@ -546,10 +543,10 @@ const Form = ({
 
         // Set the isDirty flag and per field object:
         if (initialData) {
-            if (!isEqual(newData[fieldKey], initialData[fieldKey])) {
+            if (!isEqual(get(newData, fieldKey), get(initialData, fieldKey))) {
                 dirtyFields[fieldKey] = {
-                    oldData: initialData[fieldKey],
-                    newData: newData[fieldKey]
+                    oldData: get(initialData, fieldKey),
+                    newData: get(newData, fieldKey)
                 };
             } else if (typeof dirtyFields[fieldKey] !== "undefined") {
                 delete dirtyFields[fieldKey];
@@ -684,7 +681,7 @@ const Form = ({
                 Object.assign({
                     key: path,
                     value: fieldData,
-                    initialValue: initialData[path],
+                    initialValue: get(initialData, path),
                     error: errors[path],
                     isDirty: !!dirtyFields[path],
                     isDisabled: isDisabled || fieldConfig.isDisabled,

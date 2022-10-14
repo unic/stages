@@ -47,10 +47,10 @@ function App() {
                     field1: "Subtest1",
                     collection1: [
                         {
-                            field1: "Bla 1"
+                            field1: "324"
                         },
                         {
-                            field1: "Bla 2"
+                            field1: "657"
                         }
                     ]
                 }
