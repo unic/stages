@@ -138,33 +138,43 @@ const Form = ({
     */
     const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
         const field = find(fieldPaths, { path: fieldKey }).config;
-        if (isDebugging()) window.stagesLogging(`Validate field "${field.id}"`, uniqId);
+        if (isDebugging()) window.stagesLogging(`Validate field "${fieldKey}"`, uniqId);
 
         // Is the data entered valid, check with default field function and optionally with custom validation:
         const fieldIsValid = isFieldValid(fieldKey, field, validationData, triggeringEvent);
+        const fieldValidationData = get(validationData, fieldKey);
 
-        if (errors[field.id]) delete errors[field.id];
+        if (errors[fieldKey]) delete errors[fieldKey];
 
         // Regular non reserved type fields:
         if (!isReservedType(field.type) && fieldIsValid !== true) {
-            if (!firstErrorField) firstErrorField = field.id;
-            errors[field.id] = {
-                value: validationData[field.id],
+            if (!firstErrorField) firstErrorField = fieldKey;
+            errors[fieldKey] = {
+                value: fieldValidationData,
                 field,
                 errorCode: fieldIsValid !== false ? fieldIsValid : undefined
             };
         // Collections which are required (need to have at least one entry!):
-        } else if (field.type === "collection" && field.isRequired && (!validationData[field.id] || validationData[field.id].length === 0 || validationData[field.id].length === 1 && Object.keys(validationData[field.id][0]).length === 0)) {
-            if (!firstErrorField) firstErrorField = field.id;
-            errors[field.id] = {
-                value: validationData[field.id],
+        } else if (
+            field.type === "collection" && 
+            field.isRequired && 
+            (
+                !fieldValidationData || 
+                fieldValidationData.length === 0 || 
+                fieldValidationData.length === 1 && 
+                Object.keys(fieldValidationData[0]).length === 0
+            )
+        ) {
+            if (!firstErrorField) firstErrorField = fieldKey;
+            errors[fieldKey] = {
+                value: fieldValidationData,
                 field
             };
         // Collections which are not required will only be checked if data has been added:
         } else if (field.type === "collection") {
             if (Array.isArray(field.fields)) {
                 field.fields.forEach(subField => {
-                    validationData[field.id] && validationData[field.id].forEach((dataEntry, index) => {
+                    fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
                         // Don't check fields if the collection isn't required and the object is empty:
                         if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
@@ -172,8 +182,8 @@ const Form = ({
                         const fieldIsValid = isFieldValid(subField, dataEntry, triggeringEvent);
 
                         if (fields[subField.type] && fieldIsValid !== true) {
-                            errors[`${field.id}-${index}-${subField.id}`] = {
-                                value: validationData[field.id],
+                            errors[fieldKey] = {
+                                value: fieldValidationData,
                                 subField,
                                 errorCode: fieldIsValid !== false ? fieldIsValid : undefined
                             };
@@ -182,7 +192,7 @@ const Form = ({
                 });
             } else {
                 // This is a union type collection, so we need to get the validation config inside the types object:
-                validationData[field.id] && validationData[field.id].forEach((dataEntry, index) => {
+                fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
                     // Don't check fields if the collection isn't required and the object is empty:
                     if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
@@ -193,8 +203,8 @@ const Form = ({
                             const fieldIsValid = isFieldValid(subField, dataEntry, triggeringEvent);
 
                             if (fields[subField.type] && fieldIsValid !== true) {
-                                errors[`${field.id}-${index}-${subField.id}`] = {
-                                    value: validationData[field.id],
+                                errors[fieldKey] = {
+                                    value: fieldValidationData,
                                     subField,
                                     errorCode: fieldIsValid !== false ? fieldIsValid : undefined
                                 };
@@ -205,11 +215,11 @@ const Form = ({
             }
         }
 
-        if (field.type === "collection" && field.uniqEntries && validationData[field.id]) {
+        if (field.type === "collection" && field.uniqEntries && fieldValidationData) {
             // Add error if collection entries are not unique!
-            if (uniqWith(validationData[field.id], (arrVal, othVal) => stringify(arrVal) === stringify(othVal)).length !== validationData[field.id].length) {
-                errors[field.id] = {
-                    value: validationData[field.id],
+            if (uniqWith(fieldValidationData, (arrVal, othVal) => stringify(arrVal) === stringify(othVal)).length !== fieldValidationData.length) {
+                errors[fieldKey] = {
+                    value: fieldValidationData,
                     field
                 };
             }
