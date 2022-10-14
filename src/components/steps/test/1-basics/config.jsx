@@ -268,6 +268,227 @@ const config = {
                     }
                 ]
             },
+            {
+                id: "collectionGroup",
+                type: "group",
+                fields: [
+                    {
+                        id: "collection1",
+                        type: "collection",
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection2",
+                        type: "collection",
+                        init: true,
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection3",
+                        type: "collection",
+                        init: true,
+                        isRequired: true,
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection4",
+                        type: "collection",
+                        init: true,
+                        min: 2,
+                        max: 5,
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection5",
+                        type: "collection",
+                        init: true,
+                        isRequired: true,
+                        min: 2,
+                        max: 5,
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection6",
+                        type: "collection",
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection7",
+                        type: "collection",
+                        init: true,
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Factor 1",
+                                type: "number"
+                            },
+                            {
+                                id: "field2",
+                                label: "Factor 2",
+                                type: "number"
+                            },
+                            {
+                                id: "result",
+                                label: "Result of Factor 1 x Factor 2",
+                                type: "number",
+                                isDisabled: true,
+                                computedValue: (data, itemData) => {
+                                    let result = 0;
+                                    if (itemData.field1 && itemData.field2) {
+                                        result = Number(itemData.field1) * Number(itemData.field2);
+                                    }
+                                    return result !== 0 ? result : "";
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection8",
+                        type: "collection",
+                        isRequired: true,
+                        uniqEntries: true,
+                        init: true,
+                        fields: [
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    },
+                    {
+                        id: "collection9",
+                        type: "collection",
+                        isRequired: true,
+                        init: "food",
+                        fields: {
+                            food: [
+                                {
+                                    id: "name",
+                                    label: "Food Name",
+                                    type: "text",
+                                    isRequired: true
+                                },
+                                {
+                                    id: "calories",
+                                    label: "Calories",
+                                    type: "text"
+                                }
+                            ],
+                            drink: [
+                                {
+                                    id: "name",
+                                    label: "Drink Name",
+                                    type: "text",
+                                    isRequired: true
+                                },
+                                {
+                                    id: "alcohol",
+                                    label: "Alcohol Percentage",
+                                    type: "text"
+                                },
+                                {
+                                    id: "fullName",
+                                    label: "Full Name",
+                                    type: "text",
+                                    isDisabled: true,
+                                    computedValue: (data, itemData) => {
+                                        if (itemData.alcohol) {
+                                            return `${itemData.name} ${itemData.alcohol}%`;
+                                        }
+                                        return itemData.name;
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
         ];
     }
 };

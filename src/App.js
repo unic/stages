@@ -55,7 +55,14 @@ function App() {
                     ]
                 }
             }
-        ]
+        ],
+        collectionGroup: {
+            collection6: [
+                {
+                    field1: "test"
+                }
+            ]
+        }
     });
 
     const handleChange = (data, errors) => {

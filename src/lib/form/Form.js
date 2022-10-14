@@ -369,21 +369,24 @@ const Form = ({
         
         if (isDebugging()) window.stagesLogging(`Is visible change to "${isVisible ? "visible" : "invisible"}"`, uniqId);
 
-        parsedFieldConfig.forEach(field => {
+        fieldPaths.forEach(fieldPath => {
+            const field = fieldPath.config;
+            let fieldData = get(newData, fieldPath.path);
             if (field.type === "collection" && field.init) {
                 const minEntries = field.min ? Number(field.min) : 1;
                 // Init collections if needed (will add empty object so the row is rendered):
-                if (!newData[field.id] || newData[field.id].length === 0) newData[field.id] = [];
-                for (let i = newData[field.id].length; i < minEntries; i++) {
+                if (!fieldData || fieldData.length === 0) fieldData = [];
+                for (let i = fieldData.length; i < minEntries; i++) {
                     if (typeof field.init === "string") {
                         // Init union types with a specific type:
-                        newData[field.id].push({
+                        fieldData.push({
                             __typename: field.init
                         });
                     } else {
-                        newData[field.id].push({});
+                        fieldData.push({});
                     }
                 }
+                set(newData, fieldPath.path, fieldData);
             }
         });
 
