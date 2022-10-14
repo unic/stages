@@ -38,13 +38,12 @@ const getFieldPaths = (fieldConfig, data) => {
                     }
                 } else if (item.type === "group") {
                     getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}.${item.id}` : item.id);
-                } else {
-                    paths.push({
-                        path: renderPath ? `${renderPath}.${item.id}` : item.id,
-                        config: item,
-                        data: get(data, renderPath ? `${renderPath}.${item.id}` : item.id)
-                    });
                 }
+                paths.push({
+                    path: renderPath ? `${renderPath}.${item.id}` : item.id,
+                    config: item,
+                    data: get(data, renderPath ? `${renderPath}.${item.id}` : item.id)
+                });
             });
         }
     }
@@ -120,6 +119,7 @@ const Form = ({
 
     // Is a specific field valid based on current data:
     const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
+        if (!fields[field.type]) return true;
         const thisData = get(fieldData, fieldKey);
         const isValid = !isReservedType(field.type) && fields[field.type].isValid(thisData, field);
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
@@ -653,6 +653,7 @@ const Form = ({
         const renderedFields = {};
 
         const createField = (fieldConfig, fieldData, path) => {
+            if (!fields[fieldConfig.type]) return null;
             const cleanedField = Object.assign({}, fieldConfig);
 
             if (optionsLoaded[fieldConfig.id]) cleanedField.options = optionsLoaded[path];
@@ -680,7 +681,8 @@ const Form = ({
         };
 
         fieldPaths.forEach(fieldPath => {
-            set(renderedFields, fieldPath.path, createField(fieldPath.config, fieldPath.data, fieldPath.path));
+            const fieldComponent = createField(fieldPath.config, fieldPath.data, fieldPath.path);
+            if (fieldComponent) set(renderedFields, fieldPath.path, fieldComponent);
         });
 
         /*
