@@ -1,4 +1,4 @@
-import axios from "axios";
+import get from "lodash.get";
 
 const addressConfig = {
     fields: () => {
@@ -176,7 +176,17 @@ const config = {
                                 label: "Field 2",
                                 type: "text",
                                 isRequired: false
-                            }
+                            },
+                            {
+                                id: "field3",
+                                label: "Combined (compute values)",
+                                type: "text",
+                                disabled: true,
+                                isRequired: false,
+                                computedValue: (data) => {
+                                    return get(data, "group1.subgroup1.field1", "") + get(data, "group1.subgroup1.field2", "");
+                                }
+                            },
                         ]
                     }
                 ]
@@ -250,7 +260,7 @@ const config = {
                         isDisabled: true,
                         computedValue: (data, itemData) => {
                             let result = 0;
-                            if (itemData.factor1 && itemData.factor2) {
+                            if (itemData && itemData.factor1 && itemData.factor2) {
                                 result = Number(itemData.factor1) * Number(itemData.factor2);
                             }
                             return result !== 0 ? result : "";

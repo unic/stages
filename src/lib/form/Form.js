@@ -387,7 +387,7 @@ const Form = ({
             }
         });
 
-        newData = computeValues(parsedFieldConfig, newData);
+        newData = computeValues(newData);
 
         if (typeof config.asyncDataLoader === "function" && isVisible && !dataLoaded) {
             // Load async data if an asyncDataLoader has been provided:
@@ -416,39 +416,16 @@ const Form = ({
         This function finds all fields with computed values and computes them
         with the current data.
     */
-    const computeValues = (config, data) => {
-        config.forEach(field => {
-            if (typeof field.computedValue === "function") {
-                data[field.id] = field.computedValue(data);
-            }
-            if (field.type === "collection") {
-                if (Array.isArray(field.fields)) {
-                    field.fields.forEach(subField => {
-                        if (typeof subField.computedValue === "function") {
-                            data[field.id].forEach((dataEntry, index) => {
-                                data[field.id][index][subField.id] = subField.computedValue(data, data[field.id][index]);
-                            });
-                        }
-                    });
-                } else {
-                    // This is a union type collection, so we need to loop differently:
-                    data[field.id].forEach((dataEntry, index) => {
-                        if (data[field.id][index].__typename) {
-                            const unionType = data[field.id][index].__typename;
-                            if (field.fields[unionType]) {
-                                const subFields = field.fields[unionType];
-                                subFields.forEach(subField => {
-                                    if (typeof subField.computedValue === "function") {
-                                        data[field.id][index][subField.id] = subField.computedValue(data, data[field.id][index]);
-                                    }
-                                });
-                            }
-                        }
-                    });
-                }
+    const computeValues = (data) => {
+        const newData = Object.assign({}, data);
+        fieldPaths.forEach(fieldPath => {
+            if (typeof fieldPath.config.computedValue === "function") {
+                const itemData = get(data, fieldPath.path.split(".").slice(0, -1).join("."));
+                const computedValue = fieldPath.config.computedValue(data, itemData);
+                set(newData, fieldPath.path, computedValue);
             }
         });
-        return data;
+        return newData;
     };
 
     /*
@@ -515,7 +492,7 @@ const Form = ({
         }
 
         // Now run over all computed value fields to recalculate all dynamic data:
-        newData = computeValues(parsedFieldConfig, newData);
+        newData = computeValues(newData);
 
         // prepare the params for the validateOnCallback:
         const validateOnParams = {

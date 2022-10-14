@@ -26,6 +26,8 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                     {fields.group1.subgroup1.field1}
                     <br />
                     {fields.group1.subgroup1.field2}
+                    <br />
+                    {fields.group1.subgroup1.field3}
                 </fieldset>
             </fieldset>
             <br />
