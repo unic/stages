@@ -559,7 +559,7 @@ const Form = ({
         if (fieldConfig.clearFields && Array.isArray(fieldConfig.clearFields)) {
             const newOptionsLoaded = Object.assign({}, optionsLoaded);
             fieldConfig.clearFields.forEach((field) => {
-                delete newData[field];
+                set(newData, field, undefined);
                 delete newOptionsLoaded[field];
             });
             setOptionsLoaded(newOptionsLoaded);

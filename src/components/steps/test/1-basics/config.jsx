@@ -62,6 +62,7 @@ const config = {
                 type: "text",
                 isRequired: true,
                 validateOn: data.city && data.city.length > 5 ? ["change", "blur", "action"] : ["blur", "action"],
+                clearFields: ["city2", "city3"],
                 customValidation: ({ data, allData, isValid }) => {
                     if (isValid && data.length % 2 === 1) return "UNEVEN";
                     return isValid;
@@ -155,8 +156,9 @@ const config = {
                     },
                     {
                         id: "field2",
-                        label: "Field 2",
+                        label: "Field 2 (clears sub Field 1)",
                         type: "text",
+                        clearFields: ["group1.subgroup1.field1"],
                         isRequired: false
                     },
                     {
