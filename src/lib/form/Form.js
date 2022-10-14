@@ -556,7 +556,6 @@ const Form = ({
 
         // Set the isDirty flag and per field object:
         if (initialData) {
-            setIsDirty(!isEqual(newData, initialData));
             if (!isEqual(newData[fieldKey], initialData[fieldKey])) {
                 dirtyFields[fieldKey] = {
                     oldData: initialData[fieldKey],
@@ -565,6 +564,7 @@ const Form = ({
             } else if (typeof dirtyFields[fieldKey] !== "undefined") {
                 delete dirtyFields[fieldKey];
             }
+            setIsDirty(Object.keys(dirtyFields).length > 0);
             setDirtyFields(dirtyFields);
         }
 

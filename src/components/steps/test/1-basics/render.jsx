@@ -1,9 +1,13 @@
-const FormRenderer = ({ fields, onCollectionAction, fieldProps, data, errors }) => {
+const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, errors }) => {
     return (
-        <div>
-            {fields.country}
+        <div style={{ border: isDirty ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
+            <div style={{ border: dirtyFields.country ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
+                {fields.country}
+            </div>
             <br />
-            {fields.postalcode}
+            <div style={{ border: dirtyFields.postalcode ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
+                {fields.postalcode}
+            </div>
             <br />
             {fields.city}
             <br />
