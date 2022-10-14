@@ -817,28 +817,30 @@ const Form = ({
     */
     const onCollectionAction = (fieldKey, action, index) => {
         const newData = Object.assign({}, data);
-        const field = find(parsedFieldConfig, { id: fieldKey });
+        const field = getConfigForField(fieldKey);
         const minEntries = field && field.min ? Number(field.min) : 0;
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
+        const updatedCollection = get(newData, fieldKey, []);
         let newErrors;
 
         if (isDebugging()) window.stagesLogging(`On collection action "${fieldKey}"`, uniqId);
 
         // This will add a new entry to the collection:
         if (action === "add") {
-            if (!Array.isArray(newData[fieldKey])) newData[fieldKey] = [];
             if (typeof index === "string" && field.fields[index]) {
                 // This is a union type collection, we're adding a specific entry:
-                if (maxEntries > newData[fieldKey].length) newData[fieldKey].push({__typename: index});
+                if (maxEntries > updatedCollection.length) updatedCollection.push({__typename: index});
             } else {
-                if (maxEntries > newData[fieldKey].length) newData[fieldKey].push({});
+                if (maxEntries > updatedCollection.length) updatedCollection.push({});
             }
         }
 
         // This will remove a specific entry in the collection:
         if (action === "remove") {
-            if (minEntries < newData[fieldKey].length) newData[fieldKey].splice(index, 1);
+            if (minEntries < updatedCollection.length) updatedCollection.splice(index, 1);
         }
+
+        set(newData, fieldKey, updatedCollection);
 
         // Only validate if collection action validation is enabled:
         if (validateOn.indexOf("collectionAction") > -1) {

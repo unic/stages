@@ -171,6 +171,65 @@ const config = {
                         ]
                     }
                 ]
+            },
+            {
+                id: "onlyNumbers",
+                label: "Only numbers allowed",
+                type: "text",
+                filter: value => value.replace(/\D/g,'')
+            },
+            {
+                id: "field1",
+                label: "Factor 1",
+                type: "number"
+            },
+            {
+                id: "field2",
+                label: "Factor 2",
+                type: "number"
+            },
+            {
+                id: "sum",
+                label: "Summary of both fields",
+                type: "number",
+                isDisabled: true,
+                computedValue: (data) => {
+                    let result = 0;
+                    if (data.field1) result = result + Number(data.field1);
+                    if (data.field2) result = result + Number(data.field2);
+                    return result !== 0 ? result : "";
+                }
+            },
+            {
+                id: "maths",
+                label: "Maths",
+                type: "collection",
+                init: true,
+                fields: [
+                    {
+                        id: "factor1",
+                        label: "Factor 1",
+                        type: "number"
+                    },
+                    {
+                        id: "factor2",
+                        label: "Factor 2",
+                        type: "number"
+                    },
+                    {
+                        id: "result",
+                        label: "Result of Factor 1 x Factor 2",
+                        type: "number",
+                        isDisabled: true,
+                        computedValue: (data, itemData) => {
+                            let result = 0;
+                            if (itemData.factor1 && itemData.factor2) {
+                                result = Number(itemData.factor1) * Number(itemData.factor2);
+                            }
+                            return result !== 0 ? result : "";
+                        }
+                    }
+                ]
             }
         ];
     }
