@@ -121,15 +121,16 @@ const Form = ({
     const isReservedType = type => type === "collection" || type === "subform" || type === "group";
 
     // Is a specific field valid based on current data:
-    const isFieldValid = (field, fieldData, triggeringEvent) => {
-        const isValid = !isReservedType(field.type) && fields[field.type].isValid(fieldData[field.id], field);
+    const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
+        const thisData = get(fieldData, fieldKey);
+        const isValid = !isReservedType(field.type) && fields[field.type].isValid(thisData, field);
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
-            data: fieldData[field.id],
+            data: thisData,
             allData: fieldData,
             fieldConfig: field,
             isValid,
-            fieldHasFocus: !!(focusedField && focusedField.key === field.id),
-            fieldIsDirty: typeof dirtyFields[field.id] !== "undefined",
+            fieldHasFocus: !!(focusedField && focusedField.key === fieldKey),
+            fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
             triggeringEvent
         }) : isValid;
     };
@@ -137,11 +138,13 @@ const Form = ({
     /*
         This function is used to validate one single field. It returns the updated error and firstErrorField object
     */
-    const validateField = (field, triggeringEvent, validationData, errors, firstErrorField) => {
+    const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
+        console.log("validateField", fieldKey);
+        const field = find(fieldPaths, { path: fieldKey }).config;
         if (isDebugging()) window.stagesLogging(`Validate field "${field.id}"`, uniqId);
 
         // Is the data entered valid, check with default field function and optionally with custom validation:
-        const fieldIsValid = isFieldValid(field, validationData, triggeringEvent);
+        const fieldIsValid = isFieldValid(fieldKey, field, validationData, triggeringEvent);
 
         if (errors[field.id]) delete errors[field.id];
 
@@ -231,9 +234,9 @@ const Form = ({
 
         if (!validationData) validationData = data;
 
-        parsedFieldConfig.forEach(field => {
-            if (!fields[field.type] && !isReservedType(field.type)) return;
-            const result = validateField(field, "action", validationData, errors, firstErrorField);
+        fieldPaths.forEach(fieldPath => {
+            if (!fields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
+            const result = validateField(fieldPath.path, "action", validationData, errors, firstErrorField);
             errors = result.errors;
             firstErrorField = result.firstErrorField;
         });
@@ -445,7 +448,7 @@ const Form = ({
         This function returns the field configuration for a specific field, given the key of that field (or keys for collection fields)
     */
     const getConfigForField = fieldKey => {
-        return fieldPaths[fieldKey] ? fieldPaths[fieldKey].config : {};
+        return find(fieldPaths, { path: fieldKey }).config;
     };
 
     const getActiveCustomEvents = (triggeringEvent, eventData) => {
@@ -491,25 +494,12 @@ const Form = ({
         if (!syntheticCall) lastOnChange = timestamp;
 
         const fieldConfig = getConfigForField(fieldKey);
+        
         let newData = Object.assign({}, outsideData || data);
-        let newValue;
+        let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
 
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
-        const filterValue = v => {
-            let field;
-            if (Array.isArray(fieldKey)) {
-                const rootField = find(parsedFieldConfig, { id: fieldKey[0] });
-                field = find(rootField.fields, { id: fieldKey[1] });
-            } else {
-                field = find(parsedFieldConfig, { id: fieldKey });
-            }
-            if (field && typeof field.filter === "function") return field.filter(value);
-                return v;
-        };
-
-        newValue = filterValue(value);
-        
         if (newValue) {
             set(newData, fieldKey, newValue);
         } else {
@@ -536,7 +526,7 @@ const Form = ({
             (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
-            const result = validateField(fieldConfig, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
+            const result = validateField(fieldKey, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
             setErrors(newErrors);
         } else if (
@@ -549,7 +539,7 @@ const Form = ({
             (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation) ||
             (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation)
         ) {
-            const result = validateField(fieldConfig, "change", newData, errors);
+            const result = validateField(fieldKey, "change", newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
             setErrors(newErrors);
         }
@@ -643,7 +633,7 @@ const Form = ({
             (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
         ) {
-            const result = validateField(fieldConfig, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
+            const result = validateField(fieldKey, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
             limitedOnChange(newData, result.errors, id, fieldKey);
         } else if (
@@ -652,7 +642,7 @@ const Form = ({
             (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf("blur") > -1) || 
             (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf("blur") > -1)
         ) {
-            const result = validateField(fieldConfig, "blur", newData, errors);
+            const result = validateField(fieldKey, "blur", newData, errors);
             setErrors(Object.assign({}, errors, result.errors));
             limitedOnChange(newData, result.errors, id, fieldKey);
         }

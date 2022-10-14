@@ -88,9 +88,11 @@ const config = {
                 fields: [
                     {
                         id: "field1",
-                        label: "Field 1",
+                        label: "Field 1 (has custom validation onChange)",
                         type: "text",
-                        isRequired: true
+                        isRequired: true,
+                        customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length % 2 === 1,
+                        validateOn: ["action", "change"]
                     },
                     {
                         id: "field2",
@@ -104,9 +106,11 @@ const config = {
                         fields: [
                             {
                                 id: "field1",
-                                label: "Field 1",
+                                label: "Field 1 (has custom validation onChange)",
                                 type: "text",
-                                isRequired: true
+                                isRequired: true,
+                                customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length % 2 === 1,
+                                validateOn: ["action", "change"]
                             },
                             {
                                 id: "collection1",
@@ -114,9 +118,11 @@ const config = {
                                 fields: [
                                     {
                                         id: "field1",
-                                        label: "Field 1",
+                                        label: "Field 1 (has custom validation onChange)",
                                         type: "text",
-                                        isRequired: true
+                                        isRequired: true,
+                                        customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length % 2 === 1,
+                                        validateOn: ["action", "change"]
                                     }
                                 ]
                             }
@@ -201,6 +207,24 @@ const config = {
                 }
             },
             {
+                id: "atLeastOne",
+                type: "dummy",
+                customValidation: ({ allData }) => {
+                    return !!allData.field1 || !!allData.field2;
+                },
+                errorRenderer: (error) => <div style={{ color: "#f30" }}><br />Please fill out at least one of the two fields.</div>,
+            },
+            {
+                id: "username",
+                label: "Username",
+                type: "text",
+                isRequired: true,
+                customValidation: ({ data, isValid }) => {
+                    return isValid && data.replace(/[^a-z0-9-]/gi, "") === data;
+                },
+                errorRenderer: (error) => <div style={{ color: "#f30" }}><br />Please fill out this field. Only alphanumeric values and '-' is allowed.</div>,
+            },
+            {
                 id: "maths",
                 label: "Maths",
                 type: "collection",
@@ -230,7 +254,7 @@ const config = {
                         }
                     }
                 ]
-            }
+            },
         ];
     }
 };

@@ -41,6 +41,9 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                 <div className="pure-u-1-3">{fields.sum}</div>
             </div>
             <br />
+            {fields.atLeastOne}
+            {fields.username}
+            <br />
             <p>And you can compute collection item specific data, as well:</p>
             <fieldset>
                 {fields.maths ? fields.maths.map((subFields, index) => (
