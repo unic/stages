@@ -35,6 +35,13 @@ const getFieldPaths = (fieldConfig, data) => {
                     const itemRenderPath = renderPath ? `${renderPath}.${item.id}` : item.id;
                     const itemData = get(data, itemRenderPath);
                     const unionData = get(data, renderPath);
+                    if (unionKey && unionData && unionData.__typename === unionKey || !unionKey) {
+                        paths.push({
+                            path: itemRenderPath,
+                            config: item,
+                            data: itemData,
+                        });
+                    }
                     if (item.type === "collection") {
                         const thisData = renderPath ? get(data, `${renderPath}.${item.id}`) : data[item.id];
                         if (thisData && Array.isArray(thisData)) {
@@ -48,13 +55,6 @@ const getFieldPaths = (fieldConfig, data) => {
                         }
                     } else if (item.type === "group") {
                         getPathsForPath(`${path}[${index}].fields`, itemRenderPath);
-                    }
-                    if (unionKey && unionData && unionData.__typename === unionKey || !unionKey) {
-                        paths.push({
-                            path: itemRenderPath,
-                            config: item,
-                            data: itemData,
-                        });
                     }
                 });
             }
