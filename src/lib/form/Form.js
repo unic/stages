@@ -23,12 +23,18 @@ const getFieldPaths = (fieldConfig, data) => {
 
     const getPathsForPath = (path = "", renderPath) => {
         let thisConfigs = [path ? get(fieldConfig, path) : fieldConfig];
+        let thisKeys = [];
         if (!Array.isArray(thisConfigs[0])) {
+            thisKeys = Object.keys(thisConfigs[0]);
             thisConfigs = Object.values(thisConfigs[0]);
         }
-        thisConfigs.forEach(thisConfig => {
+        thisConfigs.forEach((thisConfig, unionIndex) => {
+            const unionKey = typeof thisKeys[unionIndex] !== "undefined" ? thisKeys[unionIndex] : undefined;
             if (Array.isArray(thisConfig)) {
                 thisConfig.forEach((item, index) => {
+                    const itemRenderPath = renderPath ? `${renderPath}.${item.id}` : item.id;
+                    const itemData = get(data, itemRenderPath);
+                    const unionData = get(data, renderPath);
                     if (item.type === "collection") {
                         const thisData = renderPath ? get(data, `${renderPath}.${item.id}`) : data[item.id];
                         if (thisData && Array.isArray(thisData)) {
@@ -41,13 +47,15 @@ const getFieldPaths = (fieldConfig, data) => {
                             });
                         }
                     } else if (item.type === "group") {
-                        getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}.${item.id}` : item.id);
+                        getPathsForPath(`${path}[${index}].fields`, itemRenderPath);
                     }
-                    paths.push({
-                        path: renderPath ? `${renderPath}.${item.id}` : item.id,
-                        config: item,
-                        data: get(data, renderPath ? `${renderPath}.${item.id}` : item.id)
-                    });
+                    if (unionKey && unionData && unionData.__typename === unionKey || !unionKey) {
+                        paths.push({
+                            path: itemRenderPath,
+                            config: item,
+                            data: itemData,
+                        });
+                    }
                 });
             }
         });
