@@ -672,125 +672,44 @@ const Form = ({
             delete cleanedField.clearFields;
             delete cleanedField.dynamicOptions;
 
-            return React.createElement(
-                fields[fieldConfig.type].component,
-                Object.assign({
-                    key: path,
-                    value: fieldData,
-                    initialValue: get(initialData, path),
-                    error: errors[path],
-                    isDirty: !!dirtyFields[path],
-                    isDisabled: isDisabled || fieldConfig.isDisabled,
-                    onChange: value => handleChange(path, value),
-                    onFocus: () => handleFocus(path),
-                    onBlur: () => handleBlur(path)
-                }, cleanedField)
-            );
+            if (fieldConfig.type !== "subform") {
+                return React.createElement(
+                    fields[fieldConfig.type].component,
+                    Object.assign({
+                        key: path,
+                        value: fieldData,
+                        initialValue: get(initialData, path),
+                        error: errors[path],
+                        isDirty: !!dirtyFields[path],
+                        isDisabled: isDisabled || fieldConfig.isDisabled,
+                        onChange: value => handleChange(path, value),
+                        onFocus: () => handleFocus(path),
+                        onBlur: () => handleBlur(path)
+                    }, cleanedField)
+                );
+            } else {
+                return (
+                    <Form
+                        config={fieldConfig.config}
+                        render={({ fieldProps }) => React.createElement(fieldConfig.render, fieldProps)}
+                        fields={fields}
+                        id={`${id}-${fieldConfig.id}`}
+                        onChange={(value, subErrors) => handleChange(path, value)}
+                        onValidation={errors => handleSubValidation(path, errors)}
+                        parentRunValidation={runValidation}
+                        data={data && get(data, path)}
+                        isVisible={isVisible}
+                        isDisabled={isDisabled}
+                        validateOn={validateOn}
+                    />
+                );
+            } 
         };
 
         fieldPaths.forEach(fieldPath => {
             const fieldComponent = createField(fieldPath.config, fieldPath.data, fieldPath.path);
             if (fieldComponent) set(renderedFields, fieldPath.path, fieldComponent);
         });
-
-        /*
-        parsedFieldConfig.forEach(field => {
-            const cleanedField = Object.assign({}, field);
-            if (!fields[field.type] && !isReservedType(field.type)) return; // Ignore field types which don't exist!
-
-            if (optionsLoaded[field.id]) cleanedField.options = optionsLoaded[field.id];
-
-            // Remove special props from field before rendering:
-            delete cleanedField.computedValue;
-            delete cleanedField.filter;
-            delete cleanedField.clearFields;
-            delete cleanedField.dynamicOptions;
-
-            // Create regular fields:
-            if (!isReservedType(field.type)) {
-                renderedFields[field.id] = React.createElement(
-                    fields[field.type].component,
-                    Object.assign({
-                        key: field.id,
-                        value: data[field.id],
-                        initialValue: initialData[field.id],
-                        error: errors[field.id],
-                        isDirty: !!dirtyFields[field.id],
-                        isDisabled: isDisabled || field.isDisabled,
-                        onChange: value => handleChange(field.id, value),
-                        onFocus: () => handleFocus(field.id),
-                        onBlur: () => handleBlur(field.id)
-                    }, cleanedField)
-                );
-            // Create collections:
-            } else if (field.type === "collection") {
-                if (!Array.isArray(renderedFields[field.id])) renderedFields[field.id] = [];
-                // Add existing entries:
-                if (data[field.id]) {
-                    data[field.id].forEach((dataEntry, index) => {
-                        const subRenderedFields = {};
-                        if (Array.isArray(field.fields)) {
-                            field.fields.forEach(subField => {
-                                if (fields[subField.type]) {
-                                    subRenderedFields[subField.id] = React.createElement(
-                                        fields[subField.type].component,
-                                        Object.assign({
-                                            key: `${field.id}-${index}-${subField.id}`,
-                                            value: dataEntry[subField.id],
-                                            error: errors[`${field.id}-${index}-${subField.id}`],
-                                            isDisabled: isDisabled || subField.isDisabled,
-                                            onChange: value => handleChange([field.id, subField.id], value, index),
-                                            onFocus: () => handleFocus([field.id, subField.id], index),
-                                            onBlur: () => handleBlur([field.id, subField.id], index)
-                                        }, subField)
-                                    )
-                                }
-                            });
-                        } else {
-                            // This is a union type collection, so we need to infer the type so we can select the right field config:
-                            if (dataEntry.__typename && field.fields[dataEntry.__typename]) {
-                                // This entries type was found, so render it:
-                                field.fields[dataEntry.__typename].forEach(subField => {
-                                    if (fields[subField.type]) {
-                                        subRenderedFields[subField.id] = React.createElement(
-                                            fields[subField.type].component,
-                                            Object.assign({
-                                                key: `${field.id}-${index}-${subField.id}`,
-                                                value: dataEntry[subField.id],
-                                                error: errors[`${field.id}-${index}-${subField.id}`],
-                                                isDisabled: isDisabled || subField.isDisabled,
-                                                onChange: value => handleChange([field.id, subField.id], value, index),
-                                                onFocus: () => handleFocus([field.id, subField.id], index),
-                                                onBlur: () => handleBlur([field.id, subField.id], index)
-                                            }, subField)
-                                        )
-                                    }
-                                });
-                            }
-                        }
-                        renderedFields[field.id].push(subRenderedFields);
-                    });
-                }
-            // Create subforms:
-            } else if (field.type === "subform") {
-                renderedFields[field.id] = (
-                    <Form
-                        config={field.config}
-                        render={({ fieldProps }) => React.createElement(field.render, fieldProps)}
-                        fields={fields}
-                        id={`${id}-${field.id}`}
-                        onChange={(value, subErrors) => handleChange(field.id, value)}
-                        onValidation={errors => handleSubValidation(field.id, errors)}
-                        parentRunValidation={runValidation}
-                        data={data && data[field.id]}
-                        isVisible={isVisible}
-                        isDisabled={isDisabled}
-                        validateOn={validateOn}
-                    />
-                );
-            }
-        });
-        */
 
         return renderedFields;
     };
