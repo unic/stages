@@ -22,30 +22,35 @@ const getFieldPaths = (fieldConfig, data) => {
     const paths = [];
 
     const getPathsForPath = (path = "", renderPath) => {
-        const thisConfig = path ? get(fieldConfig, path) : fieldConfig;
-        if (Array.isArray(thisConfig)) {
-            thisConfig.forEach((item, index) => {
-                if (item.type === "collection") {
-                    const thisData = renderPath ? get(data, `${renderPath}.${item.id}`) : data[item.id];
-                    if (thisData && Array.isArray(thisData)) {
-                        thisData.forEach((colItem, colIndex) => {
-                            getPathsForPath(
-                                `${path}[${index}].fields`, renderPath ?
-                                    `${renderPath}.${item.id}[${colIndex}]` : 
-                                    `${item.id}[${colIndex}]`
-                            );
-                        });
-                    }
-                } else if (item.type === "group") {
-                    getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}.${item.id}` : item.id);
-                }
-                paths.push({
-                    path: renderPath ? `${renderPath}.${item.id}` : item.id,
-                    config: item,
-                    data: get(data, renderPath ? `${renderPath}.${item.id}` : item.id)
-                });
-            });
+        let thisConfigs = [path ? get(fieldConfig, path) : fieldConfig];
+        if (!Array.isArray(thisConfigs[0])) {
+            thisConfigs = Object.values(thisConfigs[0]);
         }
+        thisConfigs.forEach(thisConfig => {
+            if (Array.isArray(thisConfig)) {
+                thisConfig.forEach((item, index) => {
+                    if (item.type === "collection") {
+                        const thisData = renderPath ? get(data, `${renderPath}.${item.id}`) : data[item.id];
+                        if (thisData && Array.isArray(thisData)) {
+                            thisData.forEach((colItem, colIndex) => {
+                                getPathsForPath(
+                                    `${path}[${index}].fields`, renderPath ?
+                                        `${renderPath}.${item.id}[${colIndex}]` : 
+                                        `${item.id}[${colIndex}]`
+                                );
+                            });
+                        }
+                    } else if (item.type === "group") {
+                        getPathsForPath(`${path}[${index}].fields`, renderPath ? `${renderPath}.${item.id}` : item.id);
+                    }
+                    paths.push({
+                        path: renderPath ? `${renderPath}.${item.id}` : item.id,
+                        config: item,
+                        data: get(data, renderPath ? `${renderPath}.${item.id}` : item.id)
+                    });
+                });
+            }
+        });
     }
 
     getPathsForPath();

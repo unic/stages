@@ -144,7 +144,7 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                         errors={errors}
                     />
                     <Collection
-                        title="A minimum of 2 and maximum of 4 initialized entries:"
+                        title="A minimum of 2 and maximum of 5 initialized entries:"
                         description="This will initialize two entries which are empty. You can't remove for less than two. They are not required, so can be left empty."
                         collectionKey="collection4"
                         fields={fields}
@@ -152,7 +152,7 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                         errors={errors}
                     />
                     <Collection
-                        title="A minimum of 2 and maximum of 4 initialized entries, all required:"
+                        title="A minimum of 2 and maximum of 5 initialized entries, all required:"
                         description="This will initialize two entries which are required. If you don't fill out the required collection fields, it will show an error on all required fields."
                         collectionKey="collection5"
                         fields={fields}
