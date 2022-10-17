@@ -70,9 +70,10 @@ const config = {
             },
             {
                 id: "city2",
-                label: "City on Blur validated",
+                label: "City on Blur validated (has trim cleanup)",
                 type: "text",
                 isRequired: true,
+                cleanUp: value => value.trim(),
                 validateOn: ["blur", "action"],
                 customValidation: ({ data, allData, isValid }) => isValid && data.length % 2 === 1
             },
@@ -167,8 +168,9 @@ const config = {
                         fields: [
                             {
                                 id: "field1",
-                                label: "Field 1",
+                                label: "Field 1 (has trim cleanup)",
                                 type: "text",
+                                cleanUp: value => value.trim(),
                                 isRequired: true
                             },
                             {

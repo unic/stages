@@ -616,8 +616,8 @@ const Form = ({
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
         // Run field cleanUp function if one is set:
-        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && newData[fieldConfig.id]) {
-            newData[fieldConfig.id] = fieldConfig.cleanUp(newData[fieldConfig.id]);
+        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && get(newData, fieldKey)) {
+            set(newData, fieldKey, fieldConfig.cleanUp(get(newData, fieldKey)));
             limitedOnChange(newData, errors, id, fieldKey);
         }
 
