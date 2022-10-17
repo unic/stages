@@ -333,7 +333,8 @@ const Form = ({
             // Handle caching of loaded options if enabled:
             if (optionsConfig.enableCaching) {
                 optionsConfig.watchFields.forEach(f => {
-                    if (updatedData[f]) cacheKeyValues[f] = updatedData[f];
+                    const fieldData = get(updatedData, f);
+                    if (fieldData) cacheKeyValues[f] = fieldData;
                 });
                 cacheKey = `${fieldKey}-${stringify(cacheKeyValues)}`;
             }
@@ -578,14 +579,14 @@ const Form = ({
                     fieldPath.config.dynamicOptions.events &&
                     fieldPath.config.dynamicOptions.events.indexOf('change') > -1 &&
                     fieldPath.config.dynamicOptions.watchFields &&
-                    fieldPath.config.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1 &&
+                    fieldPath.config.dynamicOptions.watchFields.indexOf(fieldKey) > -1 &&
                     (!fieldConfig.dynamicOptions ||
                     (fieldConfig.dynamicOptions &&
-                        optionsLoaded[fieldConfig.id] &&
-                        optionsLoaded[fieldConfig.id].indexOf(newData[fieldConfig.id]) > -1) ||
-                    !optionsLoaded[fieldConfig.id])
+                        optionsLoaded[fieldPath.path] &&
+                        optionsLoaded[fieldPath.path].indexOf(get(newData, fieldKey)) > -1) ||
+                    !optionsLoaded[fieldPath.path])
                 ) {
-                    createDynamicOptions(fieldPath.config.id, fieldPath.config.dynamicOptions, newData);
+                    createDynamicOptions(fieldPath.path, fieldPath.config.dynamicOptions, newData);
                 }
             });
         }

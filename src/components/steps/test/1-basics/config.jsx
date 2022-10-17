@@ -179,12 +179,12 @@ const config = {
                             value: "", text: "Select a posts comment ..."
                         }],
                         dynamicOptions: {
-                            watchFields: ['post'],
+                            watchFields: ['dynamicValuesGroup.post'],
                             events: ["init", "change"],
                             enableCaching: true,
                             loader: async (data) => {
-                                if (!data || !data.post) return [{ value: "", text: "Select a posts comment ..." }];
-                                const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.post}/comments`);
+                                if (!data || !data.dynamicValuesGroup || !data.dynamicValuesGroup.post) return [{ value: "", text: "Select a posts comment ..." }];
+                                const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${data.dynamicValuesGroup.post}/comments`);
                                 return response.data.map(comment => {
                                     return {
                                         value: comment.id, text: comment.name
