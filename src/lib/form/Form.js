@@ -317,25 +317,25 @@ const Form = ({
     };
 
     // Create the dynamic options for a specific field
-    const createDynamicOptions = async (field, optionsConfig, updatedData) => {
+    const createDynamicOptions = async (fieldKey, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
             const cacheKeyValues = {};
             let cacheKey;
             let options;
 
             // Variables used to prevent race conditions with the async options calls:
-            const newNr = typeof latestOptionsRequestIDsPerField[field] === "number" ? latestOptionsRequestIDsPerField[field] + 1 : 0;
+            const newNr = typeof latestOptionsRequestIDsPerField[fieldKey] === "number" ? latestOptionsRequestIDsPerField[fieldKey] + 1 : 0;
             let nrAfterAsyncCall = newNr;
-            latestOptionsRequestIDsPerField[field] = newNr;
+            latestOptionsRequestIDsPerField[fieldKey] = newNr;
 
-            if (isDebugging()) window.stagesLogging(`Create dynamic options for field "${field}"`, uniqId);
+            if (isDebugging()) window.stagesLogging(`Create dynamic options for field "${fieldKey}"`, uniqId);
 
             // Handle caching of loaded options if enabled:
             if (optionsConfig.enableCaching) {
                 optionsConfig.watchFields.forEach(f => {
                     if (updatedData[f]) cacheKeyValues[f] = updatedData[f];
                 });
-                cacheKey = `${field}-${stringify(cacheKeyValues)}`;
+                cacheKey = `${fieldKey}-${stringify(cacheKeyValues)}`;
             }
 
             // Load async data or use the cache:
@@ -343,7 +343,7 @@ const Form = ({
                 options = optionsCache[cacheKey];
             } else {
                 options = await optionsConfig.loader(updatedData, handleChange);
-                nrAfterAsyncCall = latestOptionsRequestIDsPerField[field];
+                nrAfterAsyncCall = latestOptionsRequestIDsPerField[fieldKey];
             }
 
             if (optionsConfig.enableCaching) {
@@ -353,7 +353,7 @@ const Form = ({
 
             // Only update options if this is the latest option call for this field:
             if (nrAfterAsyncCall === newNr) {
-                updateOptionsLoaded(field, options);
+                updateOptionsLoaded(fieldKey, options);
                 if (optionsConfig.onOptionsChange && typeof optionsConfig.onOptionsChange === "function") {
                     optionsConfig.onOptionsChange(options, updatedData, handleChange);
                 }
@@ -418,11 +418,13 @@ const Form = ({
 
         if (isVisible) {
             // Check if a field has dynamic options and needs to initialize them:
-            parsedFieldConfig.forEach(field => {
-                if (field.dynamicOptions && field.dynamicOptions.events && field.dynamicOptions.events.indexOf("init") > -1) {
-                    createDynamicOptions(field.id, field.dynamicOptions, newData);
-                }
-            });
+            if (Array.isArray(fieldPaths)) {
+                fieldPaths.forEach(fieldPath => {
+                    if (fieldPath.config.dynamicOptions && fieldPath.config.dynamicOptions.events && fieldPath.config.dynamicOptions.events.indexOf("init") > -1) {
+                        createDynamicOptions(fieldPath.path, fieldPath.config.dynamicOptions, newData);
+                    }
+                });
+            }
         }
 
         limitedOnChange(newData, validationErrors(), id); // will trigger validations even with no inits
@@ -569,22 +571,24 @@ const Form = ({
         }
 
         // Check if a field has dynamic options which have to be loaded:
-        parsedFieldConfig.forEach(field => {
-            if (
-                field.dynamicOptions &&
-                field.dynamicOptions.events &&
-                field.dynamicOptions.events.indexOf('change') > -1 &&
-                field.dynamicOptions.watchFields &&
-                field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1 &&
-                (!fieldConfig.dynamicOptions ||
-                  (fieldConfig.dynamicOptions &&
-                    optionsLoaded[fieldConfig.id] &&
-                    optionsLoaded[fieldConfig.id].indexOf(newData[fieldConfig.id]) > -1) ||
-                  !optionsLoaded[fieldConfig.id])
-            ) {
-                createDynamicOptions(field.id, field.dynamicOptions, newData);
-            }
-        });
+        if (Array.isArray(fieldPaths)) {
+            fieldPaths.forEach(fieldPath => {
+                if (
+                    fieldPath.config.dynamicOptions &&
+                    fieldPath.config.dynamicOptions.events &&
+                    fieldPath.config.dynamicOptions.events.indexOf('change') > -1 &&
+                    fieldPath.config.dynamicOptions.watchFields &&
+                    fieldPath.config.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1 &&
+                    (!fieldConfig.dynamicOptions ||
+                    (fieldConfig.dynamicOptions &&
+                        optionsLoaded[fieldConfig.id] &&
+                        optionsLoaded[fieldConfig.id].indexOf(newData[fieldConfig.id]) > -1) ||
+                    !optionsLoaded[fieldConfig.id])
+                ) {
+                    createDynamicOptions(fieldPath.config.id, fieldPath.config.dynamicOptions, newData);
+                }
+            });
+        }
 
         limitedOnChange(newData, newErrors || errors, id, fieldKey);
     };
@@ -648,17 +652,19 @@ const Form = ({
         }
 
         // Check if a field has dynamic options which have to be loaded:
-        parsedFieldConfig.forEach(field => {
-            if (
-                field.dynamicOptions && 
-                field.dynamicOptions.events && 
-                field.dynamicOptions.events.indexOf("blur") > -1 && 
-                field.dynamicOptions.watchFields && 
-                field.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
-            ) {
-                createDynamicOptions(field.id, field.dynamicOptions, newData);
-            }
-        });
+        if (Array.isArray(fieldPaths)) {
+            fieldPaths.forEach(fieldPath => {
+                if (
+                    fieldPath.config.dynamicOptions && 
+                    fieldPath.config.dynamicOptions.events && 
+                    fieldPath.config.dynamicOptions.events.indexOf("blur") > -1 && 
+                    fieldPath.config.dynamicOptions.watchFields && 
+                    fieldPath.config.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
+                ) {
+                    createDynamicOptions(fieldPath.config.id, fieldPath.config.dynamicOptions, newData);
+                }
+            });
+        }
     };
 
     /*
