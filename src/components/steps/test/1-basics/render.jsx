@@ -73,6 +73,7 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
             <br />
             <p>And you can compute collection item specific data, as well:</p>
             <fieldset>
+                <p>Do some maths:</p>
                 {fields.maths ? fields.maths.map((subFields, index) => (
                     <div key={`math-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                         <div className="pure-g">
@@ -85,6 +86,13 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                     </div>)
                 ) : null}
                 <button type="button" onClick={() => onCollectionAction("maths", "add")}>+</button>
+            </fieldset>
+            <br />
+            <fieldset>
+                <p>Dynamic values from an async call populating a select:</p>
+                {fields.dynamicValuesGroup.post}
+                <br />
+                {fields.dynamicValuesGroup.comment}
             </fieldset>
             <br />
             <fieldset>
