@@ -140,7 +140,7 @@ const Form = ({
             allData: fieldData,
             fieldConfig: field,
             isValid,
-            fieldHasFocus: !!(focusedField && focusedField.key === fieldKey),
+            fieldHasFocus: !!(focusedField && focusedField === fieldKey),
             fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
             triggeringEvent
         }) : isValid;
@@ -515,7 +515,7 @@ const Form = ({
             data: get(newData, fieldKey),
             fieldIsDirty: !!dirtyFields[fieldKey],
             fieldConfig,
-            fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
+            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
 
         // Are there any custom events active?
@@ -594,8 +594,8 @@ const Form = ({
         to track which field has focus and what the last field in focus was.
     */
     const handleFocus = (fieldKey, index) => {
-        setFocusedField({ key: fieldKey, index });
-        setLastFocusedField({ key: fieldKey, index });
+        setFocusedField(fieldKey);
+        setLastFocusedField(fieldKey);
     };
 
     /*
@@ -622,7 +622,7 @@ const Form = ({
             data: get(newData, fieldKey),
             fieldIsDirty: !!dirtyFields[fieldKey],
             fieldConfig,
-            fieldHasFocus: !!(focusedField && focusedField.key === fieldKey)
+            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
 
         // Are there any custom events active?
