@@ -707,7 +707,7 @@ const Form = ({
                         config={fieldConfig.config}
                         render={({ fieldProps }) => React.createElement(fieldConfig.render, fieldProps)}
                         fields={fields}
-                        id={`${id}-${fieldConfig.id}`}
+                        id={path}
                         onChange={(value, subErrors) => handleChange(path, value)}
                         onValidation={errors => handleSubValidation(path, errors)}
                         parentRunValidation={runValidation}
