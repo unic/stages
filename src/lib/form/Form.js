@@ -678,7 +678,7 @@ const Form = ({
             if (!fields[fieldConfig.type]) return null;
             const cleanedField = Object.assign({}, fieldConfig);
 
-            if (optionsLoaded[fieldConfig.id]) cleanedField.options = optionsLoaded[path];
+            if (optionsLoaded[path]) cleanedField.options = optionsLoaded[path];
 
             // Remove special props from field before rendering:
             delete cleanedField.computedValue;
