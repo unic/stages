@@ -53,7 +53,17 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                 <br />
                 {fields.group1.field2}
                 <br />
-                <button onClick={() => addConfig("group1", "coordinates")}>Add Coordinate Fields</button>
+                {fields.group1.coords ? (
+                    <>
+                        <fieldset>
+                            {fields.coords.lng}
+                            <br />
+                            {fields.coords.lat}
+                        </fieldset>
+                        <br />
+                    </>
+                ) : null}
+                {!fields.group1.coords ? <button onClick={() => addConfig("group1", "coordinates")}>Add Coordinate Fields</button> : null}
                 <fieldset>
                     {fields.group1.subgroup1.field1}
                     <br />

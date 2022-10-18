@@ -128,7 +128,7 @@ const Form = ({
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState();
     const [lastFocusedField, setLastFocusedField] = useState();
-    const parsedFieldConfig = parseConfig(config, data, asyncData);
+    const [parsedFieldConfig, setParsedFieldConfig] = useState(parseConfig(config, data, asyncData));
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
@@ -791,15 +791,21 @@ const Form = ({
     };
 
     /*
-        This adds a specific config to a certain path
+        This adds a specific config to the field configuration at a certain path
     */
     const addConfig = (path, configKey) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
             const fieldConfig = find(fieldPaths, { path: path });
             const newFields = [...fieldConfig.config.fields];
             const configIndex = findIndex(parsedFieldConfig, { id: path });
+
             newFields.push(config.fieldConfigs[configKey](data, asyncData));
-            if (configIndex > -1) parsedFieldConfig[configIndex] = newFields;
+
+            if (configIndex > -1) {
+                const newParsedFieldConfig = [...parsedFieldConfig];
+                newParsedFieldConfig[configIndex].fields = newFields;
+                setParsedFieldConfig(newParsedFieldConfig);
+            }
         }
     };
 
