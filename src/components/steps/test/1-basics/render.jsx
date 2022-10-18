@@ -56,9 +56,9 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                 {fields.group1.coords ? (
                     <>
                         <fieldset>
-                            {fields.coords.lng}
+                            {fields.group1.coords.lng}
                             <br />
-                            {fields.coords.lat}
+                            {fields.group1.coords.lat}
                         </fieldset>
                         <br />
                     </>
