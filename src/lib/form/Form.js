@@ -699,6 +699,7 @@ const Form = ({
         const createField = (fieldConfig, fieldData, path) => {
             if (!fields[fieldConfig.type]) return null;
             const cleanedField = Object.assign({}, fieldConfig);
+            cleanedField.id = path;
 
             if (optionsLoaded[path]) cleanedField.options = optionsLoaded[path];
 
