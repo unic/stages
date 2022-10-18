@@ -798,13 +798,21 @@ const Form = ({
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
             const fieldConfig = find(fieldPaths, { path: path });
             const newFields = [...fieldConfig.config.fields];
-            const configIndex = findIndex(parsedFieldConfig, { id: path });
-
+            const newParsedFieldConfig = [...parsedFieldConfig];
+            const pathParts = path.split(".");
+            let configPath = "";
+            
             newFields.push(config.fieldConfigs[configKey](data, asyncData));
 
-            if (configIndex > -1) {
-                const newParsedFieldConfig = [...parsedFieldConfig];
-                newParsedFieldConfig[configIndex].fields = newFields;
+            pathParts.forEach(pathPart => {
+                const thisConfig = configPath ? get(parsedFieldConfig, configPath) : parsedFieldConfig;
+                const configIndex = findIndex(thisConfig, { id: pathPart });
+                if (configIndex > -1) configPath += `[${configIndex}].fields`;
+                console.log({pathPart,thisConfig,configIndex,configPath});
+            });
+
+            if (configPath !== "") {
+                set(newParsedFieldConfig, configPath, newFields);
                 setParsedFieldConfig(newParsedFieldConfig);
             }
         }
