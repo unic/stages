@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import find from "lodash.find";
+import findIndex from "lodash.findindex";
 import uniqWith from "lodash.uniqwith";
 import isEqual from "lodash.isequal";
 import get from "lodash.get";
@@ -794,7 +795,11 @@ const Form = ({
     */
     const addConfig = (path, configKey) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
-            set(parsedFieldConfig, path, config.fieldConfigs[configKey](data, asyncData));
+            const fieldConfig = find(fieldPaths, { path: path });
+            const newFields = [...fieldConfig.config.fields];
+            const configIndex = findIndex(parsedFieldConfig, { id: path });
+            newFields.push(config.fieldConfigs[configKey](data, asyncData));
+            if (configIndex > -1) parsedFieldConfig[configIndex] = newFields;
         }
     };
 
