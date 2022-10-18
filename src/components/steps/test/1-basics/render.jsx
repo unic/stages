@@ -155,10 +155,11 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                                                     <br />
                                                 </>
                                             ) : null}
-                                            {!subSubFields.coords ? <button onClick={() => addConfig(`collection1[${index}].colGroup.collection1`, "coordinates")}>Add Coordinate Fields</button> : null}
                                             <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "remove", subIndex)}>-</button>
                                         </div>)
                                     ) : null}
+                                    {subFields.colGroup.collection1[0] && !subFields.colGroup.collection1[0].coords ? <button onClick={() => addConfig(`collection1[${index}].colGroup.collection1`, "coordinates")}>Add Coordinate Fields</button> : null}
+                                    <br />
                                     <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "add")}>+</button>
                                 </fieldset>
                             </fieldset>
