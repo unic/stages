@@ -23,7 +23,7 @@ const Collection = ({ title, description, collectionKey, fields, onCollectionAct
     );
 };
 
-const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, errors }) => {
+const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFields, data, errors }) => {
     return (
         <div style={{ border: isDirty ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
             <div style={{ border: dirtyFields.country ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
@@ -53,6 +53,7 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                 <br />
                 {fields.group1.field2}
                 <br />
+                <button onClick={() => addConfig("group1", "coordinates")}>Add Coordinate Fields</button>
                 <fieldset>
                     {fields.group1.subgroup1.field1}
                     <br />

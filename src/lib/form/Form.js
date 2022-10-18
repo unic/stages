@@ -790,6 +790,15 @@ const Form = ({
     };
 
     /*
+        This adds a specific config to a certain path
+    */
+    const addConfig = (path, configKey) => {
+        if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
+            set(parsedFieldConfig, path, config.fieldConfigs[configKey](data, asyncData));
+        }
+    };
+
+    /*
         The function is called by the forms action buttons. It either runs the validation
         or just the supplied callback.
     */
@@ -824,7 +833,7 @@ const Form = ({
     // Render all the render props:
     return render ? render({
         actionProps: { handleActionClick, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: createRenderedFields(), onCollectionAction, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
+        fieldProps: { fields: createRenderedFields(), onCollectionAction, addConfig, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
         loading
     }) : null;
 };
