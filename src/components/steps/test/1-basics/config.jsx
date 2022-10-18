@@ -37,6 +37,26 @@ const config = {
             posts: response && response.data || []
         };
     },
+    fieldConfigs: {
+        coordinates: (data, asyncData) => {
+            return {
+                id: "coords",
+                type: "group",
+                fields: [
+                    {
+                        id: "lng",
+                        label: "Longitude",
+                        type: "text"
+                    },
+                    {
+                        id: "lat",
+                        label: "Latitude",
+                        type: "text"
+                    }
+                ]
+            };
+        }
+    }, 
     fields: (data, asyncData) => {
         const posts = asyncData && asyncData.posts ? asyncData.posts.map(item => {
             return {
@@ -99,6 +119,7 @@ const config = {
                 isRequired: true,
                 customValidation: ({ data, allData, isValid, triggeringEvent }) => isValid && data.length % 2 === 1
             },
+            "coordinates",
             {
                 id: "collection1",
                 type: "collection",
@@ -117,6 +138,7 @@ const config = {
                         type: "text",
                         isRequired: false
                     },
+                    "coordinates",
                     {
                         id: "colGroup",
                         type: "group",

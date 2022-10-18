@@ -43,6 +43,12 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
             {fields.q1}
             <br />
             <fieldset>
+                {fields.coords.lng}
+                <br />
+                {fields.coords.lat}
+            </fieldset>
+            <br />
+            <fieldset>
                 {fields.group1.field1}
                 <br />
                 {fields.group1.field2}
@@ -101,6 +107,11 @@ const FormRenderer = ({ fields, onCollectionAction, isDirty, dirtyFields, data, 
                         <div className="pure-g">
                             <div className="pure-u-1-3">{subFields.field1}</div>
                             <div className="pure-u-1-3">{subFields.field2}</div>
+                            <fieldset>
+                                {subFields.coords.lng}
+                                <br />
+                                {subFields.coords.lat}
+                            </fieldset>
                             <br />
                             <fieldset>
                                 <div className="pure-u-1-3">{subFields.colGroup.field1}</div>

@@ -66,6 +66,26 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
+const parseConfig = (config, data, asyncData) => {
+    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
+
+    const parseConfigItem = configItem => {
+        if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
+            return config.fieldConfigs[configItem](data, asyncData);
+        }
+        return configItem;
+    };
+
+    parsedConfig = parsedConfig.map(configItem => {
+        if (typeof configItem === "object" && (configItem.type === "group" || configItem.type === "collection") && Array.isArray(configItem.fields)) {
+            configItem.fields = configItem.fields.map(field => parseConfigItem(field));
+        }
+        return parseConfigItem(configItem);
+    });
+
+    return parsedConfig;
+};
+
 const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
 
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
@@ -107,7 +127,7 @@ const Form = ({
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState();
     const [lastFocusedField, setLastFocusedField] = useState();
-    const parsedFieldConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
+    const parsedFieldConfig = parseConfig(config, data, asyncData);
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
@@ -128,7 +148,7 @@ const Form = ({
     }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 
     // Helper function to detect reserved field types:
-    const isReservedType = type => type === "collection" || type === "subform" || type === "group";
+    const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "config";
 
     // Is a specific field valid based on current data:
     const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
