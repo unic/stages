@@ -145,6 +145,17 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                                                 <div className="pure-u-1-3">{subSubFields.field1}</div>
                                             </div>
                                             <br />
+                                            {subSubFields.coords ? (
+                                                <>
+                                                    <fieldset>
+                                                        {subSubFields.coords.lng}
+                                                        <br />
+                                                        {subSubFields.coords.lat}
+                                                    </fieldset>
+                                                    <br />
+                                                </>
+                                            ) : null}
+                                            {!subSubFields.coords ? <button onClick={() => addConfig(`collection1[${index}].colGroup.collection1`, "coordinates")}>Add Coordinate Fields</button> : null}
                                             <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "remove", subIndex)}>-</button>
                                         </div>)
                                     ) : null}

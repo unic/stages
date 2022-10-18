@@ -801,14 +801,20 @@ const Form = ({
             const newParsedFieldConfig = [...parsedFieldConfig];
             const pathParts = path.split(".");
             let configPath = "";
-            
+
             newFields.push(config.fieldConfigs[configKey](data, asyncData));
 
             pathParts.forEach(pathPart => {
                 const thisConfig = configPath ? get(parsedFieldConfig, configPath) : parsedFieldConfig;
-                const configIndex = findIndex(thisConfig, { id: pathPart });
-                if (configIndex > -1) configPath += `[${configIndex}].fields`;
-                console.log({pathPart,thisConfig,configIndex,configPath});
+                if (pathPart.endsWith("]")) {
+                    const pathPartSplit = pathPart.split("[");
+                    const realPathPart = pathPartSplit[0];
+                    const configIndex = findIndex(thisConfig, { id: realPathPart });
+                    if (configIndex > -1) configPath += `[${configIndex}].fields`;
+                } else {
+                    const configIndex = findIndex(thisConfig, { id: pathPart });
+                    if (configIndex > -1) configPath += `[${configIndex}].fields`;
+                }
             });
 
             if (configPath !== "") {
