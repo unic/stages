@@ -67,7 +67,7 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
-const parseConfig = (config, data, asyncData, addedConfigs) => {
+const parseConfig = (config, data, asyncData, modifiedConfigs) => {
     let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
 
     const parseConfigItem = configItem => {
@@ -84,11 +84,11 @@ const parseConfig = (config, data, asyncData, addedConfigs) => {
         return parseConfigItem(configItem);
     });
 
-    addedConfigs.forEach(addedConfig => {
-        const fields = get(parsedConfig, addedConfig.path);
+    modifiedConfigs.forEach(modifiedConfig => {
+        const fields = get(parsedConfig, modifiedConfig.path);
         if (Array.isArray(fields)) {
-            fields.push(addedConfig.fields(data, asyncData));
-            set(parsedConfig, addedConfig.path, fields);
+            if (modifiedConfig.action === "add") fields.push(modifiedConfig.fields(data, asyncData));
+            set(parsedConfig, modifiedConfig.path, fields);
         }
     });
 
@@ -136,8 +136,8 @@ const Form = ({
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState();
     const [lastFocusedField, setLastFocusedField] = useState();
-    const [addedConfigs, setAddedConfigs] = useState([]);
-    const parsedFieldConfig = parseConfig(config, data, asyncData, addedConfigs);
+    const [modifiedConfigs, setModifiedConfigs] = useState([]);
+    const parsedFieldConfig = parseConfig(config, data, asyncData, modifiedConfigs);
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
@@ -807,7 +807,7 @@ const Form = ({
     /*
         This adds a specific config to the field configuration at a certain path
     */
-    const addConfig = (path, configKey) => {
+    const modifyConfig = (path, configKey, action) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
             const pathParts = path.split(".");
             let configPath = "";
@@ -826,11 +826,12 @@ const Form = ({
             });
 
             if (configPath !== "") {
-                addedConfigs.push({
+                modifiedConfigs.push({
                     fields: config.fieldConfigs[configKey],
-                    path: configPath
+                    path: configPath,
+                    action
                 });
-                setAddedConfigs([...addedConfigs]);
+                setModifiedConfigs([...modifiedConfigs]);
             }
         }
     };
@@ -870,7 +871,7 @@ const Form = ({
     // Render all the render props:
     return render ? render({
         actionProps: { handleActionClick, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: createRenderedFields(), onCollectionAction, addConfig, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
+        fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
         loading
     }) : null;
 };

@@ -23,7 +23,7 @@ const Collection = ({ title, description, collectionKey, fields, onCollectionAct
     );
 };
 
-const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFields, data, errors }) => {
+const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirtyFields, data, errors }) => {
     return (
         <div style={{ border: isDirty ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
             <div style={{ border: dirtyFields.country ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
@@ -63,7 +63,7 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                         <br />
                     </>
                 ) : null}
-                {!fields.group1.coords ? <button onClick={() => addConfig("group1", "coordinates")}>Add Coordinate Fields</button> : null}
+                {!fields.group1.coords ? <button onClick={() => modifyConfig("group1", "coordinates", "add")}>Add Coordinate Fields</button> : null}
                 <fieldset>
                     {fields.group1.subgroup1.field1}
                     <br />
@@ -80,7 +80,7 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                             <br />
                         </>
                     ) : null}
-                    {!fields.group1.subgroup1.coords ? <button onClick={() => addConfig("group1.subgroup1", "coordinates")}>Add Coordinate Fields</button> : null}
+                    {!fields.group1.subgroup1.coords ? <button onClick={() => modifyConfig("group1.subgroup1", "coordinates", "add")}>Add Coordinate Fields</button> : null}
                 </fieldset>
             </fieldset>
             <br />
@@ -158,7 +158,7 @@ const FormRenderer = ({ fields, onCollectionAction, addConfig, isDirty, dirtyFie
                                             <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "remove", subIndex)}>-</button>
                                         </div>)
                                     ) : null}
-                                    {subFields.colGroup.collection1[0] && !subFields.colGroup.collection1[0].coords ? <button onClick={() => addConfig(`collection1[${index}].colGroup.collection1`, "coordinates")}>Add Coordinate Fields</button> : null}
+                                    {subFields.colGroup.collection1[0] && !subFields.colGroup.collection1[0].coords ? <button onClick={() => modifyConfig(`collection1[${index}].colGroup.collection1`, "coordinates", "add")}>Add Coordinate Fields</button> : null}
                                     <br />
                                     <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "add")}>+</button>
                                 </fieldset>
