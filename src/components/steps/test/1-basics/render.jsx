@@ -64,6 +64,7 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                     </>
                 ) : null}
                 {!fields.group1.coords ? <button onClick={() => modifyConfig("group1", "coordinates", "add")}>Add Coordinate Fields</button> : null}
+                {fields.group1.coords ? <button onClick={() => modifyConfig("group1", "coordinates", "remove")}>Remove Coordinate Fields</button> : null}
                 <fieldset>
                     {fields.group1.subgroup1.field1}
                     <br />

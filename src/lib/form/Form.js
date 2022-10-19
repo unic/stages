@@ -88,6 +88,11 @@ const parseConfig = (config, data, asyncData, modifiedConfigs) => {
         const fields = get(parsedConfig, modifiedConfig.path);
         if (Array.isArray(fields)) {
             if (modifiedConfig.action === "add") fields.push(modifiedConfig.fields(data, asyncData));
+            if (modifiedConfig.action === "remove") {
+                const field = modifiedConfig.fields(data, asyncData);
+                const index = findIndex(fields, {id: field.id});
+                if (index > -1) fields.splice(index, 1);
+            }
             set(parsedConfig, modifiedConfig.path, fields);
         }
     });
