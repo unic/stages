@@ -67,7 +67,7 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
-const parseConfig = (config, data, asyncData) => {
+const parseConfig = (config, data, asyncData, addedConfigs) => {
     let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
 
     const parseConfigItem = configItem => {
@@ -82,6 +82,14 @@ const parseConfig = (config, data, asyncData) => {
             configItem.fields = configItem.fields.map(field => parseConfigItem(field));
         }
         return parseConfigItem(configItem);
+    });
+
+    addedConfigs.forEach(addedConfig => {
+        const fields = get(parsedConfig, addedConfig.path);
+        if (Array.isArray(fields)) {
+            fields.push(addedConfig.fields);
+            set(parsedConfig, addedConfig.path, fields);
+        }
     });
 
     return parsedConfig;
@@ -128,12 +136,9 @@ const Form = ({
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState();
     const [lastFocusedField, setLastFocusedField] = useState();
-    const [parsedFieldConfig, setParsedFieldConfig] = useState(parseConfig(config, data, asyncData));
+    const [addedConfigs, setAddedConfigs] = useState([]);
+    const parsedFieldConfig = parseConfig(config, data, asyncData, addedConfigs);
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
-
-    useEffect(() => {
-        setParsedFieldConfig(parseConfig(config, data, asyncData));
-    }, [asyncData]);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
@@ -804,13 +809,9 @@ const Form = ({
     */
     const addConfig = (path, configKey) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
-            const fieldConfig = find(fieldPaths, { path: path });
-            const newFields = [...fieldConfig.config.fields];
-            const newParsedFieldConfig = [...parsedFieldConfig];
             const pathParts = path.split(".");
+            const additionalFields = config.fieldConfigs[configKey](data, asyncData);
             let configPath = "";
-
-            newFields.push(config.fieldConfigs[configKey](data, asyncData));
 
             pathParts.forEach(pathPart => {
                 const thisConfig = configPath ? get(parsedFieldConfig, configPath) : parsedFieldConfig;
@@ -826,8 +827,11 @@ const Form = ({
             });
 
             if (configPath !== "") {
-                set(newParsedFieldConfig, configPath, newFields);
-                setParsedFieldConfig(newParsedFieldConfig);
+                addedConfigs.push({
+                    fields: additionalFields,
+                    path: configPath
+                });
+                setAddedConfigs([...addedConfigs]);
             }
         }
     };
