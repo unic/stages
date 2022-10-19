@@ -131,6 +131,10 @@ const Form = ({
     const [parsedFieldConfig, setParsedFieldConfig] = useState(parseConfig(config, data, asyncData));
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
 
+    useEffect(() => {
+        setParsedFieldConfig(parseConfig(config, data, asyncData));
+    }, [asyncData]);
+
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
         if (data && !initialData) {
@@ -371,7 +375,6 @@ const Form = ({
             if (optionsConfig.enableCaching) {
                 updateOptionsCache(cacheKey, options);
             }
-
 
             // Only update options if this is the latest option call for this field:
             if (nrAfterAsyncCall === newNr) {
