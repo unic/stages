@@ -87,7 +87,7 @@ const parseConfig = (config, data, asyncData, addedConfigs) => {
     addedConfigs.forEach(addedConfig => {
         const fields = get(parsedConfig, addedConfig.path);
         if (Array.isArray(fields)) {
-            fields.push(addedConfig.fields);
+            fields.push(addedConfig.fields(data, asyncData));
             set(parsedConfig, addedConfig.path, fields);
         }
     });
@@ -810,7 +810,6 @@ const Form = ({
     const addConfig = (path, configKey) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
             const pathParts = path.split(".");
-            const additionalFields = config.fieldConfigs[configKey](data, asyncData);
             let configPath = "";
 
             pathParts.forEach(pathPart => {
@@ -828,7 +827,7 @@ const Form = ({
 
             if (configPath !== "") {
                 addedConfigs.push({
-                    fields: additionalFields,
+                    fields: config.fieldConfigs[configKey],
                     path: configPath
                 });
                 setAddedConfigs([...addedConfigs]);
