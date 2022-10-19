@@ -697,7 +697,11 @@ const Form = ({
         const renderedFields = {};
 
         const createField = (fieldConfig, fieldData, path) => {
-            if (!fields[fieldConfig.type]) return null;
+            if (
+                !fields[fieldConfig.type] || 
+                (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, data))
+            ) return null;
+
             const cleanedField = Object.assign({}, fieldConfig);
             cleanedField.id = path;
 
@@ -708,6 +712,7 @@ const Form = ({
             delete cleanedField.filter;
             delete cleanedField.clearFields;
             delete cleanedField.dynamicOptions;
+            delete cleanedField.isRendered;
 
             if (fieldConfig.type !== "subform") {
                 return React.createElement(

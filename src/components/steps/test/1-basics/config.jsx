@@ -326,7 +326,12 @@ const config = {
                     {
                         id: "factor2",
                         label: "Factor 2",
-                        type: "number"
+                        type: "number",
+                        isRendered: (path, data, allData) => {
+                            console.log({path, data, allData});
+                            if (path.includes("[1]")) return false;
+                            return true;
+                        }
                     },
                     {
                         id: "result",
