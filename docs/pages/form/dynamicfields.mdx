@@ -75,3 +75,24 @@ You can do the same in the render function, for example if you want to hide a gr
 However, be careful to not make a form to dynamic, this can be irritating for the user and hard to test.
 
 [Related Demo](https://stages-demo.vercel.app/dynamicfields)
+
+## The isRendered prop
+
+To help with dynamic fields, we've added the `isRendered` property. An example:
+
+```
+...
+{
+    id: "myfield",
+    label: "My Field",
+    type: "text",
+    isRendered: (path, data, allData) => {
+        if (path.includes("[1]")) return false;
+        return true;
+    }
+},
+...
+```
+
+This field only renders, if it's in a collection and has an index of `1`, so in other words, if it is the second item 
+in a collection. All other items in the collection will not render this field.
