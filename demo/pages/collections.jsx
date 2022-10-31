@@ -32,7 +32,13 @@ function CollectionsPage() {
         collection6: [
             { field1: "Field 1 sample text", field2: "Field 2 sample text" },
             { field1: "Another sample" }
-        ]
+        ],
+        collection10: [
+            { field1: "Field 1 sample text", field2: "Field 2 sample text" },
+            { field1: "Field 1 sample text", field2: "Field 2 sample text" },
+            { field1: "Field 1 sample text", field2: "Field 2 sample text" },
+            { field1: "Field 1 sample text", field2: "Field 2 sample text" }
+        ],
     });
 
     return (
@@ -257,6 +263,34 @@ function CollectionsPage() {
                                         }
                                     ]
                                 }
+                            },
+                            {
+                                id: "collection10",
+                                type: "collection",
+                                fields: [
+                                    {
+                                        id: "field1",
+                                        label: "Field 1",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "field2",
+                                        label: "Field 2",
+                                        type: "text",
+                                        isRequired: false,
+                                        isRendered: (path, data, allData) => {
+                                            // Just an example, this code could definitely be improved massively!
+                                            if (path.includes("[0]")) return false;
+                                            if (path.includes("[2]")) return false;
+                                            if (path.includes("[4]")) return false;
+                                            if (path.includes("[6]")) return false;
+                                            if (path.includes("[8]")) return false;
+                                            if (path.includes("[10]")) return false;
+                                            return true;
+                                        }
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -317,6 +351,13 @@ function CollectionsPage() {
                                 title="Force entries to be uniq:"
                                 description="Sometimes you only want uniq entries in a collection. With the isUniq property you can force Stages to validate that. Add two entries with the same values and submit to see the error:"
                                 collectionKey="collection8"
+                                fieldProps={fieldProps}
+                                errors={fieldProps.errors}
+                            />
+                            <Collection
+                                title="Dynamic fields per item:"
+                                description="Deciding which fields to display based on the index of the collection item (Field 2 is only shown every second entry)."
+                                collectionKey="collection10"
                                 fieldProps={fieldProps}
                                 errors={fieldProps.errors}
                             />
