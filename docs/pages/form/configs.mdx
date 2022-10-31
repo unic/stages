@@ -85,3 +85,115 @@ Additionally, Stages comes with a few special properties which are field inepend
 - **clearFields**: This is an array of field keys to clear if this field changes
 
 See the detailed info on those in the respective doc pages.
+
+## Config Templates
+
+Sometimes you want to reuse configurations at different places in your data structure. To do that, you can use 
+config templates. An example:
+
+```
+const config = {
+    fieldConfigs: {
+        coordinates: (data) => {
+            return {
+                id: "coords",
+                type: "group",
+                fields: [
+                    {
+                        id: "lat",
+                        label: "Latitude",
+                        type: "text"
+                    },
+                    {
+                        id: "lng",
+                        label: "Longitude",
+                        type: "text"
+                    }
+                ]
+            };
+        }
+    }, 
+    fields: (data) => {
+        return [
+            {
+                id: "field",
+                label: "Field",
+                type: "text"
+            },
+            "coordinates",
+            {
+                id: "mygroup",
+                type: "group",
+                fields: [
+                    {
+                        id: "subfield",
+                        label: "Sub Field",
+                        type: "text"
+                    },
+                    "coordinates"
+                ]
+            }
+        ];
+    }
+};
+```
+
+This will create the following data structure:
+
+```
+{
+    field: "Bla ...",
+    coords: {
+        lat: "3.687",
+        lng: "34.988"
+    },
+    mygroup: {
+        subfield: "Bla, bla ...",
+        coords: {
+            lat: "4.376",
+            lng: "23.976"
+        }
+    }
+}
+```
+
+Another use for config templates, is to dynamically modify configs from the render function. An example:
+
+```
+render: = ({ fields, modifyConfig }) => {
+    return (
+        <div>
+            {fields.field}
+            <br />
+            <fieldset>
+                {fields.mygroup.coords ? (
+                    <>
+                        <fieldset>
+                            {fields.mygroup.coords.lng}
+                            <br />
+                            {fields.mygroup.coords.lat}
+                        </fieldset>
+                        <br />
+                    </>
+                ) : null}
+                {!fields.coords ? (
+                    <button onClick={() => modifyConfig("mygroup", "coordinates", "add")}>
+                        Add Coordinate Fields
+                    </button>
+                ) : null}
+                {fields.coords ? (
+                    <button onClick={() => modifyConfig("mygroup", "coordinates", "remove")}>
+                        Remove Coordinate Fields
+                    </button>
+                ) : null}
+            </fieldset>
+        </div>
+    )
+}
+```
+
+The `modifyConfig` method has three parameters:
+
+- **path:** The data structure path of where to add the configuration
+- **template:** The key of the config template which should be added
+- **action:** The action, which can currently be either `add` or `remove`
