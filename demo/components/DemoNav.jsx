@@ -90,6 +90,11 @@ const DemoNav = () => {
                     </Link>
                 </StyledLi>
                 <StyledLi>
+                    <Link href="/groups">
+                        <MenuItem active={router.pathname === "/groups"}>Groups</MenuItem>
+                    </Link>
+                </StyledLi>
+                <StyledLi>
                     <Link href="/asyncdata">
                         <MenuItem active={router.pathname === "/asyncdata"}>Async Data</MenuItem>
                     </Link>
