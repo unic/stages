@@ -1,0 +1,86 @@
+# Groups
+
+With groups you can structure your data. Combine multiple fields of any type 
+to create deeply nested data structures.
+
+This is a simple example, nested twice, of how it works:
+
+```
+[   
+    {
+        id: "field",
+        label: "Field",
+        type: "text"
+    },
+    {
+        id: "mygroup",
+        type: "group",
+        fields: [
+            {
+                id: "field1",
+                label: "Field 1",
+                type: "text"
+            },
+            {
+                id: "field2",
+                label: "Field 2",
+                type: "text"
+            },
+            {
+                id: "mysubgroup",
+                type: "group",
+                fields: [
+                    {
+                        id: "field1",
+                        label: "Field 1",
+                        type: "text"
+                    },
+                    {
+                        id: "field2",
+                        label: "Field 2",
+                        type: "text"
+                    }
+                ]
+            }
+        ]
+    }
+]
+```
+
+The data structure of this example would look something like this:
+
+```
+{
+    field: "Some text ...",
+    mygroup: {
+        field1: "Bla ...",
+        field2: "More bla ...",
+        mysubgroup: {
+            field1: "Bla, bla ...",
+            field2: "So much bla!"
+        }
+    }
+}
+```
+
+In the render function, you could than render the fields like this:
+
+```
+<div>
+    {fields.field}
+    <br />
+    <fieldset>
+        {fields.mygroup.field1}
+        <br />
+        {fields.mygroup.field2}
+        <br />
+        <fieldset>
+            {fields.mygroup.mysubgroup.field1}
+            <br />
+            {fields.mygroup.mysubgroup.field2}
+        </fieldset>
+    </fieldset>
+</div>
+```
+
+You can nest whatever you want, even collections, and you can nest as far as you want.

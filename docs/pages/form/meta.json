@@ -5,6 +5,7 @@
     "actions": "Actions",
     "validation": "Validation",
     "collections": "Collections",
+    "groups": "Groups",
     "computedvalues": "Computed Values",
     "filteredvalues": "Filtered Values",
     "asyncdata": "Async Data",
