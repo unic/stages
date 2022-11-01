@@ -711,7 +711,7 @@ const Form = ({
 
         const createField = (fieldConfig, fieldData, path) => {
             if (
-                !fields[fieldConfig.type] || 
+                (!fields[fieldConfig.type] && fieldConfig.type !== "subform") || 
                 (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, data))
             ) return null;
 
