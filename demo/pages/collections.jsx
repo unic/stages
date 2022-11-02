@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Form, plainFields as fields } from "react-stages";
 import Layout from "../components/Layout";
 
-const Collection = ({ title, description, collectionKey, fieldProps, errors }) => {
+const Collection = ({ title, description, collectionKey, fieldProps, errors, addMoveButtons }) => {
     return (
         <>
             <h3>{title}</h3>
@@ -15,6 +15,13 @@ const Collection = ({ title, description, collectionKey, fieldProps, errors }) =
                             <div className="pure-u-16-24">{subFields.field2}</div>
                             {subFields.result ? <div className="pure-u-8-24"><br />{subFields.result}</div> : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction(collectionKey, "remove", index)} style={{ position: "absolute", right: "8px" }}>-</button>
+                            {addMoveButtons ? (
+                                <div>
+                                    <br />
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction(collectionKey, "move", index, 0)}>Move to top</button>
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction(collectionKey, "move", index, fieldProps.fields[collectionKey].length - 1)}>Move to bottom</button>
+                                </div>
+                            ) : null}
                         </div>)
                     ) : null}
                 </div>
@@ -38,6 +45,15 @@ function CollectionsPage() {
             { field1: "Field 1 sample text", field2: "Field 2 sample text" },
             { field1: "Field 1 sample text", field2: "Field 2 sample text" },
             { field1: "Field 1 sample text", field2: "Field 2 sample text" }
+        ],
+        collection11: [
+            { field1: "Field 1 sample text 1", field2: "Field 2 sample text 1" },
+            { field1: "Field 1 sample text 2", field2: "Field 2 sample text 2" },
+            { field1: "Field 1 sample text 3", field2: "Field 2 sample text 3" },
+            { field1: "Field 1 sample text 4", field2: "Field 2 sample text 4" },
+            { field1: "Field 1 sample text 5", field2: "Field 2 sample text 5" },
+            { field1: "Field 1 sample text 6", field2: "Field 2 sample text 6" },
+            { field1: "Field 1 sample text 7", field2: "Field 2 sample text 7" }
         ],
     });
 
@@ -291,6 +307,24 @@ function CollectionsPage() {
                                         }
                                     }
                                 ]
+                            },
+                            {
+                                id: "collection11",
+                                type: "collection",
+                                fields: [
+                                    {
+                                        id: "field1",
+                                        label: "Field 1",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "field2",
+                                        label: "Field 2",
+                                        type: "text",
+                                        isRequired: false
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -382,6 +416,14 @@ function CollectionsPage() {
                                     {fieldProps.errors && fieldProps.errors.collection9 ? <div style={{ color: "red" }}>Please add at least one meal!</div> : null}
                                 </div>
                             </div>
+                            <Collection
+                                title="Move items:"
+                                description="Move items to the top or bottom of the collection (simple version with buttons)."
+                                collectionKey="collection11"
+                                fieldProps={fieldProps}
+                                errors={fieldProps.errors}
+                                addMoveButtons
+                            />
                         </div>
                         <br />
                         <hr />
