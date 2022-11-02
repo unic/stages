@@ -1,8 +1,80 @@
 import React, { useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Form, plainFields as fields } from "react-stages";
 import Layout from "../components/Layout";
 
-const Collection = ({ title, description, collectionKey, fieldProps, errors, addMoveButtons }) => {
+const Collection = ({ title, description, collectionKey, fieldProps, errors, addMoveButtons, addDragAndDrop }) => {
+    if (addDragAndDrop && process.browser) {
+        const getListStyle = isDraggingOver => ({
+            background: "f8f8f8",
+            width: "calc(100% - 16px)",
+            padding: "8px"
+        });
+        const getItemStyle = (isDragging, draggableStyle) => ({
+            userSelect: "none",
+            width: "calc(100% - 32px)",
+            margin: "8px",
+            padding: "8px",
+            position: "relative",
+            background: isDragging ? "#e6e6e6" : "#f2f2f2",
+            ...draggableStyle
+        });
+        const onDragEnd = (result) => {
+            // dropped outside the list
+            if (!result.destination) {
+                return;
+            }
+
+            fieldProps.onCollectionAction(collectionKey, "move", result.source.index, result.destination.index)
+        };
+
+        return (
+            <>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                <div style={{ border: "1px #ccc dashed" }}>
+                    <div>
+                        <button type="button" onClick={() => fieldProps.onCollectionAction(collectionKey, "add")} style={{ float: "right", marginRight: "-32px" }}>+</button>
+                        <DragDropContext onDragEnd={onDragEnd}>
+                            <Droppable droppableId="droppable">
+                            {(provided, snapshot) => (
+                                <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    style={getListStyle(snapshot.isDraggingOver)}
+                                >
+                                    {fieldProps.fields[collectionKey] ? fieldProps.fields[collectionKey].map((subFields, index) => (
+                                        <Draggable key={`${collectionKey}-ìtem-${index}`} draggableId={`${collectionKey}-ìtem-${index}`} index={index}>
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    {...provided.dragHandleProps}
+                                                    style={getItemStyle(
+                                                        snapshot.isDragging,
+                                                        provided.draggableProps.style
+                                                    )}
+                                                >
+                                                    <div className="pure-g">
+                                                        <div className="pure-u-12-24">{subFields.field1}</div>
+                                                        <div className="pure-u-12-24">{subFields.field2}</div>
+                                                        <button type="button" onClick={() => fieldProps.onCollectionAction(collectionKey, "remove", index)} style={{ position: "absolute", right: "8px" }}>-</button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </Draggable>
+                                    )) : null}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                            </Droppable>
+                        </DragDropContext>
+                    </div>
+                </div>
+            </>
+        );
+    }
+    if (addDragAndDrop && !process.browser) return null;
     return (
         <>
             <h3>{title}</h3>
@@ -47,6 +119,15 @@ function CollectionsPage() {
             { field1: "Field 1 sample text", field2: "Field 2 sample text" }
         ],
         collection11: [
+            { field1: "Field 1 sample text 1", field2: "Field 2 sample text 1" },
+            { field1: "Field 1 sample text 2", field2: "Field 2 sample text 2" },
+            { field1: "Field 1 sample text 3", field2: "Field 2 sample text 3" },
+            { field1: "Field 1 sample text 4", field2: "Field 2 sample text 4" },
+            { field1: "Field 1 sample text 5", field2: "Field 2 sample text 5" },
+            { field1: "Field 1 sample text 6", field2: "Field 2 sample text 6" },
+            { field1: "Field 1 sample text 7", field2: "Field 2 sample text 7" }
+        ],
+        collection12: [
             { field1: "Field 1 sample text 1", field2: "Field 2 sample text 1" },
             { field1: "Field 1 sample text 2", field2: "Field 2 sample text 2" },
             { field1: "Field 1 sample text 3", field2: "Field 2 sample text 3" },
@@ -325,6 +406,24 @@ function CollectionsPage() {
                                         isRequired: false
                                     }
                                 ]
+                            },
+                            {
+                                id: "collection12",
+                                type: "collection",
+                                fields: [
+                                    {
+                                        id: "field1",
+                                        label: "Field 1",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "field2",
+                                        label: "Field 2",
+                                        type: "text",
+                                        isRequired: false
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -423,6 +522,14 @@ function CollectionsPage() {
                                 fieldProps={fieldProps}
                                 errors={fieldProps.errors}
                                 addMoveButtons
+                            />
+                            <Collection
+                                title="Drag and drop items:"
+                                description="Using the move action together with Beautiful DnD, we get a nice drag and drop behaviour."
+                                collectionKey="collection12"
+                                fieldProps={fieldProps}
+                                errors={fieldProps.errors}
+                                addDragAndDrop
                             />
                         </div>
                         <br />
