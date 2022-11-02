@@ -773,7 +773,7 @@ const Form = ({
         This function handles adding and removing collection entries. It is
         called by the forms render method.
     */
-    const onCollectionAction = (fieldKey, action, index) => {
+    const onCollectionAction = (fieldKey, action, index, toIndex) => {
         const newData = Object.assign({}, data);
         const field = getConfigForField(fieldKey);
         const minEntries = field && field.min ? Number(field.min) : 0;
@@ -796,6 +796,12 @@ const Form = ({
         // This will remove a specific entry in the collection:
         if (action === "remove") {
             if (minEntries < updatedCollection.length) updatedCollection.splice(index, 1);
+        }
+
+        // This action will move a certain entry from one index to another index, which is very useful with react-beautiful-dnd
+        if (action === "move" && index > -1 && toIndex > -1) {
+            const [removed] = updatedCollection.splice(index, 1);
+            updatedCollection.splice(toIndex, 0, removed);
         }
 
         set(newData, fieldKey, updatedCollection);

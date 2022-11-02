@@ -112,6 +112,8 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                         </div>
                         <br />
                         <button type="button" onClick={() => onCollectionAction("maths", "remove", index)}>-</button>
+                        <button type="button" onClick={() => onCollectionAction("maths", "move", index, 0)}>Move to top</button>
+                        <button type="button" onClick={() => onCollectionAction("maths", "move", index, fields.maths.length - 1)}>Move to bottom</button>
                     </div>)
                 ) : null}
                 <button type="button" onClick={() => onCollectionAction("maths", "add")}>+</button>
