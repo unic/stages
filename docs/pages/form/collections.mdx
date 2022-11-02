@@ -181,4 +181,13 @@ One thing to than change is in the Form render funtion, you need to explicitely 
 </button>
 ```
 
+## Collection actions
+
+In the examples above, we used `onCollectionAction()` a lot. The function params are:
+
+- **path:** The unique path of the collection you want to manipulate
+- **action:** What you want to do. Currently you can use `add`, `remove` and `move`
+- **index:** The index of the collection entry
+- **index2:** A second index. Currently only needed for `move` actions where it will be the destination (check the drag and drop example in the demos for an advanced example)
+
 [Related Demo](https://stages-demo.vercel.app/collections)
