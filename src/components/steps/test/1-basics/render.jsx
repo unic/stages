@@ -138,6 +138,8 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                                 {subFields.coords.lat}
                             </fieldset>
                             <br />
+                            {subFields.dynSelect}
+                            <br />
                             <fieldset>
                                 <div className="pure-u-1-3">{subFields.colGroup.field1}</div>
                                 <br />

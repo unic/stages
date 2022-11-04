@@ -138,6 +138,23 @@ const config = {
                         type: "text",
                         isRequired: false
                     },
+                    {
+                        id: "dynSelect",
+                        label: "Dynamic Select",
+                        type: "select",
+                        options: (path, data, allData) => {
+                            return [
+                                {   
+                                    text: "Entry 1",
+                                    value: "entry1"
+                                },
+                                {   
+                                    text: "Entry 2",
+                                    value: "entry2"
+                                }
+                            ];
+                        }
+                    },
                     "coordinates",
                     {
                         id: "colGroup",

@@ -724,7 +724,11 @@ const Form = ({
             const cleanedField = Object.assign({}, fieldConfig);
             cleanedField.id = path;
 
-            if (optionsLoaded[path]) cleanedField.options = optionsLoaded[path];
+            if (optionsLoaded[path]) {
+                cleanedField.options = optionsLoaded[path];
+            } else if (typeof cleanedField.options === "function") {
+                cleanedField.options = cleanedField.options(path, fieldData, data);
+            }
 
             // Remove special props from field before rendering:
             delete cleanedField.computedValue;
