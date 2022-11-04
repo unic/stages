@@ -24,6 +24,7 @@ const Collection = ({ title, description, collectionKey, fields, onCollectionAct
 };
 
 const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirtyFields, data, errors }) => {
+    console.log({fields});
     return (
         <div style={{ border: isDirty ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
             <div style={{ border: dirtyFields.country ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
@@ -163,7 +164,7 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                                             <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "remove", subIndex)}>-</button>
                                         </div>)
                                     ) : null}
-                                    {subFields.colGroup.collection1[0] && !subFields.colGroup.collection1[0].coords ? <button onClick={() => modifyConfig(`collection1[${index}].colGroup.collection1`, "coordinates", "add")}>Add Coordinate Fields</button> : null}
+                                    {subFields.colGroup.collection1 && subFields.colGroup.collection1[0] && !subFields.colGroup.collection1[0].coords ? <button onClick={() => modifyConfig(`collection1[${index}].colGroup.collection1`, "coordinates", "add")}>Add Coordinate Fields</button> : null}
                                     <br />
                                     <button type="button" onClick={() => onCollectionAction(`collection1[${index}].colGroup.collection1`, "add")}>+</button>
                                 </fieldset>
@@ -174,6 +175,7 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                     </div>)
                 ) : null}
                 <button type="button" onClick={() => onCollectionAction("collection1", "add")}>+</button>
+                <button type="button" onClick={() => onCollectionAction("collection1", "sort", ["field1", "field2"])}>Sort</button>
             </fieldset>
             <fieldset>
                 <div>

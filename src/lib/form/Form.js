@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import find from "lodash.find";
+import sortBy from "lodash.sortby";
 import findIndex from "lodash.findindex";
 import uniqWith from "lodash.uniqwith";
 import isEqual from "lodash.isequal";
@@ -788,7 +789,7 @@ const Form = ({
         const field = getConfigForField(fieldKey);
         const minEntries = field && field.min ? Number(field.min) : 0;
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
-        const updatedCollection = get(newData, fieldKey, []);
+        let updatedCollection = get(newData, fieldKey, []);
         let newErrors;
 
         if (isDebugging()) window.stagesLogging(`On collection action "${fieldKey}"`, uniqId);
@@ -824,6 +825,11 @@ const Form = ({
         if (action === "move" && index > -1 && toIndex > -1) {
             const [removed] = updatedCollection.splice(index, 1);
             updatedCollection.splice(toIndex, 0, removed);
+        }
+
+        // This action uses Lodash sortBy to sort the collection:
+        if (action === "sort" && updatedCollection.length > 0 && index) {
+            updatedCollection = sortBy(updatedCollection, index);
         }
 
         set(newData, fieldKey, updatedCollection);
