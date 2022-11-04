@@ -91,3 +91,27 @@ const loadCities = async (data, handleChange) => {
     return cities;
   };
 ```
+
+## Non Async Dynamic Options
+
+For non async dynamic options, you can simply define a function which calculates them:
+
+```
+{
+    id: "dynSelect",
+    label: "Dynamic Select",
+    type: "select",
+    options: (path, data, allData) => {
+        return [
+            {   
+                text: "Entry 1",
+                value: "entry1"
+            },
+            {   
+                text: "Entry 2",
+                value: "entry2"
+            }
+        ];
+    }
+}
+```
