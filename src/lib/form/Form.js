@@ -427,11 +427,17 @@ const Form = ({
                 for (let i = fieldData.length; i < minEntries; i++) {
                     if (typeof field.init === "string") {
                         // Init union types with a specific type:
-                        fieldData.push({
-                            __typename: field.init
-                        });
+                        if (typeof field.setInitialData === "function") {
+                            fieldData.push(field.setInitialData(fieldData, newData, field.init));
+                        } else {
+                            fieldData.push({ __typename: field.init });
+                        }
                     } else {
-                        fieldData.push({});
+                        if (typeof field.setInitialData === "function") {
+                            fieldData.push(field.setInitialData(fieldData, newData));
+                        } else {
+                            fieldData.push({});
+                        }
                     }
                 }
                 set(newData, fieldPath.path, fieldData);
@@ -787,9 +793,21 @@ const Form = ({
         if (action === "add") {
             if (typeof index === "string" && field.fields[index]) {
                 // This is a union type collection, we're adding a specific entry:
-                if (maxEntries > updatedCollection.length) updatedCollection.push({__typename: index});
+                if (maxEntries > updatedCollection.length) {
+                    if (typeof field.setInitialData === "function") {
+                        updatedCollection.push(field.setInitialData(updatedCollection, newData, index));
+                    } else {
+                        updatedCollection.push({__typename: index});
+                    }
+                }
             } else {
-                if (maxEntries > updatedCollection.length) updatedCollection.push({});
+                if (maxEntries > updatedCollection.length) {
+                    if (typeof field.setInitialData === "function") {
+                        updatedCollection.push(field.setInitialData(updatedCollection, newData));
+                    } else {
+                        updatedCollection.push({});
+                    }
+                }
             }
         }
 

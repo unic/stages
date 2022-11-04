@@ -414,6 +414,9 @@ const config = {
                         init: true,
                         min: 2,
                         max: 5,
+                        setInitialData: (data, allData) => {
+                            return { field1: "Test", field2: "Bla" };
+                        },
                         fields: [
                             {
                                 id: "field1",
