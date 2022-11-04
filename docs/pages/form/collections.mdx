@@ -79,6 +79,10 @@ Collection have following options:
 - **min**: Add a number for the minimum amount of entries
 - **max**: Add a number for the maximum amount of entries
 - **uniqEntries**: If true, all entries have to be uniq
+- **setInitialData**: A callback which adds initial data to a newly created collection entry, with following params:
+    - **data**: The collections data
+    - **alldata**: All the data in the form
+    - **type**: In case of a union type collection, the type of the new entry
 
 ## Computed Collections
 
