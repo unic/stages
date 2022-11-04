@@ -832,6 +832,11 @@ const Form = ({
             updatedCollection = sortBy(updatedCollection, index);
         }
 
+        // This action duplicates a specific collection entry:
+        if (action === "duplicate" && index > -1) {
+            updatedCollection.splice(index+1, 0, Object.assign({}, updatedCollection[index]));
+        }
+
         set(newData, fieldKey, updatedCollection);
 
         // Only validate if collection action validation is enabled:

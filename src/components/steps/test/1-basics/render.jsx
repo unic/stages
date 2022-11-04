@@ -11,6 +11,7 @@ const Collection = ({ title, description, collectionKey, fields, onCollectionAct
                             <div className="pure-u-16-24">{subFields.field2}</div>
                             {subFields.result ? <div className="pure-u-8-24"><br />{subFields.result}</div> : null}
                             <button type="button" onClick={() => onCollectionAction(`collectionGroup.${collectionKey}`, "remove", index)} style={{ position: "absolute", right: "8px" }}>-</button>
+                            <button type="button" onClick={() => onCollectionAction(`collectionGroup.${collectionKey}`, "duplicate", index)} style={{ position: "absolute", right: "38px" }}>Duplicate</button>
                         </div>)
                     ) : null}
                 </div>
