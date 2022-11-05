@@ -57,7 +57,7 @@ const RadioGroup = ({
                                     if (typeof onChange === "function") onChange(option.value);
                                 }}
                                 onFocus={e => {
-                                    if (typeof onFocus === "function") onFocus(e.target.value);
+                                    if (typeof onFocus === "function") onFocus();
                                 }}
                             />
                             <label htmlFor={`${id}-${option.value}`}>{option.text}</label>

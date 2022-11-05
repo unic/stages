@@ -25,7 +25,6 @@ const Collection = ({ title, description, collectionKey, fields, onCollectionAct
 };
 
 const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirtyFields, data, errors }) => {
-    console.log({fields});
     return (
         <div style={{ border: isDirty ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
             <div style={{ border: dirtyFields.country ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
@@ -35,6 +34,8 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
             <div style={{ border: dirtyFields.postalcode ? "4px #f30 solid" : "4px #eee solid", padding: "32px" }}>
                 {fields.postalcode}
             </div>
+            <br />
+            {fields.seltest}
             <br />
             {fields.city}
             <br />

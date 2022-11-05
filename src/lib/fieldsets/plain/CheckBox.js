@@ -56,7 +56,7 @@ const CheckBox = ({
                         if (typeof onChange === "function") onChange(e.target.checked ? true : false);
                     }}
                     onFocus={e => {
-                        if (typeof onFocus === "function") onFocus(e.target.value);
+                        if (typeof onFocus === "function") onFocus();
                     }}
                 />
                 {suffix ? <span>{suffix}</span> : null}

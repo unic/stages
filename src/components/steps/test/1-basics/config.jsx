@@ -92,6 +92,17 @@ const config = {
                 }
             },
             {
+                id: "seltest",
+                label: "Select Test",
+                type: "select",
+                options: [
+                    { value: "", text: "Bitte wählen ..." },
+                    { value: "A", text: "A" },
+                    { value: "B", text: "B" },
+                    { value: "C", text: "C" }
+                ]
+            },
+            {
                 id: "city",
                 label: "City",
                 type: "text",

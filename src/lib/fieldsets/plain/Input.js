@@ -54,10 +54,10 @@ const Input = ({
                         if (typeof onChange === "function") onChange(e.target.value);
                     }}
                     onFocus={e => {
-                        if (typeof onFocus === "function") onFocus(e.target.value);
+                        if (typeof onFocus === "function") onFocus();
                     }}
                     onBlur={e => {
-                        if (typeof onBlur === "function") onBlur(e.target.value);
+                        if (typeof onBlur === "function") onBlur();
                     }}
                 />
                 {suffix ? <span>{suffix}</span> : null}

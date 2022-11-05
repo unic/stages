@@ -45,7 +45,7 @@ const Select = ({
                 {prefix ? <span>{prefix}</span> : null}
                 <select
                     name={id}
-                    value={value}
+                    value={typeof value === "undefined" ? "" : value}
                     options={options}
                     placeholder={placeholder}
                     disabled={!!isDisabled}
@@ -53,8 +53,11 @@ const Select = ({
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
                     }}
+                    onBlur={e => {
+                        if (typeof onBlur === "function") onBlur();
+                    }}
                     onFocus={e => {
-                        if (typeof onFocus === "function") onFocus(e.target.value);
+                        if (typeof onFocus === "function") onFocus();
                     }}
                 >
                     {options.map(option => <option value={option.value} key={option.value}>{option.text}</option>)}
