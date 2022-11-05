@@ -111,8 +111,11 @@ function App() {
                 id="basics"
                 data={data}
                 config={basicsConfig}
+                enableUndo
                 render={({ actionProps, fieldProps, loading }) => (
                     <div>
+                        <button onClick={actionProps.handleUndo}>Undo</button>
+                        <button onClick={actionProps.handleRedo}>Redo</button>
                         <FormLayout
                             loading={loading}
                             fields={<BasicsRenderer {...fieldProps} />}

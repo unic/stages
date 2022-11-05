@@ -127,12 +127,15 @@ const Form = ({
     parentRunValidation,
     validateOn,
     throttleWait,
-    customEvents
+    customEvents,
+    enableUndo
 }) => {
     const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
     const [dirtyFields, setDirtyFields] = useState({});
     const [initialData, setInitialData] = useState(false);
+    const [undoData, setUndoData] = useState([]);
+    const [activeUndoIndex, setActiveUndoIndex] = useState(0);
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [optionsLoaded, setOptionsLoaded] = useState({});
@@ -150,7 +153,9 @@ const Form = ({
     useEffect(() => {
         if (data && !initialData) {
             if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
-            setInitialData(JSON.parse(stringify(data)));
+            const stringifiedData = stringify(data);
+            setInitialData(JSON.parse(stringifiedData));
+            setUndoData([stringifiedData]);
         }
     }, [data]);
 
@@ -406,6 +411,35 @@ const Form = ({
         if (newLastOnChangeData !== lastOnChangeData) {
             onChange(newData, errors, id, fieldKey);
             lastOnChangeData = newLastOnChangeData;
+        }
+    };
+
+    // Form action handler for undo
+    const handleUndo = () => {
+        if (enableUndo && activeUndoIndex > 0) {
+            const newIndex = activeUndoIndex - 1;
+            setActiveUndoIndex(newIndex);
+            limitedOnChange(JSON.parse(undoData[newIndex]), errors, id);
+        }
+    };
+    
+    // Form action handler for redo
+    const handleRedo = () => {
+        if (enableUndo && activeUndoIndex < undoData.length - 1) {
+            const newIndex = activeUndoIndex + 1;
+            setActiveUndoIndex(newIndex);
+            limitedOnChange(JSON.parse(undoData[newIndex]), errors, id);
+        }
+    };
+
+    // Add new entry to the undo index
+    const addNewUndoEntry = newData => {
+        if (enableUndo) {
+            const newUndoData = [...undoData];
+            newUndoData.length = activeUndoIndex + 1;
+            newUndoData.push(stringify(newData));
+            setUndoData(newUndoData);
+            setActiveUndoIndex(newUndoData.length - 1);
         }
     };
 
@@ -707,6 +741,8 @@ const Form = ({
                 }
             });
         }
+
+        addNewUndoEntry(newData);
     };
 
     /*
@@ -914,7 +950,7 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: { handleActionClick, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
+        actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
         fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
         loading
     }) : null;
