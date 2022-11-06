@@ -149,7 +149,7 @@ const Form = ({
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
     const parsedFieldConfig = parseConfig(config, data, asyncData, modifiedConfigs);
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
-console.log({undoData, activeUndoIndex, errors, data});
+
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
         if (data && !initialData) {
