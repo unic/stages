@@ -43,6 +43,25 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
             <br />
             {fields.city3}
             <br />
+            <p>And you can compute collection item specific data, as well:</p>
+            <fieldset>
+                <p>Do some maths:</p>
+                {fields.maths ? fields.maths.map((subFields, index) => (
+                    <div key={`math-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                        <div className="pure-g">
+                            <div className="pure-u-1-3">{subFields.factor1}</div>
+                            <div className="pure-u-1-3">{subFields.factor2}</div>
+                            <div className="pure-u-1-3">{subFields.result}</div>
+                        </div>
+                        <br />
+                        <button type="button" onClick={() => onCollectionAction("maths", "remove", index)}>-</button>
+                        <button type="button" onClick={() => onCollectionAction("maths", "move", index, 0)}>Move to top</button>
+                        <button type="button" onClick={() => onCollectionAction("maths", "move", index, fields.maths.length - 1)}>Move to bottom</button>
+                    </div>)
+                ) : null}
+                <button type="button" onClick={() => onCollectionAction("maths", "add")}>+</button>
+            </fieldset>
+            <br />
             {fields.q1}
             <br />
             <fieldset>
@@ -102,25 +121,6 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
             <br />
             {fields.atLeastOne}
             {fields.username}
-            <br />
-            <p>And you can compute collection item specific data, as well:</p>
-            <fieldset>
-                <p>Do some maths:</p>
-                {fields.maths ? fields.maths.map((subFields, index) => (
-                    <div key={`math-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
-                        <div className="pure-g">
-                            <div className="pure-u-1-3">{subFields.factor1}</div>
-                            <div className="pure-u-1-3">{subFields.factor2}</div>
-                            <div className="pure-u-1-3">{subFields.result}</div>
-                        </div>
-                        <br />
-                        <button type="button" onClick={() => onCollectionAction("maths", "remove", index)}>-</button>
-                        <button type="button" onClick={() => onCollectionAction("maths", "move", index, 0)}>Move to top</button>
-                        <button type="button" onClick={() => onCollectionAction("maths", "move", index, fields.maths.length - 1)}>Move to bottom</button>
-                    </div>)
-                ) : null}
-                <button type="button" onClick={() => onCollectionAction("maths", "add")}>+</button>
-            </fieldset>
             <br />
             <fieldset>
                 <p>Dynamic values from an async call populating a select:</p>

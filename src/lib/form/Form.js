@@ -155,7 +155,6 @@ const Form = ({
             if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
             const stringifiedData = stringify(data);
             setInitialData(JSON.parse(stringifiedData));
-            setUndoData([stringifiedData]);
         }
     }, [data]);
 
@@ -501,6 +500,7 @@ const Form = ({
                     }
                 });
             }
+            if (activeUndoIndex === 0 && undoData.length === 0) setUndoData([stringify(newData)]);
         }
 
         limitedOnChange(newData, validationErrors(), id); // will trigger validations even with no inits
