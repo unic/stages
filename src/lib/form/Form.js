@@ -128,7 +128,8 @@ const Form = ({
     validateOn,
     throttleWait,
     customEvents,
-    enableUndo
+    enableUndo,
+    undoMaxDepth = 10
 }) => {
     const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
@@ -454,6 +455,9 @@ console.log({undoData, activeUndoIndex, errors, data});
                 dirtyFields,
                 errors
             }));
+
+            if (newUndoData.length > undoMaxDepth) newUndoData.shift();
+
             setUndoData(newUndoData);
             setActiveUndoIndex(newUndoData.length - 1);
         }
