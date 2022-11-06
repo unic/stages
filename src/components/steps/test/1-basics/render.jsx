@@ -43,6 +43,8 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
             <br />
             {fields.city3}
             <br />
+            {fields.q1}
+            <br />
             <p>And you can compute collection item specific data, as well:</p>
             <fieldset>
                 <p>Do some maths:</p>
@@ -61,8 +63,6 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                 ) : null}
                 <button type="button" onClick={() => onCollectionAction("maths", "add")}>+</button>
             </fieldset>
-            <br />
-            {fields.q1}
             <br />
             <fieldset>
                 {fields.coords.lng}

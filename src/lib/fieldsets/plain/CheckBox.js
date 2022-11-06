@@ -55,6 +55,9 @@ const CheckBox = ({
                     onClick={e => {
                         if (typeof onChange === "function") onChange(e.target.checked ? true : false);
                     }}
+                    onBlur={e => {
+                        if (typeof onBlur === "function") onBlur();
+                    }}
                     onFocus={e => {
                         if (typeof onFocus === "function") onFocus();
                     }}

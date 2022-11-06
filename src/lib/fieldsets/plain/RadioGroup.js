@@ -56,6 +56,9 @@ const RadioGroup = ({
                                 onClick={e => {
                                     if (typeof onChange === "function") onChange(option.value);
                                 }}
+                                onBlur={e => {
+                                    if (typeof onBlur === "function") onBlur();
+                                }}
                                 onFocus={e => {
                                     if (typeof onFocus === "function") onFocus();
                                 }}
