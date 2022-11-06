@@ -1,0 +1,37 @@
+# Undo / Redo
+
+You can activate undo / redo functionality for a form, all you have to set is `enableUndo` on the Form component. 
+Optionally you can set the depth of the undo memory, which is done with the `undoMaxDepth` prop, per default 
+it is set to 10.
+
+Here's a basic example of using undo:
+
+```
+<Form
+    enableUndo
+    fields={yourFields}
+    config={youFieldsConfig}
+    render={({ actionProps, fieldProps }) => (
+        <>
+            <div>
+                {fieldProps.fields.email}
+                <br />
+                {fieldProps.fields.password}
+            </div>
+            <hr />
+            <button
+                type="button"
+                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+            >
+                Submit
+            </button>
+            <br />
+            <button onClick={actionProps.handleUndo}>Undo</button>
+            <button onClick={actionProps.handleRedo}>Redo</button>
+        </>
+    )}
+/>
+```
+
+On the `actionProps` in the render function, you have the necessary callbacks, `handleUndo` and `handleRedo` which you have to call, 
+for example with buttons as in the sample code above.
