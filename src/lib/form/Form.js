@@ -417,12 +417,14 @@ console.log({undoData, activeUndoIndex, errors, data});
     const handleUndo = () => {
         if (enableUndo && activeUndoIndex > 0) {
             const newIndex = activeUndoIndex - 1;
-            setActiveUndoIndex(newIndex);
             const oldState = JSON.parse(undoData[newIndex]);
-            limitedOnChange(oldState.data, oldState.errors, id);
+
+            setActiveUndoIndex(newIndex);
             setErrors(oldState.errors);
             setIsDirty(oldState.isDirty);
             setDirtyFields(oldState.dirtyFields);
+
+            limitedOnChange(oldState.data, oldState.errors, id);
         }
     };
     
@@ -430,12 +432,14 @@ console.log({undoData, activeUndoIndex, errors, data});
     const handleRedo = () => {
         if (enableUndo && activeUndoIndex < undoData.length - 1) {
             const newIndex = activeUndoIndex + 1;
-            setActiveUndoIndex(newIndex);
             const oldState = JSON.parse(undoData[newIndex]);
-            limitedOnChange(oldState.data, oldState.errors, id);
+
+            setActiveUndoIndex(newIndex);
             setErrors(oldState.errors);
             setIsDirty(oldState.isDirty);
             setDirtyFields(oldState.dirtyFields);
+
+            limitedOnChange(oldState.data, oldState.errors, id);
         }
     };
 
