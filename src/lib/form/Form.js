@@ -148,7 +148,7 @@ const Form = ({
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
     const parsedFieldConfig = parseConfig(config, data, asyncData, modifiedConfigs);
     const fieldPaths = getFieldPaths(parsedFieldConfig, data);
-
+console.log({undoData, activeUndoIndex, errors, data});
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
         if (data && !initialData) {
@@ -418,7 +418,11 @@ const Form = ({
         if (enableUndo && activeUndoIndex > 0) {
             const newIndex = activeUndoIndex - 1;
             setActiveUndoIndex(newIndex);
-            limitedOnChange(JSON.parse(undoData[newIndex]), errors, id);
+            const oldState = JSON.parse(undoData[newIndex]);
+            limitedOnChange(oldState.data, oldState.errors, id);
+            setErrors(oldState.errors);
+            setIsDirty(oldState.isDirty);
+            setDirtyFields(oldState.dirtyFields);
         }
     };
     
@@ -427,7 +431,11 @@ const Form = ({
         if (enableUndo && activeUndoIndex < undoData.length - 1) {
             const newIndex = activeUndoIndex + 1;
             setActiveUndoIndex(newIndex);
-            limitedOnChange(JSON.parse(undoData[newIndex]), errors, id);
+            const oldState = JSON.parse(undoData[newIndex]);
+            limitedOnChange(oldState.data, oldState.errors, id);
+            setErrors(oldState.errors);
+            setIsDirty(oldState.isDirty);
+            setDirtyFields(oldState.dirtyFields);
         }
     };
 
@@ -436,7 +444,12 @@ const Form = ({
         if (enableUndo) {
             const newUndoData = [...undoData];
             newUndoData.length = activeUndoIndex + 1;
-            newUndoData.push(stringify(newData));
+            newUndoData.push(stringify({
+                data: newData,
+                isDirty,
+                dirtyFields,
+                errors
+            }));
             setUndoData(newUndoData);
             setActiveUndoIndex(newUndoData.length - 1);
         }
@@ -500,7 +513,14 @@ const Form = ({
                     }
                 });
             }
-            if (activeUndoIndex === 0 && undoData.length === 0) setUndoData([stringify(newData)]);
+            if (activeUndoIndex === 0 && undoData.length === 0) {
+                setUndoData([stringify({
+                    data: newData,
+                    isDirty,
+                    dirtyFields,
+                    errors
+                })]);
+            }
         }
 
         limitedOnChange(newData, validationErrors(), id); // will trigger validations even with no inits
