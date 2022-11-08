@@ -57,7 +57,7 @@ const config = {
             };
         }
     }, 
-    fields: (data, asyncData) => {
+    fields: (data, asyncData, interfaceState) => {
         const posts = asyncData && asyncData.posts ? asyncData.posts.map(item => {
             return {
                 value: item.id,
@@ -100,7 +100,8 @@ const config = {
                     { value: "A", text: "A" },
                     { value: "B", text: "B" },
                     { value: "C", text: "C" }
-                ]
+                ],
+                isInterfaceState: true
             },
             {
                 id: "city",

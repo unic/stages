@@ -7,6 +7,8 @@ import uniqWith from "lodash.uniqwith";
 import isEqual from "lodash.isequal";
 import get from "lodash.get";
 import set from "lodash.set";
+import unset from "lodash.unset";
+import merge from "lodash.merge";
 import stringify from "fast-json-stable-stringify";
 
 const isElementInViewport = el => {
@@ -68,8 +70,8 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
-const parseConfig = (config, data, asyncData, modifiedConfigs) => {
-    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData) : [];
+const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) => {
+    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState) : [];
 
     const parseConfigItem = configItem => {
         if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
@@ -131,6 +133,12 @@ const Form = ({
     enableUndo,
     undoMaxDepth = 10
 }) => {
+    // First we need to merge interfaceData with form data, whithout muting form data:
+    const [interfaceState, setInterfaceState] = useState({});
+    const alldata = Object.assign({}, data);
+    merge(alldata, interfaceState);
+
+    // Now we can setup all state:
     const [uniqId] = useState(`form-${id || "noid"}-${+ new Date()}`);
     const [isDirty, setIsDirty] = useState(false);
     const [dirtyFields, setDirtyFields] = useState({});
@@ -147,8 +155,10 @@ const Form = ({
     const [focusedField, setFocusedField] = useState();
     const [lastFocusedField, setLastFocusedField] = useState();
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
-    const parsedFieldConfig = parseConfig(config, data, asyncData, modifiedConfigs);
-    const fieldPaths = getFieldPaths(parsedFieldConfig, data);
+
+    // Lastly, we craete the actual objects we will work with:
+    const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs);
+    const fieldPaths = getFieldPaths(parsedFieldConfig, alldata);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
@@ -179,6 +189,7 @@ const Form = ({
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
             data: thisData,
             allData: fieldData,
+            interfaceState,
             fieldConfig: field,
             isValid,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey),
@@ -293,7 +304,7 @@ const Form = ({
         let errors = {};
         let firstErrorField;
 
-        if (!validationData) validationData = data;
+        if (!validationData) validationData = alldata;
 
         fieldPaths.forEach(fieldPath => {
             if (!fields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
@@ -402,6 +413,30 @@ const Form = ({
         }
     };
 
+    // This function removes interface data from the form data and packs it into the interface state:
+    const removeInterfaceState = thisData => {
+        // 1. Use fieldPaths to remove data which shouldn't be exposed.
+        // 2. Put it into interFace state
+        // 3. Add it again when working with the data (once, right on top)
+
+        const interfaceState = {};
+        const newData = Object.assign({}, thisData);
+
+        fieldPaths.forEach(fieldPath => {
+            if (fieldPath.config.isInterfaceState) {
+                const pathData = get(thisData, fieldPath.path);
+                if (typeof pathData !== "undefined") {
+                    set(interfaceState, fieldPath.path, pathData);
+                    unset(newData, fieldPath.path);
+                }
+            }
+        });
+
+        setInterfaceState(interfaceState);
+
+        return newData;
+    };
+
     // Improve the on change handler so that only real changes are bubbled up!
     const limitedOnChange = (newData, errors, id, fieldKey) => {
         let newLastOnChangeData;
@@ -409,7 +444,7 @@ const Form = ({
             newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey });
         } catch(error) {};
         if (newLastOnChangeData !== lastOnChangeData) {
-            onChange(newData, errors, id, fieldKey);
+            onChange(removeInterfaceState(newData), errors, id, fieldKey);
             lastOnChangeData = newLastOnChangeData;
         }
     };
@@ -468,7 +503,7 @@ const Form = ({
         the wizard to find out which steps are valid).
     */
     useEffect(() => {
-        let newData = Object.assign({}, data);
+        let newData = Object.assign({}, alldata);
         
         if (isDebugging()) window.stagesLogging(`Is visible change to "${isVisible ? "visible" : "invisible"}"`, uniqId);
 
@@ -542,8 +577,8 @@ const Form = ({
         const newData = Object.assign({}, data);
         fieldPaths.forEach(fieldPath => {
             if (typeof fieldPath.config.computedValue === "function") {
-                const itemData = get(data, fieldPath.path.split(".").slice(0, -1).join("."));
-                const computedValue = fieldPath.config.computedValue(data, itemData);
+                const itemData = get(alldata, fieldPath.path.split(".").slice(0, -1).join("."));
+                const computedValue = fieldPath.config.computedValue(data, itemData, interfaceState);
                 set(newData, fieldPath.path, computedValue);
             }
         });
@@ -601,7 +636,7 @@ const Form = ({
 
         const fieldConfig = getConfigForField(fieldKey);
         
-        let newData = Object.assign({}, outsideData || data);
+        let newData = Object.assign({}, outsideData || alldata);
         let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
 
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
@@ -713,7 +748,7 @@ const Form = ({
     const handleBlur = (fieldKey) => {
         setFocusedField();
         const fieldConfig = getConfigForField(fieldKey);
-        const newData = Object.assign({}, data);
+        const newData = Object.assign({}, alldata);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
@@ -783,7 +818,7 @@ const Form = ({
         const createField = (fieldConfig, fieldData, path) => {
             if (
                 (!fields[fieldConfig.type] && fieldConfig.type !== "subform") || 
-                (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, data))
+                (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, alldata))
             ) return null;
 
             const cleanedField = Object.assign({}, fieldConfig);
@@ -792,7 +827,7 @@ const Form = ({
             if (optionsLoaded[path]) {
                 cleanedField.options = optionsLoaded[path];
             } else if (typeof cleanedField.options === "function") {
-                cleanedField.options = cleanedField.options(path, fieldData, data);
+                cleanedField.options = cleanedField.options(path, fieldData, alldata);
             }
 
             // Remove special props from field before rendering:
@@ -827,7 +862,7 @@ const Form = ({
                         onChange={(value, subErrors) => handleChange(path, value)}
                         onValidation={errors => handleSubValidation(path, errors)}
                         parentRunValidation={runValidation}
-                        data={data && get(data, path)}
+                        data={alldata && get(alldata, path)}
                         isVisible={isVisible}
                         isDisabled={isDisabled}
                         validateOn={validateOn}
@@ -849,7 +884,7 @@ const Form = ({
         called by the forms render method.
     */
     const onCollectionAction = (fieldKey, action, index, toIndex) => {
-        const newData = Object.assign({}, data);
+        const newData = Object.assign({}, alldata);
         const field = getConfigForField(fieldKey);
         const minEntries = field && field.min ? Number(field.min) : 0;
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
@@ -952,7 +987,7 @@ const Form = ({
         if (isDebugging()) window.stagesLogging(`Handle action click`, uniqId);
 
         // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("action", data);
+        const activeCustomEvents = getActiveCustomEvents("action", alldata);
 
         // Only validate if action validation is enabled (which is the default):
         if (
@@ -979,7 +1014,7 @@ const Form = ({
     // Render all the render props:
     return render ? render({
         actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
+        fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
         loading
     }) : null;
 };
