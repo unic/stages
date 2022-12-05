@@ -1,24 +1,6 @@
-import React, { Fragment, useState } from "react";
-import { Stages, Navigation, Progression, HashRouter, Debugger } from "./lib/stages";
-import { Form, Actions } from "./lib/form";
+import React, { useState } from "react";
+import { Form } from "./lib/form";
 import fields from "./lib/fieldsets/plain";
-
-import {
-    basicsConfig, guestsConfig, programConfig,
-    BasicsRenderer, GuestsRenderer, ProgramRenderer
-} from "./components/steps/test";
-
-const FormLayout = ({ loading, fields, actions }) => <div>
-    {loading ? (
-        <div>Loading data, please wait ...</div>
-    ) : (
-        <>
-            {fields}
-            <hr />
-            {actions}
-        </>
-    )}
-</div>;
 
 export const getStateFromLocalStorage = () => {
 	if (typeof localStorage !== "undefined") {
@@ -38,31 +20,17 @@ export const saveStateToLocalStorage = (state = {}) => {
 
 function App() {
     const [data, setData] = useState({
-        postalcode: "5600",
-        collection1: [
-            {
-                field1: "Test1",
-                field2: "Test2",
-                colGroup: {
-                    field1: "Subtest1",
-                    collection1: [
-                        {
-                            field1: "324"
-                        },
-                        {
-                            field1: "657"
-                        }
-                    ]
-                }
-            }
+        teams: [
+            { nr: "2332", name: "Team 1" },
+            { nr: "435", name: "Team 2" }
         ],
-        collectionGroup: {
-            collection6: [
-                {
-                    field1: "test"
-                }
-            ]
-        }
+        players: [
+            { 
+                prename: "Hans",
+                lastname: "Muster",
+                team: 435
+            }
+        ]
     });
 
     const handleChange = (data, errors) => {
@@ -70,41 +38,123 @@ function App() {
         setData(data);
     };
 
-    const onSubmit = data => {
-        console.log("submit:", data);
-    };
+    return (
+        <Form
+            id="basics"
+            data={data}
+            config={{
+                fields: () => {
+                    const fieldConfig = [
+                        {
+                            id: "teams",
+                            type: "collection",
+                            init: true,
+                            fields: [
+                                {
+                                    id: "nr",
+                                    type: "text",
+                                    label: "Nr."
+                                },
+                                {
+                                    id: "name",
+                                    type: "text",
+                                    label: "Name"
+                                }
+                            ]
+                        },
+                        {
+                            id: "players",
+                            type: "collection",
+                            init: true,
+                            fields: [
+                                {
+                                    id: "prename",
+                                    type: "text",
+                                    label: "Prename"
+                                },
+                                {
+                                    id: "lastname",
+                                    type: "text",
+                                    label: "Lastname"
+                                },
+                                {
+                                    id: "team",
+                                    type: "select",
+                                    label: "Team",
+                                    computedOptions: {
+                                        source: "teams",
+                                        initWith: [
+                                            { value: "", text: "Please select ..." }
+                                        ],
+                                        mapFn: (item) => {
+                                            return {
+                                                value: item.nr,
+                                                text: item.name
+                                            };
+                                        },
+                                        sortFn: (a, b) => a.name > b.name ? 1 : b.name > a.name ? -1 : 0,
+                                        filterFn: (item) => !!item.nr
+                                    }
+                                }
+                            ]
+                        }
+                    ];
 
-    const createActionButtonConfig = (type, onNav, onSubmit, data) => {
-        if (type === "first") {
-            return [{
-                title: "Next",
-                type: "primary",
-                validate: true,
-                onClick: () => onNav("next")
-            }];
-        }
-        return [
-            {
-                title: "Prev",
-                type: "secondary",
-                validate: false,
-                onClick: () => onNav("prev")
-            },
-            {
-                title: "Basics (Step 1)",
-                type: "secondary",
-                validate: false,
-                onClick: () => onNav("step", "basics")
-            },
-            {
-                title: type === "last" ? "Submit" : "Next",
-                type: "primary",
-                validate: true,
-                onClick: () => type === "last" ? onSubmit(data) : onNav("next")
-            }
-        ];
-    };
+                    return fieldConfig;
+                }
+            }}
+            enableUndo
+            render={({ actionProps, fieldProps }) => (
+                <div>
+                    {console.log(fieldProps.fields)}
+                    <button onClick={actionProps.handleUndo}>Undo</button>
+                    <button onClick={actionProps.handleRedo}>Redo</button>
+                    <div>
+                        <h2>Teams:</h2>
+                        <fieldset>
+                            {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
+                                <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                                    <div className="pure-g">
+                                        <div className="pure-u-1-3">{subFields.nr}</div>
+                                        <div className="pure-u-1-3">{subFields.name}</div>
+                                    </div>
+                                    <br />
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
+                                </div>)
+                            ) : null}
+                            <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
+                        </fieldset>
+                        <h2>Players:</h2>
+                        <fieldset>
+                            {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
+                                <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                                    <div className="pure-g">
+                                        <div className="pure-u-1-3">{subFields.prename}</div>
+                                        <div className="pure-u-1-3">{subFields.lastname}</div>
+                                        <div className="pure-u-1-3">{subFields.team}</div>
+                                    </div>
+                                    <br />
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
+                                </div>)
+                            ) : null}
+                            <button type="button" onClick={() => fieldProps.onCollectionAction("players", "add")}>+</button>
+                        </fieldset>
+                    </div>
+                    <br /><br />
+                    <button
+                        type="button"
+                        onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                    >
+                        Submit
+                    </button>
+                </div>
+            )}
+            fields={fields}
+            onChange={handleChange}
+        />
+    );
 
+    /*
     return (
         <>
             <Form
@@ -139,6 +189,7 @@ function App() {
             <Debugger />
         </>
     );
+    */
 
     /*
     return (
