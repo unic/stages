@@ -86,14 +86,14 @@ function App() {
                                         initWith: [
                                             { value: "", text: "Please select ..." }
                                         ],
-                                        mapFn: (item) => {
+                                        map: (item) => {
                                             return {
                                                 value: item.nr,
                                                 text: item.name
                                             };
                                         },
-                                        sortFn: (a, b) => a.name > b.name ? 1 : b.name > a.name ? -1 : 0,
-                                        filterFn: (item) => !!item.nr
+                                        sort: (a, b) => a.name > b.name ? 1 : b.name > a.name ? -1 : 0,
+                                        filter: (item) => !!item.nr
                                     }
                                 }
                             ]

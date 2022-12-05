@@ -830,9 +830,9 @@ const Form = ({
                 cleanedField.options = cleanedField.options(path, fieldData, alldata);
             } else if (typeof cleanedField.computedOptions === "object") {
                 let options = get(data, cleanedField.computedOptions.source, []);
-                if (typeof cleanedField.computedOptions.filterFn === "function") options = options.filter(cleanedField.computedOptions.filterFn);
-                if (typeof cleanedField.computedOptions.sortFn === "function") options = options.sort(cleanedField.computedOptions.sortFn);
-                if (typeof cleanedField.computedOptions.mapFn === "function") options = options.map(cleanedField.computedOptions.mapFn);
+                if (typeof cleanedField.computedOptions.filter === "function") options = options.filter(cleanedField.computedOptions.filter);
+                if (typeof cleanedField.computedOptions.sort === "function") options = options.sort(cleanedField.computedOptions.sort);
+                if (typeof cleanedField.computedOptions.map === "function") options = options.map(cleanedField.computedOptions.map);
                 if (cleanedField.computedOptions.initWith && Array.isArray(cleanedField.computedOptions.initWith)) options = cleanedField.computedOptions.initWith.concat(options);
                 cleanedField.options = options;
             }
