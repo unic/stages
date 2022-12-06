@@ -28,7 +28,7 @@ function App() {
             { 
                 prename: "Hans",
                 lastname: "Muster",
-                team: 435
+                team: "435"
             }
         ]
     });
@@ -106,7 +106,6 @@ function App() {
             enableUndo
             render={({ actionProps, fieldProps }) => (
                 <div>
-                    {console.log(fieldProps.fields)}
                     <button onClick={actionProps.handleUndo}>Undo</button>
                     <button onClick={actionProps.handleRedo}>Redo</button>
                     <div>

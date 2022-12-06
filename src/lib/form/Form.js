@@ -835,7 +835,10 @@ const Form = ({
                 if (typeof cleanedField.computedOptions.map === "function") options = options.map(cleanedField.computedOptions.map);
                 if (cleanedField.computedOptions.initWith && Array.isArray(cleanedField.computedOptions.initWith)) options = cleanedField.computedOptions.initWith.concat(options);
                 cleanedField.options = options;
-                if (find(options, { value: cleanedField.value }) === -1) cleanedField.value = "";
+                if (!find(options, { value: get(alldata, path) })) {
+                    cleanedField.value = "";
+                    set(alldata, path, "");
+                }
             }
 
             // Remove special props from field before rendering:
