@@ -840,13 +840,13 @@ const Form = ({
                 
                 // If isUnique is set on this field, than remove all already selected options from other items in the collection:
                 if (fieldConfig.isUnique) {
-                    options = options.filter(option => {
-                        if (option.value === "") return true;
+                    options = options.map(option => {
+                        if (option.value === "") return option;
                         const collectionPath = path.substring(0, path.lastIndexOf("["));
                         let collectionData = get(data, collectionPath, []);
                         const dataIndex = findIndex(collectionData, { [fieldConfig.id]: option.value });
-                        if (dataIndex > -1 && option.value !== fieldValue) return false;
-                        return true;
+                        if (dataIndex > -1 && option.value !== fieldValue) return {...option, disabled: true};
+                        return option;
                     });
                 }
 

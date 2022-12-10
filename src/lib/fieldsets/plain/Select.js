@@ -46,7 +46,6 @@ const Select = ({
                 <select
                     name={id}
                     value={typeof value === "undefined" ? "" : value}
-                    options={options}
                     placeholder={placeholder}
                     disabled={!!isDisabled}
                     required={!!isRequired}
@@ -60,7 +59,7 @@ const Select = ({
                         if (typeof onFocus === "function") onFocus();
                     }}
                 >
-                    {options.map(option => <option value={option.value} key={option.value}>{option.text}</option>)}
+                    {options.map(option => <option value={option.value} key={option.value} disabled={option.disabled ? true : null}>{option.text}</option>)}
                 </select>
                 {suffix ? <span>{suffix}</span> : null}
             </div>
