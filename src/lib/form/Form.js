@@ -93,7 +93,7 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) =
             if (modifiedConfig.action === "add") fields.push(modifiedConfig.fields(data, asyncData));
             if (modifiedConfig.action === "remove") {
                 const field = modifiedConfig.fields(data, asyncData);
-                const index = findIndex(fields, {id: field.id});
+                const index = findIndex(fields, { id: field.id });
                 if (index > -1) fields.splice(index, 1);
             }
             set(parsedConfig, modifiedConfig.path, fields);
@@ -829,13 +829,30 @@ const Form = ({
             } else if (typeof cleanedField.options === "function") {
                 cleanedField.options = cleanedField.options(path, fieldData, alldata);
             } else if (typeof cleanedField.computedOptions === "object") {
+                // Compute options from the data of a collection:
                 let options = get(data, cleanedField.computedOptions.source, []);
+                let fieldValue = get(alldata, path);
+
                 if (typeof cleanedField.computedOptions.filter === "function") options = options.filter(cleanedField.computedOptions.filter);
                 if (typeof cleanedField.computedOptions.sort === "function") options = options.sort(cleanedField.computedOptions.sort);
                 if (typeof cleanedField.computedOptions.map === "function") options = options.map(cleanedField.computedOptions.map);
                 if (cleanedField.computedOptions.initWith && Array.isArray(cleanedField.computedOptions.initWith)) options = cleanedField.computedOptions.initWith.concat(options);
+                
+                // If isUnique is set on this field, than remove all already selected options from other items in the collection:
+                if (fieldConfig.isUnique) {
+                    options = options.filter(option => {
+                        if (option.value === "") return true;
+                        const collectionPath = path.substring(0, path.lastIndexOf("["));
+                        let collectionData = get(data, collectionPath, []);
+                        const dataIndex = findIndex(collectionData, { [fieldConfig.id]: option.value });
+                        if (dataIndex > -1 && option.value !== fieldValue) return false;
+                        return true;
+                    });
+                }
+
                 cleanedField.options = options;
-                if (!find(options, { value: get(alldata, path) })) {
+                
+                if (!find(options, { value: fieldValue })) {
                     cleanedField.value = "";
                     set(alldata, path, "");
                 }

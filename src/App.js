@@ -81,6 +81,7 @@ function App() {
                                     id: "team",
                                     type: "select",
                                     label: "Team",
+                                    isUnique: true,
                                     computedOptions: {
                                         source: "teams",
                                         initWith: [
