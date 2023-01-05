@@ -88,8 +88,8 @@ function App() {
                                     label: "Team",
                                     isUnique: true,
                                     cast: {
-                                        data: (value) => Number(value),
-                                        field: (value) => value ? String(value) : ""
+                                        data: "number",
+                                        field: "string"
                                     },
                                     computedOptions: {
                                         source: "teams",

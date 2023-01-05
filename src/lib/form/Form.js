@@ -22,6 +22,14 @@ const isElementInViewport = el => {
     );
 }
 
+const castValueStrType = (value, type) => {
+    if (type === "number") return Number(value);
+    if (type === "string") return String(value);
+    if (type === "boolean") return Boolean(value);
+    if (type === "date") return new Date(value);
+    return value;
+};
+
 const getFieldPaths = (fieldConfig, data) => {
     const paths = [];
 
@@ -655,6 +663,7 @@ const Form = ({
         let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
 
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
+        if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
 
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
@@ -885,6 +894,7 @@ const Form = ({
 
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
+                if (fieldConfig.cast && typeof fieldConfig.cast.field === "string") return castValueStrType(value, fieldConfig.cast.field);
                 return value;
             };
 
