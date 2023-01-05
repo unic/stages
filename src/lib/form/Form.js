@@ -654,6 +654,8 @@ const Form = ({
         let newData = Object.assign({}, outsideData || alldata);
         let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
 
+        if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
+
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
         if (newValue) {
@@ -853,7 +855,7 @@ const Form = ({
                 if (typeof cleanedField.computedOptions.map === "function") options = options.map(cleanedField.computedOptions.map);
                 if (cleanedField.computedOptions.initWith && Array.isArray(cleanedField.computedOptions.initWith)) options = cleanedField.computedOptions.initWith.concat(options);
                 
-                // If isUnique is set on this field, than remove all already selected options from other items in the collection:
+                // If isUnique is set on this field, than disable all already selected options from other items in the collection:
                 if (fieldConfig.isUnique) {
                     options = options.map(option => {
                         if (option.value === "") return option;
@@ -881,12 +883,17 @@ const Form = ({
             delete cleanedField.dynamicOptions;
             delete cleanedField.isRendered;
 
+            const castValue = value => {
+                if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
+                return value;
+            };
+
             if (fieldConfig.type !== "subform") {
                 return React.createElement(
                     fields[fieldConfig.type].component,
                     Object.assign({
                         key: path,
-                        value: fieldData,
+                        value: castValue(fieldData),
                         initialValue: get(initialData, path),
                         error: errors[path],
                         isDirty: !!dirtyFields[path],

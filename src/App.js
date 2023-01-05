@@ -21,14 +21,14 @@ export const saveStateToLocalStorage = (state = {}) => {
 function App() {
     const [data, setData] = useState({
         teams: [
-            { nr: "2332", name: "Team 1" },
-            { nr: "435", name: "Team 2" }
+            { nr: 2332, name: "Team 1" },
+            { nr: 435, name: "Team 2" }
         ],
         players: [
             { 
                 prename: "Hans",
                 lastname: "Muster",
-                team: "435"
+                team: 435
             }
         ]
     });
@@ -54,7 +54,11 @@ function App() {
                                     id: "nr",
                                     type: "text",
                                     label: "Nr.",
-                                    isUnique: true
+                                    isUnique: true,
+                                    cast: {
+                                        data: (value) => Number(value),
+                                        field: (value) => value ? String(value) : ""
+                                    }
                                 },
                                 {
                                     id: "name",
@@ -83,6 +87,10 @@ function App() {
                                     type: "select",
                                     label: "Team",
                                     isUnique: true,
+                                    cast: {
+                                        data: (value) => Number(value),
+                                        field: (value) => value ? String(value) : ""
+                                    },
                                     computedOptions: {
                                         source: "teams",
                                         initWith: [
