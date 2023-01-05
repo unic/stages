@@ -252,6 +252,21 @@ const Form = ({
                                 subField,
                                 errorCode: fieldIsValid !== false ? fieldIsValid : undefined
                             };
+                        } else if (fields[subField.type] && subField.isUnique) {
+                            // Check if field is unique in collection:
+                            let collectionData = get(validationData, fieldKey, [])
+                                .filter(item => typeof item[subField.id] !== "undefined")
+                                .map(item => item[subField.id]);
+                            
+                            const uniqCollectionData = [...new Set(collectionData)];
+
+                            if (uniqCollectionData.length !== collectionData.length) {
+                                errors[fieldKey] = {
+                                    value: fieldValidationData,
+                                    subField,
+                                    errorCode: "notUnique"
+                                };
+                            }
                         }
                     });
                 });

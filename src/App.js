@@ -53,7 +53,8 @@ function App() {
                                 {
                                     id: "nr",
                                     type: "text",
-                                    label: "Nr."
+                                    label: "Nr.",
+                                    isUnique: true
                                 },
                                 {
                                     id: "name",
