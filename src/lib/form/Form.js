@@ -22,7 +22,14 @@ const isElementInViewport = el => {
     );
 }
 
-const castValueStrType = (value, type) => {
+const castValueStrType = (value, type, parseAsArray) => {
+    if (parseAsArray && Array.isArray(value)) {
+        if (type === "number") return value.map(v => Number(v));
+        if (type === "string") return value.map(v => String(v));
+        if (type === "boolean") return value.map(v => Boolean(v));
+        if (type === "date") return value.map(v => new Date(v));
+        return value;
+    }
     if (type === "number") return Number(value);
     if (type === "string") return String(value);
     if (type === "boolean") return Boolean(value);
@@ -664,6 +671,7 @@ const Form = ({
 
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
+        if (fieldConfig.cast && Array.isArray(fieldConfig.cast.data)) newValue = castValueStrType(newValue, fieldConfig.cast.data[0], true);
 
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
@@ -895,6 +903,7 @@ const Form = ({
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "string") return castValueStrType(value, fieldConfig.cast.field);
+                if (fieldConfig.cast && Array.isArray(fieldConfig.cast.field)) return castValueStrType(value, fieldConfig.cast.field[0], true);
                 return value;
             };
 
