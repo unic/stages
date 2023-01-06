@@ -794,6 +794,12 @@ const Form = ({
             limitedOnChange(newData, errors, id, fieldKey);
         }
 
+        // If precision is set, parse the value accordingly:
+        if (typeof fieldConfig.precision === "number") {
+            set(newData, fieldKey, Number(get(newData, fieldKey)).toFixed(fieldConfig.precision));
+            limitedOnChange(newData, errors, id, fieldKey);
+        }
+
         // prepare the params for the validateOnCallback:
         const validateOnParams = {
             data: get(newData, fieldKey),
