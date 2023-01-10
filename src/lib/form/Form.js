@@ -370,6 +370,16 @@ const Form = ({
                         
                     }
 
+                    // Sum of all values is equal, example: "spending": { equalSum: "income" }
+                    if (valueRules.equalSum) {
+                        
+                    }
+
+                    // Sum of all values is less or equal, example: "spending": { lessOrEqualSum: "income" }
+                    if (valueRules.lessOrEqualSum) {
+                        
+                    }
+
                     if (!ruleConformsToData) {
                         errors[fieldKey] = {
                             value: fieldValidationData,
