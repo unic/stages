@@ -380,6 +380,11 @@ const Form = ({
                         
                     }
 
+                    // Field combo has to be unique, example: ["prename", "lastname"]: { isUnique: true }
+                    if (valueRules.isUnique && Array.isArray(ruleField)) {
+                        
+                    }
+
                     if (!ruleConformsToData) {
                         errors[fieldKey] = {
                             value: fieldValidationData,
