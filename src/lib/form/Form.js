@@ -360,6 +360,16 @@ const Form = ({
                         
                     }
 
+                    // Have more of certain values than others, example: "gender": { moreOf: { value: "ms", than: "mr" } }
+                    if (valueRules.moreOf && valueRules.moreOf.value && valueRules.moreOf.than) {
+                        
+                    }
+
+                    // Have at least of certain values than others, example: "gender": { atLeastAsMany: { value: "ms", than: "mr" } }
+                    if (valueRules.atLeastAsMany && valueRules.atLeastAsMany.value && valueRules.atLeastAsMany.than) {
+                        
+                    }
+
                     if (!ruleConformsToData) {
                         errors[fieldKey] = {
                             value: fieldValidationData,
