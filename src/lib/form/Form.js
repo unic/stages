@@ -365,7 +365,7 @@ const Form = ({
                         
                     }
 
-                    // Have at least of certain values than others, example: "gender": { atLeastAsMany: { value: "ms", than: "mr" } }
+                    // Have at least as many of something than somithing else, example: "gender": { atLeastAsMany: { value: "ms", than: "mr" } }
                     if (valueRules.atLeastAsMany && valueRules.atLeastAsMany.value && valueRules.atLeastAsMany.than) {
                         
                     }
