@@ -28,7 +28,8 @@ function App() {
             { 
                 prename: "Hans",
                 lastname: "Muster",
-                team: "435"
+                team: "435",
+                position: "goalkeeper"
             }
         ]
     });
@@ -42,6 +43,7 @@ function App() {
         <Form
             id="basics"
             data={data}
+            validateOn={["change", "blur", "action"]}
             config={{
                 fields: () => {
                     const fieldConfig = [
@@ -68,6 +70,14 @@ function App() {
                             id: "players",
                             type: "collection",
                             init: true,
+                            rules: {
+                                position: {
+                                    "goalkeeper": { max: 1, errorCode: "goalkeeperOne" },
+                                    "defender": { min: 2, max: 4, errorCode: "defenderLimits" },
+                                    "midfield": { min: 2, max: 5, errorCode: "midfieldLimits" },
+                                    "striker": { min: 1, max: 3, errorCode: "strikerLimits" }
+                                }
+                            },
                             fields: [
                                 {
                                     id: "prename",
@@ -80,10 +90,20 @@ function App() {
                                     label: "Lastname"
                                 },
                                 {
+                                    id: "position",
+                                    type: "radio",
+                                    lable: "Position",
+                                    options: [
+                                        { value: "goalkeeper", text: "Goalkeeper" },
+                                        { value: "defender", text: "Defender" },
+                                        { value: "midfield", text: "Midfield" },
+                                        { value: "striker", text: "Striker" }
+                                    ]
+                                },
+                                {
                                     id: "team",
                                     type: "select",
                                     label: "Team",
-                                    isUnique: true,
                                     computedOptions: {
                                         source: "teams",
                                         initWith: [
@@ -116,12 +136,11 @@ function App() {
                         <fieldset>
                             {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
                                 <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
-                                    <div className="pure-g">
+                                    <div className="pure-g" style={{ display: "flex", gap: "4px 16px" }}>
                                         <div className="pure-u-1-3">{subFields.nr}</div>
                                         <div className="pure-u-1-3">{subFields.name}</div>
+                                        <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
                                     </div>
-                                    <br />
-                                    <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
                                 </div>)
                             ) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
@@ -130,16 +149,17 @@ function App() {
                         <fieldset>
                             {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
                                 <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
-                                    <div className="pure-g">
+                                    <div className="pure-g" style={{ display: "flex", gap: "4px 16px" }}>
                                         <div className="pure-u-1-3">{subFields.prename}</div>
                                         <div className="pure-u-1-3">{subFields.lastname}</div>
                                         <div className="pure-u-1-3">{subFields.team}</div>
+                                        <div className="pure-u-1-3">{subFields.position}</div>
+                                        <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
                                     </div>
-                                    <br />
-                                    <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
                                 </div>)
                             ) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("players", "add")}>+</button>
+                            {fieldProps.errors.players ? <div style={{ color: "red" }}>Error: {fieldProps.errors.players.errorCode}!</div> : null}
                         </fieldset>
                     </div>
                     <br /><br />

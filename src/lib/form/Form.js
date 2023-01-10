@@ -310,6 +310,7 @@ const Form = ({
             }
         }
 
+        // Check if data is unique if that's a requirement:
         if (field.type === "collection" && field.uniqEntries && fieldValidationData) {
             // Add error if collection entries are not unique!
             if (uniqWith(fieldValidationData, (arrVal, othVal) => stringify(arrVal) === stringify(othVal)).length !== fieldValidationData.length) {
@@ -318,6 +319,56 @@ const Form = ({
                     field
                 };
             }
+        }
+
+        // If the collection has rules set, check them against the data:
+        if (field.type === "collection" && field.rules && typeof field.rules === "object" && fieldValidationData) {
+            Object.keys(field.rules).forEach(ruleField => {
+                const rule = field.rules[ruleField];
+                Object.keys(rule).forEach((value) => {
+                    const valueRules = rule[value];
+                    let ruleConformsToData = true;
+
+                    // max occurence of value, example: "position": { "goalkeeper": { max: 1, errorCode: "goalkeeperOne" } }
+                    if (valueRules.max && typeof valueRules.max === "number") {
+                        let count = 0;
+                        fieldValidationData.forEach(d => d[ruleField] === value ? count++ : undefined);
+                        if (count > valueRules.max) ruleConformsToData = false;
+                    }
+
+                    // min occurence of value, example: "position": { "defender": { min: 3, errorCode: "defenderMiminum" } }
+                    if (valueRules.min && typeof valueRules.min === "number") {
+                        let count = 0;
+                        fieldValidationData.forEach(d => d[ruleField] === value ? count++ : undefined);
+                        if (count < valueRules.min) ruleConformsToData = false;
+                    }
+
+                    // Disallow values if certain values are set, example: "gender": { disallow: { value: ["ms"], if: ["mr"] } }
+                    if (valueRules.disallow && valueRules.disallow.value && valueRules.disallow.if) {
+                        // First check if "if" values are present:
+                        let found = false;
+                    }
+
+                    // Require values if certain values are set, example: "gender": { require: { value: ["ms"], if: ["mr"] } }
+                    if (valueRules.require && valueRules.require.value && valueRules.disallow.if) {
+                        // First check if "if" values are present:
+                        let found = false;
+                    }
+
+                    // Have equal amounts of certain values, example: "gender": { equalAmount: [ "ms", "mr" ] }
+                    if (valueRules.equalAmount && Array.isArray(valueRules.equalAmount)) {
+                        
+                    }
+
+                    if (!ruleConformsToData) {
+                        errors[fieldKey] = {
+                            value: fieldValidationData,
+                            field,
+                            errorCode: valueRules.errorCode || "invalidRule"
+                        };
+                    }
+                });
+            });
         }
 
         return {
