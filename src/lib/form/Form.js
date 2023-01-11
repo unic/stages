@@ -349,9 +349,21 @@ const Form = ({
                         let found = false;
                     }
 
+                    // Disallow values if certain values are set, example: "gender": { disallow: { value: ["female"], ifOneOf: ["male", "intersex"] } }
+                    if (valueRules.disallow && valueRules.disallow.value && valueRules.disallow.ifOneOf) {
+                        // First check if one of "ifOneOf" values are present:
+                        let found = false;
+                    }
+
                     // Require values if certain values are set, example: "gender": { require: { value: ["ms"], if: ["mr"] } }
                     if (valueRules.require && valueRules.require.value && valueRules.disallow.if) {
                         // First check if "if" values are present:
+                        let found = false;
+                    }
+
+                    // Disallow values if certain values are set, example: "gender": { require: { value: ["female"], ifOneOf: ["male", "intersex"] } }
+                    if (valueRules.require && valueRules.require.value && valueRules.require.ifOneOf) {
+                        // First check if one of "ifOneOf" values are present:
                         let found = false;
                     }
 
