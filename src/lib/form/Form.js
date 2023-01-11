@@ -341,8 +341,8 @@ const Form = ({
                     const valueRules = rules[value]; // An object of rules for this field/value combo
                     
                     // Convert fields and values to array, even if they are a primitive value:
-                    const ruleFields = Array.isArray(ruleField) ? ruleField : [ruleField];
-                    const values = Array.isArray(value) ? value : [value];
+                    const ruleFields = ruleField.indexOf(",") > -1 ? ruleField.split(",") : [ruleField];
+                    const values = value.indexOf(",") > -1 ? value.split(",") : [value];
                     const fieldValueCombos = getCombosFromTwoArrays(ruleFields, values);
 
                     let ruleConformsToData = true;
@@ -354,9 +354,12 @@ const Form = ({
                         values: ["goalkeeper"] or [] (for calculation on a field)
                         valueRules: { maxCount: 1 }
                         fieldValidationData: collection data array -> [{}, {}, ...]
+
+                        Multiple fields or values can be added, by comma separating them like this: "prename,lastname"
+                        Fields can use dot syntax, for nested properties: "coords.lat"
                     */
 
-                    // max occurence of value, example: ["position"]: { ["goalkeeper"]: { maxCount: 1, errorCode: "goalkeeperOne" } }
+                    // max occurence of value, example: "position": { "goalkeeper": { maxCount: 1, errorCode: "goalkeeperOne" } }
                     if (valueRules.maxCount && typeof valueRules.maxCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
@@ -365,7 +368,7 @@ const Form = ({
                         });
                     }
 
-                    // min occurence of value, example: ["position"]: { ["defender"]: { minCount: 3, errorCode: "defenderMiminum" } }
+                    // min occurence of value, example: "position": { "defender": { minCount: 3, errorCode: "defenderMiminum" } }
                     if (valueRules.minCount && typeof valueRules.minCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
@@ -374,7 +377,7 @@ const Form = ({
                         });
                     }
 
-                    // exact occurence of value, example: ["position"]: { ["defender"]: { exactCount: 3 } }
+                    // exact occurence of value, example: "position": { "defender": { exactCount: 3 } }
                     if (valueRules.exactCount && typeof valueRules.exactCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
@@ -383,7 +386,7 @@ const Form = ({
                         });
                     }
 
-                    // same occurence of value as another field, example: ["position"]: { ["defender"]: { sameCountAs: "midfield" } }
+                    // same occurence of value as another field, example: "position": { "defender": { sameCountAs: "midfield" } }
                     if (valueRules.sameCountAs && typeof valueRules.sameCountAs === "string") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
@@ -396,7 +399,7 @@ const Form = ({
                         });
                     }
 
-                    // same occurence of value as another field, example: ["position"]: { ["defender"]: { differentCountAs: "midfield" } }
+                    // same occurence of value as another field, example: "position": { "defender": { differentCountAs: "midfield" } }
                     if (valueRules.differentCountAs && typeof valueRules.differentCountAs === "string") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
@@ -409,7 +412,7 @@ const Form = ({
                         });
                     }
 
-                    // same sum as, example: ["spending"]: { "": { sameSumAs: "income" } }
+                    // same sum as, example: "spending": { "": { sameSumAs: "income" } }
                     if (
                         (valueRules.sameSumAs && typeof valueRules.sameSumAs === "string") ||
                         (valueRules.differentSumAs && typeof valueRules.differentSumAs === "string") || 
@@ -430,6 +433,20 @@ const Form = ({
                             if (valueRules.biggerSumAs && sum1 <= sum2) ruleConformsToData = false;
                             if (valueRules.smallerSumAs && sum1 >= sum2) ruleConformsToData = false;
                         });
+                    }
+
+                    // Check if multi field value combinations are unique, example: "prename,lastname": { "": { isUnique: true } }
+                    if (valueRules.isUnique && ruleFields.length > 0) {
+                        const valueCombos = [];
+                        let duplicateFound = false;
+                        fieldValidationData.forEach(d => {
+                            const combo = ruleFields.map(f => get(d, f));
+                            valueCombos.forEach(c => {
+                                if (isEqual(combo, c)) duplicateFound = true;
+                            });
+                            valueCombos.push(combo);
+                        });
+                        if (duplicateFound) ruleConformsToData = false;
                     }
 
                     /*
@@ -460,21 +477,6 @@ const Form = ({
                     if (valueRules.require && valueRules.require.value && valueRules.require.ifOneOf) {
                         // First check if one of "ifOneOf" values are present:
                         let found = false;
-                    }
-
-                    // Sum of all values is equal, example: "spending": { equalSum: "income" }
-                    if (valueRules.equalSum) {
-                        
-                    }
-
-                    // Sum of all values is less or equal, example: "spending": { lessOrEqualSum: "income" }
-                    if (valueRules.lessOrEqualSum) {
-                        
-                    }
-
-                    // Field combo has to be unique, example: ["prename", "lastname"]: { isUnique: true }
-                    if (valueRules.isUnique && Array.isArray(ruleField)) {
-                        
                     }
                     */
 
