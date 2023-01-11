@@ -410,17 +410,25 @@ const Form = ({
                     }
 
                     // same sum as, example: ["spending"]: { "": { sameSumAs: "income" } }
-                    if (valueRules.sameSumAs && typeof valueRules.sameSumAs === "string") {
+                    if (
+                        (valueRules.sameSumAs && typeof valueRules.sameSumAs === "string") ||
+                        (valueRules.differentSumAs && typeof valueRules.differentSumAs === "string") || 
+                        (valueRules.biggerSumAs && typeof valueRules.biggerSumAs === "string") ||
+                        (valueRules.smallerSumAs && typeof valueRules.smallerSumAs === "string")
+                    ) {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let sum1 = 0;
                             let sum2 = 0;
                             fieldValidationData.forEach(d => {
                                 const thisValue1 = Number(get(d, fieldValueCombo[0]));
-                                const thisValue2 = Number(get(d, valueRules.sameSumAs));
+                                const thisValue2 = Number(get(d, valueRules.sameSumAs || valueRules.differentSumAs || valueRules.biggerSumAs || valueRules.smallerSumAs));
                                 if (!isNaN(thisValue1)) sum1 = sum1 + thisValue1;
                                 if (!isNaN(thisValue2)) sum2 = sum2 + thisValue2;
                             });
-                            if (sum1 !== sum2) ruleConformsToData = false;
+                            if (valueRules.sameSumAs && sum1 !== sum2) ruleConformsToData = false;
+                            if (valueRules.differentSumAs && sum1 === sum2) ruleConformsToData = false;
+                            if (valueRules.biggerSumAs && sum1 <= sum2) ruleConformsToData = false;
+                            if (valueRules.smallerSumAs && sum1 >= sum2) ruleConformsToData = false;
                         });
                     }
 

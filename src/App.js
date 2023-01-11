@@ -72,7 +72,7 @@ function App() {
                             init: true,
                             rules: {
                                 "position": { "goalkeeper": { exactCount: 1 }, "defender": { minCount: 1, sameCountAs: "midfield" } },
-                                "spending": { "": { sameSumAs: "income" } }
+                                "spending": { "": { biggerSumAs: "income" } }
                             },
                             fields: [
                                 {
