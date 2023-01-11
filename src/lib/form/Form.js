@@ -360,7 +360,7 @@ const Form = ({
                     if (valueRules.maxCount && typeof valueRules.maxCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
-                            fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
+                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
                             if (count > valueRules.maxCount) ruleConformsToData = false;
                         });
                     }
@@ -369,7 +369,7 @@ const Form = ({
                     if (valueRules.minCount && typeof valueRules.minCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
-                            fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
+                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
                             if (count < valueRules.minCount) ruleConformsToData = false;
                         });
                     }
@@ -378,7 +378,7 @@ const Form = ({
                     if (valueRules.exactCount && typeof valueRules.exactCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
-                            fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
+                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
                             if (count !== valueRules.exactCount) ruleConformsToData = false;
                         });
                     }
