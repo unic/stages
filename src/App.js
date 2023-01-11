@@ -71,7 +71,11 @@ function App() {
                             type: "collection",
                             init: true,
                             rules: {
-                                "position": { "goalkeeper": { exactCount: 1 }, "defender": { minCount: 1, sameCountAs: "midfield" } },
+                                "position": {
+                                    "goalkeeper": { exactCount: 1 },
+                                    "defender": { minCount: 1, sameCountAs: "midfield" },
+                                    "striker": { disallow: "midfield" }
+                                },
                                 "spending": { "": { biggerSumAs: "income" } },
                                 "prename,lastname": { "": { isUnique: true } }
                             },

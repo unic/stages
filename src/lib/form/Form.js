@@ -449,24 +449,26 @@ const Form = ({
                         if (duplicateFound) ruleConformsToData = false;
                     }
 
-                    /*
-                    // Disallow values if one of certain values are set
-                    // "gender": { ["ms"]: { disallowIfOneOf: ["mr"] } }
-                    // "gender": { "ms": { disallowIfOneOf: "mr" } }
-                    if (valueRules.disallowIfOneOf && Array.isArray(valueRules.disallowIfOneOf)) {
-                        // First check if specified values are present:
-                        let valueFound = false;
-                        let ifFound = false;
-                        fieldValidationData.forEach(d => {
-                            if (d[ruleField] === value || (Array.isArray(value) && value.indexOf(d[ruleField])) > -1) valueFound = true;
-                            if (valueRules.disallowIfOneOf.indexOf(d[ruleField]) > -1) ifFound = true;
+                    // Disallow certain values if something is set, example: "gender": { "ms": { disallow: "mr" } }
+                    if (valueRules.disallow) {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let bannedValueFound = false;
+                            let searchValueFound = false;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) searchValueFound = true;
+                                if (Array.isArray(valueRules.disallow)) {
+                                    valueRules.disallow.forEach(str => {
+                                        if (get(d, fieldValueCombo[0]) === str) bannedValueFound = true;
+                                    });
+                                } else {
+                                    if (get(d, fieldValueCombo[0]) === valueRules.disallow) bannedValueFound = true;
+                                }
+                            });
+                            if (searchValueFound && bannedValueFound) ruleConformsToData = false;
                         });
-                        if (valueFound && ifFound) ruleConformsToData = false;
                     }
 
-                    // or: "gender": { ["ms"]: { disallowIf: ["mr"] } }
-                    // or: "gender": { ["ms"]: { disallowIf: "mr" } }
-
+                    /*
                     // Require values if certain values are set, example: "gender": { require: { value: ["ms"], if: ["mr"] } }
                     if (valueRules.require && valueRules.require.value && valueRules.disallow.if) {
                         // First check if "if" values are present:
