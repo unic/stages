@@ -71,7 +71,8 @@ function App() {
                             type: "collection",
                             init: true,
                             rules: {
-                                "position": { "goalkeeper": { exactCount: 1 }, "defender": { minCount: 2, differentCountAs: "midfield" } }
+                                "position": { "goalkeeper": { exactCount: 1 }, "defender": { minCount: 1, sameCountAs: "midfield" } },
+                                "spending": { "": { sameSumAs: "income" } }
                             },
                             fields: [
                                 {
@@ -83,6 +84,16 @@ function App() {
                                     id: "lastname",
                                     type: "text",
                                     label: "Lastname"
+                                },
+                                {
+                                    id: "spending",
+                                    type: "text",
+                                    label: "Spending"
+                                },
+                                {
+                                    id: "income",
+                                    type: "text",
+                                    label: "Income"
                                 },
                                 {
                                     id: "position",
@@ -148,6 +159,8 @@ function App() {
                                         <div className="pure-u-1-3">{subFields.prename}</div>
                                         <div className="pure-u-1-3">{subFields.lastname}</div>
                                         <div className="pure-u-1-3">{subFields.team}</div>
+                                        <div className="pure-u-1-3">{subFields.spending}</div>
+                                        <div className="pure-u-1-3">{subFields.income}</div>
                                         <div className="pure-u-1-3">{subFields.position}</div>
                                         <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
                                     </div>

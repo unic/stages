@@ -351,7 +351,7 @@ const Form = ({
                         For rule: "position": { "goalkeeper": { maxCount: 1 } }
 
                         ruleFields: ["position"]
-                        values: ["goalkeeper"]
+                        values: ["goalkeeper"] or [] (for calculation on a field)
                         valueRules: { maxCount: 1 }
                         fieldValidationData: collection data array -> [{}, {}, ...]
                     */
@@ -409,6 +409,21 @@ const Form = ({
                         });
                     }
 
+                    // same sum as, example: ["spending"]: { "": { sameSumAs: "income" } }
+                    if (valueRules.sameSumAs && typeof valueRules.sameSumAs === "string") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let sum1 = 0;
+                            let sum2 = 0;
+                            fieldValidationData.forEach(d => {
+                                const thisValue1 = Number(get(d, fieldValueCombo[0]));
+                                const thisValue2 = Number(get(d, valueRules.sameSumAs));
+                                if (!isNaN(thisValue1)) sum1 = sum1 + thisValue1;
+                                if (!isNaN(thisValue2)) sum2 = sum2 + thisValue2;
+                            });
+                            if (sum1 !== sum2) ruleConformsToData = false;
+                        });
+                    }
+
                     /*
                     // Disallow values if one of certain values are set
                     // "gender": { ["ms"]: { disallowIfOneOf: ["mr"] } }
@@ -437,21 +452,6 @@ const Form = ({
                     if (valueRules.require && valueRules.require.value && valueRules.require.ifOneOf) {
                         // First check if one of "ifOneOf" values are present:
                         let found = false;
-                    }
-
-                    // Have equal amounts of certain values, example: "gender": { equalAmount: [ "ms", "mr" ] }
-                    if (valueRules.equalAmount && Array.isArray(valueRules.equalAmount)) {
-                        
-                    }
-
-                    // Have more of certain values than others, example: "gender": { moreOf: { value: "ms", than: "mr" } }
-                    if (valueRules.moreOf && valueRules.moreOf.value && valueRules.moreOf.than) {
-                        
-                    }
-
-                    // Have at least as many of something than somithing else, example: "gender": { atLeastAsMany: { value: "ms", than: "mr" } }
-                    if (valueRules.atLeastAsMany && valueRules.atLeastAsMany.value && valueRules.atLeastAsMany.than) {
-                        
                     }
 
                     // Sum of all values is equal, example: "spending": { equalSum: "income" }
