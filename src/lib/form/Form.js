@@ -37,6 +37,18 @@ const castValueStrType = (value, type, parseAsArray) => {
     return value;
 };
 
+const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
+    const res = [];
+
+    arr1.forEach(arr1Item => {
+        arr2.forEach(arr2Item => {
+            res.push([arr1Item, arr2Item]);
+        });
+    });
+
+    return res;
+ };
+
 const getFieldPaths = (fieldConfig, data) => {
     const paths = [];
 
@@ -324,42 +336,61 @@ const Form = ({
         // If the collection has rules set, check them against the data:
         if (field.type === "collection" && field.rules && typeof field.rules === "object" && fieldValidationData) {
             Object.keys(field.rules).forEach(ruleField => {
-                const rule = field.rules[ruleField];
-                Object.keys(rule).forEach((value) => {
-                    const valueRules = rule[value];
+                const rules = field.rules[ruleField];
+                Object.keys(rules).forEach((value) => {
+                    const valueRules = rules[value]; // An object of rules for this field/value combo
+                    
+                    // Convert fields and values to array, even if they are a primitive value:
+                    const ruleFields = Array.isArray(ruleField) ? ruleField : [ruleField];
+                    const values = Array.isArray(value) ? value : [value];
+                    const fieldValueCombos = getCombosFromTwoArrays(ruleFields, values);
+
                     let ruleConformsToData = true;
 
-                    // max occurence of value, example: "position": { "goalkeeper": { max: 1, errorCode: "goalkeeperOne" } }
+                    /*
+                        For rule: "position": { "goalkeeper": { max: 1 } }
+
+                        ruleFields: ["position"]
+                        values: ["goalkeeper"]
+                        valueRules: { max: 1 }
+                        fieldValidationData: collection data array -> [{}, {}, ...]
+                    */
+
+                    // max occurence of value, example: ["position"]: { ["goalkeeper"]: { max: 1, errorCode: "goalkeeperOne" } }
                     if (valueRules.max && typeof valueRules.max === "number") {
-                        let count = 0;
-                        fieldValidationData.forEach(d => d[ruleField] === value ? count++ : undefined);
-                        if (count > valueRules.max) ruleConformsToData = false;
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
+                            if (count > valueRules.max) ruleConformsToData = false;
+                        });
                     }
 
-                    // min occurence of value, example: "position": { "defender": { min: 3, errorCode: "defenderMiminum" } }
+                    // min occurence of value, example: ["position"]: { ["defender"]: { min: 3, errorCode: "defenderMiminum" } }
                     if (valueRules.min && typeof valueRules.min === "number") {
-                        let count = 0;
-                        fieldValidationData.forEach(d => d[ruleField] === value ? count++ : undefined);
-                        if (count < valueRules.min) ruleConformsToData = false;
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
+                            if (count < valueRules.min) ruleConformsToData = false;
+                        });
                     }
 
-                    // Disallow values if certain values are set, example: "gender": { ["ms"]: { disallowIf: ["mr"] } }
-                    if (valueRules.disallowIf && valueRules.disallowIf) {
+                    /*
+                    // Disallow values if one of certain values are set
+                    // "gender": { ["ms"]: { disallowIfOneOf: ["mr"] } }
+                    // "gender": { "ms": { disallowIfOneOf: "mr" } }
+                    if (valueRules.disallowIfOneOf && Array.isArray(valueRules.disallowIfOneOf)) {
                         // First check if specified values are present:
                         let valueFound = false;
                         let ifFound = false;
                         fieldValidationData.forEach(d => {
                             if (d[ruleField] === value || (Array.isArray(value) && value.indexOf(d[ruleField])) > -1) valueFound = true;
-                            if (d[ruleField] === valueRules.disallowIf || (Array.isArray(valueRules.disallowIf) && valueRules.disallowIf.indexOf(d[ruleField]) > -1)) ifFound = true;
+                            if (valueRules.disallowIfOneOf.indexOf(d[ruleField]) > -1) ifFound = true;
                         });
                         if (valueFound && ifFound) ruleConformsToData = false;
                     }
 
-                    // Disallow values if certain values are set, example: "gender": { disallow: { value: ["female"], ifOneOf: ["male", "intersex"] } }
-                    if (valueRules.disallow && valueRules.disallow.value && valueRules.disallow.ifOneOf) {
-                        // First check if one of "ifOneOf" values are present:
-                        let found = false;
-                    }
+                    // or: "gender": { ["ms"]: { disallowIf: ["mr"] } }
+                    // or: "gender": { ["ms"]: { disallowIf: "mr" } }
 
                     // Require values if certain values are set, example: "gender": { require: { value: ["ms"], if: ["mr"] } }
                     if (valueRules.require && valueRules.require.value && valueRules.disallow.if) {
@@ -402,6 +433,7 @@ const Form = ({
                     if (valueRules.isUnique && Array.isArray(ruleField)) {
                         
                     }
+                    */
 
                     if (!ruleConformsToData) {
                         errors[fieldKey] = {

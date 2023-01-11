@@ -71,7 +71,7 @@ function App() {
                             type: "collection",
                             init: true,
                             rules: {
-                                "position": { "striker": { disallowIf: "defender" } }
+                                "position": { "goalkeeper": { min: 1, max: 1 }, "defender": { min: 2 } }
                             },
                             fields: [
                                 {
