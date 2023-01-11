@@ -348,29 +348,38 @@ const Form = ({
                     let ruleConformsToData = true;
 
                     /*
-                        For rule: "position": { "goalkeeper": { max: 1 } }
+                        For rule: "position": { "goalkeeper": { maxCount: 1 } }
 
                         ruleFields: ["position"]
                         values: ["goalkeeper"]
-                        valueRules: { max: 1 }
+                        valueRules: { maxCount: 1 }
                         fieldValidationData: collection data array -> [{}, {}, ...]
                     */
 
-                    // max occurence of value, example: ["position"]: { ["goalkeeper"]: { max: 1, errorCode: "goalkeeperOne" } }
-                    if (valueRules.max && typeof valueRules.max === "number") {
+                    // maxCount occurence of value, example: ["position"]: { ["goalkeeper"]: { maxCount: 1, errorCode: "goalkeeperOne" } }
+                    if (valueRules.maxCount && typeof valueRules.maxCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
                             fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
-                            if (count > valueRules.max) ruleConformsToData = false;
+                            if (count > valueRules.maxCount) ruleConformsToData = false;
                         });
                     }
 
-                    // min occurence of value, example: ["position"]: { ["defender"]: { min: 3, errorCode: "defenderMiminum" } }
-                    if (valueRules.min && typeof valueRules.min === "number") {
+                    // min occurence of value, example: ["position"]: { ["defender"]: { minCount: 3, errorCode: "defenderMiminum" } }
+                    if (valueRules.minCount && typeof valueRules.minCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
                             fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
-                            if (count < valueRules.min) ruleConformsToData = false;
+                            if (count < valueRules.minCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // exact occurence of value, example: ["position"]: { ["defender"]: { exactCount: 3 } }
+                    if (valueRules.exactCount && typeof valueRules.exactCount === "number") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            fieldValidationData.forEach(d => d[fieldValueCombo[0]] === fieldValueCombo[1] ? count++ : undefined);
+                            if (count !== valueRules.exactCount) ruleConformsToData = false;
                         });
                     }
 
