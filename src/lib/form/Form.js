@@ -345,8 +345,14 @@ const Form = ({
 
                     // Disallow values if certain values are set, example: "gender": { disallow: { value: ["ms"], if: ["mr"] } }
                     if (valueRules.disallow && valueRules.disallow.value && valueRules.disallow.if) {
-                        // First check if "if" values are present:
-                        let found = false;
+                        // First check if specified values are present:
+                        let valueFound = false;
+                        let ifFound = false;
+                        fieldValidationData.forEach(d => {
+                            if (d[ruleField] === valueRules.disallow.value || (Array.isArray(valueRules.disallow.value) && valueRules.disallow.value.indexOf(d[ruleField])) > -1) valueFound = true;
+                            if (d[ruleField] === valueRules.disallow.if || (Array.isArray(valueRules.disallow.if) && valueRules.disallow.if.indexOf(d[ruleField])) > -1) ifFound = true;
+                        });
+                        if (valueFound && ifFound) ruleConformsToData = false;
                     }
 
                     // Disallow values if certain values are set, example: "gender": { disallow: { value: ["female"], ifOneOf: ["male", "intersex"] } }
