@@ -356,7 +356,7 @@ const Form = ({
                         fieldValidationData: collection data array -> [{}, {}, ...]
                     */
 
-                    // maxCount occurence of value, example: ["position"]: { ["goalkeeper"]: { maxCount: 1, errorCode: "goalkeeperOne" } }
+                    // max occurence of value, example: ["position"]: { ["goalkeeper"]: { maxCount: 1, errorCode: "goalkeeperOne" } }
                     if (valueRules.maxCount && typeof valueRules.maxCount === "number") {
                         fieldValueCombos.forEach(fieldValueCombo => {
                             let count = 0;
@@ -380,6 +380,32 @@ const Form = ({
                             let count = 0;
                             fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
                             if (count !== valueRules.exactCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // same occurence of value as another field, example: ["position"]: { ["defender"]: { sameCountAs: "midfield" } }
+                    if (valueRules.sameCountAs && typeof valueRules.sameCountAs === "string") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            let otherValueCount = 0;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) count++;
+                                if (get(d, fieldValueCombo[0]) === valueRules.sameCountAs) otherValueCount++;
+                            });
+                            if (count !== otherValueCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // same occurence of value as another field, example: ["position"]: { ["defender"]: { differentCountAs: "midfield" } }
+                    if (valueRules.differentCountAs && typeof valueRules.differentCountAs === "string") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            let otherValueCount = 0;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) count++;
+                                if (get(d, fieldValueCombo[0]) === valueRules.differentCountAs) otherValueCount++;
+                            });
+                            if (count === otherValueCount) ruleConformsToData = false;
                         });
                     }
 
