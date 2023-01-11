@@ -71,12 +71,7 @@ function App() {
                             type: "collection",
                             init: true,
                             rules: {
-                                position: {
-                                    "goalkeeper": { max: 1, errorCode: "goalkeeperOne" },
-                                    "defender": { min: 2, max: 4, errorCode: "defenderLimits" },
-                                    "midfield": { min: 2, max: 5, errorCode: "midfieldLimits" },
-                                    "striker": { min: 1, max: 3, errorCode: "strikerLimits" }
-                                }
+                                "position": { "striker": { disallowIf: "defender" } }
                             },
                             fields: [
                                 {
