@@ -468,19 +468,24 @@ const Form = ({
                         });
                     }
 
-                    /*
-                    // Require values if certain values are set, example: "gender": { require: { value: ["ms"], if: ["mr"] } }
-                    if (valueRules.require && valueRules.require.value && valueRules.disallow.if) {
-                        // First check if "if" values are present:
-                        let found = false;
+                    // Require certain values if something is set, example: "gender": { "ms": { require: "mr" } }
+                    if (valueRules.disallow) {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let requiredValueFound = false;
+                            let searchValueFound = false;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) searchValueFound = true;
+                                if (Array.isArray(valueRules.disallow)) {
+                                    valueRules.disallow.forEach(str => {
+                                        if (get(d, fieldValueCombo[0]) === str) requiredValueFound = true;
+                                    });
+                                } else {
+                                    if (get(d, fieldValueCombo[0]) === valueRules.disallow) requiredValueFound = true;
+                                }
+                            });
+                            if (searchValueFound && !requiredValueFound) ruleConformsToData = false;
+                        });
                     }
-
-                    // Disallow values if certain values are set, example: "gender": { require: { value: ["female"], ifOneOf: ["male", "intersex"] } }
-                    if (valueRules.require && valueRules.require.value && valueRules.require.ifOneOf) {
-                        // First check if one of "ifOneOf" values are present:
-                        let found = false;
-                    }
-                    */
 
                     if (!ruleConformsToData) {
                         errors[fieldKey] = {
