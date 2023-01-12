@@ -11,7 +11,7 @@
     "asyncdata": "Async Data",
     "customerrors": "Custom Errors",
     "dynamicfields": "Dynamic Fields",
-    "dynamicoptions": "Dynamic Options",
+    "dynamicoptions": "Dynamic and Computed Options",
     "undo": "Undo / Redo",
     "formrecursion": "Form Recursion"
 }

@@ -1,4 +1,6 @@
-# Dynamic Options
+# Dynamic and Computed Options
+
+## Dynamic Options
 
 Sometimes you need select or radiogroup options which are dynamically loaded based on some other fields content. 
 You can do that by defining `dynamicOptions` like this:
@@ -115,3 +117,39 @@ For non async dynamic options, you can simply define a function which calculates
     }
 }
 ```
+
+## Computed Options
+
+There is a second way to create dynamic options, designed mainly to use values from a collection inside 
+a field which has options, for example a select. Here's an example for such a field config:
+
+```
+{
+    id: "team",
+    type: "select",
+    label: "Team",
+    computedOptions: {
+        source: "teams",
+        initWith: [
+            { value: "", text: "Please select ..." }
+        ],
+        map: (item) => {
+            return {
+                value: item.nr,
+                text: item.name
+            };
+        },
+        sort: (a, b) => a.name > b.name ? 1 : b.name > a.name ? -1 : 0,
+        filter: (item) => !!item.nr
+    }
+}
+```
+
+For this one to work, there has to be a collection with the `id` `teams`, and at least containing the fields `nr` and `name`. 
+It than creates options based on what the user entered in that collection. Here's an explanation of all the options:
+
+- **source**: This is the path key of the source collection
+- **initWith**: Usually you want to init the options array with an empty option, you can do it here
+- **map**: This is a callback which maps the values of the collection to the usual option props `value` and `text`
+- **sort**: This optional callback can be used to sort the entries
+- **filter**: Another optional option to filter the entries, for example to remove collection entries which haven't been filled in by the user
