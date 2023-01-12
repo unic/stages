@@ -302,3 +302,29 @@ You can combine all this rules freely, just make sure that you don't setup rules
 Additionally you can add error codes to each rule set, to render different error messages depending on which rule has been broken.
 
 `"prename,lastname": { "": { isUnique: true, errorCode: "uniqueNames" } }`
+
+If you miss a certain useful rule, you can define your own custom rule handlers like this:
+
+```
+<Form
+    customRuleHandlers={{
+        disallowOddNumbers: ({ fieldValueCombos, fieldValidationData, valueRules, get }) => {
+            // "age": { "": { disallowOddNumbers: true } }
+            let ruleConformsToData = true;
+
+            if (valueRules.disallowOddNumbers) {
+                fieldValueCombos.forEach(fieldValueCombo => {
+                    fieldValidationData.forEach(d => {
+                        const value = get(d, fieldValueCombo[0]);
+                        if (value && value % 2 === 1) ruleConformsToData = false;
+                    });
+                });
+            }
+
+            return ruleConformsToData;
+        }
+    }}
+    config={...}
+    render={...}
+/>
+```

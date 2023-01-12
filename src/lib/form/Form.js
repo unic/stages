@@ -158,7 +158,8 @@ const Form = ({
     throttleWait,
     customEvents,
     enableUndo,
-    undoMaxDepth = 10
+    undoMaxDepth = 10,
+    customRuleHandlers
 }) => {
     // First we need to merge interfaceData with form data, whithout muting form data:
     const [interfaceState, setInterfaceState] = useState({});
@@ -484,6 +485,16 @@ const Form = ({
                                 }
                             });
                             if (searchValueFound && !requiredValueFound) ruleConformsToData = false;
+                        });
+                    }
+
+                    // Check all custom rule handlers
+                    if (ruleConformsToData && typeof customRuleHandlers === "object") {
+                        Object.keys(customRuleHandlers).forEach(customRule => {
+                            if (typeof valueRules[customRule] !== "undefined" && typeof customRuleHandlers[customRule] === "function") {
+                                const result = customRuleHandlers[customRule]({ fieldValueCombos, fieldValidationData, valueRules, get });
+                                if (!result) ruleConformsToData = false;
+                            }
                         });
                     }
 
@@ -1284,7 +1295,8 @@ Form.propTypes = {
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     onValidation: PropTypes.func,
     parentRunValidation: PropTypes.bool,
-    validateOn: PropTypes.array
+    validateOn: PropTypes.array,
+    customRuleHandlers: PropTypes.object
 };
 
 Form.defaultProps = {
@@ -1292,7 +1304,8 @@ Form.defaultProps = {
     onChange: () => {},
     isVisible: true,
     isDisabled: false,
-    validateOn: ["action"]
+    validateOn: ["action"],
+    customRuleHandlers: {}
 };
 
 export default Form;

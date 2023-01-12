@@ -44,6 +44,23 @@ function App() {
             id="basics"
             data={data}
             validateOn={["change", "blur", "action"]}
+            customRuleHandlers={{
+                disallowOddNumbers: ({ fieldValueCombos, fieldValidationData, valueRules, get }) => {
+                    // "age": { "": { disallowOddNumbers: true } }
+                    let ruleConformsToData = true;
+
+                    if (valueRules.disallowOddNumbers) {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            fieldValidationData.forEach(d => {
+                                const value = get(d, fieldValueCombo[0]);
+                                if (value && value % 2 === 1) ruleConformsToData = false;
+                            });
+                        });
+                    }
+
+                    return ruleConformsToData;
+                }
+            }}
             config={{
                 fields: () => {
                     const fieldConfig = [
@@ -72,11 +89,9 @@ function App() {
                             init: true,
                             rules: {
                                 "position": {
-                                    "goalkeeper": { exactCount: 1 },
-                                    "defender": { minCount: 1, sameCountAs: "midfield" },
-                                    "striker": { disallow: "midfield" }
+                                    "goalkeeper": { exactCount: 1 }
                                 },
-                                "spending": { "": { biggerSumAs: "income" } },
+                                "spending": { "": { disallowOddNumbers: true } },
                                 "prename,lastname": { "": { isUnique: true } }
                             },
                             fields: [
