@@ -300,3 +300,5 @@ options to require or disallow certain values based on other values set in the c
 You can combine all this rules freely, just make sure that you don't setup rules which can never be valid in combination!
 
 Additionally you can add error codes to each rule set, to render different error messages depending on which rule has been broken.
+
+`"prename,lastname": { "": { isUnique: true, errorCode: "uniqueNames" } }`
