@@ -195,3 +195,108 @@ In the examples above, we used `onCollectionAction()` a lot. The function params
 - **index2:** A second index. Currently only needed for `move` actions where it will be the destination (check the drag and drop example in the demos for an advanced example)
 
 [Related Demo](https://stages-demo.vercel.app/collections)
+
+## Collection Rules
+
+Implementing validations for fields in complicated collections can be time consuming, that's why you now get collection rules 
+which simplify this task a lot.
+
+Let's start with an example to get a basic understanding of how you define collection validation rules:
+
+```
+{
+    id: "players",
+    type: "collection",
+    init: true,
+    min: 11,
+    max: 11,
+    rules: {
+        "position": {
+            "goalkeeper": { exactCount: 1 },
+            "defender": { minCount: 2, sameCountAs: "midfield" },
+            "striker": { minCount: 1 }
+        },
+        "prename,lastname": { "": { isUnique: true } }
+    },
+    fields: [
+        {
+            id: "prename",
+            type: "text",
+            label: "Prename",
+            isRequired: true
+        },
+        {
+            id: "lastname",
+            type: "text",
+            label: "Lastname",
+            isRequired: true
+        },
+        {
+            id: "position",
+            type: "radio",
+            lable: "Position",
+            options: [
+                { value: "goalkeeper", text: "Goalkeeper" },
+                { value: "defender", text: "Defender" },
+                { value: "midfield", text: "Midfield" },
+                { value: "striker", text: "Striker" }
+            ],
+            isRequired: true
+        }
+    ]
+}
+```
+
+The example is a collection for entering a football team. The collection is defined as containing exactly 11 team members. 
+The user needs to enter pre- and lastname and a position for each team member. To make shure the team has at least one 
+goalkeeper, a first rule is defined for the field `position` as `"goalkeeper": { exactCount: 1 }`, additionally we define 
+the defender position to have at least two members and for the team to be balanced, the midfield needs to have the same 
+amount: `"defender": { minCount: 2, sameCountAs: "midfield" }`. The striker than is set to have at least one member. Finally, 
+we define that the combination of the `prename` and `lastname` fields have to be unique: `"prename,lastname": { "": { isUnique: true } }`. 
+With these basic rules, we make shure that the entered team makes sense.
+
+So let's dissect the basic structure of rules and later list the possible options. First, we always define which fields are affected. 
+This can either be a single field `fieldname` or a combination of fields `field1,field2`. For collections with nested fields, we can use 
+dot separated path syntax like this: `coords.longitude`
+
+After selecting the fields, we select the affected values. For example to have exactly one value of "goalkeeper", we define that 
+like this: `"position": { "goalkeeper": { exactCount: 1 } }`. As with fields, we can add multiple values by separating them with a 
+comma like this: `ms,mr`. Sometimes we don't want to target specific values with our rules, in such a case we can just leave the 
+value field empty like this: `"spending": { "": { biggerSumAs: "income" } }`.
+
+And lastly, we need to define one or multiple rules like this: `"position": { "defender": { minCount: 2, sameCountAs: "midfield" } }`.
+
+### Rule options
+
+There are various rule options for different types of rule. Some play with the count of certain entries, some with calculations of field 
+values like the `sameSumAs` option, some are collection specific rules of field properties like the `isUnique` option, than we have 
+options to require or disallow certain values based on other values set in the collection.
+
+- **maxCount**: Define the maximum count of a certain field value:
+- `"position": { "defender": { maxCount: 3 } }`
+- **minCount**: Define the minimum count of a certain field value:
+- `"position": { "striker": { minCount: 1 } }`
+- **exactCount**: Define the exact count of a certain field value:
+- `"position": { "goalkeeper": { exactCount: 1 } }`
+- **sameCountAs**: Define two values to occur the same amount of times:
+- `"position": { "defender": { sameCountAs: "midfield" } }`
+- **differentCountAs**: Define two values to occur different amount of times:
+- `"position": { "midfield": { differentCountAs: "striker" } }`
+- **sameSumAs**: Define the sum of all values of a certain field to be the same as another fields sum:
+- `"spending": { "": { sameSumAs: "income" } }`
+- **differentSumAs**: Define the sum of all values of a certain field to be different as another fields sum:
+- `"spending": { "": { differentSumAs: "income" } }`
+- **biggerSumAs**: Define the sum of all values of a certain field to be bigger than another fields sum:
+- `"spending": { "": { biggerSumAs: "income" } }`
+- **smallerSumAs**: Define the sum of all values of a certain field to be small than another fields sum:
+- `"spending": { "": { smallerSumAs: "income" } }`
+- **isUnique**: Define a combination of fields to be unique:
+- `"prename,lastname": { "": { isUnique: true } }`
+- **disallow**: Disallow values if a certain other value is set:
+- `"gender": { "ms": { disallow: "mr" } }`
+- **require**: Require certain values if a certain other value is set:
+- `"gender": { "ms": { require: "mr" } }`
+
+You can combine all this rules freely, just make sure that you don't setup rules which can never be valid in combination!
+
+Additionally you can add error codes to each rule set, to render different error messages depending on which rule has been broken.
