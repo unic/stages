@@ -13,5 +13,6 @@
     "dynamicfields": "Dynamic Fields",
     "dynamicoptions": "Dynamic and Computed Options",
     "undo": "Undo / Redo",
-    "formrecursion": "Form Recursion"
+    "formrecursion": "Form Recursion",
+    "typecasting": "Typecasting"
 }

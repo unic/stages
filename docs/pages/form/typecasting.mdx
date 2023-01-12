@@ -1,0 +1,52 @@
+# Typecasting
+
+Sometimes you have fields which expect a different type than what you want in your data. 
+And data should always be serialisable. So for example if you have a calendar input, than that 
+date should always be in a string format like this: `2022-08-23`. However, some calendar fields 
+may return a Date object, which can cause problems. To solve such cases, you can explicitely 
+typecast on a field configuration. This is how:
+
+```
+{
+    id: "arrivalDate",
+    label: "Arrival",
+    type: "calendar",
+    cast: {
+        data: "string",
+        field: "date"
+    }
+}
+```
+
+The `cast` option expects two options, one for the type used in the data and one for the type the field expects. 
+Both options are required. Additionally, you can supply a callback to do the conversion yourself, which is sometimes needed 
+to make certain fields work. An example:
+
+```
+{
+    id: "arrivalDate",
+    label: "Arrival",
+    type: "calendar",
+    cast: {
+        data: (value) => new Date(value),
+        field: (value) => String(value).split("T")[0]
+    }
+}
+```
+
+For non callback options, all JS proimitive types are available, so `number`, `string` and `boolean`. Additionally, `date` can 
+be used to convert between Date objects and strings.
+
+Finally, for fields which expect arrays, you can do something like this:
+
+```
+{
+    id: "eventDates",
+    label: "Event Dates",
+    type: "multiselect",
+    cast: {
+        data: ["string"],
+        field: ["date"]
+    }
+}
+```
