@@ -103,7 +103,7 @@ function App() {
                                 {
                                     id: "position",
                                     type: "radio",
-                                    lable: "Position",
+                                    label: "Position",
                                     options: [
                                         { value: "goalkeeper", text: "Goalkeeper" },
                                         { value: "defender", text: "Defender" },
