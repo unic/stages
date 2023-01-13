@@ -42,7 +42,7 @@ const Layout = ({ children }) => {
                     position: "relative"
                 }}
                 ><Debugger /></div>
-                <div style={{ maxWidth: "900px" }}>
+                <div style={{ maxWidth: "960px" }}>
                     {children}
                 </div>
             </div>
