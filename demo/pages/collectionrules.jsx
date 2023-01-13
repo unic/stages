@@ -4,14 +4,61 @@ import Layout from "../components/Layout";
 
 function FormPage() {
     const [data, setData] = useState({
-        teams: [
-            { nr: "2332", name: "France" },
-            { nr: "435", name: "Brasil" }
-        ],
         players: [
             { 
-                name: "Pele",
-                team: "435"
+                prename: "Carlos",
+                lastname: "Germano",
+                position: "goalkeeper"
+            },
+            { 
+                prename: "André",
+                lastname: "Cruz",
+                position: "defender"
+            },
+            { 
+                prename: "Júnior",
+                lastname: "Baiano",
+                position: "defender"
+            },
+            { 
+                prename: "Roberto",
+                lastname: "Carlos",
+                position: "defender"
+            },
+            { 
+                prename: "Zé",
+                lastname: "Carlos",
+                position: "defender"
+            },
+            { 
+                prename: "César",
+                lastname: "Sampaio",
+                position: "midfield"
+            },
+            { 
+                prename: "Zé",
+                lastname: "Roberto",
+                position: "midfield"
+            },
+            { 
+                prename: "Rivaldo",
+                lastname: "Ferreira",
+                position: "midfield"
+            },
+            { 
+                prename: "Emerson",
+                lastname: "Ferreira da Rosa",
+                position: "midfield"
+            },
+            { 
+                prename: "Ronaldo",
+                lastname: "Nazário de Lima",
+                position: "striker"
+            },
+            { 
+                prename: "Bebeto",
+                lastname: "Gama de Oliveira",
+                position: "striker"
             }
         ]
     });
@@ -74,7 +121,8 @@ function FormPage() {
                         <p>
                             In this demo we have to create a football (soccer) team. There has to be exactly one goal keeper, 
                             at least two defenders, two midfielders and one striker. Defenders and midfielders need to 
-                            be the same amout, to make it balanced. And finally, all name combos need to be unique.
+                            be the same amout, to make it balanced. And finally, all name combos need to be unique. Try changing 
+                            the team positions and click submit to see what happens.
                         </p>
                         <h3>Players:</h3>
                         <fieldset>
