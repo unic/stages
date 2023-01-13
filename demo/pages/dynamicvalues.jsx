@@ -3,7 +3,7 @@ import { Form, plainFields as fields } from "react-stages";
 import Layout from "../components/Layout";
 
 function FormPage() {
-    const [data, setData] = useState({});
+    const [data, setData] = useState({price: 2.55});
     return (
         <Layout>
             <Form
@@ -70,7 +70,14 @@ function FormPage() {
                                         }
                                     }
                                 ]
-                            }
+                            },
+                            {
+                                id: "price",
+                                label: "Price",
+                                type: "text",
+                                prefix: "$ ",
+                                precision: 2
+                            },
                         ]
                     }
                 }}
@@ -105,6 +112,14 @@ function FormPage() {
                             ) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("maths", "add")}>+</button>
                         </fieldset>
+                        <br />
+                        <p>
+                            Another special type of dynamic value is a field using the "precision" option, which is very useful for price values. 
+                            Try entering some other value, for example "40.1234" or just "40".
+                        </p>
+                        <div>
+                            {fieldProps.fields.price}
+                        </div>
                         <br />
                         <hr />
                         <br />
