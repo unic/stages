@@ -78,6 +78,12 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
+                        <h3>Computed Options:</h3>
+                        <p>
+                            In this demo, the teams added in the first collection, are automatically added as options to the 
+                            team select in the second collection.
+                        </p>
+                        <h3>Teams:</h3>
                         <fieldset>
                             {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
                                 <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
@@ -92,6 +98,7 @@ function FormPage() {
                             <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
                         </fieldset>
                         <br />
+                        <h3>Players:</h3>
                         <fieldset>
                             {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
                                 <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
