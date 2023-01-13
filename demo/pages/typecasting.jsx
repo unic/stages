@@ -1,0 +1,85 @@
+import React, { useState } from "react";
+import { Form, plainFields as fields } from "react-stages";
+import Layout from "../components/Layout";
+
+function FormPage() {
+    const [data, setData] = useState({});
+    return (
+        <Layout>
+            <Form
+                data={data}
+                fields={fields}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "mybool",
+                                label: "Boolean Field",
+                                type: "checkbox",
+                                cast: {
+                                    data: (value) => value ? "yes" : "no",
+                                    field: (value) => value === "yes" ? true : false
+                                }
+                            },
+                            {
+                                id: "mydate",
+                                label: "Date Field",
+                                type: "date",
+                                cast: {
+                                    data: (value) => new Date(value),
+                                    field: (value) => {
+                                        if (value instanceof Date) {
+                                            let month = value.getUTCMonth() + 1;
+                                            if (month < 10) month = `0${month}`;
+                                            let day = value.getUTCDate();
+                                            if (day < 10) day = `0${day}`;
+                                            const year = value.getUTCFullYear();
+                                            return `${year}-${month}-${day}`;
+                                        }
+                                        return "";
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => (
+                    <>
+                        <p>
+                            Ideally you always want the right kind of type in the data you receive from Stages. However, sometimes you 
+                            work with 3rd party fields which use a different type. You can solve this problem in Stages with Typecasting.
+                        </p>
+                        <p>
+                            In this first example, our component creates a boolean, but our backend API expects "yes" and "no" strings. 
+                            We use custom typecasting to solve this. Check the data in the debugger where the correct type (and value) is set.
+                        </p>
+                        <div>
+                            {fieldProps.fields.mybool}
+                        </div>
+                        <br />
+                        <p>
+                            In this next example, we have a field which returns a string which looke like "2022-08-23". But our 
+                            JavaScript code which receives the data expects a Date object. So we typecast it. Check the code of 
+                            this example to get an idea how.
+                        </p>
+                        <div>
+                            {fieldProps.fields.mydate}
+                        </div>
+                        <br />
+                        <hr />
+                        <br />
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                    </>
+                )}
+                onChange={payload => setData(payload)}
+            /> 
+        </Layout>
+    );
+};
+  
+export default FormPage;
