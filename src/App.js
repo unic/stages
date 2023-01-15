@@ -65,6 +65,12 @@ function App() {
                 fields: () => {
                     const fieldConfig = [
                         {
+                            id: "field1",
+                            type: "text",
+                            label: "Default Test",
+                            defaultValue: "Test ..."
+                        },
+                        {
                             id: "teams",
                             type: "collection",
                             init: true,
@@ -159,6 +165,8 @@ function App() {
                     <button onClick={actionProps.handleRedo}>Redo</button>
                     <div>
                         <h2>Teams:</h2>
+                        <div>{fieldProps.fields.field1}</div>
+                        <br /><br />
                         <fieldset>
                             {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
                                 <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>

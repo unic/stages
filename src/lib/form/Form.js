@@ -192,6 +192,18 @@ const Form = ({
     useEffect(() => {
         if (data && !initialData) {
             if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
+
+            // Scan through the fieldPaths to find fields with default data:
+            fieldPaths.forEach(fieldPath => {
+                if (typeof fieldPath.config.defaultValue !== "undefined") {
+                    const originalData = get(data, fieldPath.path);
+                    if (typeof originalData === "undefined") {
+                        set(data, fieldPath.path, fieldPath.config.defaultValue);
+                        set(alldata, fieldPath.path, fieldPath.config.defaultValue);
+                    }
+                }
+            });
+
             const stringifiedData = stringify(data);
             setInitialData(JSON.parse(stringifiedData));
         }
@@ -1094,6 +1106,7 @@ const Form = ({
             delete cleanedField.clearFields;
             delete cleanedField.dynamicOptions;
             delete cleanedField.isRendered;
+            delete cleanedField.defaultValue;
 
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
