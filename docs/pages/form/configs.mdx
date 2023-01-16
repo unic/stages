@@ -202,3 +202,29 @@ The `modifyConfig` method has three parameters:
 - **path:** The data structure path of where to add the configuration
 - **template:** The key of the config template which should be added
 - **action:** The action, which can currently be either `add` or `remove`
+
+## Config Functions
+
+A third way to define config items, is with a function:
+
+```
+<Form
+    config={{
+        fields: () => {
+            return [
+                (data, asyncData, interfaceState) => {
+                    return {
+                        id: "myField",
+                        type: "text",
+                        label: "My Field"
+                    };
+                }
+            ]
+        }
+    }}
+    ...
+/>
+```
+
+This can be used to define field configs externally, than import them in your forms. And it makes sure, that all your configs 
+actually exists, as your build wont compile without them existing, something which isn't guaranteed with config templates.
