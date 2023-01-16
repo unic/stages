@@ -141,6 +141,8 @@ let timeoutRef; // Timeout ref used to throttle onChange validations
 
 let lastOnChangeData; // Used to prevent unnessesary onChange callbacks
 
+const chosenPlaceholders = {}; 
+
 /*
     This is the form component used in Stages. You can use it for individual steps in a wizard
     or on it's own for one stage forms.
@@ -1109,6 +1111,14 @@ const Form = ({
             delete cleanedField.dynamicOptions;
             delete cleanedField.isRendered;
             delete cleanedField.defaultValue;
+
+            // If placeholder is an array, pick one randomly
+            if (cleanedField.placeholder && Array.isArray(cleanedField.placeholder) && cleanedField.placeholder.length > 1) {
+                if (typeof chosenPlaceholders[path] === "undefined") {
+                    chosenPlaceholders[path] = cleanedField.placeholder[Math.floor(Math.random() * cleanedField.placeholder.length)];
+                }
+                cleanedField.placeholder = chosenPlaceholders[path];
+            }
 
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);

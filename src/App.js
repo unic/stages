@@ -68,14 +68,13 @@ function App() {
                             id: "field1",
                             type: "text",
                             label: "Default Test",
-                            defaultValue: "Test ..."
+                            placeholder: ["Placeholder 1", "Placeholder 2", "Placeholder 3"]
                         },
                         () => {
                             return {
                                 id: "field2",
                                 type: "text",
-                                label: "Default Test 2",
-                                defaultValue: "Test 2 ..."
+                                label: "Default Test 2"
                             };
                         },
                         {
