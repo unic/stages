@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, Fragment } from "react";
 import { Form } from "./lib/form";
+import { Stages, HashRouter } from "./lib/stages";
 import fields from "./lib/fieldsets/plain";
 
 export const getStateFromLocalStorage = () => {
@@ -16,6 +17,28 @@ export const saveStateToLocalStorage = (state = {}) => {
 		const stringifiedState = JSON.stringify(state);
 		localStorage.setItem("stages-demo-app", stringifiedState);
 	}
+};
+
+const Navigation = ({ currentStep, data, onChangeStep, errors, lastValidStep, keys, stepCount }) => {
+    const items = [];
+
+    for (let i = 0; i < keys.length; i++) {
+        if (keys && keys[i] && keys[i].visible) {
+            const stepName = keys && keys[i] ? keys[i].key : `Step ${i + 1}`;
+
+            if (currentStep === i) {
+                items.push(<li key={stepName} style={{ textTransform: "capitalize", marginBottom: "4px" }}><strong>{stepName}</strong></li>);
+            } else if ((lastValidStep > -1 && lastValidStep + 1 < i) || lastValidStep === -1 && i > 0) {
+                items.push(<li key={stepName} style={{ color: "#999", textTransform: "capitalize", marginBottom: "4px" }}>{stepName}</li>);
+            } else {
+                items.push(<li key={stepName} style={{ textTransform: "capitalize", marginBottom: "4px" }} onClick={() => onChangeStep(i)}>{stepName}</li>);
+            }
+        }
+    }
+
+    return (
+        <ul style={{ listStyleType: "none", margin: "0 0 0 32px 0", padding: 0 }}>{items}</ul>
+    );
 };
 
 function App() {
@@ -39,6 +62,51 @@ function App() {
         setData(data);
     };
 
+    return (
+        <Stages
+            validateOnStepChange={false}
+            render={({ navigationProps, routerProps, steps }) => (
+                <div className="pure-g">
+                    <div className="pure-u-1-5" style={{ marginTop: "64px" }}>
+                        <Navigation {...navigationProps} />
+                    </div>
+                    <div className="pure-u-4-5">{steps}</div>
+                    {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
+                </div>
+            )}
+        >
+            {({ isActive, data, onChange, onNav, index, setStepKey, initializing }) => {
+                const key = setStepKey("home", index);
+                if (initializing) return null;
+                if (!isActive) return <Fragment key={`step-${key}`}></Fragment>;
+                if (!data || Object.keys(data).length === 0) onChange({visited: true}, {}, index);
+
+                return (
+                    <Fragment key={`step-${key}`}>
+                        <h2>Home</h2>
+                        <p>Page content ...</p>
+                        <button type="button" onClick={() => onNav("step", "about")}>Read the About</button>
+                    </Fragment>
+                );
+            }}
+            {({ isActive, data, onNav, onChange, index, setStepKey, initializing }) => {
+                const key = setStepKey("about", index);
+                if (initializing) return null;
+                if (!isActive) return <Fragment key={`step-${key}`}></Fragment>;
+                if (!data || Object.keys(data).length === 0) onChange({visited: true}, {}, index);
+
+                return (
+                    <Fragment key={`step-${key}`}>
+                        <h2>About</h2>
+                        <p>Page content ...</p>
+                        <button type="button" onClick={() => onNav("step", "home")}>Go back to Home</button>
+                    </Fragment>
+                );
+            }}
+        </Stages>
+    );
+
+    /*
     return (
         <Form
             id="basics"
@@ -225,6 +293,7 @@ function App() {
             onChange={handleChange}
         />
     );
+    */
 
     /*
     return (
