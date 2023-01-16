@@ -1263,8 +1263,15 @@ const Form = ({
         The function is called by the forms action buttons. It either runs the validation
         or just the supplied callback.
     */
-    const handleActionClick = (callback, validate) => {
+    const handleActionClick = (callback, validate, reset) => {
         if (isDebugging()) window.stagesLogging(`Handle action click`, uniqId);
+
+        // If this is a reset action, we reset back to the initial data:
+        if (reset) {
+            limitedOnChange(initialData, validationErrors(), id);
+            setDirtyFields({});
+            setIsDirty(false);
+        }
 
         // Are there any custom events active?
         const activeCustomEvents = getActiveCustomEvents("action", alldata);

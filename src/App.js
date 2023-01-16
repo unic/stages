@@ -213,6 +213,13 @@ function App() {
                     >
                         Submit
                     </button>
+                    {" "}
+                    <button
+                        type="button"
+                        onClick={() => actionProps.handleActionClick(() => {}, false, true)}
+                    >
+                        Reset
+                    </button>
                 </div>
             )}
             fields={fields}
