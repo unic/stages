@@ -102,7 +102,9 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) =
 
     const parseConfigItem = configItem => {
         if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
-            return config.fieldConfigs[configItem](data, asyncData);
+            return config.fieldConfigs[configItem](data, asyncData, interfaceState);
+        } else if (typeof configItem === "function") {
+            return configItem(data, asyncData, interfaceState);
         }
         return configItem;
     };
