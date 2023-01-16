@@ -25,7 +25,8 @@ Actions inside the render prop could look something like this:
 
 As you see, you get a group of properties with the `actionProps` prop. These are:
 
-- **handleActionClick**: This one expects a callback which will receive the forms data and if the second argument is set to true, it will only be executed if the form is valid
+- **handleActionClick**: This one expects a callback which will receive the forms data and if the second argument is set to true, it will only 
+    be executed if the form is valid. An additional optional third parameter (boolean) let's you reset the form back to the initial data.
 - **isDisabled**: This will be true if the form is disabled, so you can disable actions, as well
 - **isDirty**: If you only want to save data when it has changed, than you can use this boolean to find that out
 
