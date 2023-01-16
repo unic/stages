@@ -68,6 +68,28 @@ You get following variables in the `customValidation` function:
 - **isDirty**: In case you only want to validate dirty fields (a boolean)
 - **triggeringEvent**: The event which triggered this validation, for example `change`, `blur` or `action` or your custom event
 
+For basic validations, return a boolean, `true` for a valid field, `false` for when something isn't. 
+For more complicated validations, those that check for multiple things which can be wrong, you can return an error code in the 
+form of a string like this: `"INVALID_LEADING_CHARS"`. You can than in the error renderer use the error code to decide which 
+error to output:
+
+```
+{
+    id: "address",
+    label: "Address",
+    type: "text",
+    customValidation: ({ data, isValid }) => {
+        if (isValid && data && data.startsWith("0")) return "INVALID_LEADING_CHARS";
+        return isValid;
+    },
+    errorRenderer: ({ errorCode }) => {
+        if (errorCode === "INVALID_LEADING_CHARS") return <div className="error">Don't ...</div>;
+        if (errorCode === "SOMETHING_ELSE") return <div className="error">Don't ...</div>;
+        return <div className="error">General error message ...</div>;
+    }
+}
+```
+
 ## Validation Events
 
 Per default, validation happens on actions which have validation switched on, eq:
