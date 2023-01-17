@@ -1114,6 +1114,7 @@ const Form = ({
             delete cleanedField.isRendered;
             delete cleanedField.defaultValue;
             delete cleanedField.cleanUp;
+            delete cleanedField.precision;
 
             // If placeholder is an array, pick one randomly
             if (cleanedField.placeholder && Array.isArray(cleanedField.placeholder) && cleanedField.placeholder.length > 1) {
