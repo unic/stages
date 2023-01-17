@@ -62,6 +62,7 @@ function App() {
         setData(data);
     };
 
+    /*
     return (
         <Stages
             validateOnStepChange={false}
@@ -105,8 +106,8 @@ function App() {
             }}
         </Stages>
     );
+    */
 
-    /*
     return (
         <Form
             id="basics"
@@ -293,7 +294,6 @@ function App() {
             onChange={handleChange}
         />
     );
-    */
 
     /*
     return (

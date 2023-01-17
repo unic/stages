@@ -66,7 +66,7 @@ const getFieldPaths = (fieldConfig, data) => {
                     const itemRenderPath = renderPath ? `${renderPath}.${item.id}` : item.id;
                     const itemData = get(data, itemRenderPath);
                     const unionData = get(data, renderPath);
-                    if (unionKey && unionData && unionData.__typename === unionKey || !unionKey) {
+                    if ((unionKey && unionData && unionData.__typename === unionKey) || !unionKey) {
                         paths.push({
                             path: itemRenderPath,
                             config: item,
@@ -270,8 +270,8 @@ const Form = ({
             (
                 !fieldValidationData || 
                 fieldValidationData.length === 0 || 
-                fieldValidationData.length === 1 && 
-                Object.keys(fieldValidationData[0]).length === 0
+                (fieldValidationData.length === 1 && 
+                Object.keys(fieldValidationData[0]).length === 0)
             )
         ) {
             if (!firstErrorField) firstErrorField = fieldKey;
@@ -283,7 +283,7 @@ const Form = ({
         } else if (field.type === "collection") {
             if (Array.isArray(field.fields)) {
                 field.fields.forEach(subField => {
-                    fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
+                    fieldValidationData && fieldValidationData.forEach((dataEntry) => {
                         // Don't check fields if the collection isn't required and the object is empty:
                         if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
@@ -316,7 +316,7 @@ const Form = ({
                 });
             } else {
                 // This is a union type collection, so we need to get the validation config inside the types object:
-                fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
+                fieldValidationData && fieldValidationData.forEach((dataEntry) => {
                     // Don't check fields if the collection isn't required and the object is empty:
                     if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
@@ -975,7 +975,7 @@ const Form = ({
         This function is called on each fields onFocus. It is currently used 
         to track which field has focus and what the last field in focus was.
     */
-    const handleFocus = (fieldKey, index) => {
+    const handleFocus = (fieldKey) => {
         setFocusedField(fieldKey);
         setLastFocusedField(fieldKey);
     };
