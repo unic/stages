@@ -80,7 +80,7 @@ Other often used properties:
 Additionally, Stages comes with a few special properties which are field independent:
 
 - **errorRenderer**: A custom error renderer, to make errors look nice
-- **defaultValue**: Initially sets a default value, except the field is already set by the forms initial data
+- **defaultValue**: Initially sets a default value, except the field is already set by the forms initial data. This can be a function: `data => { return "Something ..." }`
 - **computedValue**: You can compute a value dynamically based on the current form data
 - **filter**: You can filter all user input with a filter function
 - **clearFields**: This is an array of field keys to clear if this field changes. Optionally you can add a function here which 

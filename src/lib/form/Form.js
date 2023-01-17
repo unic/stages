@@ -202,8 +202,9 @@ const Form = ({
                 if (typeof fieldPath.config.defaultValue !== "undefined") {
                     const originalData = get(data, fieldPath.path);
                     if (typeof originalData === "undefined") {
-                        set(data, fieldPath.path, fieldPath.config.defaultValue);
-                        set(alldata, fieldPath.path, fieldPath.config.defaultValue);
+                        const defaultValue = typeof fieldPath.config.defaultValue === "function" ? fieldPath.config.defaultValue(data) : fieldPath.config.defaultValue;
+                        set(data, fieldPath.path, defaultValue);
+                        set(alldata, fieldPath.path, defaultValue);
                     }
                 }
             });
