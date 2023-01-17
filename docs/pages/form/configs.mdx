@@ -83,7 +83,8 @@ Additionally, Stages comes with a few special properties which are field indepen
 - **defaultValue**: Initially sets a default value, except the field is already set by the forms initial data
 - **computedValue**: You can compute a value dynamically based on the current form data
 - **filter**: You can filter all user input with a filter function
-- **clearFields**: This is an array of field keys to clear if this field changes
+- **clearFields**: This is an array of field keys to clear if this field changes. Optionally you can add a function here which 
+    dynamically returns an array of fields to clear: `(value, data, errors) => { return ["some", "array", "of", "field", "keys"] }`
 - **cleanUp**: Add a callback here if you want to clean up the value on blur, something like: `value => value.trim()`
 - **isInterfaceState**: Set this to `true` and the field data will not show up outside of the form, but will show up 
     in `fieldProps` so you can use it in your render function. Great to have UI elements like switches or 

@@ -939,9 +939,10 @@ const Form = ({
         }
 
         // If there are any fields to be cleared, do that now:
-        if (fieldConfig.clearFields && Array.isArray(fieldConfig.clearFields)) {
+        if (fieldConfig.clearFields && (Array.isArray(fieldConfig.clearFields) || typeof fieldConfig.clearFields === "function")) {
             const newOptionsLoaded = Object.assign({}, optionsLoaded);
-            fieldConfig.clearFields.forEach((field) => {
+            const fields = Array.isArray(fieldConfig.clearFields) ? fieldConfig.clearFields : fieldConfig.clearFields(newValue, newData, newErrors);
+            fields.forEach((field) => {
                 set(newData, field, undefined);
                 delete newOptionsLoaded[field];
             });
@@ -1111,6 +1112,7 @@ const Form = ({
             delete cleanedField.dynamicOptions;
             delete cleanedField.isRendered;
             delete cleanedField.defaultValue;
+            delete cleanedField.cleanUp;
 
             // If placeholder is an array, pick one randomly
             if (cleanedField.placeholder && Array.isArray(cleanedField.placeholder) && cleanedField.placeholder.length > 1) {
