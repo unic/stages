@@ -14,7 +14,7 @@ import ToolbarPlugin from './WysiwygToolbarPlugin';
 function Placeholder() {
     return (
         <div className="editor-placeholder">
-            Play around with the Markdown plugin...
+            Start adding content ...
         </div>
     );
 }
@@ -108,7 +108,13 @@ const WysiwygInput = ({
     // When the editor changes, you can get notified via the
     // LexicalOnChangePlugin!
     function onEditorChange(editorState) {
-        onChange(JSON.stringify(editorState));
+        const newValue = JSON.stringify(editorState);
+        const emptyInit = "{\"root\":{\"children\":[{\"children\":[],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}";
+        if (newValue === emptyInit) {
+            onChange("");
+        } else {
+            onChange(JSON.stringify(editorState));
+        }
     };
     
     // Lexical React plugins are React components, which makes them

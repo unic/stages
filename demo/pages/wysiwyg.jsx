@@ -21,7 +21,7 @@ function FormPage() {
                         return [
                             {
                                 id: "wysiwyg",
-                                label: "Lexical WYSIWYG Input",
+                                label: "Lexical WYSIWYG Input Demo (WIP)",
                                 secondaryText: "Example of a WYSIWYG (Lexical) input used inside Stages.",
                                 type: "wysiwyg"
                             }
@@ -30,9 +30,13 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <div>
+                        <div style={{ borderBottom: fieldProps.dirtyFields.wysiwyg ? "4px #f30 solid" : "4px #eee solid", paddingBottom: "16px" }}>
                             {fieldProps.fields.wysiwyg}
                         </div>
+                        <p>
+                            As Lexical is initially firing an onChange with initialized empty content, you need to capture that 
+                            and return an empty string. The line above illustrates how that solves the isDirty calculation of Stages.
+                        </p>
                         <br />
                         <hr />
                         <br />
