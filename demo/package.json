@@ -12,7 +12,9 @@
   "author": "Fredi Bach",
   "license": "ISC",
   "dependencies": {
+    "@lexical/react": "^0.7.6",
     "axios": "^0.26.0",
+    "lexical": "^0.7.6",
     "next": "^12.1.0",
     "react": "^17.0.2",
     "react-beautiful-dnd": "^13.1.1",

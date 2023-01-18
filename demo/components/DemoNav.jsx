@@ -189,6 +189,11 @@ const DemoNav = () => {
                         <MenuItem active={router.pathname === "/sparouter"}>SPA Router</MenuItem>
                     </Link>
                 </StyledLi>
+                <StyledLi>
+                    <Link href="/wysiwyg">
+                        <MenuItem active={router.pathname === "/wysiwyg"}>WYSIWYG</MenuItem>
+                    </Link>
+                </StyledLi>
             </ul>  
         </div>
     );

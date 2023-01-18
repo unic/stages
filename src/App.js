@@ -1,6 +1,6 @@
 import React, { useState, Fragment } from "react";
 import { Form } from "./lib/form";
-import { Stages, HashRouter } from "./lib/stages";
+import { Stages, HashRouter, Debugger } from "./lib/stages";
 import fields from "./lib/fieldsets/plain";
 
 export const getStateFromLocalStorage = () => {
@@ -109,190 +109,194 @@ function App() {
     */
 
     return (
-        <Form
-            id="basics"
-            data={data}
-            validateOn={["change", "blur", "action"]}
-            customRuleHandlers={{
-                disallowOddNumbers: ({ fieldValueCombos, fieldValidationData, valueRules, get }) => {
-                    // "age": { "": { disallowOddNumbers: true } }
-                    let ruleConformsToData = true;
+        <>
+            <Debugger />
+            <Form
+                id="basics"
+                data={data}
+                validateOn={["change", "blur", "action"]}
+                customRuleHandlers={{
+                    disallowOddNumbers: ({ fieldValueCombos, fieldValidationData, valueRules, get }) => {
+                        // "age": { "": { disallowOddNumbers: true } }
+                        let ruleConformsToData = true;
 
-                    if (valueRules.disallowOddNumbers) {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            fieldValidationData.forEach(d => {
-                                const value = get(d, fieldValueCombo[0]);
-                                if (value && value % 2 === 1) ruleConformsToData = false;
+                        if (valueRules.disallowOddNumbers) {
+                            fieldValueCombos.forEach(fieldValueCombo => {
+                                fieldValidationData.forEach(d => {
+                                    const value = get(d, fieldValueCombo[0]);
+                                    if (value && value % 2 === 1) ruleConformsToData = false;
+                                });
                             });
-                        });
-                    }
-
-                    return ruleConformsToData;
-                }
-            }}
-            config={{
-                fields: () => {
-                    const fieldConfig = [
-                        {
-                            id: "field1",
-                            type: "text",
-                            label: "Default Test",
-                            placeholder: ["Placeholder 1", "Placeholder 2", "Placeholder 3"]
-                        },
-                        () => {
-                            return {
-                                id: "field2",
-                                type: "text",
-                                label: "Default Test 2"
-                            };
-                        },
-                        {
-                            id: "teams",
-                            type: "collection",
-                            init: true,
-                            fields: [
-                                {
-                                    id: "nr",
-                                    type: "number",
-                                    label: "Nr.",
-                                    precision: 2,
-                                    isUnique: true
-                                },
-                                {
-                                    id: "name",
-                                    type: "text",
-                                    label: "Name"
-                                }
-                            ]
-                        },
-                        {
-                            id: "players",
-                            type: "collection",
-                            init: true,
-                            rules: {
-                                "position": {
-                                    "goalkeeper": { exactCount: 1 }
-                                },
-                                "spending": { "": { disallowOddNumbers: true } },
-                                "prename,lastname": { "": { isUnique: true } }
-                            },
-                            fields: [
-                                {
-                                    id: "prename",
-                                    type: "text",
-                                    label: "Prename"
-                                },
-                                {
-                                    id: "lastname",
-                                    type: "text",
-                                    label: "Lastname"
-                                },
-                                {
-                                    id: "spending",
-                                    type: "text",
-                                    label: "Spending"
-                                },
-                                {
-                                    id: "income",
-                                    type: "text",
-                                    label: "Income"
-                                },
-                                {
-                                    id: "position",
-                                    type: "radio",
-                                    label: "Position",
-                                    options: [
-                                        { value: "goalkeeper", text: "Goalkeeper" },
-                                        { value: "defender", text: "Defender" },
-                                        { value: "midfield", text: "Midfield" },
-                                        { value: "striker", text: "Striker" }
-                                    ]
-                                },
-                                {
-                                    id: "team",
-                                    type: "select",
-                                    label: "Team",
-                                    computedOptions: {
-                                        source: "teams",
-                                        initWith: [
-                                            { value: "", text: "Please select ..." }
-                                        ],
-                                        map: (item) => {
-                                            return {
-                                                value: item.nr,
-                                                text: item.name
-                                            };
-                                        },
-                                        sort: (a, b) => a.name > b.name ? 1 : b.name > a.name ? -1 : 0,
-                                        filter: (item) => !!item.nr
-                                    }
-                                }
-                            ]
                         }
-                    ];
 
-                    return fieldConfig;
-                }
-            }}
-            enableUndo
-            render={({ actionProps, fieldProps }) => (
-                <div>
-                    <button onClick={actionProps.handleUndo}>Undo</button>
-                    <button onClick={actionProps.handleRedo}>Redo</button>
+                        return ruleConformsToData;
+                    }
+                }}
+                config={{
+                    fields: () => {
+                        const fieldConfig = [
+                            {
+                                id: "field1",
+                                type: "text",
+                                label: "Default Test",
+                                placeholder: ["Placeholder 1", "Placeholder 2", "Placeholder 3"],
+                                cleanUp: value => value.trim()
+                            },
+                            () => {
+                                return {
+                                    id: "field2",
+                                    type: "text",
+                                    label: "Default Test 2"
+                                };
+                            },
+                            {
+                                id: "teams",
+                                type: "collection",
+                                init: true,
+                                fields: [
+                                    {
+                                        id: "nr",
+                                        type: "number",
+                                        label: "Nr.",
+                                        precision: 2,
+                                        isUnique: true
+                                    },
+                                    {
+                                        id: "name",
+                                        type: "text",
+                                        label: "Name"
+                                    }
+                                ]
+                            },
+                            {
+                                id: "players",
+                                type: "collection",
+                                init: true,
+                                rules: {
+                                    "position": {
+                                        "goalkeeper": { exactCount: 1 }
+                                    },
+                                    "spending": { "": { disallowOddNumbers: true } },
+                                    "prename,lastname": { "": { isUnique: true } }
+                                },
+                                fields: [
+                                    {
+                                        id: "prename",
+                                        type: "text",
+                                        label: "Prename"
+                                    },
+                                    {
+                                        id: "lastname",
+                                        type: "text",
+                                        label: "Lastname"
+                                    },
+                                    {
+                                        id: "spending",
+                                        type: "text",
+                                        label: "Spending"
+                                    },
+                                    {
+                                        id: "income",
+                                        type: "text",
+                                        label: "Income"
+                                    },
+                                    {
+                                        id: "position",
+                                        type: "radio",
+                                        label: "Position",
+                                        options: [
+                                            { value: "goalkeeper", text: "Goalkeeper" },
+                                            { value: "defender", text: "Defender" },
+                                            { value: "midfield", text: "Midfield" },
+                                            { value: "striker", text: "Striker" }
+                                        ]
+                                    },
+                                    {
+                                        id: "team",
+                                        type: "select",
+                                        label: "Team",
+                                        computedOptions: {
+                                            source: "teams",
+                                            initWith: [
+                                                { value: "", text: "Please select ..." }
+                                            ],
+                                            map: (item) => {
+                                                return {
+                                                    value: item.nr,
+                                                    text: item.name
+                                                };
+                                            },
+                                            sort: (a, b) => a.name > b.name ? 1 : b.name > a.name ? -1 : 0,
+                                            filter: (item) => !!item.nr
+                                        }
+                                    }
+                                ]
+                            }
+                        ];
+
+                        return fieldConfig;
+                    }
+                }}
+                enableUndo
+                render={({ actionProps, fieldProps }) => (
                     <div>
-                        <h2>Teams:</h2>
-                        <div>{fieldProps.fields.field1}</div><div>{fieldProps.fields.field2}</div>
+                        <button onClick={actionProps.handleUndo}>Undo</button>
+                        <button onClick={actionProps.handleRedo}>Redo</button>
+                        <div>
+                            <h2>Teams:</h2>
+                            <div>{fieldProps.fields.field1}</div><div>{fieldProps.fields.field2}</div>
+                            <br /><br />
+                            <fieldset>
+                                {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
+                                    <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                                        <div className="pure-g" style={{ display: "flex", gap: "4px 16px" }}>
+                                            <div className="pure-u-1-3">{subFields.nr}</div>
+                                            <div className="pure-u-1-3">{subFields.name}</div>
+                                            <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
+                                        </div>
+                                    </div>)
+                                ) : null}
+                                <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
+                            </fieldset>
+                            <h2>Players:</h2>
+                            <fieldset>
+                                {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
+                                    <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                                        <div className="pure-g" style={{ display: "flex", gap: "4px 16px" }}>
+                                            <div className="pure-u-1-3">{subFields.prename}</div>
+                                            <div className="pure-u-1-3">{subFields.lastname}</div>
+                                            <div className="pure-u-1-3">{subFields.team}</div>
+                                            <div className="pure-u-1-3">{subFields.spending}</div>
+                                            <div className="pure-u-1-3">{subFields.income}</div>
+                                            <div className="pure-u-1-3">{subFields.position}</div>
+                                            <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
+                                        </div>
+                                    </div>)
+                                ) : null}
+                                <button type="button" onClick={() => fieldProps.onCollectionAction("players", "add")}>+</button>
+                                {fieldProps.errors.players ? <div style={{ color: "red" }}>Error: {fieldProps.errors.players.errorCode}!</div> : null}
+                            </fieldset>
+                        </div>
                         <br /><br />
-                        <fieldset>
-                            {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
-                                <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
-                                    <div className="pure-g" style={{ display: "flex", gap: "4px 16px" }}>
-                                        <div className="pure-u-1-3">{subFields.nr}</div>
-                                        <div className="pure-u-1-3">{subFields.name}</div>
-                                        <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
-                                    </div>
-                                </div>)
-                            ) : null}
-                            <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
-                        </fieldset>
-                        <h2>Players:</h2>
-                        <fieldset>
-                            {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
-                                <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
-                                    <div className="pure-g" style={{ display: "flex", gap: "4px 16px" }}>
-                                        <div className="pure-u-1-3">{subFields.prename}</div>
-                                        <div className="pure-u-1-3">{subFields.lastname}</div>
-                                        <div className="pure-u-1-3">{subFields.team}</div>
-                                        <div className="pure-u-1-3">{subFields.spending}</div>
-                                        <div className="pure-u-1-3">{subFields.income}</div>
-                                        <div className="pure-u-1-3">{subFields.position}</div>
-                                        <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
-                                    </div>
-                                </div>)
-                            ) : null}
-                            <button type="button" onClick={() => fieldProps.onCollectionAction("players", "add")}>+</button>
-                            {fieldProps.errors.players ? <div style={{ color: "red" }}>Error: {fieldProps.errors.players.errorCode}!</div> : null}
-                        </fieldset>
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                        {" "}
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(() => {}, false, true)}
+                        >
+                            Reset
+                        </button>
                     </div>
-                    <br /><br />
-                    <button
-                        type="button"
-                        onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
-                    >
-                        Submit
-                    </button>
-                    {" "}
-                    <button
-                        type="button"
-                        onClick={() => actionProps.handleActionClick(() => {}, false, true)}
-                    >
-                        Reset
-                    </button>
-                </div>
-            )}
-            fields={fields}
-            onChange={handleChange}
-        />
+                )}
+                fields={fields}
+                onChange={handleChange}
+            />
+        </>
     );
 
     /*
