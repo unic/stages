@@ -380,10 +380,12 @@ const LexicalInput = ({
                         margin-bottom: 1px;
                         background: #fff;
                         padding: 4px;
-                        border: 1px #bbb solid;
+                        border: 1px #ccc solid;
                         border-top-left-radius: 10px;
                         border-top-right-radius: 10px;
+                        border-bottom: none;
                         vertical-align: middle;
+                        background: #f8f8f8;
                       }
                       
                       .toolbar button.toolbar-item {
