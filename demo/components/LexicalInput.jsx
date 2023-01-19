@@ -1,10 +1,15 @@
-import { $getRoot, $getSelection } from 'lexical';
 import React, { useEffect } from 'react';
 import Head from 'next/head';
 
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { ListItemNode, ListNode } from "@lexical/list";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -140,10 +145,18 @@ const LexicalInput = ({
     };
 
     const initialConfig = {
-        namespace: 'MyEditor', 
+        namespace: id, 
         theme,
         onError,
-        editorState: value
+        editorState: value,
+        nodes: [
+          HeadingNode,
+          ListNode,
+          ListItemNode,
+          QuoteNode,
+          AutoLinkNode,
+          LinkNode
+        ]
     };
     
     return (
@@ -335,28 +348,16 @@ const LexicalInput = ({
                       
                       .editor-heading-h1 {
                         font-size: 24px;
-                        color: rgb(5, 5, 5);
-                        font-weight: 400;
-                        margin: 0;
-                        margin-bottom: 12px;
-                        padding: 0;
                       }
                       
                       .editor-heading-h2 {
-                        font-size: 15px;
-                        color: rgb(101, 103, 107);
-                        font-weight: 700;
-                        margin: 0;
-                        margin-top: 10px;
-                        padding: 0;
-                        text-transform: uppercase;
+                        font-size: 18px;
                       }
                       
                       .editor-quote {
                         margin: 0;
                         margin-left: 20px;
                         font-size: 15px;
-                        color: rgb(101, 103, 107);
                         border-left-color: rgb(206, 208, 212);
                         border-left-width: 4px;
                         border-left-style: solid;
@@ -818,6 +819,9 @@ const LexicalInput = ({
                                     placeholder={<Placeholder />}
                                     ErrorBoundary={LexicalErrorBoundary}
                                 />
+                                <AutoFocusPlugin />
+                                <ListPlugin />
+                                <LinkPlugin />
                                 <OnChangePlugin onChange={onEditorChange} />
                                 <HistoryPlugin />
                                 <MyCustomAutoFocusPlugin />
