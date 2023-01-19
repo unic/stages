@@ -36,7 +36,6 @@ const LowPriority = 1;
 const supportedBlockTypes = new Set([
   "paragraph",
   "quote",
-  "code",
   "h1",
   "h2",
   "ul",
@@ -44,7 +43,6 @@ const supportedBlockTypes = new Set([
 ]);
 
 const blockTypeToBlockName = {
-  code: "Code Block",
   h1: "Large Heading",
   h2: "Small Heading",
   h3: "Heading",
@@ -68,8 +66,9 @@ function positionEditorElement(editor, rect) {
   } else {
     editor.style.opacity = "1";
     editor.style.top = `${rect.top + rect.height + window.pageYOffset + 10}px`;
+    const leftPos = rect.left + window.pageXOffset - editor.offsetWidth / 2 + rect.width / 2;
     editor.style.left = `${
-      rect.left + window.pageXOffset - editor.offsetWidth / 2 + rect.width / 2
+      leftPos < 10 ? 10 : leftPos
     }px`;
   }
 }
@@ -397,11 +396,6 @@ function BlockOptionsDropdownList({
         <span className="text">Quote</span>
         {blockType === "quote" && <span className="active" />}
       </button>
-      <button className="item" onClick={formatCode}>
-        <span className="icon code" />
-        <span className="text">Code Block</span>
-        {blockType === "code" && <span className="active" />}
-      </button>
     </div>
   );
 }
@@ -584,15 +578,6 @@ export default function ToolbarPlugin() {
             aria-label="Format Strikethrough"
           >
             <i className="format strikethrough" />
-          </button>
-          <button
-            onClick={() => {
-              editor.dispatchCommand(FORMAT_TEXT_COMMAND, "code");
-            }}
-            className={"toolbar-item spaced " + (isCode ? "active" : "")}
-            aria-label="Insert Code"
-          >
-            <i className="format code" />
           </button>
           <button
             onClick={insertLink}

@@ -1,18 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Head from 'next/head';
 
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import ToolbarPlugin from './LexicalToolbarPlugin';
 
@@ -120,21 +117,6 @@ const LexicalInput = ({
         } else {
             onChange(JSON.stringify(editorState));
         }
-    };
-    
-    // Lexical React plugins are React components, which makes them
-    // highly composable. Furthermore, you can lazy load plugins if
-    // desired, so you don't pay the cost for plugins until you
-    // actually use them.
-    function MyCustomAutoFocusPlugin() {
-        const [editor] = useLexicalComposerContext();
-    
-        useEffect(() => {
-            // Focus the editor when the effect fires!
-            editor.focus();
-        }, [editor]);
-    
-        return null;
     };
     
     // Catch any errors that occur during Lexical updates and log them
@@ -806,7 +788,7 @@ const LexicalInput = ({
                       }                      
                 `}</style>
             </Head>
-            <div id={id}>
+            <div key={id}>
                 {label ? <label htmlFor={id}><h2>{label}{isRequired ? " *" : ""}</h2></label> : null}
                 {secondaryText ? <p>{secondaryText}</p> : null}
                 <div>
@@ -819,12 +801,9 @@ const LexicalInput = ({
                                     placeholder={<Placeholder />}
                                     ErrorBoundary={LexicalErrorBoundary}
                                 />
-                                <AutoFocusPlugin />
                                 <ListPlugin />
                                 <LinkPlugin />
                                 <OnChangePlugin onChange={onEditorChange} />
-                                <HistoryPlugin />
-                                <MyCustomAutoFocusPlugin />
                             </div>
                         </div>
                     </LexicalComposer>
