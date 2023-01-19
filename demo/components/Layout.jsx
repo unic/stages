@@ -22,6 +22,11 @@ const Layout = ({ children }) => {
                 <div style={{ maxWidth: "960px" }}>
                     {children}
                 </div>
+                <div style={{ padding: "16px 0", marginTop: "64px", fontSize: "12px", letterSpacing: "1px" }}>
+                    - - -
+                    <br />
+                    (c) 2023 by Fredi Bach :  <a href="https://unic.com" style={{ color: "#000" }}>Unic</a> : {"  "} <a href="https://github.com/unic/stages" style={{ color: "#000" }}>Github</a>
+                </div>
             </div>
         </> 
     );
