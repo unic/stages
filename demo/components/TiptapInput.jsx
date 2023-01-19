@@ -30,14 +30,11 @@ const TiptapInput = (
 ) => {
   const editor = useEditor({
     extensions: [StarterKit],
-    content: `
-        <p>
-          Try to select <em>this text</em> to see what we call the bubble menu.
-        </p>
-        <p>
-          Neat, isn’t it? Add an empty paragraph to see the floating menu.
-        </p>
-      `,
+    content: value ? JSON.parse(value) : "",
+    onUpdate: ({ editor }) => {
+        const json = editor.getJSON();
+        onChange(JSON.stringify(json));
+    },
   });
 
   return (
