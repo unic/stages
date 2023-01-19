@@ -1,10 +1,16 @@
 import React, { useState } from "react";
 import { Form, plainFields as fields } from "react-stages";
 import Layout from "../components/Layout";
-import WysiwygInput from "../components/WysiwygInput";
+import LexicalInput from "../components/LexicalInput";
+import TiptapInput from "../components/TiptapInput";
 
-fields.wysiwyg = {
-    component: WysiwygInput,
+fields.lexical = {
+    component: LexicalInput,
+    isValid: () => true
+};
+
+fields.tiptap = {
+    component: TiptapInput,
     isValid: () => true
 };
 
@@ -20,23 +26,33 @@ function FormPage() {
                     fields: () => {
                         return [
                             {
-                                id: "wysiwyg",
+                                id: "lexical",
                                 label: "Lexical WYSIWYG Input Demo (WIP)",
                                 secondaryText: "Example of a WYSIWYG (Lexical) input used inside Stages.",
-                                type: "wysiwyg"
+                                type: "lexical"
+                            },
+                            {
+                                id: "tiptap",
+                                label: "Tiptap WYSIWYG Input Demo (WIP)",
+                                secondaryText: "Another popular editor, Tiptap. Select some text and see what happens.",
+                                type: "tiptap"
                             }
                         ]
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <div style={{ borderBottom: fieldProps.dirtyFields.wysiwyg ? "4px #f30 solid" : "4px #eee solid", paddingBottom: "16px" }}>
-                            {fieldProps.fields.wysiwyg}
+                        <div style={{ borderBottom: fieldProps.dirtyFields.lexical ? "4px #f30 solid" : "4px #eee solid", paddingBottom: "16px" }}>
+                            {fieldProps.fields.lexical}
                         </div>
                         <p>
                             As Lexical is initially firing an onChange with initialized empty content, you need to capture that 
                             and return an empty string. The line above illustrates how that solves the isDirty calculation of Stages.
                         </p>
+                        <br />
+                        <div style={{ borderBottom: fieldProps.dirtyFields.tiptap ? "4px #f30 solid" : "4px #eee solid", paddingBottom: "16px" }}>
+                            {fieldProps.fields.tiptap}
+                        </div>
                         <br />
                         <hr />
                         <br />

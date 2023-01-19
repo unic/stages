@@ -9,7 +9,7 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
-import ToolbarPlugin from './WysiwygToolbarPlugin';
+import ToolbarPlugin from './LexicalToolbarPlugin';
 
 function Placeholder() {
     return (
@@ -19,7 +19,7 @@ function Placeholder() {
     );
 }
 
-const WysiwygInput = ({
+const LexicalInput = ({
     id,
     label,
     value,
@@ -838,4 +838,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default WysiwygInput;
+export default LexicalInput;
