@@ -1,6 +1,10 @@
 import React, { useState } from "react";
-import { Form, plainFields as fields } from "react-stages";
+import { Form } from "react-stages";
+import fields from "../components/demofields";
 import axios from "axios";
+import Paragraph from "../components/demofields/parts/Paragraph";
+import Heading from "../components/demofields/parts/Heading";
+import HR from "../components/HR";
 
 import Layout from "../components/Layout";
 

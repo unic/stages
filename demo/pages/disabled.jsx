@@ -1,6 +1,10 @@
 import React, { useState } from "react";
-import { Form, plainFields as fields } from "react-stages";
+import { Form } from "react-stages";
+import fields from "../components/demofields";
 import Layout from "../components/Layout";
+import Paragraph from "../components/demofields/parts/Paragraph";
+import Heading from "../components/demofields/parts/Heading";
+import HR from "../components/HR";
 
 function FormPage() {
     const [data, setData] = useState({});
@@ -14,30 +18,43 @@ function FormPage() {
                     fields: () => {
                         return [
                             {
-                                id: "text",
-                                label: "Text",
-                                type: "text"
+                                id: "email",
+                                label: "Email",
+                                type: "email",
+                                isRequired: true
                             },
                             {
-                                id: "duration",
-                                label: "Cookie löschen nach",
+                                id: "password",
+                                label: "Password",
+                                type: "password",
+                                isRequired: true
+                            },
+                            {
+                                id: "signedIn",
+                                label: "Cookie behaviour?",
+                                secondaryText: "stay signed in",
+                                type: "checkbox"
+                            },
+                            {
+                                id: "country",
+                                label: "Country:",
                                 type: "select",
                                 options: [
-                                    { value: "", text: "Bitte wählen ..." },
-                                    { value: "7", text: "1 Woche" },
-                                    { value: "31", text: "1 Monat" },
-                                    { value: "365", text: "1 Jahr" }
+                                    { value: "", text: "Please select ..." },
+                                    { value: "CH", text: "Switzerland" },
+                                    { value: "LI", text: "Liechtenstein" },
+                                    { value: "AT", text: "Austria" },
+                                    { value: "DE", text: "Germany" }
                                 ]
                             },
                             {
-                                id: "onTheRadio",
-                                label: "What song?",
+                                id: "gender",
+                                label: "Gender:",
                                 type: "radio",
                                 options: [
-                                    { value: "", text: "Bitte wählen ..." },
-                                    { value: "A", text: "Lose Yourself" },
-                                    { value: "B", text: "Stan" },
-                                    { value: "C", text: "8 Mile" }
+                                    { value: "", text: "Please select ..." },
+                                    { value: "male", text: "Male" },
+                                    { value: "female", text: "Female" }
                                 ]
                             }
                         ]
@@ -46,19 +63,24 @@ function FormPage() {
                 render={({ actionProps, fieldProps }) => (
                     <>
                         <div>
-                            <p>
+                            <Heading>Disabled Form</Heading>
+                            <Paragraph>
                                 A simple example of a disabled form. Useful for example to prevent user inputs while sending data. 
                                 All fields in the form will be set to isDisabled, no matter what the config says.
-                            </p>
+                            </Paragraph>
                             <br />
-                            {fieldProps.fields.text}
+                            {fieldProps.fields.email}
                             <br />
-                            {fieldProps.fields.duration}
+                            {fieldProps.fields.password}
                             <br />
-                            {fieldProps.fields.onTheRadio}
+                            {fieldProps.fields.signedIn}
+                            <br />
+                            {fieldProps.fields.country}
+                            <br />
+                            {fieldProps.fields.gender}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

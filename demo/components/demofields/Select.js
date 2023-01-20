@@ -1,4 +1,8 @@
 import React from "react";
+import Label from "./parts/Label";
+import FieldWrapper from "./parts/FieldWrapper";
+import PathInfo from "./parts/PathInfo";
+import Error from "./parts/Error";
 
 /*
 
@@ -22,6 +26,7 @@ Optional:
 
 const Select = ({
     id,
+    type,
     label,
     value,
     options,
@@ -32,6 +37,8 @@ const Select = ({
     placeholder,
     isRequired,
     isDisabled,
+    isDirty,
+    hasFocus,
     prefix,
     suffix,
     secondaryText,
@@ -39,8 +46,9 @@ const Select = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <div id={id}>
-            {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
+        <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus}>
+            {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
+            <PathInfo id={id} type={type} />
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <select
@@ -58,6 +66,7 @@ const Select = ({
                     onFocus={e => {
                         if (typeof onFocus === "function") onFocus();
                     }}
+                    style={{ padding: "4px 0", minWidth: "220px" }}
                 >
                     {options.map(option => <option value={option.value} key={option.value} disabled={option.disabled ? true : null}>{option.text}</option>)}
                 </select>
@@ -65,9 +74,9 @@ const Select = ({
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
             {error ? errorRenderer ? errorRenderer(error) : (
-                <div style={{ color: "red" }}>Please fill out this field!</div>
+                <Error text="Please fill out this field!" error={error} />
             ) : null}
-        </div>
+        </FieldWrapper>
     );
 }
 

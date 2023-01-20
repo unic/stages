@@ -1,7 +1,11 @@
 import React, { useState } from "react";
-import { Form, plainFields as fields } from "react-stages";
+import { Form } from "react-stages";
+import fields from "../components/demofields";
 import Layout from "../components/Layout";
 import LexicalInput from "../components/LexicalInput";
+import Paragraph from "../components/demofields/parts/Paragraph";
+import Heading from "../components/demofields/parts/Heading";
+import HR from "../components/HR";
 
 fields.lexical = {
     component: LexicalInput,

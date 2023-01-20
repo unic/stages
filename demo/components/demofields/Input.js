@@ -1,6 +1,8 @@
 import React from "react";
 import Label from "./parts/Label";
 import FieldWrapper from "./parts/FieldWrapper";
+import PathInfo from "./parts/PathInfo";
+import Error from "./parts/Error";
 
 /*
 
@@ -33,6 +35,8 @@ const Input = ({
     placeholder,
     isRequired,
     isDisabled,
+    isDirty,
+    hasFocus,
     prefix,
     suffix,
     secondaryText,
@@ -41,8 +45,9 @@ const Input = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <FieldWrapper id={id} isDirty={props.isDirty}>
-            {label ? <Label id={id} label={label} isRequired={isRequired} /> : null}
+        <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus}>
+            {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
+            <PathInfo id={id} type={type} />
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <input
@@ -61,12 +66,13 @@ const Input = ({
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();
                     }}
+                    style={{ padding: "4px 8px", minWidth: "200px" }}
                 />
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
             {error ? errorRenderer ? errorRenderer(error) : (
-                <div style={{ color: "red" }}>Please fill out this field!</div>
+                <Error text="Please fill out this field!" error={error} />
             ) : null}
         </FieldWrapper>
     );

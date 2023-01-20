@@ -1,4 +1,8 @@
 import React, { Fragment } from "react";
+import Label from "./parts/Label";
+import FieldWrapper from "./parts/FieldWrapper";
+import PathInfo from "./parts/PathInfo";
+import Error from "./parts/Error";
 
 /*
 
@@ -22,6 +26,7 @@ Optional:
 
 const RadioGroup = ({
     id,
+    type,
     label,
     value,
     options,
@@ -31,6 +36,8 @@ const RadioGroup = ({
     error,
     isRequired,
     isDisabled,
+    isDirty,
+    hasFocus,
     prefix,
     suffix,
     secondaryText,
@@ -38,13 +45,14 @@ const RadioGroup = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <div id={id}>
-            {label ? <label>{label}{isRequired ? " *" : ""}</label> : null}
+        <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus}>
+            {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
+            <PathInfo id={id} type={type} />
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 {options.map(option => {
                     return (
-                        <Fragment key={`${id}-${option.value}`}>
+                        <span key={`${id}-${option.value}`} style={{ marginRight: "8px", color: isDisabled ? "#999" : "#000" }}>
                             <input
                                 type="radio"
                                 name={id}
@@ -63,18 +71,19 @@ const RadioGroup = ({
                                     if (typeof onFocus === "function") onFocus();
                                 }}
                             />
+                            {" "}
                             <label htmlFor={`${id}-${option.value}`}>{option.text}</label>
                             {" "}
-                        </Fragment>
+                        </span>
                     );
                 })}
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
             {error ? errorRenderer ? errorRenderer(error) : (
-                <div style={{ color: "red" }}>Please fill out this field!</div>
+                <Error text="Please fill out this field!" error={error} />
             ) : null}
-        </div>
+        </FieldWrapper>
     );
 };
 

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { Form, plainFields as fields } from "react-stages";
+import { Form } from "react-stages";
+import fields from "../components/demofields";
 import Layout from "../components/Layout";
+import Paragraph from "../components/demofields/parts/Paragraph";
+import Heading from "../components/demofields/parts/Heading";
+import HR from "../components/HR";
 
 const Collection = ({ title, description, collectionKey, fieldProps, errors, addMoveButtons, addDragAndDrop }) => {
     if (addDragAndDrop && process.browser) {

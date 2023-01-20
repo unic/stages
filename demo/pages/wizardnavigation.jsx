@@ -1,6 +1,10 @@
 import React, { Fragment } from "react";
-import { Stages, Form, Actions, Progression, HashRouter, plainFields as fields } from "react-stages";
+import { Stages, Form, Actions, Progression, HashRouter } from "react-stages";
+import fields from "../components/demofields";
 import Layout from "../components/Layout";
+import Paragraph from "../components/demofields/parts/Paragraph";
+import Heading from "../components/demofields/parts/Heading";
+import HR from "../components/HR";
 
 import Navigation from "../components/WizardNavigation";
 
