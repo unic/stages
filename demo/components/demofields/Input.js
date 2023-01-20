@@ -1,4 +1,6 @@
 import React from "react";
+import Label from "./parts/Label";
+import FieldWrapper from "./parts/FieldWrapper";
 
 /*
 
@@ -31,7 +33,6 @@ const Input = ({
     placeholder,
     isRequired,
     isDisabled,
-    hasFocus,
     prefix,
     suffix,
     secondaryText,
@@ -40,8 +41,8 @@ const Input = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <div id={id}>
-            {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
+        <FieldWrapper id={id} isDirty={props.isDirty}>
+            {label ? <Label id={id} label={label} isRequired={isRequired} /> : null}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <input
@@ -67,7 +68,7 @@ const Input = ({
             {error ? errorRenderer ? errorRenderer(error) : (
                 <div style={{ color: "red" }}>Please fill out this field!</div>
             ) : null}
-        </div>
+        </FieldWrapper>
     );
 }
 

@@ -1141,6 +1141,7 @@ const Form = ({
                         error: errors[path],
                         isDirty: !!dirtyFields[path],
                         isDisabled: isDisabled || fieldConfig.isDisabled,
+                        hasFocus: !!(focusedField && focusedField === path),
                         onChange: value => handleChange(path, value),
                         onFocus: () => handleFocus(path),
                         onBlur: () => handleBlur(path)

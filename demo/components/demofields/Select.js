@@ -20,10 +20,11 @@ Optional:
 
 */
 
-const Input = ({
+const Select = ({
     id,
     label,
     value,
+    options,
     onChange,
     onBlur,
     onFocus,
@@ -31,11 +32,9 @@ const Input = ({
     placeholder,
     isRequired,
     isDisabled,
-    hasFocus,
     prefix,
     suffix,
     secondaryText,
-    type,
     errorRenderer,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
@@ -44,23 +43,24 @@ const Input = ({
             {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
-                <input
+                <select
                     name={id}
-                    value={value || ""}
+                    value={typeof value === "undefined" ? "" : value}
                     placeholder={placeholder}
-                    type={type || "text"}
                     disabled={!!isDisabled}
                     required={!!isRequired}
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
                     }}
-                    onFocus={e => {
-                        if (typeof onFocus === "function") onFocus();
-                    }}
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();
                     }}
-                />
+                    onFocus={e => {
+                        if (typeof onFocus === "function") onFocus();
+                    }}
+                >
+                    {options.map(option => <option value={option.value} key={option.value} disabled={option.disabled ? true : null}>{option.text}</option>)}
+                </select>
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
@@ -76,4 +76,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default Input;
+export default Select;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Form, plainFields as fields } from "react-stages";
+import { Form } from "react-stages";
+import fields from "../components/demofields";
 import Layout from "../components/Layout";
 
 function FormPage() {
