@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import Paragraph from "../components/demofields/parts/Paragraph";
 import Heading from "../components/demofields/parts/Heading";
 import HR from "../components/HR";
+import Fieldset from "../components/demofields/parts/Fieldset";
 
 function FormPage() {
     const [data, setData] = useState({});
@@ -88,35 +89,35 @@ function FormPage() {
                         <div>
                             {fieldProps.fields.field}
                             <br />
-                            <fieldset>
+                            <Fieldset>
                                 {fieldProps.fields.coords.lat}
                                 <br />
                                 {fieldProps.fields.coords.lng}
-                            </fieldset>
+                            </Fieldset>
                             <br />
-                            <fieldset>
+                            <Fieldset>
                                 {fieldProps.fields.mygroup.field1}
                                 <br />
                                 {fieldProps.fields.mygroup.field2}
                                 <br />
-                                <fieldset>
+                                <Fieldset>
                                     {fieldProps.fields.mygroup.coords.lat}
                                     <br />
                                     {fieldProps.fields.mygroup.coords.lng}
-                                </fieldset>
+                                </Fieldset>
                                 <br />
-                                <fieldset>
+                                <Fieldset>
                                     {fieldProps.fields.mygroup.mysubgroup.field1}
                                     <br />
                                     {fieldProps.fields.mygroup.mysubgroup.field2}
                                     <br />
                                     {fieldProps.fields.mygroup.mysubgroup.coords ? (
                                         <>
-                                            <fieldset>
+                                            <Fieldset>
                                                 {fieldProps.fields.mygroup.mysubgroup.coords.lng}
                                                 <br />
                                                 {fieldProps.fields.mygroup.mysubgroup.coords.lat}
-                                            </fieldset>
+                                            </Fieldset>
                                             <br />
                                         </>
                                     ) : null}
@@ -130,8 +131,8 @@ function FormPage() {
                                             Remove Coordinate Fields
                                         </button>
                                     ) : null}
-                                </fieldset>
-                            </fieldset>
+                                </Fieldset>
+                            </Fieldset>
                         </div>
                         <br />
                         <HR isDirty={fieldProps.isDirty} />
