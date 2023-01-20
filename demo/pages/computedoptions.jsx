@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import Paragraph from "../components/demofields/parts/Paragraph";
 import Heading from "../components/demofields/parts/Heading";
 import HR from "../components/HR";
+import Fieldset from "../components/demofields/parts/Fieldset";
 
 function FormPage() {
     const [data, setData] = useState({
@@ -88,7 +89,7 @@ function FormPage() {
                             team select in the second collection.
                         </Paragraph>
                         <Heading>Players:</Heading>
-                        <fieldset>
+                        <Fieldset>
                             {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
                                 <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                                     <div className="pure-g">
@@ -100,10 +101,10 @@ function FormPage() {
                                 </div>)
                             ) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("players", "add")}>+</button>
-                        </fieldset>
+                        </Fieldset>
                         <br />
                         <Heading>Teams:</Heading>
-                        <fieldset>
+                        <Fieldset>
                             {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
                                 <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                                     <div className="pure-g">
@@ -115,7 +116,7 @@ function FormPage() {
                                 </div>)
                             ) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
-                        </fieldset>
+                        </Fieldset>
                         <br />
                         <HR isDirty={fieldProps.isDirty} />
                         <br />

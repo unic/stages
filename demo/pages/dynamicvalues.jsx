@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import Paragraph from "../components/demofields/parts/Paragraph";
 import Heading from "../components/demofields/parts/Heading";
 import HR from "../components/HR";
+import Fieldset from "../components/demofields/parts/Fieldset";
 
 function FormPage() {
     const [data, setData] = useState({price: 2.55});
@@ -102,7 +103,7 @@ function FormPage() {
                         </div>
                         <br />
                         <Paragraph>And you can compute collection item specific data, as well:</Paragraph>
-                        <fieldset>
+                        <Fieldset>
                             {fieldProps.fields.maths ? fieldProps.fields.maths.map((subFields, index) => (
                                 <div key={`math-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                                     <div className="pure-g">
@@ -115,7 +116,7 @@ function FormPage() {
                                 </div>)
                             ) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("maths", "add")}>+</button>
-                        </fieldset>
+                        </Fieldset>
                         <br />
                         <Paragraph>
                             Another special type of dynamic value is a field using the "precision" option, which is very useful for price values. 

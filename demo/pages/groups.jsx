@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import Paragraph from "../components/demofields/parts/Paragraph";
 import Heading from "../components/demofields/parts/Heading";
 import HR from "../components/HR";
+import Fieldset from "../components/demofields/parts/Fieldset";
 
 function FormPage() {
     const [data, setData] = useState({});
@@ -105,22 +106,22 @@ function FormPage() {
                         <div>
                             {fieldProps.fields.field}
                             <br />
-                            <fieldset>
+                            <Fieldset>
                                 {fieldProps.fields.mygroup.field1}
                                 <br />
                                 {fieldProps.fields.mygroup.field2}
                                 <br />
-                                <fieldset>
+                                <Fieldset>
                                     {fieldProps.fields.mygroup.mysubgroup.field1}
                                     <br />
                                     {fieldProps.fields.mygroup.mysubgroup.field2}
-                                </fieldset>
-                            </fieldset>
+                                </Fieldset>
+                            </Fieldset>
                         </div>
                         <Heading>Deeply nested groups and collections</Heading>
                         <Paragraph>An example with a group inside of a collection, which contains another collection. Start adding entries to see the behaviour:</Paragraph>
                         <div>
-                            <fieldset>
+                            <Fieldset>
                                 {fieldProps.fields.deepcollection ? fieldProps.fields.deepcollection.map((subFields, index) => (
                                     <div key={`deepcollection-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                                         <div className="pure-g">
@@ -129,10 +130,10 @@ function FormPage() {
                                         </div>
                                         <br />
                                         <div className="pure-g">
-                                            <fieldset>
+                                            <Fieldset>
                                                 <div className="pure-u-1-3">{subFields.colGroup.field}</div>
                                                 <br /><br />
-                                                <fieldset>
+                                                <Fieldset>
                                                     {subFields.colGroup.subcollection ? subFields.colGroup.subcollection.map((subSubFields, subIndex) => (
                                                         <div key={`subcollection-${subIndex}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                                                             <div className="pure-g">
@@ -143,14 +144,14 @@ function FormPage() {
                                                         </div>)
                                                     ) : null}
                                                     <button type="button" onClick={() => fieldProps.onCollectionAction(`deepcollection[${index}].colGroup.subcollection`, "add")}>+</button>
-                                                </fieldset>
-                                            </fieldset>
+                                                </Fieldset>
+                                            </Fieldset>
                                         </div>
                                         <button type="button" onClick={() => fieldProps.onCollectionAction("deepcollection", "remove", index)}>-</button>
                                     </div>)
                                 ) : null}
                                 <button type="button" onClick={() => fieldProps.onCollectionAction("deepcollection", "add")}>+</button>
-                            </fieldset>
+                            </Fieldset>
                         </div>
                         <br />
                         <HR isDirty={fieldProps.isDirty} />
