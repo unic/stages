@@ -45,9 +45,11 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <p>And some data to the fields.</p>
-                        <p>The undo memory is updated on blur, so change fields between adding data.</p>
-                        <p>Than try out the undo / redo buttons.</p>
+                        <Heading>Undo / Redo</Heading>
+                        <Paragraph>
+                            Add some data to the fields. The undo memory is updated on blur, so change fields between adding data. 
+                            Than try out the undo / redo buttons.
+                        </Paragraph>
                         <div>
                             {fieldProps.fields.field1}
                             <br />
@@ -56,7 +58,7 @@ function FormPage() {
                             {fieldProps.fields.country}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

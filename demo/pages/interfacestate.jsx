@@ -56,11 +56,12 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <p>
+                        <Heading>Interface State</Heading>
+                        <Paragraph>
                             In this demo, we declare the summary as interface state, so that it doesn't show up in the exposed data. 
                             You can check this by opening the debugger and inspect the data. For a comparison, in the "Dynamic Values" 
                             demo, we didn't set this field as interface state, so it shows up in the data as you can check in the debugger.
-                        </p>
+                        </Paragraph>
                         <br />
                         <div className="pure-g">
                             <div className="pure-u-1-3">{fieldProps.fields.field1}</div>
@@ -68,19 +69,19 @@ function FormPage() {
                             <div className="pure-u-1-3">{fieldProps.fields.sum}</div>
                         </div>
                         <br />
-                        <p>
+                        <Paragraph>
                             Another good use for interface state is something like advanced options. Here the "checkbox" to 
                             open the advanced options is interface state and not exposed in the data. You can access it in the render prop with 
                             "fieldProps.interfaceState.advanced".
-                        </p>
+                        </Paragraph>
                         {fieldProps.fields.advanced}
                         {fieldProps.interfaceState.advanced ? (
                             <div>{fieldProps.fields.advancedoption}</div>
                         ) : null}
                         <br />
-                        <p>Again check the data in the debugger. Only the "advancedoption" data is exposed, not the checkbox.</p>
+                        <Paragraph>Again check the data in the debugger. Only the "advancedoption" data is exposed, not the checkbox.</Paragraph>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

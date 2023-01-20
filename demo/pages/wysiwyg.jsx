@@ -25,7 +25,7 @@ function FormPage() {
                         return [
                             {
                                 id: "lexical",
-                                label: "Lexical WYSIWYG Input Demo (WIP)",
+                                label: "Lexical WYSIWYG Input",
                                 secondaryText: "Example of a WYSIWYG (Lexical) input used inside Stages.",
                                 type: "lexical"
                             }
@@ -34,13 +34,17 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <div style={{ borderBottom: fieldProps.dirtyFields.lexical ? "4px #f30 solid" : "4px #eee solid", paddingBottom: "16px" }}>
+                        <Heading>WYSIWYG Editor Integration</Heading>
+                        <Paragraph>Stages makes it easy to integrate complex fields like WYSIWYG editors.</Paragraph>
+                        <div>
                             {fieldProps.fields.lexical}
                         </div>
-                        <p>
+                        <Paragraph>
                             As Lexical is initially firing an onChange with initialized empty content, you need to capture that 
-                            and return an empty string. The line above illustrates how that solves the isDirty calculation of Stages.
-                        </p>
+                            and return an empty string. The line below illustrates how that solves the isDirty calculation of Stages.
+                        </Paragraph>
+                        <br />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

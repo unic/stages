@@ -68,16 +68,17 @@ function AsyncPage() {
                 render={({ actionProps, fieldProps }) => (
                     <>
                         <div>
-                            <p>
+                            <Heading>Dynamic Options</Heading>
+                            <Paragraph>
                                 In this example, the options of the second select are dynamically loaded based on what was choosen in the first select.
-                            </p>
+                            </Paragraph>
                             <br />
                             {fieldProps.fields.post}
                             <br />
                             {fieldProps.fields.comment}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

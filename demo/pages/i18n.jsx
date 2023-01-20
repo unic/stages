@@ -79,6 +79,7 @@ function WizardPage() {
 
     return (
         <Layout>
+            <Heading>i18n (internationalization)</Heading>
             <div>
                 <button type="button" onClick={switchLocale}>Switch locale</button> <span style={{ background: "#f30", color: "#fff", display: "inline-block", padding: "3px 6px" }}>Current locale: {locale}</span>
             </div>

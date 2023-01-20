@@ -435,6 +435,8 @@ function CollectionsPage() {
                 render={({ actionProps, fieldProps }) => (
                     <>
                         <div>
+                            <Heading>Collections</Heading>
+                            <Paragraph>Collections in Stages are first class citizens. They are a very powerful construct and highly configuratable.</Paragraph>
                             <Collection
                                 title="Simple, non required, non initialized collection:"
                                 description="User can add as many entries or as little as he wishes. No minimum or maximum requirements. And no entry is initialized."
@@ -537,7 +539,7 @@ function CollectionsPage() {
                             />
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

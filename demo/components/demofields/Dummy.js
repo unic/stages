@@ -3,6 +3,7 @@ import Label from "./parts/Label";
 import FieldWrapper from "./parts/FieldWrapper";
 import PathInfo from "./parts/PathInfo";
 import Error from "./parts/Error";
+import SecondaryText from "./parts/SecondaryText";
 
 /*
 
@@ -28,7 +29,7 @@ const Dummy = ({
             <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus}>
                 {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
                 <PathInfo id={id} type={type} />
-                {secondaryText ? <div>{secondaryText}</div> : null}
+                {secondaryText ? <SecondaryText isDisabled={isDisabled}>{secondaryText}</SecondaryText> : null}
                 {error ? errorRenderer ? errorRenderer(error) : (
                     <Error text="Please fill out this field!" error={error} />
                 ) : null}

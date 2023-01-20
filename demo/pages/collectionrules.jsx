@@ -121,14 +121,14 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <h3>Collection Rules:</h3>
-                        <p>
+                        <Heading>Collection Rules:</Heading>
+                        <Paragraph>
                             In this demo we have to create a football (soccer) team. There has to be exactly one goal keeper, 
                             at least two defenders, two midfielders and one striker. Defenders and midfielders need to 
                             be the same amout, to make it balanced. And finally, all name combos need to be unique. Try changing 
                             the team positions and click submit to see what happens.
-                        </p>
-                        <h3>Players:</h3>
+                        </Paragraph>
+                        <Heading>Players:</Heading>
                         <fieldset>
                             {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
                                 <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
@@ -142,7 +142,7 @@ function FormPage() {
                             {fieldProps.errors.players ? <div style={{ color: "red" }}>Error, entries not conforming to rules: {fieldProps.errors.players.errorCode}!</div> : null}
                         </fieldset>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

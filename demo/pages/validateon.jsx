@@ -14,11 +14,12 @@ function FormPage() {
     const [data5, setData5] = useState({});
     return (
         <Layout>
-            <p>
+            <Heading>Validate On (Event)</Heading>
+            <Paragraph>
                 You can set different validation behaviours on a field. Below are some examples. You have to interact with the form to experience the different behaviours.
-            </p>
+            </Paragraph>
             <br />
-            <h3>Default: Validate on Form Button Actions (Submit):</h3>
+            <Heading>Default: Validate on Form Button Actions (Submit):</Heading>
             <Form
                 id="form1"
                 data={data1}
@@ -69,7 +70,7 @@ function FormPage() {
                 onChange={payload => setData1(payload)}
             />
             <br /><br />
-            <h3>Validate on blur (and submit):</h3>
+            <Heading>Validate on blur (and submit):</Heading>
             <Form
                 id="form2"
                 data={data2}
@@ -121,7 +122,7 @@ function FormPage() {
                 onChange={payload => setData2(payload)}
             />
             <br /><br />
-            <h3>Validate on change (and submit):</h3>
+            <Heading>Validate on change (and submit):</Heading>
             <Form
                 id="form3"
                 data={data3}
@@ -173,7 +174,7 @@ function FormPage() {
                 onChange={payload => setData3(payload)}
             />
             <br /><br />
-            <h3>Validate on throttled change (and submit):</h3>
+            <Heading>Validate on throttled change (and submit):</Heading>
             <Form
                 id="form4"
                 data={data4}
@@ -225,7 +226,7 @@ function FormPage() {
                 onChange={payload => setData4(payload)}
             />
             <br /><br />
-            <h3>Dynamic validation based on length of input, first only on blur, than after five characters on change:</h3>
+            <Heading>Dynamic validation based on length of input, first only on blur, than after five characters on change:</Heading>
             <Form
                 id="form4"
                 data={data4}
@@ -268,11 +269,11 @@ function FormPage() {
                 onChange={payload => setData4(payload)}
             />
             <br /><br />
-            <h3>Custom validation event:</h3>
-            <p>
+            <Heading>Custom validation event:</Heading>
+            <Paragraph>
                 In this example, the form is validated on change, but the city field, is validated on countryChange, which 
                 is defined as "only validate on change, if country is selected and has less than 3 characters".
-            </p>
+            </Paragraph>
             <Form
                 id="form4"
                 data={data5}

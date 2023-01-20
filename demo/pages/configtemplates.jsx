@@ -80,11 +80,11 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <h3>Config Templates</h3>
-                        <p>
+                        <Heading>Config Templates</Heading>
+                        <Paragraph>
                             In this demo we're using a coordinates group temnplate with lat and lng fields multiple times. 
                             And we're adding the coordinates group dynamically nested deep down the structure.
-                        </p>
+                        </Paragraph>
                         <div>
                             {fieldProps.fields.field}
                             <br />
@@ -134,7 +134,7 @@ function FormPage() {
                             </fieldset>
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

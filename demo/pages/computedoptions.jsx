@@ -8,14 +8,14 @@ import HR from "../components/HR";
 
 function FormPage() {
     const [data, setData] = useState({
-        teams: [
-            { nr: "2332", name: "France" },
-            { nr: "435", name: "Brasil" }
-        ],
         players: [
+            { nr: "14", name: "Pele" },
+            { nr: "10", name: "Maradona" }
+        ],
+        teams: [
             { 
-                name: "Pele",
-                team: "435"
+                name: "Brasil",
+                player: "14"
             }
         ]
     });
@@ -28,7 +28,7 @@ function FormPage() {
                     fields: () => {
                         return [
                             {
-                                id: "teams",
+                                id: "players",
                                 type: "collection",
                                 init: true,
                                 fields: [
@@ -47,7 +47,7 @@ function FormPage() {
                                 ]
                             },
                             {
-                                id: "players",
+                                id: "teams",
                                 type: "collection",
                                 init: true,
                                 fields: [
@@ -57,11 +57,11 @@ function FormPage() {
                                         label: "Name"
                                     },
                                     {
-                                        id: "team",
+                                        id: "player",
                                         type: "select",
-                                        label: "Team",
+                                        label: "Captain",
                                         computedOptions: {
-                                            source: "teams",
+                                            source: "players",
                                             initWith: [
                                                 { value: "", text: "Please select ..." }
                                             ],
@@ -82,33 +82,18 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <h3>Computed Options:</h3>
-                        <p>
+                        <Heading>Computed Options:</Heading>
+                        <Paragraph>
                             In this demo, the teams added in the first collection, are automatically added as options to the 
                             team select in the second collection.
-                        </p>
-                        <h3>Teams:</h3>
+                        </Paragraph>
+                        <Heading>Players:</Heading>
                         <fieldset>
-                            {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
+                            {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
                                 <div key={`team-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
                                     <div className="pure-g">
                                         <div className="pure-u-1-3">{subFields.nr}</div>
                                         <div className="pure-u-1-3">{subFields.name}</div>
-                                    </div>
-                                    <br />
-                                    <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
-                                </div>)
-                            ) : null}
-                            <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
-                        </fieldset>
-                        <br />
-                        <h3>Players:</h3>
-                        <fieldset>
-                            {fieldProps.fields.players ? fieldProps.fields.players.map((subFields, index) => (
-                                <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
-                                    <div className="pure-g">
-                                        <div className="pure-u-1-3">{subFields.name}</div>
-                                        <div className="pure-u-1-3">{subFields.team}</div>
                                     </div>
                                     <br />
                                     <button type="button" onClick={() => fieldProps.onCollectionAction("players", "remove", index)}>-</button>
@@ -117,7 +102,22 @@ function FormPage() {
                             <button type="button" onClick={() => fieldProps.onCollectionAction("players", "add")}>+</button>
                         </fieldset>
                         <br />
-                        <hr />
+                        <Heading>Teams:</Heading>
+                        <fieldset>
+                            {fieldProps.fields.teams ? fieldProps.fields.teams.map((subFields, index) => (
+                                <div key={`player-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                                    <div className="pure-g">
+                                        <div className="pure-u-1-3">{subFields.name}</div>
+                                        <div className="pure-u-1-3">{subFields.player}</div>
+                                    </div>
+                                    <br />
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "remove", index)}>-</button>
+                                </div>)
+                            ) : null}
+                            <button type="button" onClick={() => fieldProps.onCollectionAction("teams", "add")}>+</button>
+                        </fieldset>
+                        <br />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

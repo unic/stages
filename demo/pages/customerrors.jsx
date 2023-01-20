@@ -49,24 +49,25 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <p>
+                        <Heading>Custom Errors</Heading>
+                        <Paragraph>
                             In this first field, we wrote a custom validation which only accepts alphanumeric values and "-". Try entering 
                             something different to see the custom error message.
-                        </p>
+                        </Paragraph>
                         {fieldProps.fields.username}
                         <br />
-                        <p>
+                        <Paragraph>
                             Sometimes you have situations where you can't just make a field required, because for example the user only 
                             needs to fill out one or the other. You can solve this situation with a dummy field and a custom validation 
                             function. Hit submit without entering data to see the behaviour. Than add data in only one field and try again.
-                        </p>
+                        </Paragraph>
                         <div className="pure-g">
                             <div className="pure-u-12-24">{fieldProps.fields.field1}</div>
                             <div className="pure-u-12-24">{fieldProps.fields.field2}</div>
                         </div>
                         {fieldProps.fields.atLeastOne}
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

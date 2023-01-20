@@ -53,18 +53,21 @@ function AsyncPage() {
                 render={({ actionProps, fieldProps }) => (
                     <>
                         <div>
-                            <p>
+                            <Heading>Asyncronous Data</Heading>
+                            <Paragraph>
                                 In this example, the options of the select are populated from data loaded asynchronously from "jsonplaceholder". 
                                 You can construct the whole structure and form of your form from asynchronously loaded data if you so wish.
-                            </p>
+                            </Paragraph>
                             <br />
                             {fieldProps.fields.user}
                             <br />
-                            <p>Even with async data, the form will select the correct item if the value is set (user with id 4 in this case):</p>
+                            <Paragraph>
+                                Even with async data, the form will select the correct item if the value is set (user with id 4 in this case):
+                            </Paragraph>
                             {fieldProps.fields.selecteduser}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

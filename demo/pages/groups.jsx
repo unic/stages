@@ -100,8 +100,8 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <h3>Simple nested groups</h3>
-                        <p>Nest you data as deeply as you want. (open the Debugger on the right to see how the data is structured)</p>
+                        <Heading>Simple nested groups</Heading>
+                        <Paragraph>Nest you data as deeply as you want. (open the Debugger on the right to see how the data is structured)</Paragraph>
                         <div>
                             {fieldProps.fields.field}
                             <br />
@@ -117,8 +117,8 @@ function FormPage() {
                                 </fieldset>
                             </fieldset>
                         </div>
-                        <h3>Deeply nested groups and collections</h3>
-                        <p>An example with a group inside of a collection, which contains another collection. Start adding entries to see the behaviour:</p>
+                        <Heading>Deeply nested groups and collections</Heading>
+                        <Paragraph>An example with a group inside of a collection, which contains another collection. Start adding entries to see the behaviour:</Paragraph>
                         <div>
                             <fieldset>
                                 {fieldProps.fields.deepcollection ? fieldProps.fields.deepcollection.map((subFields, index) => (
@@ -153,7 +153,7 @@ function FormPage() {
                             </fieldset>
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

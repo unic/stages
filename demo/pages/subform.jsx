@@ -129,28 +129,28 @@ function InceptionPage() {
                 render={({ actionProps, fieldProps }) => (
                     <>
                         <div>
-                            <p>
+                            <Heading>Subform</Heading>
+                            <Paragraph>
                                 This is a demonstration of using a single address form as a subform in a larger form which contains up to 
                                 three different addresses:
-                            </p>
-                            <br />
-                            <h3>Main Address:</h3>
+                            </Paragraph>
+                            <Heading>Main Address:</Heading>
                             {fieldProps.fields.mainAddress}
                             <br />
                             <hr />
-                            <h3>Billing Address:</h3>
+                            <Heading>Billing Address:</Heading>
                             {fieldProps.fields.billingSame}
                             <br />
                             {fieldProps.fields.billingAddress}
                             <br />
                             <hr />
-                            <h3>Shipping Address:</h3>
+                            <Heading>Shipping Address:</Heading>
                             {fieldProps.fields.shippingSame}
                             <br />
                             {fieldProps.fields.shippingAddress}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

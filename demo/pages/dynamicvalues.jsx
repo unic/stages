@@ -87,21 +87,21 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <p>There are two types of dynamic values: Computed values which compute a value based on other fields and filtered values which filter user input.</p>
-                        <br />
-                        <p>The first example filters away all non numbers which you enter:</p>
+                        <Heading>Dynamic Values</Heading>
+                        <Paragraph>There are two types of dynamic values: Computed values which compute a value based on other fields and filtered values which filter user input.</Paragraph>
+                        <Paragraph>The first example filters away all non numbers which you enter:</Paragraph>
                         <div>
                             {fieldProps.fields.onlyNumbers}
                         </div>
                         <br />
-                        <p>In this example, we compute the sum of Field 1 and Filed 2 and display it in the Sum field:</p>
+                        <Paragraph>In this example, we compute the sum of Field 1 and Filed 2 and display it in the Sum field:</Paragraph>
                         <div className="pure-g">
                             <div className="pure-u-1-3">{fieldProps.fields.field1}</div>
                             <div className="pure-u-1-3">{fieldProps.fields.field2}</div>
                             <div className="pure-u-1-3">{fieldProps.fields.sum}</div>
                         </div>
                         <br />
-                        <p>And you can compute collection item specific data, as well:</p>
+                        <Paragraph>And you can compute collection item specific data, as well:</Paragraph>
                         <fieldset>
                             {fieldProps.fields.maths ? fieldProps.fields.maths.map((subFields, index) => (
                                 <div key={`math-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
@@ -117,15 +117,15 @@ function FormPage() {
                             <button type="button" onClick={() => fieldProps.onCollectionAction("maths", "add")}>+</button>
                         </fieldset>
                         <br />
-                        <p>
+                        <Paragraph>
                             Another special type of dynamic value is a field using the "precision" option, which is very useful for price values. 
                             Try entering some other value, for example "40.1234" or just "40".
-                        </p>
+                        </Paragraph>
                         <div>
                             {fieldProps.fields.price}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

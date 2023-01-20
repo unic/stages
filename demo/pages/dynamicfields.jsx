@@ -56,28 +56,31 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
-                        <h3>Dynamic requirements:</h3>
+                    <>  
+                        <Heading>Dynamic fields</Heading>
+                        <Paragraph>Configuration of each field can be dynamic, based on any kind of data entered, interface state or async data</Paragraph>
+                        <Heading>Dynamic requirements:</Heading>
                         <div className="pure-g">
                             <div className="pure-u-12-24">{fieldProps.fields.field1}</div>
                             <div className="pure-u-12-24">{fieldProps.fields.field2}</div>
                         </div>
-                        <h3>Dynamicly disabled fields:</h3>
+                        <Heading>Dynamicly disabled fields:</Heading>
                         <div className="pure-g">
                             <div className="pure-u-12-24">{fieldProps.fields.field3}</div>
                             <div className="pure-u-12-24">{fieldProps.fields.field4}</div>
                         </div>
-                        <h3>Dynamic labels:</h3>
+                        <Heading>Dynamic labels:</Heading>
                         <div className="pure-g">
                             <div className="pure-u-12-24">{fieldProps.fields.name}</div>
                             <div className="pure-u-12-24">{fieldProps.fields.age}</div>
                         </div>
                         <br />
-                        <p>
+                        <Paragraph>
                             In summary, basically the whole field config and rendering is dynamic, which is often needed in dynamic wizards, 
-                            for example those found in insurance forms. Stages is built for flexibility, making such dynamic configurations easy.</p>
+                            for example those found in insurance forms. Stages is built for flexibility, making such dynamic configurations easy.
+                        </Paragraph>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"

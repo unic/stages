@@ -49,28 +49,29 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <p>
+                        <Heading>Typecasting</Heading>
+                        <Paragraph>
                             Ideally you always want the right kind of type in the data you receive from Stages. However, sometimes you 
                             work with 3rd party fields which use a different type. You can solve this problem in Stages with Typecasting.
-                        </p>
-                        <p>
+                        </Paragraph>
+                        <Paragraph>
                             In this first example, our component creates a boolean, but our backend API expects "yes" and "no" strings. 
                             We use custom typecasting to solve this. Check the data in the debugger where the correct type (and value) is set.
-                        </p>
+                        </Paragraph>
                         <div>
                             {fieldProps.fields.mybool}
                         </div>
                         <br />
-                        <p>
+                        <Paragraph>
                             In this next example, we have a field which returns a string which looke like "2022-08-23". But our 
                             JavaScript code which receives the data expects a Date object. So we typecast it. Check the code of 
                             this example to get an idea how.
-                        </p>
+                        </Paragraph>
                         <div>
                             {fieldProps.fields.mydate}
                         </div>
                         <br />
-                        <hr />
+                        <HR isDirty={fieldProps.isDirty} />
                         <br />
                         <button
                             type="button"
