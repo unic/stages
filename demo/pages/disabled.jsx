@@ -52,7 +52,6 @@ function FormPage() {
                                 label: "Visited Continents:",
                                 type: "multiselect",
                                 options: [
-                                    { value: "", text: "Please select ..." },
                                     { value: "europe", text: "Europe" },
                                     { value: "asia", text: "Asia" },
                                     { value: "northamerica", text: "North America" },
