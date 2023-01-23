@@ -66,7 +66,6 @@ function FormPage() {
                                 label: "Gender:",
                                 type: "radio",
                                 options: [
-                                    { value: "", text: "Please select ..." },
                                     { value: "male", text: "Male" },
                                     { value: "female", text: "Female" }
                                 ]
