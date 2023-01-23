@@ -54,12 +54,24 @@ const Select = ({
                 {prefix ? <span>{prefix}</span> : null}
                 <select
                     name={id}
-                    value={typeof value === "undefined" ? "" : value}
+                    value={typeof value === "undefined" ? type === "multiselect" ? [] : "" : value}
                     placeholder={placeholder}
                     disabled={!!isDisabled}
                     required={!!isRequired}
+                    multiple={type === "multiselect" ? true : undefined}
                     onChange={e => {
-                        if (typeof onChange === "function") onChange(e.target.value);
+                        if (type === "multiselect") {
+                            const options = e.target.options;
+                            const value = [];
+                            for (let i = 0, l = options.length; i < l; i++) {
+                                if (options[i].selected) {
+                                    value.push(options[i].value);
+                                }
+                            }
+                            onChange(value);
+                        } else {
+                            if (typeof onChange === "function") onChange(e.target.value);
+                        }
                     }}
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();

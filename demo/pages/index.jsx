@@ -47,6 +47,21 @@ function FormPage() {
                                 ]
                             },
                             {
+                                id: "continents",
+                                label: "Visited Continents:",
+                                type: "multiselect",
+                                options: [
+                                    { value: "", text: "Please select ..." },
+                                    { value: "europe", text: "Europe" },
+                                    { value: "asia", text: "Asia" },
+                                    { value: "northamerica", text: "North America" },
+                                    { value: "southamerica", text: "South America" },
+                                    { value: "africa", text: "Africa" },
+                                    { value: "oceanica", text: "Oceanica" },
+                                    { value: "antarctica", text: "Antarctica" }
+                                ]
+                            },
+                            {
                                 id: "gender",
                                 label: "Gender:",
                                 type: "radio",
@@ -75,6 +90,8 @@ function FormPage() {
                             {fieldProps.fields.signedIn}
                             <br />
                             {fieldProps.fields.country}
+                            <br />
+                            {fieldProps.fields.continents}
                             <br />
                             {fieldProps.fields.gender}
                         </div>

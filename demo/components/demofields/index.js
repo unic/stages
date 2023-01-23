@@ -41,6 +41,10 @@ const fields = {
         component: Select,
         isValid: selectIsValid
     },
+    multiselect: {
+        component: Select,
+        isValid: selectIsValid
+    },
     radio: {
         component: RadioGroup,
         isValid: radioGroupIsValid
