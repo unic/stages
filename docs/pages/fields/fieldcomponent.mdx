@@ -9,16 +9,19 @@ const Input = ({
     value,
     onChange,
     onBlur,
+    onFocus,
     error,
     placeholder,
     isRequired,
     isDisabled,
+    isDirty,
+    hasFocus,
     prefix,
     suffix,
     secondaryText,
     type,
     errorRenderer,
-    ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
+    ...props // additional custom props
 }) => {
     return (
         <div id={id}>
@@ -35,8 +38,11 @@ const Input = ({
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
                     }}
+                    onFocus={e => {
+                        if (typeof onFocus === "function") onFocus();
+                    }}
                     onBlur={e => {
-                        if (typeof onBlur === "function") onBlur(e.target.value);
+                        if (typeof onBlur === "function") onBlur();
                     }}
                 />
                 {suffix ? <span>{suffix}</span> : null}
@@ -57,10 +63,13 @@ Let's first go through the properties:
 - **value**: The fields value, a string in this case
 - **onChange**: The required change handler which is used to update the forms data
 - **onBlur**: The on blur handler, which triggers on blur validation
+- **onFocus**: The on focus handler, used to track which field has focus or what was the last field which had focus
 - **error**: The error messages if the field didn't validate
 - **placeholder**: A field placeholder, this one is specific to the Input field
 - **isRequired**: A boolean which tells you if the field is required or not
 - **isDisabled**: A boolean which tells you if the field is disabled
+- **isDirty**: A boolean which tells you if the field is dirty, which is the case if the value is different from the initial value
+- **hasFocus**: A boolean for when the field has focus, in case you want to style the field differently on focus
 - **prefix**: A prefix which should be render right before the field in the same line
 - **suffix**: A suffix which should be render right after the field in the same line
 - **secondaryText**: A secondary text which is usually rendered right below the label
@@ -86,4 +95,90 @@ And a few important things about the form render.
 >
     ...
 </div>
+```
+
+Here's a field which is a little more complex. This field handles both types, `select` and `multiselect`:
+
+```
+const Select = ({
+    id,
+    type,
+    label,
+    value,
+    options,
+    onChange,
+    onBlur,
+    onFocus,
+    error,
+    placeholder,
+    isRequired,
+    isDisabled,
+    isDirty,
+    hasFocus,
+    prefix,
+    suffix,
+    secondaryText,
+    errorRenderer,
+    ...props // additional custom props
+}) => {
+    return (
+        <div id={id}>
+            {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
+            <div>
+                {prefix ? <span>{prefix}</span> : null}
+                <select
+                    name={id}
+                    value={typeof value === "undefined" ? type === "multiselect" ? [] : "" : value}
+                    placeholder={placeholder}
+                    disabled={!!isDisabled}
+                    required={!!isRequired}
+                    multiple={type === "multiselect" ? true : undefined}
+                    onChange={e => {
+                        if (type === "multiselect") {
+                            const options = e.target.options;
+                            const value = [];
+                            for (let i = 0, l = options.length; i < l; i++) {
+                                if (options[i].selected) {
+                                    value.push(options[i].value);
+                                }
+                            }
+                            onChange(value);
+                        } else {
+                            if (typeof onChange === "function") onChange(e.target.value);
+                        }
+                    }}
+                    onBlur={e => {
+                        if (typeof onBlur === "function") onBlur();
+                    }}
+                    onFocus={e => {
+                        if (typeof onFocus === "function") onFocus();
+                    }}
+                >
+                    {options.map(option => <option value={option.value} key={option.value} disabled={option.disabled ? true : null}>{option.text}</option>)}
+                </select>
+                {suffix ? <span>{suffix}</span> : null}
+            </div>
+            {secondaryText ? <div>{secondaryText}</div> : null}
+            {error ? errorRenderer ? errorRenderer(error) : (
+                <div style={{ color: "red" }}>Please fill out this field!</div>
+            ) : null}
+        </div>
+    );
+}
+```
+
+It is than registered like this to handle both types:
+
+```
+const fields = {
+    ...otherFields,
+    select: {
+        component: Select,
+        isValid: selectIsValid
+    },
+    multiselect: {
+        component: Select,
+        isValid: selectIsValid
+    },
+};
 ```
