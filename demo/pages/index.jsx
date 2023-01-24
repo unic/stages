@@ -9,15 +9,15 @@ function FormPage() {
             <Heading>Stages Demos</Heading>
             <Paragraph>
                 Stages can do many things. The following Demos demonstrate most of those features. 
-                Choose one of the demos above. They usually come with some additional info. More about 
-                all the features can be found in the docs.
+                Choose one of the demos above. More details about all the features can be found in the docs.
             </Paragraph>
             <Paragraph>
                 <a href="https://stages-docs.vercel.app/" targte="_blank">Stages Docs</a>
             </Paragraph>
             <Paragraph>
                 To make the demos more useful, additional info about the configured fields are rendered. This is only 
-                for demo purposes. Additionally, as stages comes without any default styles, we decided 
+                for demo purposes. Plus there's a debugger on the lright top corner which you can use to inspect the data. 
+                Additionally, as stages comes without any default styles, we decided 
                 to use Pure CSS to make them look a little nicer. For your own implemtation, you have to bring 
                 your own styles.
             </Paragraph>
