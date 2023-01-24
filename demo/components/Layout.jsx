@@ -11,6 +11,14 @@ const Layout = ({ children }) => {
                     integrity="sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH"
                     crossorigin="anonymous"
                 />
+                <style>{`
+                    a {
+                        text-decoration: none;
+                    }
+                    a:hover {
+                        text-decoration: underline;
+                    }
+                `}</style>
             </Head>
             <DemoNav />
             <div

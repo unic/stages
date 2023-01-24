@@ -19,8 +19,9 @@ const DemoNav = () => {
                     }}
                 >Stages Demos:</h1>
                 <select onChange={e => router.push(e.target.value)} style={{ marginTop: "12px" }} defaultValue={router.pathname}>
+                    <option value="/">Demos Overview</option>
                     <optgroup label="Form">
-                        <option value="/">Simple Form</option>
+                        <option value="/simple">Simple Form</option>
                         <option value="/disabled">Disabled Form</option>
                         <option value="/asyncdata">Async Data</option>
                         <option value="/validateon">Validate On</option>
