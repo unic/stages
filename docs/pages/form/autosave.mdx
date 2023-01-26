@@ -1,0 +1,32 @@
+# Auto Save
+
+You can tell Stages to auto save the added data. The data is either stored in local or session storage. 
+On all reset actions, the saved data is removed.
+
+You can enable it two ways. The basic way is to either set `local` or `session` like this:
+
+```
+<Form
+    autoSave="local"
+    ...
+/>
+```
+
+Or if you want to config this option more precisely, you can do it like this:
+
+```
+<Form
+    autoSave={{
+		type: "session",
+		validDataOnly: false
+	}}
+    ...
+/>
+```
+
+Options are:
+
+- **type**: The storage type, either `local` or `session`
+- **validDataOnly**: Should only valid data be saved? (boolean)
+
+[Related Demo](https://stages-demo.vercel.app/autosave)
