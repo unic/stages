@@ -31,6 +31,7 @@ const DemoNav = () => {
                         <option value="/subform">Subform</option>
                         <option value="/configtemplates">Config Templates</option>
                         <option value="/i18n">i18n</option>
+                        <option value="/autosave">Auto Save</option>
                     </optgroup>
                     <optgroup label="Fields">
                         <option value="/dynamicfields">Dynamic Fields</option>

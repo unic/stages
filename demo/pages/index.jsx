@@ -36,7 +36,8 @@ function FormPage() {
                 <a href="/interfacestate">Interface State</a>{", "}
                 <a href="/subform">Subform</a>{", "}
                 <a href="/configtemplates">Config Templates</a>{", "}
-                <a href="/i18n">i18n</a>
+                <a href="/i18n">i18n</a>{", "}
+                <a href="/autosave">Auto Save</a>
             </Paragraph>
             <Heading>Fields</Heading>
             <Paragraph>
