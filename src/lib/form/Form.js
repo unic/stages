@@ -246,7 +246,9 @@ const Form = ({
                 const savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
                 if (Object.keys(savedData).length > 0) {
                     setTimeout(() => {
-                        limitedOnChange(savedData, validationErrors(false, savedData), id);
+                        setIsDirty(!!savedData.isDirty);
+                        setDirtyFields(typeof savedData.dirtyFields === "object" ? savedData.dirtyFields : {});
+                        limitedOnChange(savedData.data, validationErrors(false, savedData.data), id);
                     }, 0);   
                 }
             }
@@ -1095,9 +1097,9 @@ const Form = ({
 
         // Auto save data if enabled:
         if (autoSave === "local" || autoSave === "session") {
-            if (Object.keys(errors).length === 0) saveDataToStorage(id, newData, autoSave);
+            if (Object.keys(errors).length === 0) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave);
         } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
-            if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) saveDataToStorage(id, newData, autoSave.type);
+            if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
         }
     };
 
