@@ -1097,9 +1097,11 @@ const Form = ({
 
         // Auto save data if enabled:
         if (autoSave === "local" || autoSave === "session") {
-            if (Object.keys(errors).length === 0) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave);
+            const currentErrors = validationErrors(false, newData);
+            if (Object.keys(currentErrors).length === 0) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave);
         } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
-            if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
+            const currentErrors = validationErrors(false, newData);
+            if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
         }
     };
 

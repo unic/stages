@@ -141,7 +141,8 @@ function App() {
                                 type: "text",
                                 label: "Default Test",
                                 placeholder: ["Placeholder 1", "Placeholder 2", "Placeholder 3"],
-                                cleanUp: value => value.trim()
+                                cleanUp: value => value.trim(),
+                                isRequired: true
                             },
                             () => {
                                 return {
