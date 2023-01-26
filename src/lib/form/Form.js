@@ -242,8 +242,8 @@ const Form = ({
             setInitialData(JSON.parse(stringifiedData));
 
             // If autosave is enabled, read the data and trigger an onChange with it:
-            if (autoSave === "local" || autoSave === "session") {
-                const savedData = getDataFromStorage(id, autoSave);
+            if (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session"))) {
+                const savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
                 if (Object.keys(savedData).length > 0) {
                     setTimeout(() => {
                         limitedOnChange(savedData, validationErrors(false, savedData), id);
@@ -1093,7 +1093,12 @@ const Form = ({
 
         addNewUndoEntry(newData);
 
-        if (autoSave === "local" || autoSave === "session") saveDataToStorage(id, newData, autoSave);
+        // Auto save data if enabled:
+        if (autoSave === "local" || autoSave === "session") {
+            if (Object.keys(errors).length === 0) saveDataToStorage(id, newData, autoSave);
+        } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
+            if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) saveDataToStorage(id, newData, autoSave.type);
+        }
     };
 
     /*
@@ -1325,6 +1330,7 @@ const Form = ({
         // If this is a reset action, we reset back to the initial data:
         if (reset) {
             if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
+            if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) removeDataFromStorage(id, autoSave.type);
             limitedOnChange(initialData, validationErrors(), id);
             setDirtyFields({});
             setIsDirty(false);
