@@ -132,6 +132,34 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) =
     return parsedConfig;
 };
 
+const getDataFromStorage = (id, type, prefix = "stages-form-") => {
+    if ((type === "local" && typeof localStorage !== 'undefined') || (type === "session" && typeof sessionStorage !== 'undefined')) {
+        const stringifiedStoredState = localStorage.getItem(`${prefix}${id}`) || '{}';
+        let storedState = {};
+        try {
+            storedState = JSON.parse(stringifiedStoredState);
+        } catch (e) {};
+        return storedState;
+    }
+    return {};
+};
+  
+const saveDataToStorage = (id, data = {}, type, prefix = "stages-form-") => {
+    if (((type === "local" && typeof localStorage !== 'undefined') || (type === "session" && typeof sessionStorage !== 'undefined')) && typeof data === "object") {
+        let stringifiedState = "{}";
+        try {
+            stringifiedState = JSON.stringify(data);
+        } catch (e) {};
+        localStorage.setItem(`${prefix}${id}`, stringifiedState);
+    }
+};
+
+const removeDataFromStorage = (id, type, prefix = "stages-form-") => {
+    if ((type === "local" && typeof localStorage !== 'undefined') || (type === "session" && typeof sessionStorage !== 'undefined')) {
+        localStorage.removeItem(`${prefix}${id}`);
+    }
+};
+
 const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
 
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
@@ -162,8 +190,9 @@ const Form = ({
     throttleWait,
     customEvents,
     enableUndo,
-    undoMaxDepth = 10,
-    customRuleHandlers
+    undoMaxDepth,
+    customRuleHandlers,
+    autoSave
 }) => {
     // First we need to merge interfaceData with form data, whithout muting form data:
     const [interfaceState, setInterfaceState] = useState({});
@@ -211,6 +240,16 @@ const Form = ({
 
             const stringifiedData = stringify(data);
             setInitialData(JSON.parse(stringifiedData));
+
+            // If autosave is enabled, read the data and trigger an onChange with it:
+            if (autoSave === "local" || autoSave === "session") {
+                const savedData = getDataFromStorage(id, autoSave);
+                if (Object.keys(savedData).length > 0) {
+                    setTimeout(() => {
+                        limitedOnChange(savedData, validationErrors(false, savedData), id);
+                    }, 0);   
+                }
+            }
         }
     }, [data]);
 
@@ -1053,6 +1092,8 @@ const Form = ({
         }
 
         addNewUndoEntry(newData);
+
+        if (autoSave === "local" || autoSave === "session") saveDataToStorage(id, newData, autoSave);
     };
 
     /*
@@ -1283,6 +1324,7 @@ const Form = ({
 
         // If this is a reset action, we reset back to the initial data:
         if (reset) {
+            if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
             limitedOnChange(initialData, validationErrors(), id);
             setDirtyFields({});
             setIsDirty(false);
@@ -1333,7 +1375,9 @@ Form.propTypes = {
     onValidation: PropTypes.func,
     parentRunValidation: PropTypes.bool,
     validateOn: PropTypes.array,
-    customRuleHandlers: PropTypes.object
+    customRuleHandlers: PropTypes.object,
+    undoMaxDepth: PropTypes.number,
+    autoSave: PropTypes.oneOf(["local", "session", false])
 };
 
 Form.defaultProps = {
@@ -1342,7 +1386,9 @@ Form.defaultProps = {
     isVisible: true,
     isDisabled: false,
     validateOn: ["action"],
-    customRuleHandlers: {}
+    customRuleHandlers: {},
+    undoMaxDepth: 10,
+    autoSave: false
 };
 
 export default Form;

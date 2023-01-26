@@ -115,6 +115,7 @@ function App() {
                 id="basics"
                 data={data}
                 validateOn={["change", "blur", "action"]}
+                autoSave="local"
                 customRuleHandlers={{
                     disallowOddNumbers: ({ fieldValueCombos, fieldValidationData, valueRules, get }) => {
                         // "age": { "": { disallowOddNumbers: true } }
