@@ -29,4 +29,21 @@ Options are:
 - **type**: The storage type, either `local` or `session`
 - **validDataOnly**: Should only valid data be saved? (boolean)
 
+Autosave is also available on the wizard component:
+
+```
+<Stages
+    autoSave={{
+		type: "session",
+		validDataOnly: false
+	}}
+    ...
+>
+    ...
+</Stages>
+```
+
+Same options. Just make sure that you don't add autosave on the individual Form components used 
+for the wizard steps.
+
 [Related Demo](https://stages-demo.vercel.app/autosave)
