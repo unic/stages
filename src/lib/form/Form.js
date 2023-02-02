@@ -11,16 +11,8 @@ import unset from "lodash.unset";
 import merge from "lodash.merge";
 import stringify from "fast-json-stable-stringify";
 
-const isElementInViewport = el => {
-    const rect = el.getBoundingClientRect();
-
-    return (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
-    );
-}
+import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
+import { isElementInViewport, isDebugging } from "../utils/browser";
 
 const castValueStrType = (value, type, parseAsArray) => {
     if (parseAsArray && Array.isArray(value)) {
@@ -131,36 +123,6 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) =
 
     return parsedConfig;
 };
-
-const getDataFromStorage = (id, type, prefix = "stages-form-") => {
-    if ((type === "local" && typeof localStorage !== 'undefined') || (type === "session" && typeof sessionStorage !== 'undefined')) {
-        const stringifiedStoredState = localStorage.getItem(`${prefix}${id}`) || '{}';
-        let storedState = {};
-        try {
-            storedState = JSON.parse(stringifiedStoredState);
-        } catch (e) {};
-        return storedState;
-    }
-    return {};
-};
-  
-const saveDataToStorage = (id, data = {}, type, prefix = "stages-form-") => {
-    if (((type === "local" && typeof localStorage !== 'undefined') || (type === "session" && typeof sessionStorage !== 'undefined')) && typeof data === "object") {
-        let stringifiedState = "{}";
-        try {
-            stringifiedState = JSON.stringify(data);
-        } catch (e) {};
-        localStorage.setItem(`${prefix}${id}`, stringifiedState);
-    }
-};
-
-const removeDataFromStorage = (id, type, prefix = "stages-form-") => {
-    if ((type === "local" && typeof localStorage !== 'undefined') || (type === "session" && typeof sessionStorage !== 'undefined')) {
-        localStorage.removeItem(`${prefix}${id}`);
-    }
-};
-
-const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
 
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
 
@@ -1342,6 +1304,7 @@ const Form = ({
 
         // Are there any custom events active?
         const activeCustomEvents = getActiveCustomEvents("action", alldata);
+        let suppressCallback = false;
 
         // Only validate if action validation is enabled (which is the default):
         if (
@@ -1354,12 +1317,10 @@ const Form = ({
             }
             let errors = validate ? validationErrors(true) : {};
             setErrors(errors);
+            if (Object.keys(errors).length > 0) suppressCallback = true;
         }
 
-        // A zero second timout is needed to make sure sub form errors become available in the parent component
-        setTimeout(() => {
-            if (Object.keys(errors).length === 0) callback();
-        }, 0);
+        if (!suppressCallback) callback();
     };
 
     // If the form isn't visible, render nothing (this is needed for the Wizards step validation):
@@ -1386,8 +1347,7 @@ Form.propTypes = {
     parentRunValidation: PropTypes.bool,
     validateOn: PropTypes.array,
     customRuleHandlers: PropTypes.object,
-    undoMaxDepth: PropTypes.number,
-    autoSave: PropTypes.oneOf(["local", "session", false])
+    undoMaxDepth: PropTypes.number
 };
 
 Form.defaultProps = {

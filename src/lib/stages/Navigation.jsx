@@ -5,7 +5,7 @@ import React from "react";
     a sample on how to build your own, but of course you can use it if it
     fits your usecase.
 */
-const Navigation = ({ currentStep, data, onChangeStep, errors, lastValidStep, keys, stepCount }) => {
+const Navigation = ({ currentStep, data, onChangeStep, errors, lastValidStep, keys, stepCount, reset }) => {
     const items = [];
 
     for (let i = 0; i < keys.length; i++) {

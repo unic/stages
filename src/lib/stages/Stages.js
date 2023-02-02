@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import findIndex from "lodash.findindex";
 
-const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
+import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
+import { isDebugging } from "../utils/browser";
 
 /*
     The Stages component is your main component to build everything from simple wizards
@@ -23,10 +24,23 @@ const Stages = ({
     initialStep,
     render,
     validateOnStepChange,
-    onChange
+    onChange,
+    autoSave,
+    id
 }) => {
-    const [uniqId] = useState(`stages-${+ new Date()}`);
-    const [data, setData] = useState(initialData);
+    const createInitialData = () => {
+        // If autosave is enabled, read the data and trigger an onChange with it:
+        if (id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
+            const savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
+            if (Object.keys(savedData).length > 0) {
+                return savedData;
+            }
+        }
+        return initialData;
+    };
+
+    const [uniqId] = useState(`stages-${id ? id : + new Date()}`);
+    const [data, setData] = useState(createInitialData());
     const [activeChildren, setActiveChildren] = useState([]);
     const [errors, setErrors] = useState({});
     const [currentStep, setCurrentStep] = useState(initialStep || 0);
@@ -55,20 +69,41 @@ const Stages = ({
     /*
         This function is called by step forms and updates data and errors.
     */
-    const handleOnChange = (changedData, stepErrors, id) => {
+    const handleOnChange = (changedData, stepErrors, formId) => {
         const newData = Object.assign({}, data);
-        const key = keys && keys[id] ? keys[id].key : id;
+        const key = keys && keys[formId] ? keys[formId].key : formId;
 
         if (isDebugging()) window.stagesLogging(`Handle onChange for "${key}"`, uniqId);
 
-        errors[id] = stepErrors;
+        errors[formId] = stepErrors;
         setErrors(Object.assign({}, errors));
 
         newData[key] = changedData;
         setData(Object.assign({}, newData));
 
         if (typeof onChange === "function") onChange({ data: newData, errors });
+
+        // Auto save data if enabled:
+        if (id) {
+            if (autoSave === "local" || autoSave === "session") {
+                if (Object.keys(errors).length === 0) saveDataToStorage(id, newData, autoSave);
+            } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
+                if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) {
+                    saveDataToStorage(id, newData, autoSave.type);
+                }
+            }
+        }
     };
+
+    const reset = () => {
+        if (id) {
+            if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
+            if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) removeDataFromStorage(id, autoSave.type);
+        }
+        setData(initialData);
+        setCurrentStep(0);
+        if (typeof onChange === "function") onChange({ data: initialData, errors });
+    }
 
     /*
         If there is a logging function registered on the window (Stages browser extension), send data to it:
@@ -84,11 +119,12 @@ const Stages = ({
     */
     useEffect(() => {
         if (isDebugging()) window.stagesLogging(`Init Stages`, uniqId);
+
         children.map((item, index) => item({
             index,
             setStepKey,
             initializing: true
-        })).filter(item => item)
+        })).filter(item => item);
     }, []);
 
     /*
@@ -109,6 +145,7 @@ const Stages = ({
                 data: getStepData(index),
                 allData: data,
                 onChange: handleOnChange,
+                reset,
                 onNav,
                 isActive: index === currentStep,
                 index,
@@ -249,7 +286,7 @@ const Stages = ({
     */
     return render ? render({
         navigationProps: {
-            currentStep, data, onChangeStep, errors, keys, stepCount: activeChildren.length, lastValidStep: calculateLastValidStep()
+            currentStep, data, onChangeStep, errors, keys, stepCount: activeChildren.length, lastValidStep: calculateLastValidStep(), reset
         },
         progressionProps: calculateProgression(),
         routerProps: { step: currentStep, onChange: setCurrentStep, keys: keys },
@@ -262,12 +299,14 @@ Stages.propTypes = {
     initialData: PropTypes.object,
     render: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
     initialStep: PropTypes.number,
-    validateOnStepChange: PropTypes.bool
+    validateOnStepChange: PropTypes.bool,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
 Stages.defaultProps = {
     initialData: {},
-    validateOnStepChange: true
+    validateOnStepChange: true,
+    autoSave: false
 };
 
 export default Stages;
