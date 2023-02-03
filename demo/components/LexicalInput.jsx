@@ -10,6 +10,7 @@ import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import ToolbarPlugin from './LexicalToolbarPlugin';
 
@@ -805,6 +806,7 @@ const LexicalInput = ({
                                 />
                                 <ListPlugin />
                                 <LinkPlugin />
+                                <TabIndentationPlugin />
                                 <OnChangePlugin onChange={onEditorChange} />
                             </div>
                         </div>
