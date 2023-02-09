@@ -38,7 +38,7 @@ const Debugger = () => {
     }, []);
 
     if (Object.keys(data).length === 0) return null;
-console.log({data, selection});
+
     return (
         <div
             style={{
