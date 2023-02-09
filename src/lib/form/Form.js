@@ -222,7 +222,22 @@ const Form = ({
     */
     useEffect(() => {
         if (isDebugging()) {
-            window.stagesLogging({ id: uniqId, data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading, parsedFieldConfig }); 
+            window.stagesLogging({
+                id: uniqId,
+                data,
+                initialData,
+                interfaceState,
+                undoData,
+                asyncData,
+                errors,
+                fieldPaths,
+                isDirty,
+                focusedField,
+                lastFocusedField,
+                dirtyFields,
+                loading,
+                parsedFieldConfig
+            }); 
         }
     }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 

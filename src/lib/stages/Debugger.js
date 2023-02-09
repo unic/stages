@@ -38,7 +38,7 @@ const Debugger = () => {
     }, []);
 
     if (Object.keys(data).length === 0) return null;
-
+console.log({data, selection});
     return (
         <div
             style={{
@@ -114,54 +114,50 @@ const Debugger = () => {
                                 padding: "1px 4px"
                             }}>loading</span> : null}
                         </h3>
-                        <ul style={{
-                            listStyle: "none",
-                            display: "flex",
-                            margin: "8px 0 0 0",
-                            padding: 0,
-                            gap: "24px"
-                        }}>
-                            <li
-                                style={{ cursor: "pointer", padding: 0, margin: 0, color: selection.key === key && selection.tab === "data" ? "#f30" : "#000" }}
-                                onClick={() => setSelection({key: key, tab: "data"})}
+                        <div>
+                            <select
+                                onChange={e => setSelection({key: key, tab: e.target.value})} value={selection.key === key ? selection.tab : "data"}
+                                style={{ width: "47%", minWidth: "47%", maxWidth: "47%", marginRight: "2%", height: "25px" }}
                             >
-                                Data
-                            </li>
-                            <li
-                                style={{ cursor: "pointer", padding: 0, margin: 0, color: selection.key === key && selection.tab === "errors" ? "#f30" : "#000" }}
-                                onClick={() => setSelection({key: key, tab: "errors"})}
-                            >
-                                Errors
-                            </li>
-                            <li
-                                style={{ cursor: "pointer", padding: 0, margin: 0, color: selection.key === key && selection.tab === "parsedFieldConfig" ? "#f30" : "#000" }}
-                                onClick={() => setSelection({key: key, tab: "parsedFieldConfig"})}
-                            >
-                                Field Config
-                            </li>
-                            <li
-                                style={{ cursor: "pointer", padding: 0, margin: 0, color: selection.key === key && selection.tab === "logs" ? "#f30" : "#000" }}
-                                onClick={() => setSelection({key: key, tab: "logs"})}
-                            >
-                                Logs
-                            </li>
-                        </ul>
-                        <input value={paths[key] || ""} placeholder="your.data.filter.path" onChange={e => {
-                            const newPaths = Object.assign({}, paths);
-                            newPaths[key] = e.target.value;
-                            setPaths(newPaths);
-                        }} style={{
-                            width: "calc(100% - 12px)",
-                            minWidth: "calc(100% - 12px)",
-                            maxWidth: "calc(100% - 12px)",
-                            fontSize: "12px",
-                            border: "1px #ccc solid",
-                            background: "#fbfbfb",
-                            marginTop: "4px",
-                            padding: "4px",
-                            overflowX: "scroll",
-                            whiteSpace: "pre"
-                        }} />
+                                {data[key].keys ? (
+                                    <>
+                                        <option value="data">Data</option>
+                                        <option value="errors">Errors</option>
+                                        <option value="initialData">Initial Data</option>
+                                        <option value="keys">Keys</option>
+                                        <option value="logs">Logs</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="data">Data</option>
+                                        <option value="errors">Errors</option>
+                                        <option value="parsedFieldConfig">Field Config</option>
+                                        <option value="initialData">Initial Data</option>
+                                        <option value="interfaceState">Interface State</option>
+                                        <option value="undoData">Undo Data</option>
+                                        <option value="asyncData">Async Data</option>
+                                        <option value="fieldPaths">Field Paths</option>
+                                        <option value="logs">Logs</option>
+                                    </>
+                                )}
+                            </select>
+                            <input value={paths[key] || ""} placeholder="your.data.filter.path" onChange={e => {
+                                const newPaths = Object.assign({}, paths);
+                                newPaths[key] = e.target.value;
+                                setPaths(newPaths);
+                            }} style={{
+                                width: "47%",
+                                minWidth: "47%",
+                                maxWidth: "47%",
+                                fontSize: "12px",
+                                border: "1px #ccc solid",
+                                background: "#fbfbfb",
+                                marginTop: "4px",
+                                padding: "4px",
+                                overflowX: "scroll",
+                                whiteSpace: "pre"
+                            }} />
+                        </div>
                         {selection && selection.key === key ? (
                             <textarea readOnly style={{
                                 width: "calc(100% - 8px)",

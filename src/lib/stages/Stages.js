@@ -110,7 +110,7 @@ const Stages = ({
     */
     useEffect(() => {
         if (isDebugging()) {
-            window.stagesLogging({ id: uniqId, keys, data, errors, currentStep }); 
+            window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep }); 
         }
     }, [keys, data, errors, currentStep]);
 

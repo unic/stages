@@ -1,6 +1,6 @@
 import React, { Fragment, useState } from "react";
 import { Form, Actions } from "./lib/form";
-import { Stages, HashRouter, Progression, Navigation } from "./lib/stages";
+import { Stages, HashRouter, Progression, Navigation, Debugger } from "./lib/stages";
 import fields from "./lib/fieldsets/plain";
 
 import {
@@ -61,110 +61,113 @@ function App() {
     };
 
     return (
-        <Stages
-            initialData={{}}
-            render={({ navigationProps, progressionProps, routerProps, steps }) => (
-                <div className="pure-g">
-                    <div className="pure-u-1-5" style={{ marginTop: "64px" }}>
-                        <Navigation {...navigationProps} />
-                        <Progression {...progressionProps} /> 
+        <>
+            <Debugger />
+            <Stages
+                initialData={{}}
+                render={({ navigationProps, progressionProps, routerProps, steps }) => (
+                    <div className="pure-g">
+                        <div className="pure-u-1-5" style={{ marginTop: "64px" }}>
+                            <Navigation {...navigationProps} />
+                            <Progression {...progressionProps} /> 
+                        </div>
+                        <div className="pure-u-4-5">{steps}</div>
+                        {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
                     </div>
-                    <div className="pure-u-4-5">{steps}</div>
-                    {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
-                </div>
-            )}
-            autoSave={{
-                type: "local",
-                validDataOnly: false
-            }}
-            id="testwizard"
-            onChange={result => setData(result.data)}
-        >
-            {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
-                const key = setStepKey("basics", index);
-                if (initializing) return null;
+                )}
+                autoSave={{
+                    type: "local",
+                    validDataOnly: false
+                }}
+                id="testwizard"
+                onChange={result => setData(result.data)}
+            >
+                {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
+                    const key = setStepKey("basics", index);
+                    if (initializing) return null;
 
-                return (
-                    <Fragment key={`step-${key}`}>
-                        {isActive ? <h2>Basics:</h2> : null}
-                        <Form
-                            id={key}
-                            data={data}
-                            config={basicsConfig}
-                            render={({ actionProps, fieldProps, loading }) => (
-                                <FormLayout
-                                    loading={loading}
-                                    fields={<BasicsRenderer {...fieldProps} />}
-                                    actions={<Actions
-                                        config={createActionButtonConfig("first", onNav, onSubmit, data, reset)}
-                                        {...actionProps}
-                                    />}
-                                />
-                            )}
-                            fields={fields}
-                            onChange={onChange}
-                            isVisible={isActive}
-                        />
-                    </Fragment>
-                );
-            }}
-            {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
-                const key = setStepKey("guests", index);
-                if (initializing) return null;
+                    return (
+                        <Fragment key={`step-${key}`}>
+                            {isActive ? <h2>Basics:</h2> : null}
+                            <Form
+                                id={key}
+                                data={data}
+                                config={basicsConfig}
+                                render={({ actionProps, fieldProps, loading }) => (
+                                    <FormLayout
+                                        loading={loading}
+                                        fields={<BasicsRenderer {...fieldProps} />}
+                                        actions={<Actions
+                                            config={createActionButtonConfig("first", onNav, onSubmit, data, reset)}
+                                            {...actionProps}
+                                        />}
+                                    />
+                                )}
+                                fields={fields}
+                                onChange={onChange}
+                                isVisible={isActive}
+                            />
+                        </Fragment>
+                    );
+                }}
+                {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
+                    const key = setStepKey("guests", index);
+                    if (initializing) return null;
 
-                return (
-                    <Fragment key={`step-${key}`}>
-                        {isActive ? <h2>Guests:</h2> : null}
-                        <Form
-                            id={key}
-                            data={data}
-                            config={guestsConfig}
-                            render={({ actionProps, fieldProps, loading }) => (
-                                <FormLayout
-                                    loading={loading}
-                                    fields={<GuestsRenderer {...fieldProps} />}
-                                    actions={<Actions
-                                        config={createActionButtonConfig("regular", onNav, onSubmit, data, reset)}
-                                        {...actionProps}
-                                    />}
-                                />
-                            )}
-                            fields={fields}
-                            onChange={onChange}
-                            isVisible={isActive}
-                        />
-                    </Fragment>
-                );
-            }}
-            {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
-                const key = setStepKey("program", index);
-                if (initializing) return null;
+                    return (
+                        <Fragment key={`step-${key}`}>
+                            {isActive ? <h2>Guests:</h2> : null}
+                            <Form
+                                id={key}
+                                data={data}
+                                config={guestsConfig}
+                                render={({ actionProps, fieldProps, loading }) => (
+                                    <FormLayout
+                                        loading={loading}
+                                        fields={<GuestsRenderer {...fieldProps} />}
+                                        actions={<Actions
+                                            config={createActionButtonConfig("regular", onNav, onSubmit, data, reset)}
+                                            {...actionProps}
+                                        />}
+                                    />
+                                )}
+                                fields={fields}
+                                onChange={onChange}
+                                isVisible={isActive}
+                            />
+                        </Fragment>
+                    );
+                }}
+                {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
+                    const key = setStepKey("program", index);
+                    if (initializing) return null;
 
-                return (
-                    <Fragment key={`step-${key}`}>
-                        {isActive ? <h2>Program:</h2> : null}
-                        <Form
-                            id={key}
-                            data={data}
-                            config={programConfig}
-                            render={({ actionProps, fieldProps, loading }) => (
-                                <FormLayout
-                                    loading={loading}
-                                    fields={<ProgramRenderer {...fieldProps} />}
-                                    actions={<Actions
-                                        config={createActionButtonConfig("last", onNav, onSubmit, data, reset)}
-                                        {...actionProps}
-                                    />}
-                                />
-                            )}
-                            fields={fields}
-                            onChange={onChange}
-                            isVisible={isActive}
-                        />
-                    </Fragment>
-                );
-            }}
-        </Stages>
+                    return (
+                        <Fragment key={`step-${key}`}>
+                            {isActive ? <h2>Program:</h2> : null}
+                            <Form
+                                id={key}
+                                data={data}
+                                config={programConfig}
+                                render={({ actionProps, fieldProps, loading }) => (
+                                    <FormLayout
+                                        loading={loading}
+                                        fields={<ProgramRenderer {...fieldProps} />}
+                                        actions={<Actions
+                                            config={createActionButtonConfig("last", onNav, onSubmit, data, reset)}
+                                            {...actionProps}
+                                        />}
+                                    />
+                                )}
+                                fields={fields}
+                                onChange={onChange}
+                                isVisible={isActive}
+                            />
+                        </Fragment>
+                    );
+                }}
+            </Stages>
+        </>
     );
 }
 
