@@ -125,6 +125,7 @@ const Debugger = () => {
                                         <option value="data">Data</option>
                                         <option value="errors">Errors</option>
                                         <option value="initialData">Initial Data</option>
+                                        <option value="savedData">Saved Data</option>
                                         <option value="keys">Keys</option>
                                         <option value="logs">Logs</option>
                                     </>
@@ -137,6 +138,7 @@ const Debugger = () => {
                                         <option value="interfaceState">Interface State</option>
                                         <option value="undoData">Undo Data</option>
                                         <option value="asyncData">Async Data</option>
+                                        <option value="savedData">Saved Data</option>
                                         <option value="fieldPaths">Field Paths</option>
                                         <option value="logs">Logs</option>
                                     </>
