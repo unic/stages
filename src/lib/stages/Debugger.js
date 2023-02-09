@@ -52,7 +52,8 @@ const Debugger = () => {
                 border: "1px #bbb solid",
                 borderRadius: "4px",
                 background: "#fbfbfb",
-                fontFamily: "Open Sans, Helvetica, Arial, sans"
+                fontFamily: "Open Sans, Helvetica, Arial, sans",
+                zIndex: 1000
             }}
         >
             <strong style={{lineHeight: "22px"}}>Debugger:</strong>
