@@ -110,7 +110,11 @@ const Stages = ({
     */
     useEffect(() => {
         if (isDebugging()) {
-            window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep }); 
+            if (id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
+                window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave) });
+            } else {
+                window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: {} });
+            }
         }
     }, [keys, data, errors, currentStep]);
 

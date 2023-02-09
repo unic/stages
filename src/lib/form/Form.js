@@ -222,22 +222,43 @@ const Form = ({
     */
     useEffect(() => {
         if (isDebugging()) {
-            window.stagesLogging({
-                id: uniqId,
-                data,
-                initialData,
-                interfaceState,
-                undoData,
-                asyncData,
-                errors,
-                fieldPaths,
-                isDirty,
-                focusedField,
-                lastFocusedField,
-                dirtyFields,
-                loading,
-                parsedFieldConfig
-            }); 
+            if (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session"))) {
+                window.stagesLogging({
+                    id: uniqId,
+                    data,
+                    initialData,
+                    interfaceState,
+                    undoData,
+                    asyncData,
+                    errors,
+                    fieldPaths,
+                    isDirty,
+                    focusedField,
+                    lastFocusedField,
+                    dirtyFields,
+                    loading,
+                    parsedFieldConfig,
+                    savedData: getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave)
+                });
+            } else {
+                window.stagesLogging({
+                    id: uniqId,
+                    data,
+                    initialData,
+                    interfaceState,
+                    undoData,
+                    asyncData,
+                    errors,
+                    fieldPaths,
+                    isDirty,
+                    focusedField,
+                    lastFocusedField,
+                    dirtyFields,
+                    loading,
+                    parsedFieldConfig,
+                    savedData: {}
+                });
+            } 
         }
     }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 
