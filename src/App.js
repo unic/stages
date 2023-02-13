@@ -8,6 +8,8 @@ import {
     BasicsRenderer, GuestsRenderer, ProgramRenderer
 } from "./components/steps/test";
 
+import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "./lib/utils/storage";
+
 const FormLayout = ({ loading, fields, actions }) => <div>
     {loading ? (
         <div>Loading data, please wait ...</div>
@@ -76,8 +78,11 @@ function App() {
                     </div>
                 )}
                 autoSave={{
-                    type: "local",
-                    validDataOnly: false
+                    type: "custom",
+                    validDataOnly: false,
+                    save: (id, data) => saveDataToStorage(id, data, "local"),
+                    get: (id) => getDataFromStorage(id, "local"),
+                    remove: (id) => removeDataFromStorage(id, "local")
                 }}
                 id="testwizard"
                 onChange={result => setData(result.data)}

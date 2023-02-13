@@ -35,6 +35,11 @@ const Stages = ({
             if (Object.keys(savedData).length > 0) {
                 return savedData;
             }
+        } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.get === "function") {
+            const savedData = autoSave.get(id);
+            if (Object.keys(savedData).length > 0) {
+                return savedData;
+            }
         }
         return initialData;
     };
@@ -91,6 +96,10 @@ const Stages = ({
                 if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) {
                     saveDataToStorage(id, newData, autoSave.type);
                 }
+            } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
+                if ((autoSave.validDataOnly && Object.keys(errors).length === 0) || !autoSave.validDataOnly) {
+                    autoSave.save(id, newData);
+                }
             }
         }
     };
@@ -99,6 +108,9 @@ const Stages = ({
         if (id) {
             if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
             if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) removeDataFromStorage(id, autoSave.type);
+            if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.reset === "function") {
+                autoSave.remove(id);
+            }
         }
         setData(initialData);
         setCurrentStep(0);
