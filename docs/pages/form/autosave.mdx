@@ -26,8 +26,26 @@ Or if you want to config this option more precisely, you can do it like this:
 
 Options are:
 
-- **type**: The storage type, either `local` or `session`
+- **type**: The storage type, either `local` or `session` or `custom`
 - **validDataOnly**: Should only valid data be saved? (boolean)
+- **save**: Optional callback, used if `custom` is set for the storage type
+- **get**: Optional callback, used if `custom` is set for the storage type, has to return an object of the saved data
+- **remove**: Optional callback, used if `custom` is set for the storage type
+
+A custom auto save implementation could look like this:
+
+```
+<Form
+    autoSave={{
+		type: "custom",
+        validDataOnly: false,
+        save: (id, data) => saveDataToStorage(id, data),
+        get: (id) => getDataFromStorage(id),
+        remove: (id) => removeDataFromStorage(id)
+	}}
+    ...
+/>
+```
 
 Autosave is also available on the wizard component:
 
