@@ -108,7 +108,7 @@ const Stages = ({
         if (id) {
             if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
             if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) removeDataFromStorage(id, autoSave.type);
-            if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.reset === "function") {
+            if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.remove === "function") {
                 autoSave.remove(id);
             }
         }
@@ -124,6 +124,8 @@ const Stages = ({
         if (isDebugging()) {
             if (id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
                 window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave) });
+            } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.get === "function") {
+                window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: autoSave.get(id) });
             } else {
                 window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: {} });
             }

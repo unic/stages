@@ -203,9 +203,16 @@ const Form = ({
             const stringifiedData = stringify(data);
             setInitialData(JSON.parse(stringifiedData));
 
+            let savedData;
+
             // If autosave is enabled, read the data and trigger an onChange with it:
             if (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session"))) {
-                const savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
+                savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
+            } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.get === "function") {
+                savedData = autoSave.get(id);
+            }
+
+            if (savedData) {
                 if (Object.keys(savedData).length > 0) {
                     setTimeout(() => {
                         setIsDirty(!!savedData.isDirty);
@@ -222,43 +229,31 @@ const Form = ({
     */
     useEffect(() => {
         if (isDebugging()) {
+            let savedData;
             if (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session"))) {
-                window.stagesLogging({
-                    id: uniqId,
-                    data,
-                    initialData,
-                    interfaceState,
-                    undoData,
-                    asyncData,
-                    errors,
-                    fieldPaths,
-                    isDirty,
-                    focusedField,
-                    lastFocusedField,
-                    dirtyFields,
-                    loading,
-                    parsedFieldConfig,
-                    savedData: getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave)
-                });
+                savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
+            } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.get === "function") {
+                savedData = autoSave.get(id);
             } else {
-                window.stagesLogging({
-                    id: uniqId,
-                    data,
-                    initialData,
-                    interfaceState,
-                    undoData,
-                    asyncData,
-                    errors,
-                    fieldPaths,
-                    isDirty,
-                    focusedField,
-                    lastFocusedField,
-                    dirtyFields,
-                    loading,
-                    parsedFieldConfig,
-                    savedData: {}
-                });
-            } 
+                savedData = {}
+            }
+            window.stagesLogging({
+                id: uniqId,
+                data,
+                initialData,
+                interfaceState,
+                undoData,
+                asyncData,
+                errors,
+                fieldPaths,
+                isDirty,
+                focusedField,
+                lastFocusedField,
+                dirtyFields,
+                loading,
+                parsedFieldConfig,
+                savedData: savedData
+            });
         }
     }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 
@@ -1099,7 +1094,14 @@ const Form = ({
             if (Object.keys(currentErrors).length === 0) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave);
         } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
             const currentErrors = validationErrors(false, newData);
-            if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
+            if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
+                saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
+            }
+        } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
+            const currentErrors = validationErrors(false, newData);
+            if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
+                autoSave.save(id, { data: newData, isDirty, dirtyFields });
+            }
         }
     };
 
@@ -1333,6 +1335,9 @@ const Form = ({
         if (reset) {
             if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
             if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) removeDataFromStorage(id, autoSave.type);
+            if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.remove === "function") {
+                autoSave.remove(id);
+            }
             limitedOnChange(initialData, validationErrors(), id);
             setDirtyFields({});
             setIsDirty(false);
