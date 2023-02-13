@@ -65,6 +65,61 @@ function App() {
     return (
         <>
             <Debugger />
+            <Form
+                data={data}
+                fields={fields}
+                id="test"
+                autoSave={{
+                    type: "custom",
+                    validDataOnly: false,
+                    save: (id, data) => saveDataToStorage(id, data, "local"),
+                    get: (id) => getDataFromStorage(id, "local"),
+                    remove: (id) => removeDataFromStorage(id, "local")
+                }}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "field1",
+                                label: "Required field",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Non required field",
+                                type: "text"
+                            },
+                        ]
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => (
+                    <>
+                        <div>
+                            {fieldProps.fields.field1}
+                            <br />
+                            {fieldProps.fields.field2}
+                        </div>
+                        <br />
+                        <br />
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                        {" "}
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(() => {}, false, true)}
+                        >
+                            Reset
+                        </button>
+                    </>
+                )}
+                onChange={payload => setData(payload)}
+            />
+            {/*
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -172,6 +227,7 @@ function App() {
                     );
                 }}
             </Stages>
+            */}
         </>
     );
 }

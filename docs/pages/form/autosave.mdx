@@ -3,10 +3,12 @@
 You can tell Stages to auto save the added data. The data is either stored in local or session storage. 
 On all reset actions, the saved data is removed.
 
-You can enable it two ways. The basic way is to either set `local` or `session` like this:
+You can enable it two ways. The basic way is to either set `local` or `session` like this 
+(note that the form needs and id so the storage can define a correct key):
 
 ```
 <Form
+    id="demo"
     autoSave="local"
     ...
 />
@@ -16,6 +18,7 @@ Or if you want to config this option more precisely, you can do it like this:
 
 ```
 <Form
+    id="demo"
     autoSave={{
 		type: "session",
 		validDataOnly: false
@@ -36,6 +39,7 @@ A custom auto save implementation could look like this:
 
 ```
 <Form
+    id="demo"
     autoSave={{
 		type: "custom",
         validDataOnly: false,
@@ -51,6 +55,7 @@ Autosave is also available on the wizard component:
 
 ```
 <Stages
+    id="demo"
     autoSave={{
 		type: "session",
 		validDataOnly: false

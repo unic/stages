@@ -11,6 +11,7 @@ function FormPage() {
     return (
         <Layout>
             <Form
+                id="demo"
                 data={data}
                 fields={fields}
                 autoSave="session"

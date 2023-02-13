@@ -1097,7 +1097,7 @@ const Form = ({
             if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
                 saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
             }
-        } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
+        } else if (typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
             const currentErrors = validationErrors(false, newData);
             if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
                 autoSave.save(id, { data: newData, isDirty, dirtyFields });
