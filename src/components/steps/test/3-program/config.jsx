@@ -6,6 +6,7 @@ const config = {
                 label: "Program",
                 type: "collection",
                 isRequired: true,
+                init: true,
                 fields: [
                     {
                         id: "sport",

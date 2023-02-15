@@ -35,13 +35,19 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                 {fields.postalcode}
             </div>
             <br />
-            {fields.coords ? (
-                <fieldset>
-                    {fields.coords.lng}
-                    <br />
-                    {fields.coords.lat}
-                </fieldset>
-            ) : null}
+            <fieldset>
+                {fields.participants ? fields.participants.map((subFields, index) => (
+                    <div key={`program-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>
+                        {subFields.prename}
+                        <br />
+                        {subFields.lastname}
+                        <br />
+                        <button type="button" onClick={() => onCollectionAction("participants", "remove", index)}>-</button>
+                    </div>)
+                ) : null}
+                <button type="button" onClick={() => onCollectionAction("participants", "add")}>+</button>
+                {errors && errors.participants ? <div style={{ color: "red" }}>Bitte fügen Sie mindestens einen Teilnehmer hinzu!</div> : null}
+            </fieldset>
         </div>
     );
 };

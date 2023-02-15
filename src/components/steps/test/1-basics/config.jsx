@@ -91,7 +91,24 @@ const config = {
                     return isValid;
                 }
             },
-            "coords"
+            {
+                id: "participants",
+                label: "Participants",
+                type: "collection",
+                init: true,
+                fields: [
+                    {
+                        id: "prename",
+                        label: "Prename",
+                        type: "text"
+                    },
+                    {
+                        id: "lastname",
+                        label: "Lastname",
+                        type: "text"
+                    }
+                ]
+            }
         ];
     }
 };

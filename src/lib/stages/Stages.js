@@ -84,6 +84,7 @@ const Stages = ({
         setErrors(Object.assign({}, errors));
 
         newData[key] = changedData;
+        data[key] = changedData;
         setData(Object.assign({}, newData));
 
         if (typeof onChange === "function") onChange({ data: newData, errors });

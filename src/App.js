@@ -65,6 +65,7 @@ function App() {
     return (
         <>
             <Debugger />
+            {/*
             <Form
                 data={data}
                 fields={fields}
@@ -119,7 +120,7 @@ function App() {
                 )}
                 onChange={payload => setData(payload)}
             />
-            {/*
+            */}
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -132,6 +133,7 @@ function App() {
                         {typeof window !== "undefined" ? <HashRouter {...routerProps} /> : null}
                     </div>
                 )}
+                /*
                 autoSave={{
                     type: "custom",
                     validDataOnly: false,
@@ -139,6 +141,7 @@ function App() {
                     get: (id) => getDataFromStorage(id, "local"),
                     remove: (id) => removeDataFromStorage(id, "local")
                 }}
+                */
                 id="testwizard"
                 onChange={result => setData(result.data)}
             >
@@ -227,7 +230,6 @@ function App() {
                     );
                 }}
             </Stages>
-            */}
         </>
     );
 }
