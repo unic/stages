@@ -44,6 +44,39 @@ function FormPage() {
                                 },
                                 errorRenderer: (error) => <div style={{ color: "#f30" }}><br />Please fill out at least one of the two fields.</div>,
                             },
+                            {
+                                id: "password",
+                                label: "Password",
+                                type: "password",
+                                isRequired: true,
+                                validateOn: ["action", "blur", "change"],
+                                customValidation: ({ data, isValid }) => {
+                                    if (!data) return false;
+                                    const errors = [];
+                                    if (data.length < 8) errors.push("length");
+                                    if (data.match(/[^a-zA-Z0-9]+/) === null) errors.push("specialchar");
+                                    if (data.match(/[A-Z]+/) === null) errors.push("upper");
+                                    if (data.match(/[a-z]+/) === null) errors.push("lower");
+                                    if (data.match(/[0-9]+/) === null) errors.push("number");
+                                    return errors.length > 0 ? errors.join() : isValid;
+                                },
+                                errorRenderer: ({ errorCode }) => (
+                                    <ul>
+                                        <li style={{ color: !errorCode ? "black" : errorCode.includes("length") ? "red" : "green" }}>
+                                            At least 8 characters
+                                        </li>
+                                        <li style={{ color: !errorCode ? "black" : errorCode.includes("specialchar") ? "red" : "green" }}>
+                                            At least one special character, for example !, ?, &, % etc.
+                                        </li>
+                                        <li style={{ color: !errorCode ? "black" : errorCode.includes("upper") || errorCode.includes("lower") ? "red" : "green" }}>
+                                            At least one lowercase and one uppercase character
+                                        </li>
+                                        <li style={{ color: !errorCode ? "black" : errorCode.includes("number") ? "red" : "green" }}>
+                                            At least one number
+                                        </li>
+                                    </ul>
+                                )
+                            },
                         ]
                     }
                 }}
@@ -66,6 +99,11 @@ function FormPage() {
                             <div className="pure-u-12-24">{fieldProps.fields.field2}</div>
                         </div>
                         {fieldProps.fields.atLeastOne}
+                        <br />
+                        <Paragraph>
+                            In this example we use error codes to tell the user which strong password rules are fulfilled.
+                        </Paragraph>
+                        {fieldProps.fields.password}
                         <br />
                         <HR isDirty={fieldProps.isDirty} />
                         <br />
