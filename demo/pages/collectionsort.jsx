@@ -12,36 +12,42 @@ function FormPage() {
                 title: "Clean up the house",
                 assignee: "hm@domain.com",
                 priority: 3,
+                storypoints: 2,
                 status: "new"
             },
             {
                 title: "Bring the dog out",
                 assignee: "vb@domain.com",
                 priority: 2,
+                storypoints: 1,
                 status: "new"
             },
             {
                 title: "Create a new Stages demo",
                 assignee: "",
                 priority: 2,
+                storypoints: 3,
                 status: "progress"
             },
             {
                 title: "Move plants to the sunny side",
                 assignee: "hm@domain.com",
                 priority: 2,
+                storypoints: 5,
                 status: "progress"
             },
             {
                 title: "Go to bed early",
                 assignee: "",
                 priority: 1,
+                storypoints: 1,
                 status: "progress"
             },
             {
                 title: "Eat some healthy food",
                 assignee: "vb@domain.com",
                 priority: 1,
+                storypoints: 3,
                 status: "done"
             }
         ],
@@ -56,6 +62,17 @@ function FormPage() {
             }
         ]
     });
+
+    const sumStoryPoints = (data, status) => {
+        let sum = 0;
+        if (data && data.tasks) {
+            data.tasks.forEach(item => {
+                if (item.status === status) sum += Number(item.storypoints);
+            });
+        }
+        return sum;
+    };
+
     return (
         <Layout>
             <Form
@@ -125,7 +142,14 @@ function FormPage() {
                                         ],
                                         isRequired: true,
                                         hideDebugInfo: true
-                                    }
+                                    },
+                                    {
+                                        id: "storypoints",
+                                        label: "Story Points",
+                                        type: "number",
+                                        defaultValue: 0,
+                                        hideDebugInfo: true
+                                    },
                                 ]
                             },
                             {
@@ -149,6 +173,54 @@ function FormPage() {
                                         type: "text",
                                         isRequired: true,
                                         hideDebugInfo: true
+                                    },
+                                    {
+                                        id: "upcoming",
+                                        label: "Upcoming",
+                                        type: "number",
+                                        isDisabled: true,
+                                        hideDebugInfo: true,
+                                        computedValue: (data, itemData) => {
+                                            let sum = 0;
+                                            if (data && data.tasks) {
+                                                data.tasks.forEach(item => {
+                                                    if (item.assignee === itemData.email && item.status === "new") sum += Number(item.storypoints);
+                                                });
+                                            }
+                                            return sum;
+                                        }
+                                    },
+                                    {
+                                        id: "progress",
+                                        label: "Current",
+                                        type: "number",
+                                        isDisabled: true,
+                                        hideDebugInfo: true,
+                                        computedValue: (data, itemData) => {
+                                            let sum = 0;
+                                            if (data && data.tasks) {
+                                                data.tasks.forEach(item => {
+                                                    if (item.assignee === itemData.email && item.status === "progress") sum += Number(item.storypoints);
+                                                });
+                                            }
+                                            return sum;
+                                        }
+                                    },
+                                    {
+                                        id: "done",
+                                        label: "Done",
+                                        type: "number",
+                                        isDisabled: true,
+                                        hideDebugInfo: true,
+                                        computedValue: (data, itemData) => {
+                                            let sum = 0;
+                                            if (data && data.tasks) {
+                                                data.tasks.forEach(item => {
+                                                    if (item.assignee === itemData.email && item.status === "done") sum += Number(item.storypoints);
+                                                });
+                                            }
+                                            return sum;
+                                        }
                                     }
                                 ]
                             }
@@ -176,6 +248,7 @@ function FormPage() {
                                             {subFields.title}
                                             {subFields.assignee}
                                             {subFields.priority}
+                                            {subFields.storypoints}
                                             {subFields.status}
                                         </div>
                                     );
@@ -184,7 +257,7 @@ function FormPage() {
                         <br />
                         <div style={{ display: "flex" }}>
                             <fieldset style={{ flexGrow: 1, padding: "0", border: "none", background: "#eee" }}>
-                                <h3 style={{ padding: "8px", margin: 0 }}>New:</h3>
+                                <h3 style={{ padding: "8px", margin: 0 }}>New ({sumStoryPoints(fieldProps.data, "new")} Story Points):</h3>
                                 {fieldProps.fields.tasks ? fieldProps.fields.tasks.map((subFields, index) => {
                                     const itemData = fieldProps.get(fieldProps.data, `tasks[${index}].status`);
                                     if (itemData !== "new") return null;
@@ -194,6 +267,7 @@ function FormPage() {
                                                 {subFields.title}
                                                 {subFields.assignee}
                                                 {subFields.priority}
+                                                {subFields.storypoints}
                                                 {subFields.status}
                                             </div>
                                             <button type="button" onClick={() => fieldProps.onCollectionAction("tasks", "remove", index)}>-</button>
@@ -202,7 +276,7 @@ function FormPage() {
                                 }) : null}
                             </fieldset>
                             <fieldset style={{ flexGrow: 1, padding: "0", border: "none", background: "#eee" }}>
-                                <h3 style={{ padding: "8px", margin: 0 }}>In Progress:</h3>
+                                <h3 style={{ padding: "8px", margin: 0 }}>In Progress ({sumStoryPoints(fieldProps.data, "progress")} Story Points):</h3>
                                 {fieldProps.fields.tasks ? fieldProps.fields.tasks.map((subFields, index) => {
                                     const itemData = fieldProps.get(fieldProps.data, `tasks[${index}].status`);
                                     if (itemData !== "progress") return null;
@@ -212,6 +286,7 @@ function FormPage() {
                                                 {subFields.title}
                                                 {subFields.assignee}
                                                 {subFields.priority}
+                                                {subFields.storypoints}
                                                 {subFields.status}
                                             </div>
                                             <button type="button" onClick={() => fieldProps.onCollectionAction("tasks", "remove", index)}>-</button>
@@ -220,7 +295,7 @@ function FormPage() {
                                 }) : null}
                             </fieldset>
                             <fieldset style={{ flexGrow: 1, padding: "0", border: "none", background: "#eee" }}>
-                                <h3 style={{ padding: "8px", margin: 0 }}>Done:</h3>
+                                <h3 style={{ padding: "8px", margin: 0 }}>Done ({sumStoryPoints(fieldProps.data, "done")} Story Points):</h3>
                                 {fieldProps.fields.tasks ? fieldProps.fields.tasks.map((subFields, index) => {
                                     const itemData = fieldProps.get(fieldProps.data, `tasks[${index}].status`);
                                     if (itemData !== "done") return null;
@@ -230,6 +305,7 @@ function FormPage() {
                                                 {subFields.title}
                                                 {subFields.assignee}
                                                 {subFields.priority}
+                                                {subFields.storypoints}
                                                 {subFields.status}
                                             </div>
                                             <button type="button" onClick={() => fieldProps.onCollectionAction("tasks", "remove", index)}>-</button>
@@ -245,6 +321,12 @@ function FormPage() {
                                 <div key={`members-${index}`} style={{ background: "#fff", margin: "8px", padding: "8px", display: "flex" }}>
                                     {subFields.email}
                                     {subFields.name}
+                                    <div style={{ display: "flex", padding: "8px" }}>
+                                        <h3>Work:</h3>
+                                        {subFields.upcoming}
+                                        {subFields.progress}
+                                        {subFields.done}
+                                    </div>
                                     <button type="button" onClick={() => fieldProps.onCollectionAction("members", "remove", index)}>-</button>
                                 </div>
                             )) : null}

@@ -49,7 +49,7 @@ const Input = ({
     return (
         <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus} hideDebugInfo={hideDebugInfo}>
             {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
-            <PathInfo id={id} type={type} />
+            {hideDebugInfo ? null : <PathInfo id={id} type={type} />}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <input
@@ -68,7 +68,7 @@ const Input = ({
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();
                     }}
-                    style={{ padding: "4px 8px", minWidth: "200px" }}
+                    style={{ padding: "4px 8px", minWidth: type === "number" ? "75px" : "200px", maxWidth: type === "number" ? "75px" : "200px" }}
                 />
                 {suffix ? <span>{suffix}</span> : null}
             </div>

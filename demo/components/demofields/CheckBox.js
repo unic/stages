@@ -48,7 +48,7 @@ const CheckBox = ({
     return (
         <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus} hideDebugInfo={hideDebugInfo}>
             {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
-            <PathInfo id={id} type={type} />
+            {hideDebugInfo ? null : <PathInfo id={id} type={type} />}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <input
