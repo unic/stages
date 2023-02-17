@@ -78,6 +78,11 @@ function FormPage() {
             <Form
                 data={data}
                 fields={fields}
+                enableUndo
+                autoSave={{
+                    type: "local",
+                    validDataOnly: false
+                }}
                 config={{
                     fields: () => {
                         return [
@@ -239,6 +244,10 @@ function FormPage() {
                         </Paragraph>
                         <div>
                             <button type="button" onClick={() => fieldProps.onCollectionAction("tasks", "add")}>+</button>
+                            {" | "}
+                            <button onClick={actionProps.handleUndo}>Undo</button>
+                            {" "}
+                            <button onClick={actionProps.handleRedo}>Redo</button>
                             <br /><br />
                             {fieldProps.fields.tasks ? fieldProps.fields.tasks.map((subFields, index) => {
                                     const itemData = fieldProps.get(fieldProps.data, `tasks[${index}].status`);
@@ -332,21 +341,6 @@ function FormPage() {
                             )) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("members", "add")}>+</button>
                         </fieldset>
-                        <br />
-                        <br />
-                        <button
-                            type="button"
-                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
-                        >
-                            Submit
-                        </button>
-                        {" "}
-                        <button
-                            type="button"
-                            onClick={() => actionProps.handleActionClick(() => {}, false, true)}
-                        >
-                            Reset
-                        </button>
                     </>
                 )}
                 onChange={payload => setData(payload)}
