@@ -887,6 +887,25 @@ const Form = ({
         return arr;
     };
 
+    const isCollectionField = (path) => {
+        const pathSplit = path.split(".");
+        const secondLastEntry = pathSplit.at(-2);
+        const lastChar = secondLastEntry.slice(-1);
+        return lastChar === "]";
+    };
+
+    const getParentPath = (path) => {
+        const pathParts = path.split(".");
+        pathParts.pop();
+        let newPath = pathParts.join(".");
+        const lastChar = newPath.slice(-1);
+        if (lastChar === "]") {
+            const lastIndex = newPath.lastIndexOf("[");
+            newPath = newPath.substring(0, lastIndex);
+        }
+        return newPath;
+    };
+
     /*
         This function is called on each fields onChange. It will trigger the forms onChange
         and run the validation on the new data (which is sent to the onChange, as well).
@@ -1002,6 +1021,18 @@ const Form = ({
                     createDynamicOptions(fieldPath.path, fieldPath.config.dynamicOptions, newData);
                 }
             });
+        }
+
+        // Do we have to sort a collection?
+        if (isCollectionField(fieldKey)) {
+            const collectionKey = getParentPath(fieldKey);
+            const collectionConfig = getConfigForField(collectionKey);
+            if (collectionConfig.sort && collectionConfig.sort.by && collectionConfig.sort.by.indexOf(fieldConfig.id) > -1) {
+                let collectionData = get(newData, collectionKey, []);
+                collectionData = sortBy(collectionData, collectionConfig.sort.by);
+                if (collectionConfig.sort.dir === "desc") collectionData = collectionData.reverse();
+                set(newData, collectionKey, collectionData);
+            }
         }
 
         limitedOnChange(newData, newErrors || errors, id, fieldKey);
@@ -1281,6 +1312,11 @@ const Form = ({
             updatedCollection.splice(index+1, 0, Object.assign({}, updatedCollection[index]));
         }
 
+        if (field.sort && field.sort.by) {
+            updatedCollection = sortBy(updatedCollection, field.sort.by);
+            if (field.sort.dir === "desc") updatedCollection = updatedCollection.reverse();
+        }
+
         set(newData, fieldKey, updatedCollection);
 
         // Only validate if collection action validation is enabled:
@@ -1370,7 +1406,7 @@ const Form = ({
     // Render all the render props:
     return render ? render({
         actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields },
+        fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields, get },
         loading
     }) : null;
 };
