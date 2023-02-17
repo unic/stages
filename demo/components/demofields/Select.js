@@ -44,10 +44,11 @@ const Select = ({
     suffix,
     secondaryText,
     errorRenderer,
+    hideDebugInfo,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus}>
+        <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus} hideDebugInfo={hideDebugInfo}>
             {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
             <PathInfo id={id} type={type} />
             <div>

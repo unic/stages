@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
                     position: "relative"
                 }}
             >
-                <div style={{ maxWidth: "960px" }}>
+                <div style={{ maxWidth: "1040px" }}>
                     {children}
                 </div>
                 <div style={{ padding: "16px 0", marginTop: "64px", fontSize: "12px", letterSpacing: "1px" }}>
