@@ -44,6 +44,7 @@ const Input = ({
     type,
     errorRenderer,
     hideDebugInfo,
+    highlighted,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
@@ -68,7 +69,11 @@ const Input = ({
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();
                     }}
-                    style={{ padding: "4px 8px", minWidth: type === "number" ? "75px" : "200px", maxWidth: type === "number" ? "75px" : "200px" }}
+                    style={highlighted ? { 
+                        padding: "4px", fontWeight: "bold", minWidth: type === "number" ? "75px" : "208px", maxWidth: type === "number" ? "75px" : "208px"
+                    } : { 
+                        padding: "4px 8px", minWidth: type === "number" ? "75px" : "200px", maxWidth: type === "number" ? "75px" : "200px"
+                    }}
                 />
                 {suffix ? <span>{suffix}</span> : null}
             </div>

@@ -54,7 +54,7 @@ function FormPage() {
             <Paragraph>
                 <a href="/collections">Collections</a>{", "}
                 <a href="/collectionrules">Collection Rules</a>{", "}
-                <a href="/collectionsort">Collection Sort</a>
+                <a href="/collectionsort">Collection Sort (Kanban)</a>
             </Paragraph>
             <Heading>Wizard</Heading>
             <Paragraph>

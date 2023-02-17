@@ -30,7 +30,7 @@ function FormPage() {
                 status: "progress"
             },
             {
-                title: "Move plants to the sunny side",
+                title: "Move plants towards sun",
                 assignee: "hm@domain.com",
                 priority: 2,
                 storypoints: 5,
@@ -100,6 +100,7 @@ function FormPage() {
                                         id: "title",
                                         label: "Title",
                                         type: "text",
+                                        highlighted: true,
                                         isRequired: true,
                                         hideDebugInfo: true
                                     },
@@ -234,13 +235,15 @@ function FormPage() {
                 }}
                 render={({ actionProps, fieldProps }) => (
                     <>
-                        <Heading>Collection Sort:</Heading>
+                        <Heading>Collection Sort (Kanban Board):</Heading>
                         <Paragraph>
                             In this example we demonstrate two things. First we have a collection of tasks, which is sorted by 
                             its priority field. Blockers first, than manjor and finally minor tasks. Second, we have split 
                             the collections by it's status field. We can easily achive this by ignoring all entries in a 
                             collection that have the wrong status while looping over the items and than do this three times by it's status. 
-                            All entries without status, we display above the "Kanban" board.
+                            All entries without status, we display above the "Kanban" board. And to illustrate the power of collections 
+                            further, you can add additional team members which can than be assigned to tasks. And everything is auto saved, 
+                            so pretty functional already for an easy to setup Kanban board.
                         </Paragraph>
                         <div>
                             <button type="button" onClick={() => fieldProps.onCollectionAction("tasks", "add")}>+</button>
