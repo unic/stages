@@ -46,6 +46,7 @@ const DemoNav = () => {
                     <optgroup label="Collections">
                         <option value="/collections">Collections</option>
                         <option value="/collectionrules">Collection Rules</option>
+                        <option value="/collectionsort">Collection Sort</option>
                     </optgroup>
                     <optgroup label="Wizard">
                        <option value="/wizard">Simple Wizard</option>
