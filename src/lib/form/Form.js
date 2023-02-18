@@ -890,7 +890,7 @@ const Form = ({
     const isCollectionField = (path) => {
         const pathSplit = path.split(".");
         const secondLastEntry = pathSplit.at(-2);
-        const lastChar = secondLastEntry.slice(-1);
+        const lastChar = secondLastEntry ? secondLastEntry.slice(-1) : "";
         return lastChar === "]";
     };
 
