@@ -14,6 +14,14 @@ import stringify from "fast-json-stable-stringify";
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
 import { isElementInViewport, isDebugging } from "../utils/browser";
 
+/**
+ * Cast a value to a specific type
+ * 
+ * @param {*} value any type of value which should be casted to specific type
+ * @param {string} type one of the following types: number, string, boolean, date
+ * @param {boolean} parseAsArray should each element of an array be casted?
+ * @returns {*} the casted value
+ */
 const castValueStrType = (value, type, parseAsArray) => {
     if (parseAsArray && Array.isArray(value)) {
         if (type === "number") return value.map(v => Number(v));
@@ -29,6 +37,13 @@ const castValueStrType = (value, type, parseAsArray) => {
     return value;
 };
 
+/**
+ * Get all possible combinations of all the elements between two input arrays
+ * 
+ * @param {Array<any>} arr1 first input array
+ * @param {Array<any>} arr2 second input array
+ * @returns {Array<any>} all combinations
+ */
 const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
     const res = [];
 
@@ -39,8 +54,15 @@ const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
     });
 
     return res;
- };
+};
 
+/**
+ * Get all field paths based on the field config and the current data
+ * 
+ * @param {object} fieldConfig the field configuration
+ * @param {object} data the current data
+ * @returns {Array<string>} an array of all paths
+ */
 const getFieldPaths = (fieldConfig, data) => {
     const paths = [];
 
@@ -89,6 +111,16 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
+/**
+ * Parse the configuration using all the available data
+ * 
+ * @param {object} config the dynamic form config
+ * @param {object} data the current data
+ * @param {object} asyncData all the loaded async data
+ * @param {object} interfaceState all the interface state
+ * @param {Array<object>} modifiedConfigs config which was modified on runtime by user input
+ * @returns {Array<object>} the parsed config
+ */
 const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) => {
     let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState) : [];
 
@@ -133,10 +165,13 @@ let lastOnChangeData; // Used to prevent unnessesary onChange callbacks
 
 const chosenPlaceholders = {}; 
 
-/*
-    This is the form component used in Stages. You can use it for individual steps in a wizard
-    or on it's own for one stage forms.
-*/
+/**
+ * This is the form component used in Stages. You can use it for individual steps in a wizard
+ * or on it's own for one stage forms.
+ * 
+ * @param {object} component properties 
+ * @returns {React.ReactElement}
+ */
 const Form = ({
     config,
     data,
@@ -257,10 +292,23 @@ const Form = ({
         }
     }, [data, errors, isDirty, focusedField, lastFocusedField, dirtyFields, loading]);
 
-    // Helper function to detect reserved field types:
+    /**
+     * Helper function to detect reserved field types
+     * 
+     * @param {string} type string of the elemnts type
+     * @returns {boolean} true if the type is a reserved type
+     */
     const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "config";
 
-    // Is a specific field valid based on current data:
+    /**
+     * Is a specific field valid based on current data?
+     * 
+     * @param {string} fieldKey the path based key of the field
+     * @param {object} field the config for this field
+     * @param {object} fieldData data for this field
+     * @param {string} triggeringEvent the event which triggered this validation
+     * @returns {boolean} returns true if field value is valid
+     */
     const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
         if (!fields[field.type]) return true;
         const thisData = get(fieldData, fieldKey);
@@ -277,9 +325,16 @@ const Form = ({
         }) : isValid;
     };
 
-    /*
-        This function is used to validate one single field. It returns the updated error and firstErrorField object
-    */
+    /**
+     * This function is used to validate one single field. It returns the updated error and firstErrorField object
+     * 
+     * @param {string} fieldKey the path based key of the field
+     * @param {string} triggeringEvent the event which triggered this validation
+     * @param {object} validationData current data
+     * @param {object} errors current error object
+     * @param {boolean} firstErrorField is this the first error field?
+     * @returns {object} an object containing the errors
+     */
     const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
         const field = find(fieldPaths, { path: fieldKey }).config;
         if (isDebugging()) window.stagesLogging(`Validate field "${fieldKey}"`, uniqId);
@@ -566,10 +621,14 @@ const Form = ({
         };
     };
 
-    /*
-        This function checks for all validation errors, based on each field types validation method
-        and the fields config.
-    */
+    /**
+     * This function checks for all validation errors, based on each field types validation method
+     * and the fields config.
+     * 
+     * @param {boolean} isUserAction is this a user action or called internally (from the wizard)?
+     * @param {object} validationData the current data being validated
+     * @returns {object} an object containing the errors
+     */
     const validationErrors = (isUserAction, validationData) => {
         let errors = {};
         let firstErrorField;
@@ -592,16 +651,19 @@ const Form = ({
         return errors;
     };
 
-    /*
-        This function can be used to gather form errors without populating the error object, 
-        which can be useful in certain cases where you don't want to display errors on the fields 
-        but for example disabling submission of the form
-    */
+    /**
+     * This function can be used to gather form errors without populating the error object,
+     * which can be useful in certain cases where you don't want to display errors on the fields
+     * but for example disabling submission of the form.
+     * 
+     * @returns {object} an object containing the errors
+     */
     const silentlyGetValidationErrors = () => {
         return validationErrors(false);
     };
 
-    // To make sure that subforms are being validated, we have to run validation each time validation is being run on the parent component:
+    // To make sure that subforms are being validated, we have to run validation each time validation is being 
+    // run on the parent component:
     useEffect(() => {
         if (typeof onValidation === "function" && parentRunValidation) {
             if (isDebugging()) window.stagesLogging(`Get errors on validation`, uniqId);
@@ -611,9 +673,12 @@ const Form = ({
         }
     }, [onValidation]);
 
-    /*
-        This is the callback which sub forms call to bubble up validation errors from within the subform.
-    */
+    /**
+     * This is the callback which sub forms call to bubble up validation errors from within the subform.
+     * 
+     * @param {string} subId the id of the sub form
+     * @param {object} subErrors the errors from the sub form
+     */
     const handleSubValidation = (subId, subErrors) => {
         if (isDebugging()) window.stagesLogging(`Get sub form errors for sub id "${subId}"`, uniqId);
         validationErrors(true);
@@ -622,7 +687,12 @@ const Form = ({
         }
     };
 
-    // Helper state function so we always get the latest options cache when updating from callback:
+    /**
+     * Helper state function so we always get the latest options cache when updating from callback
+     * 
+     * @param {string} key the field path key
+     * @param {Array<object>} options all the cached options
+     */
     const updateOptionsCache = (key, options) => {
         if (isDebugging()) window.stagesLogging(`Update options cache for "${key}"`, uniqId);
         setOptionsCache(latestCache => {
@@ -630,7 +700,12 @@ const Form = ({
         });
     };
 
-    // Helper state function so we always get the latest options loaded when updating from callback:
+    /**
+     * Helper state function so we always get the latest options loaded when updating from callback
+     * 
+     * @param {string} key the field path key
+     * @param {Array<object>} options the new options which should be cached
+     */
     const updateOptionsLoaded = (key, options) => {
         if (isDebugging()) window.stagesLogging(`Update options loaded for "${key}"`, uniqId);
         setOptionsLoaded(latestCache => {
@@ -638,7 +713,13 @@ const Form = ({
         });
     };
 
-    // Create the dynamic options for a specific field
+    /**
+     * Create the dynamic options for a specific field
+     * 
+     * @param {string} fieldKey the field path key
+     * @param {object} optionsConfig configuration for the dynamicly loaded options
+     * @param {object} updatedData the latest form data
+     */
     const createDynamicOptions = async (fieldKey, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
             const cacheKeyValues = {};
@@ -683,7 +764,12 @@ const Form = ({
         }
     };
 
-    // This function removes interface data from the form data and packs it into the interface state:
+    /**
+     * This function removes interface data from the form data and packs it into the interface state
+     * 
+     * @param {object} thisData the current form data
+     * @returns {object} new data with all inteerface state removed
+     */
     const removeInterfaceState = thisData => {
         // 1. Use fieldPaths to remove data which shouldn't be exposed.
         // 2. Put it into interFace state
@@ -707,7 +793,14 @@ const Form = ({
         return newData;
     };
 
-    // Improve the on change handler so that only real changes are bubbled up!
+    /**
+     * Improve the on change handler so that only real changes are bubbled up!
+     * 
+     * @param {object} newData the latest form data
+     * @param {object} errors all the form errors
+     * @param {string} id id of the form
+     * @param {string} fieldKey the field path key
+     */
     const limitedOnChange = (newData, errors, id, fieldKey) => {
         let newLastOnChangeData;
         try {
@@ -719,7 +812,9 @@ const Form = ({
         }
     };
 
-    // Form action handler for undo
+    /**
+     * Form action handler for undo
+     */
     const handleUndo = () => {
         if (enableUndo && activeUndoIndex > 0) {
             const newIndex = activeUndoIndex - 1;
@@ -734,7 +829,9 @@ const Form = ({
         }
     };
     
-    // Form action handler for redo
+    /**
+     * Form action handler for redo
+     */
     const handleRedo = () => {
         if (enableUndo && activeUndoIndex < undoData.length - 1) {
             const newIndex = activeUndoIndex + 1;
@@ -749,7 +846,10 @@ const Form = ({
         }
     };
 
-    // Add new entry to the undo index
+    /**
+     * Add new entry to the undo index
+     * @param {object} newData the latest form data
+     */
     const addNewUndoEntry = newData => {
         if (enableUndo) {
             const newUndoData = [...undoData];
@@ -839,10 +939,13 @@ const Form = ({
         limitedOnChange(newData, validationErrors(), id); // will trigger validations even with no inits
     }, [isVisible]);
 
-    /*
-        This function finds all fields with computed values and computes them
-        with the current data.
-    */
+    /**
+     * This function finds all fields with computed values and computes them
+     * with the current data.
+     * 
+     * @param {object} data the current form data
+     * @returns {object} the newly computed form data
+     */
     const computeValues = (data) => {
         const newData = Object.assign({}, data);
         fieldPaths.forEach(fieldPath => {
@@ -855,13 +958,24 @@ const Form = ({
         return newData;
     };
 
-    /*
-        This function returns the field configuration for a specific field, given the key of that field (or keys for collection fields)
-    */
+    /**
+     * This function returns the field configuration for a specific field, given the key of that 
+     * field (or keys for collection fields)
+     * 
+     * @param {string} fieldKey the path key of the field
+     * @returns {object} the field configuration
+     */
     const getConfigForField = fieldKey => {
         return find(fieldPaths, { path: fieldKey }).config;
     };
 
+    /**
+     * Returns an array of active custom events given a triggering event and event data.
+     *
+     * @param {string} triggeringEvent - the event that triggered the custom events
+     * @param {object} eventData - the data passed to the event handler
+     * @returns {Array<string>} an array of active custom events
+     */
     const getActiveCustomEvents = (triggeringEvent, eventData) => {
         const activeCustomEvents = [];
 
@@ -882,6 +996,12 @@ const Form = ({
         return activeCustomEvents;
     };
 
+    /**
+     * Collapse arrays with only one element into a string
+     * 
+     * @param {Array<string>} arr the array to process
+     * @returns {string|Array<string>} the first element of the array or the whole array
+     */
     const arrayToStringIfOnlyOneEntry = arr => {
         if (Array.isArray(arr) && arr.length === 1) return arr[0];
         return arr;
