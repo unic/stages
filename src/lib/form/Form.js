@@ -1007,6 +1007,12 @@ const Form = ({
         return arr;
     };
 
+    /**
+     * Returns true if the field is a collection
+     * 
+     * @param {string} path the path of the field
+     * @returns {boolean} true if the field is a collection
+     */
     const isCollectionField = (path) => {
         const pathSplit = path.split(".");
         const secondLastEntry = pathSplit.at(-2);
@@ -1014,6 +1020,12 @@ const Form = ({
         return lastChar === "]";
     };
 
+    /**
+     * Returns the parent path of a given path.
+     *
+     * @param {string} path - The path to extract the parent path from.
+     * @return {string} The parent path of the given path.
+     */
     const getParentPath = (path) => {
         const pathParts = path.split(".");
         pathParts.pop();
@@ -1026,10 +1038,15 @@ const Form = ({
         return newPath;
     };
 
-    /*
-        This function is called on each fields onChange. It will trigger the forms onChange
-        and run the validation on the new data (which is sent to the onChange, as well).
-    */
+    /**
+     * This function is called on each fields onChange. It will trigger the forms onChange
+     * and run the validation on the new data (which is sent to the onChange, as well).
+     * 
+     * @param {string} fieldKey field path key
+     * @param {any} value the new value for this field
+     * @param {object} outsideData the outside data to be processed
+     * @param {boolean} syntheticCall true if this is a synthetic call
+     */
     const handleChange = (fieldKey, value, outsideData, syntheticCall = false) => {
         let throttleValidation = false;
         let newErrors;
@@ -1162,15 +1179,23 @@ const Form = ({
         This function is called on each fields onFocus. It is currently used 
         to track which field has focus and what the last field in focus was.
     */
+    /**
+     * This function is called on each fields onFocus. It is currently used 
+     * to track which field has focus and what the last field in focus was.
+     * 
+     * @param {string} fieldKey path key of the field
+     */
     const handleFocus = (fieldKey) => {
         setFocusedField(fieldKey);
         setLastFocusedField(fieldKey);
     };
 
-    /*
-        This function is called on each fields onBlur. It only runs validation 
-        if validation is enabled for blur events.
-    */
+    /**
+     * This function is called on each fields onBlur. It only runs validation 
+     * if validation is enabled for blur events.
+     * 
+     * @param {string} fieldKey path key of the field
+     */
     const handleBlur = (fieldKey) => {
         setFocusedField();
         const fieldConfig = getConfigForField(fieldKey);
@@ -1256,10 +1281,12 @@ const Form = ({
         }
     };
 
-    /*
-        Create the rendered fields object, which contain the correct React components together
-        with the correct data in them.
-    */
+    /**
+     * Create the rendered fields object, which contain the correct React components together
+     * with the correct data in them.
+     * 
+     * @return {object} An object of rendered fields, with each field represented as a React component.
+     */
     const createRenderedFields = () => {
         const renderedFields = {};
 
@@ -1375,10 +1402,15 @@ const Form = ({
         return renderedFields;
     };
 
-    /*
-        This function handles adding and removing collection entries. It is
-        called by the forms render method.
-    */
+    /**
+     * This function handles adding and removing collection entries. It is
+     * called by the forms render method.
+     * 
+     * @param {string} fieldKey the key for the field the collection belongs to
+     * @param {string} action the type of action to perform on the collection
+     * @param {number|string} index the index of the collection entry to perform the action on, or a string index if the collection is a union type
+     * @param {number} toIndex the index to move the entry to when the action is "move"
+     */
     const onCollectionAction = (fieldKey, action, index, toIndex) => {
         const newData = Object.assign({}, alldata);
         const field = getConfigForField(fieldKey);
@@ -1448,9 +1480,13 @@ const Form = ({
         limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey);
     };
 
-    /*
-        This adds a specific config to the field configuration at a certain path
-    */
+    /**
+     * This adds a specific config to the field configuration at a certain path
+     * 
+     * @param {*} path The path to the field config which should be modified
+     * @param {*} configKey The key of the `fieldConfigs` property to modify
+     * @param {*} action The action to perform on the `fieldConfigs` property
+     */
     const modifyConfig = (path, configKey, action) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
             const pathParts = path.split(".");
@@ -1480,10 +1516,14 @@ const Form = ({
         }
     };
 
-    /*
-        The function is called by the forms action buttons. It either runs the validation
-        or just the supplied callback.
-    */
+    /**
+     * The function is called by the forms action buttons. It either runs the validation
+     * or just the supplied callback.
+     * 
+     * @param {function} callback function called if no validation errors
+     * @param {boolean} validate  whether to run validation or not
+     * @param {boolean} reset whether to reset back to initial data or not
+     */
     const handleActionClick = (callback, validate, reset) => {
         if (isDebugging()) window.stagesLogging(`Handle action click`, uniqId);
 
