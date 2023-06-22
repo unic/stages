@@ -5,19 +5,30 @@ import findIndex from "lodash.findindex";
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
 import { isDebugging } from "../utils/browser";
 
-/*
-    The Stages component is your main component to build everything from simple wizards
-    to complicated dynamic multi stage form constructs. Some of it's possible usecases:
-
-    - Forms (one stage)
-    - Wizards (multiple stages, linear progression)
-    - Dynamic Wizard (multiple dynamic stages, non linear progression)
-    - Text Adventure (multiple stages, free progression)
-    - Quiz (One or multiple stages, with custom validation and locked fields)
-    - Accordion Form (stages rendered inside an accordion)
-    - Slideshow (multiple stages, no validation, keyboard navigation)
-    - Router (for SPAs)
-*/
+/**
+ * The Stages component is your main component to build everything from simple wizards
+ * to complicated dynamic multi stage form constructs. Some of it's possible usecases:
+ *
+ * - Forms (one stage)
+ * - Wizards (multiple stages, linear progression)
+ * - Dynamic Wizard (multiple dynamic stages, non linear progression)
+ * - Text Adventure (multiple stages, free progression)
+ * - Quiz (One or multiple stages, with custom validation and locked fields)
+ * - Accordion Form (stages rendered inside an accordion)
+ * - Slideshow (multiple stages, no validation, keyboard navigation)
+ * - Router (for SPAs)
+ *
+ * @param {object} props - An object containing the following keys:
+ *   - children: an array of functions that return a JSX element to render each step
+ *   - initialData: an object containing the initial data for the form
+ *   - initialStep: the index of the step to start on
+ *   - render: a function that returns the JSX to render the component
+ *   - validateOnStepChange: a boolean indicating whether to validate on step change
+ *   - onChange: a function to call when data changes
+ *   - autoSave: a string or object indicating whether to save data automatically
+ *   - id: a string indicating the unique identifier for the component
+ * @return {JSX.Element} The rendered component or null
+ */
 const Stages = ({
     children,
     initialData,
@@ -28,6 +39,11 @@ const Stages = ({
     autoSave,
     id
 }) => {
+    /**
+     * Creates the initial data for the wizard, either from saved data or the default initialData.
+     *
+     * @return {Object} The initial data for the editor.
+     */
     const createInitialData = () => {
         // If autosave is enabled, read the data and trigger an onChange with it:
         if (id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
@@ -51,9 +67,12 @@ const Stages = ({
     const [currentStep, setCurrentStep] = useState(initialStep || 0);
     const [keys, setKeys] = useState([]);
 
-    /*
-        Get only the data for a specific step.
-    */
+    /**
+     * Get only the data for a specific step.
+     * 
+     * @param {Number} index the step index
+     * @returns {Object} the data for the step at index
+     */
     const getStepData = index => {
         const key = keys && keys[index] ? keys[index].key : index;
         return data && data[key] ? data[key] : {};
@@ -63,6 +82,15 @@ const Stages = ({
         This function receives the step key from each step and
         packs them into an array which is than used by the router.
     */
+
+    /**
+     * This function receives the step key from each step and
+     * packs them into an array which is than used by the router.
+     *
+     * @param {string} key - the key to set
+     * @param {number} index - the index to set the key at
+     * @return {string} the key that was set
+     */
     const setStepKey = (key, index) => {
         if (!keys[index]) {
             keys[index] = {key, visible: true};
@@ -71,9 +99,13 @@ const Stages = ({
         return key;
     };
 
-    /*
-        This function is called by step forms and updates data and errors.
-    */
+    /**
+     * This function is called by step forms and updates data and errors.
+     *
+     * @param {Object} changedData - The changed data.
+     * @param {Object} stepErrors - The errors to show for the form step.
+     * @param {string} formId - The id of the form.
+     */
     const handleOnChange = (changedData, stepErrors, formId) => {
         const newData = Object.assign({}, data);
         const key = keys && keys[formId] ? keys[formId].key : formId;
@@ -105,6 +137,9 @@ const Stages = ({
         }
     };
 
+    /**
+     * Resets the data to its initial value and current step to zero.
+     */
     const reset = () => {
         if (id) {
             if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
@@ -187,6 +222,20 @@ const Stages = ({
         - lastValid: Jumps ton the last valid step
         - step: Jumps to a specific step
     */
+
+    /**
+     * This function is called on navigations by sub components. Following actions are possible:
+     *  - next: Jumps to the next step
+     *  - prev: Jumps to the prev step if possible
+     *  - first: Jumps to the first step
+     *  - last: Jumps to the last step if possible
+     *  - lastValid: Jumps ton the last valid step
+     *  - step: Jumps to a specific step
+     * 
+     * @param {string} navType - The type of navigation to perform.
+     * @param {number|string} nr - The step number or key to navigate to.
+     *   If `navType` is "step" and `nr` is a string, the key will be used to find the step.
+     */
     const onNav = (navType, nr) => {
         let newStepNr = currentStep;
 
@@ -246,19 +295,23 @@ const Stages = ({
         setCurrentStep(newStepNr);
     };
 
-    /*
-        The callback for the navigation component.
-    */
+    /**
+     * The callback for the navigation component.
+     * 
+     * @param {number|string} step 
+     */
     const onChangeStep = step => {
         const lastValidStep = calculateLastValidStep();
         if (isDebugging()) window.stagesLogging(`On change step "${step}"`, uniqId);
         if (lastValidStep + 1 >= step || validateOnStepChange === false) setCurrentStep(step);
     };
 
-    /*
-        Calculates the last valid step. In other words, the last step which contains a form
-        with no validation errors.
-    */
+    /**
+     * Calculates the last valid step. In other words, the last step which contains a form
+     * with no validation errors.
+     *
+     * @return {number} The index of the last valid step.
+     */
     const calculateLastValidStep = () => {
         let lastValidStep = -1;
         let stepFailed = false;
@@ -275,9 +328,12 @@ const Stages = ({
         return lastValidStep;
     };
 
-    /*
-        Calculate the step progression based on the number of valid, filled out steps.
-    */
+    /**
+     * Calculate the step progression based on the number of valid, filled out steps.
+     *
+     * @return {Object} An object containing the current step, the total number of steps, 
+     * the number of valid steps, the percentage of valid steps, the data and the errors.
+     */
     const calculateProgression = () => {
         const stepCount = activeChildren.length;
         const lastValidStep = calculateLastValidStep();
