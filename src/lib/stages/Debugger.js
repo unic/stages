@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import beautify from 'json-beautify';
 import get from "lodash.get";

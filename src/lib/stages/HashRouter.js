@@ -48,14 +48,14 @@ const HashRouter = ({ step, onChange, keys, prefix, hashFormat = "#!" }) => {
     };
 
     const handleHashes = () => {
-        if (hash.indexOf(hashFormat) !== -1) {
+        if (typeof hash === "string" && hash.indexOf(hashFormat) !== -1) {
             const index = getIndexFromHash(hash);
             if (index !== -1) {
-                setHash(`${hashFormat}${getHashFromIndex(index)}`);
+                if (typeof setHash === "function") setHash(`${hashFormat}${getHashFromIndex(index)}`);
                 onChange(index);
             }
         } else {
-            setHash(`${hashFormat}${getHashFromIndex(step)}`);
+            if (typeof setHash === "function") setHash(`${hashFormat}${getHashFromIndex(step)}`);
         }
     };
 
@@ -67,7 +67,7 @@ const HashRouter = ({ step, onChange, keys, prefix, hashFormat = "#!" }) => {
 
     useEffect(() => {
         if (isMounted) {
-            setHash(`${hashFormat}${getHashFromIndex(step)}`);
+            if (typeof setHash === "function") setHash(`${hashFormat}${getHashFromIndex(step)}`);
         }
     }, [step]);
 
