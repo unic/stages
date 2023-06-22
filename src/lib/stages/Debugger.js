@@ -2,6 +2,11 @@ import React, { useEffect, useState } from "react";
 import beautify from 'json-beautify';
 import get from "lodash.get";
 
+/**
+ * An utiility component to help debug the wizard or individual forms.
+ *
+ * @return {JSX.Element} The rendered debugging console.
+ */
 const Debugger = () => {
     const [data, setData] = useState({});
     const [logHistory, setLogHistory] = useState({});

@@ -3,14 +3,21 @@ import findIndex from "lodash.findindex";
 
 import { useMount, useHash } from "../utils/hooks";
 
-/*
-    This is our default router for Stages. It uses URL hashes.
-    It will fallback to numbers if you don't supply keys to
-    Stages.
-
-    With keys: #!mystep
-    With numbers: #!1
-*/
+/**
+ * This is our default router for Stages. It uses URL hashes.
+ * It will fallback to numbers if you don't supply keys to
+ * Stages.
+ *
+ * With keys: #!mystep
+ * With numbers: #!1
+ *
+ * @param {Object} props - The component props.
+ * @param {number} props.step - The current step index.
+ * @param {Function} props.onChange - A callback function to be invoked when the step changes.
+ * @param {Array} props.keys - An array of objects with a "key" property for each step.
+ * @param {string} props.prefix - A string prefix to be added to the step index if keys are not defined.
+ * @param {string} [props.hashFormat="#!"] - The format of the hash, defaults to "#!".
+ */
 const HashRouter = ({ step, onChange, keys, prefix, hashFormat = "#!" }) => {
     const [hash, setHash] = useHash();
     const [isMounted, setIsMounted] = useState(false);
