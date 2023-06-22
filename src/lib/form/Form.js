@@ -1483,9 +1483,9 @@ const Form = ({
     /**
      * This adds a specific config to the field configuration at a certain path
      * 
-     * @param {*} path The path to the field config which should be modified
-     * @param {*} configKey The key of the `fieldConfigs` property to modify
-     * @param {*} action The action to perform on the `fieldConfigs` property
+     * @param {string} path The path to the field config which should be modified
+     * @param {string} configKey The key of the `fieldConfigs` property to modify
+     * @param {string} action The action to perform on the `fieldConfigs` property
      */
     const modifyConfig = (path, configKey, action) => {
         if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {

@@ -18,7 +18,7 @@ import { isDebugging } from "../utils/browser";
  * - Slideshow (multiple stages, no validation, keyboard navigation)
  * - Router (for SPAs)
  *
- * @param {object} props - An object containing the following keys:
+ * @param {Object} props - An object containing the following keys:
  *   - children: an array of functions that return a JSX element to render each step
  *   - initialData: an object containing the initial data for the form
  *   - initialStep: the index of the step to start on

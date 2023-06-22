@@ -6,9 +6,9 @@ import React from "react";
  * fits your usecase.
  *
  * @param {number} currentStep - The current step of the navigation.
- * @param {object} data - Current data in the wizard, can be used to display step summaries.
+ * @param {Object} data - Current data in the wizard, can be used to display step summaries.
  * @param {function} onChangeStep - Function to call when the step should change.
- * @param {object} errors - Object containing error data for each step.
+ * @param {Object} errors - Object containing error data for each step.
  * @param {number} lastValidStep - The last valid step in the wizard.
  * @param {array} keys - All the step keys in the wizard.
  * @param {number} stepCount - The number of steps in the wizard.
