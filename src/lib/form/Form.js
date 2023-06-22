@@ -397,7 +397,6 @@ const Form = ({
                                 .filter(item => typeof item[subField.id] !== "undefined")
                                 .map(item => item[subField.id]);
                             
-                            // @ts-ignore
                             const uniqCollectionData = [...new Set(collectionData)];
 
                             if (uniqCollectionData.length !== collectionData.length) {

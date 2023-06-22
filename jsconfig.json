@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
       "checkJs": true,
-      "jsx": "preserve"
+      "jsx": "preserve",
+      "target": "es6"
     },
     "exclude": ["node_modules", "docs", "demo", "dist", "public"], 
   }
