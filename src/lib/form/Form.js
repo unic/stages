@@ -59,8 +59,8 @@ const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
 /**
  * Get all field paths based on the field config and the current data
  * 
- * @param {object} fieldConfig the field configuration
- * @param {object} data the current data
+ * @param {Object} fieldConfig the field configuration
+ * @param {Object} data the current data
  * @returns {Array<string>} an array of all paths
  */
 const getFieldPaths = (fieldConfig, data) => {
@@ -114,10 +114,10 @@ const getFieldPaths = (fieldConfig, data) => {
 /**
  * Parse the configuration using all the available data
  * 
- * @param {object} config the dynamic form config
- * @param {object} data the current data
- * @param {object} asyncData all the loaded async data
- * @param {object} interfaceState all the interface state
+ * @param {Object} config the dynamic form config
+ * @param {Object} data the current data
+ * @param {Object} asyncData all the loaded async data
+ * @param {Object} interfaceState all the interface state
  * @param {Array<object>} modifiedConfigs config which was modified on runtime by user input
  * @returns {Array<object>} the parsed config
  */
@@ -169,7 +169,7 @@ const chosenPlaceholders = {};
  * This is the form component used in Stages. You can use it for individual steps in a wizard
  * or on it's own for one stage forms.
  * 
- * @param {object} component properties 
+ * @param {Object} component properties 
  * @returns {React.ReactElement}
  */
 const Form = ({
@@ -304,8 +304,8 @@ const Form = ({
      * Is a specific field valid based on current data?
      * 
      * @param {string} fieldKey the path based key of the field
-     * @param {object} field the config for this field
-     * @param {object} fieldData data for this field
+     * @param {Object} field the config for this field
+     * @param {Object} fieldData data for this field
      * @param {string} triggeringEvent the event which triggered this validation
      * @returns {boolean} returns true if field value is valid
      */
@@ -330,8 +330,8 @@ const Form = ({
      * 
      * @param {string} fieldKey the path based key of the field
      * @param {string} triggeringEvent the event which triggered this validation
-     * @param {object} validationData current data
-     * @param {object} errors current error object
+     * @param {Object} validationData current data
+     * @param {Object} errors current error object
      * @param {boolean} firstErrorField is this the first error field?
      * @returns {object} an object containing the errors
      */
@@ -626,7 +626,7 @@ const Form = ({
      * and the fields config.
      * 
      * @param {boolean} isUserAction is this a user action or called internally (from the wizard)?
-     * @param {object} validationData the current data being validated
+     * @param {Object} validationData the current data being validated
      * @returns {object} an object containing the errors
      */
     const validationErrors = (isUserAction, validationData) => {
@@ -677,7 +677,7 @@ const Form = ({
      * This is the callback which sub forms call to bubble up validation errors from within the subform.
      * 
      * @param {string} subId the id of the sub form
-     * @param {object} subErrors the errors from the sub form
+     * @param {Object} subErrors the errors from the sub form
      */
     const handleSubValidation = (subId, subErrors) => {
         if (isDebugging()) window.stagesLogging(`Get sub form errors for sub id "${subId}"`, uniqId);
@@ -717,8 +717,8 @@ const Form = ({
      * Create the dynamic options for a specific field
      * 
      * @param {string} fieldKey the field path key
-     * @param {object} optionsConfig configuration for the dynamicly loaded options
-     * @param {object} updatedData the latest form data
+     * @param {Object} optionsConfig configuration for the dynamicly loaded options
+     * @param {Object} updatedData the latest form data
      */
     const createDynamicOptions = async (fieldKey, optionsConfig, updatedData) => {
         if (optionsConfig.loader && typeof optionsConfig.loader === "function") {
@@ -767,7 +767,7 @@ const Form = ({
     /**
      * This function removes interface data from the form data and packs it into the interface state
      * 
-     * @param {object} thisData the current form data
+     * @param {Object} thisData the current form data
      * @returns {object} new data with all inteerface state removed
      */
     const removeInterfaceState = thisData => {
@@ -796,8 +796,8 @@ const Form = ({
     /**
      * Improve the on change handler so that only real changes are bubbled up!
      * 
-     * @param {object} newData the latest form data
-     * @param {object} errors all the form errors
+     * @param {Object} newData the latest form data
+     * @param {Object} errors all the form errors
      * @param {string} id id of the form
      * @param {string} fieldKey the field path key
      */
@@ -848,7 +848,7 @@ const Form = ({
 
     /**
      * Add new entry to the undo index
-     * @param {object} newData the latest form data
+     * @param {Object} newData the latest form data
      */
     const addNewUndoEntry = newData => {
         if (enableUndo) {
@@ -943,7 +943,7 @@ const Form = ({
      * This function finds all fields with computed values and computes them
      * with the current data.
      * 
-     * @param {object} data the current form data
+     * @param {Object} data the current form data
      * @returns {object} the newly computed form data
      */
     const computeValues = (data) => {
@@ -973,7 +973,7 @@ const Form = ({
      * Returns an array of active custom events given a triggering event and event data.
      *
      * @param {string} triggeringEvent - the event that triggered the custom events
-     * @param {object} eventData - the data passed to the event handler
+     * @param {Object} eventData - the data passed to the event handler
      * @returns {Array<string>} an array of active custom events
      */
     const getActiveCustomEvents = (triggeringEvent, eventData) => {
@@ -1044,7 +1044,7 @@ const Form = ({
      * 
      * @param {string} fieldKey field path key
      * @param {any} value the new value for this field
-     * @param {object} outsideData the outside data to be processed
+     * @param {Object} outsideData the outside data to be processed
      * @param {boolean} syntheticCall true if this is a synthetic call
      */
     const handleChange = (fieldKey, value, outsideData, syntheticCall = false) => {

@@ -10,7 +10,7 @@ import React from "react";
  * @param {function} onChangeStep - Function to call when the step should change.
  * @param {Object} errors - Object containing error data for each step.
  * @param {number} lastValidStep - The last valid step in the wizard.
- * @param {array} keys - All the step keys in the wizard.
+ * @param {array<object>} keys - All the step keys in the wizard.
  * @param {number} stepCount - The number of steps in the wizard.
  * @param {function} reset - Function to call when the navigation is reset.
  * @return {JSX.Element} - The navigation component.
