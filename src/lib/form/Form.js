@@ -19,7 +19,7 @@ import { isElementInViewport, isDebugging } from "../utils/browser";
  * 
  * @param {*} value any type of value which should be casted to specific type
  * @param {string} type one of the following types: number, string, boolean, date
- * @param {boolean} parseAsArray should each element of an array be casted?
+ * @param {boolean} [parseAsArray] should each element of an array be casted?
  * @returns {*} the casted value
  */
 const castValueStrType = (value, type, parseAsArray) => {
@@ -61,7 +61,7 @@ const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
  * 
  * @param {Object} fieldConfig the field configuration
  * @param {Object} data the current data
- * @returns {Array<string>} an array of all paths
+ * @returns {Array<Object>} an array of all paths
  */
 const getFieldPaths = (fieldConfig, data) => {
     const paths = [];
@@ -210,8 +210,8 @@ const Form = ({
     const [asyncData, setAsyncData] = useState();
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
-    const [focusedField, setFocusedField] = useState();
-    const [lastFocusedField, setLastFocusedField] = useState();
+    const [focusedField, setFocusedField] = useState("");
+    const [lastFocusedField, setLastFocusedField] = useState("");
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
 
     // Lastly, we craete the actual objects we will work with:
@@ -221,6 +221,7 @@ const Form = ({
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
         if (data && !initialData) {
+            // @ts-ignore
             if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
 
             // Scan through the fieldPaths to find fields with default data:
@@ -272,6 +273,7 @@ const Form = ({
             } else {
                 savedData = {}
             }
+            // @ts-ignore
             window.stagesLogging({
                 id: uniqId,
                 data,
@@ -306,7 +308,7 @@ const Form = ({
      * @param {string} fieldKey the path based key of the field
      * @param {Object} field the config for this field
      * @param {Object} fieldData data for this field
-     * @param {string} triggeringEvent the event which triggered this validation
+     * @param {string|string[]} triggeringEvent the event which triggered this validation
      * @returns {boolean} returns true if field value is valid
      */
     const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
@@ -329,14 +331,15 @@ const Form = ({
      * This function is used to validate one single field. It returns the updated error and firstErrorField object
      * 
      * @param {string} fieldKey the path based key of the field
-     * @param {string} triggeringEvent the event which triggered this validation
+     * @param {string|string[]} triggeringEvent the event which triggered this validation
      * @param {Object} validationData current data
      * @param {Object} errors current error object
-     * @param {boolean} firstErrorField is this the first error field?
+     * @param {string} [firstErrorField] key of first error field
      * @returns {object} an object containing the errors
      */
     const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
         const field = find(fieldPaths, { path: fieldKey }).config;
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Validate field "${fieldKey}"`, uniqId);
 
         // Is the data entered valid, check with default field function and optionally with custom validation:
@@ -373,12 +376,14 @@ const Form = ({
         } else if (field.type === "collection") {
             if (Array.isArray(field.fields)) {
                 field.fields.forEach(subField => {
-                    fieldValidationData && fieldValidationData.forEach((dataEntry) => {
+                    fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
+                        const arrayFieldPath = `${fieldKey}[${index}].${subField.id}`;
+
                         // Don't check fields if the collection isn't required and the object is empty:
                         if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
                         // Is the data entered valid, check with default field function and optionally with custom validation:
-                        const fieldIsValid = isFieldValid(subField, dataEntry, triggeringEvent);
+                        const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, triggeringEvent);
 
                         if (fields[subField.type] && fieldIsValid !== true) {
                             errors[fieldKey] = {
@@ -392,6 +397,7 @@ const Form = ({
                                 .filter(item => typeof item[subField.id] !== "undefined")
                                 .map(item => item[subField.id]);
                             
+                            // @ts-ignore
                             const uniqCollectionData = [...new Set(collectionData)];
 
                             if (uniqCollectionData.length !== collectionData.length) {
@@ -406,15 +412,17 @@ const Form = ({
                 });
             } else {
                 // This is a union type collection, so we need to get the validation config inside the types object:
-                fieldValidationData && fieldValidationData.forEach((dataEntry) => {
+                fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
                     // Don't check fields if the collection isn't required and the object is empty:
                     if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
 
                     if (field.fields[dataEntry.__typename]) {
                         const subFields = field.fields[dataEntry.__typename];
                         subFields.forEach(subField => {
+                            const arrayFieldPath = `${fieldKey}[${index}].${subField.id}`;
+
                             // Is the data entered valid, check with default field function and optionally with custom validation:
-                            const fieldIsValid = isFieldValid(subField, dataEntry, triggeringEvent);
+                            const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, triggeringEvent);
 
                             if (fields[subField.type] && fieldIsValid !== true) {
                                 errors[fieldKey] = {
@@ -625,8 +633,8 @@ const Form = ({
      * This function checks for all validation errors, based on each field types validation method
      * and the fields config.
      * 
-     * @param {boolean} isUserAction is this a user action or called internally (from the wizard)?
-     * @param {Object} validationData the current data being validated
+     * @param {boolean} [isUserAction] is this a user action or called internally (from the wizard)?
+     * @param {Object} [validationData] the current data being validated
      * @returns {object} an object containing the errors
      */
     const validationErrors = (isUserAction, validationData) => {
@@ -666,6 +674,7 @@ const Form = ({
     // run on the parent component:
     useEffect(() => {
         if (typeof onValidation === "function" && parentRunValidation) {
+            // @ts-ignore
             if (isDebugging()) window.stagesLogging(`Get errors on validation`, uniqId);
             let errors = validationErrors(true);
             setErrors(errors);
@@ -680,6 +689,7 @@ const Form = ({
      * @param {Object} subErrors the errors from the sub form
      */
     const handleSubValidation = (subId, subErrors) => {
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Get sub form errors for sub id "${subId}"`, uniqId);
         validationErrors(true);
         if (subErrors && Object.keys(subErrors).length > 0) {
@@ -694,6 +704,7 @@ const Form = ({
      * @param {Array<object>} options all the cached options
      */
     const updateOptionsCache = (key, options) => {
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Update options cache for "${key}"`, uniqId);
         setOptionsCache(latestCache => {
             return Object.assign({}, latestCache, {[key]: options});
@@ -707,6 +718,7 @@ const Form = ({
      * @param {Array<object>} options the new options which should be cached
      */
     const updateOptionsLoaded = (key, options) => {
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Update options loaded for "${key}"`, uniqId);
         setOptionsLoaded(latestCache => {
             return Object.assign({}, latestCache, {[key]: options});
@@ -731,6 +743,7 @@ const Form = ({
             let nrAfterAsyncCall = newNr;
             latestOptionsRequestIDsPerField[fieldKey] = newNr;
 
+            // @ts-ignore
             if (isDebugging()) window.stagesLogging(`Create dynamic options for field "${fieldKey}"`, uniqId);
 
             // Handle caching of loaded options if enabled:
@@ -799,7 +812,7 @@ const Form = ({
      * @param {Object} newData the latest form data
      * @param {Object} errors all the form errors
      * @param {string} id id of the form
-     * @param {string} fieldKey the field path key
+     * @param {string} [fieldKey] the field path key
      */
     const limitedOnChange = (newData, errors, id, fieldKey) => {
         let newLastOnChangeData;
@@ -875,6 +888,7 @@ const Form = ({
     useEffect(() => {
         let newData = Object.assign({}, alldata);
         
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Is visible change to "${isVisible ? "visible" : "invisible"}"`, uniqId);
 
         fieldPaths.forEach(fieldPath => {
@@ -1069,6 +1083,7 @@ const Form = ({
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
         if (fieldConfig.cast && Array.isArray(fieldConfig.cast.data)) newValue = castValueStrType(newValue, fieldConfig.cast.data[0], true);
 
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
         if (newValue) {
@@ -1197,12 +1212,13 @@ const Form = ({
      * @param {string} fieldKey path key of the field
      */
     const handleBlur = (fieldKey) => {
-        setFocusedField();
+        setFocusedField("");
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
         // Run field cleanUp function if one is set:
@@ -1419,6 +1435,7 @@ const Form = ({
         let updatedCollection = get(newData, fieldKey, []);
         let newErrors;
 
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On collection action "${fieldKey}"`, uniqId);
 
         // This will add a new entry to the collection:
@@ -1449,7 +1466,7 @@ const Form = ({
         }
 
         // This action will move a certain entry from one index to another index, which is very useful with react-beautiful-dnd
-        if (action === "move" && index > -1 && toIndex > -1) {
+        if (action === "move" && typeof index === "number" && index > -1 && toIndex > -1) {
             const [removed] = updatedCollection.splice(index, 1);
             updatedCollection.splice(toIndex, 0, removed);
         }
@@ -1460,7 +1477,7 @@ const Form = ({
         }
 
         // This action duplicates a specific collection entry:
-        if (action === "duplicate" && index > -1) {
+        if (action === "duplicate" && typeof index === "number" && index > -1) {
             updatedCollection.splice(index+1, 0, Object.assign({}, updatedCollection[index]));
         }
 
@@ -1525,6 +1542,7 @@ const Form = ({
      * @param {boolean} reset whether to reset back to initial data or not
      */
     const handleActionClick = (callback, validate, reset) => {
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle action click`, uniqId);
 
         // If this is a reset action, we reset back to the initial data:

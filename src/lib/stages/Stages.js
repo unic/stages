@@ -110,6 +110,7 @@ const Stages = ({
         const newData = Object.assign({}, data);
         const key = keys && keys[formId] ? keys[formId].key : formId;
 
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle onChange for "${key}"`, uniqId);
 
         errors[formId] = stepErrors;
@@ -159,10 +160,13 @@ const Stages = ({
     useEffect(() => {
         if (isDebugging()) {
             if (id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
+                // @ts-ignore
                 window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave) });
             } else if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.get === "function") {
+                // @ts-ignore
                 window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: autoSave.get(id) });
             } else {
+                // @ts-ignore
                 window.stagesLogging({ id: uniqId, keys, data, initialData, initialStep, errors, currentStep, savedData: {} });
             }
         }
@@ -172,6 +176,7 @@ const Stages = ({
         Run through steps first to get all the keys:
     */
     useEffect(() => {
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Init Stages`, uniqId);
 
         children.map((item, index) => item({
@@ -239,6 +244,7 @@ const Stages = ({
     const onNav = (navType, nr) => {
         let newStepNr = currentStep;
 
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On nav "${navType}" -> "${nr}"`, uniqId);
         
         if (navType === "next") {
@@ -302,8 +308,9 @@ const Stages = ({
      */
     const onChangeStep = step => {
         const lastValidStep = calculateLastValidStep();
+        // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On change step "${step}"`, uniqId);
-        if (lastValidStep + 1 >= step || validateOnStepChange === false) setCurrentStep(step);
+        if ((typeof lastValidStep === "number" && typeof step === "number" && lastValidStep + 1 >= step) || validateOnStepChange === false) setCurrentStep(step);
     };
 
     /**
@@ -339,7 +346,7 @@ const Stages = ({
         const lastValidStep = calculateLastValidStep();
         let validSteps = 0;
 
-        Object.keys(errors).forEach(index => {
+        Object.keys(errors).forEach((error, index) => {
             const stepData = getStepData(index);
             if (index <= lastValidStep && Object.keys(errors[index]).length === 0 && Object.keys(stepData).length > 0) validSteps++;
         });

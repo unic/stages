@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+      "checkJs": true,
+      "jsx": "preserve"
+    },
+    "exclude": ["node_modules", "docs", "demo", "dist", "public"], 
+  }
