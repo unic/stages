@@ -1,3 +1,9 @@
+/**
+ * Check if the element is in the browser viewport
+ * 
+ * @param {*} el the element
+ * @returns {boolean} true if the element is in the browser viewport
+ */
 const isElementInViewport = el => {
     const rect = el.getBoundingClientRect();
 
@@ -9,6 +15,7 @@ const isElementInViewport = el => {
     );
 }
 
+// @ts-ignore
 const isDebugging = () => typeof window !== "undefined" && typeof window.stagesLogging === "function";
 
 export {
