@@ -90,6 +90,40 @@ error to output:
 }
 ```
 
+## Global Per Type Validation
+
+Often you want the same validation for all fields with the same type, for example emails or phone numbers. 
+This can be achived with global type validations on the Form component:
+
+```
+<Form
+    typeValidations={{
+        email: {
+            validation: ({ data, isValid }) => {
+                return isValid && data.indexOf('@') > -1 && data.indexOf('.') > -1;
+            },
+            renderer: ({ errorCode }) => (
+                <div style={{ color: "red" }}>Please enter a valid email address.</div>
+            )
+        },
+        tel: {
+            validation: ({ data, isValid }) => {
+                return isValid && data.indexOf('+') === 0 && data.length === 13;
+            },
+            renderer: ({ errorCode }) => (
+                <div style={{ color: "red" }}>Please enter a valid phone number.</div>
+            )
+        }
+    }}
+    ...
+/>
+```
+
+Now each time use use a field of type email, that global validation will be used, together with the globally 
+defined error renderer.
+
+Btw, you can still overwrite the global validation if you create a custom validation on a specific field.
+
 ## Validation Events
 
 Per default, validation happens on actions which have validation switched on, eq:
