@@ -68,6 +68,24 @@ const config = {
 
         return [
             {
+                id: "email1",
+                label: "Email 1",
+                type: "email",
+                isRequired: true
+            },
+            {
+                id: "email2",
+                label: "Email 2",
+                type: "email",
+                isRequired: true
+            },
+            {
+                id: "phone",
+                label: "Phone",
+                type: "tel",
+                isRequired: true
+            },
+            {
                 id: "country",
                 label: "Country",
                 type: "select",

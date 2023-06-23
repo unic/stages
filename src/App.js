@@ -65,6 +65,7 @@ function App() {
     return (
         <>
             <Debugger />
+            {/*
             <Form
                 data={data}
                 fields={fields}
@@ -210,7 +211,7 @@ function App() {
                 )}
                 onChange={payload => setData(payload)}
             />
-            {/*
+            */}
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -244,6 +245,24 @@ function App() {
                                 id={key}
                                 data={data}
                                 config={basicsConfig}
+                                typeValidations={{
+                                    email: {
+                                        validation: ({ data, isValid }) => {
+                                            return isValid && data.indexOf('@') > -1 && data.indexOf('.') > -1;
+                                        },
+                                        renderer: ({ errorCode }) => (
+                                            <div style={{ color: "red" }}>Please enter a valid email address.</div>
+                                        )
+                                    },
+                                    tel: {
+                                        validation: ({ data, isValid }) => {
+                                            return isValid && data.indexOf('+') === 0 && data.length === 13;
+                                        },
+                                        renderer: ({ errorCode }) => (
+                                            <div style={{ color: "red" }}>Please enter a valid phone number.</div>
+                                        )
+                                    }
+                                }}
                                 render={({ actionProps, fieldProps, loading }) => (
                                     <FormLayout
                                         loading={loading}
@@ -318,7 +337,6 @@ function App() {
                     );
                 }}
             </Stages>
-            */}
         </>
     );
 }

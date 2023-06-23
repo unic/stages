@@ -57,6 +57,14 @@ const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
 };
 
 /**
+ * A path config
+ * @typedef {Object} PathConfig
+ * @property {string} path - The path of this field
+ * @property {Object} config - The configuration for this field
+ * @property {Object} data - The fields data
+ */
+
+/**
  * Get all field paths based on the field config and the current data
  * 
  * @param {Object} fieldConfig the field configuration
@@ -64,8 +72,18 @@ const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
  * @returns {Array<Object>} an array of all paths
  */
 const getFieldPaths = (fieldConfig, data) => {
+    /**
+     * @type {Array<PathConfig>}
+     */
     const paths = [];
 
+    /**
+     * Recursively get all the paths with their configs and data objects
+     *
+     * @param {string} [path] - the config path
+     * @param {string} [renderPath] - the render path
+     * @return {void}
+     */
     const getPathsForPath = (path = "", renderPath) => {
         let thisConfigs = [path ? get(fieldConfig, path) : fieldConfig];
         let thisKeys = [];
@@ -189,7 +207,8 @@ const Form = ({
     enableUndo,
     undoMaxDepth,
     customRuleHandlers,
-    autoSave
+    autoSave,
+    typeValidations
 }) => {
     // First we need to merge interfaceData with form data, whithout muting form data:
     const [interfaceState, setInterfaceState] = useState({});
@@ -315,6 +334,20 @@ const Form = ({
         if (!fields[field.type]) return true;
         const thisData = get(fieldData, fieldKey);
         const isValid = !isReservedType(field.type) && fields[field.type].isValid(thisData, field);
+        if (typeValidations[field.type] && typeof typeValidations[field.type].validation === "function" && !field.customValidation) {
+            // This field type has a global custom validation and no per field custom validation, 
+            // so use the global custom validation!
+            return typeValidations[field.type].validation({
+                data: thisData,
+                allData: fieldData,
+                interfaceState,
+                fieldConfig: field,
+                isValid,
+                fieldHasFocus: !!(focusedField && focusedField === fieldKey),
+                fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
+                triggeringEvent
+            });
+        }
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
             data: thisData,
             allData: fieldData,
@@ -1367,6 +1400,11 @@ const Form = ({
                 cleanedField.placeholder = chosenPlaceholders[path];
             }
 
+            // If this field type has a global custom error renderer and the specific field has no error renderer, use the global one:
+            if (typeValidations[fieldConfig.type] && typeof typeValidations[fieldConfig.type].renderer === "function" && !fieldConfig.errorRenderer) {
+                cleanedField.errorRenderer = typeValidations[fieldConfig.type].renderer;
+            }
+
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "string") return castValueStrType(value, fieldConfig.cast.field);
@@ -1601,7 +1639,8 @@ Form.propTypes = {
     parentRunValidation: PropTypes.bool,
     validateOn: PropTypes.array,
     customRuleHandlers: PropTypes.object,
-    undoMaxDepth: PropTypes.number
+    undoMaxDepth: PropTypes.number,
+    typeValidations: PropTypes.object
 };
 
 Form.defaultProps = {
@@ -1612,7 +1651,8 @@ Form.defaultProps = {
     validateOn: ["action"],
     customRuleHandlers: {},
     undoMaxDepth: 10,
-    autoSave: false
+    autoSave: false,
+    typeValidations: {}
 };
 
 export default Form;

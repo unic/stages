@@ -28,6 +28,18 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
     return (
         <div>
             <div>
+                {fields.email1}
+            </div>
+            <br />
+            <div>
+                {fields.email2}
+            </div>
+            <br />
+            <div>
+                {fields.phone}
+            </div>
+            <br />
+            <div>
                 {fields.country}
             </div>
             <br />
