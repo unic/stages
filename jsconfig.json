@@ -1,8 +1,8 @@
 {
-    "compilerOptions": {
-      "checkJs": true,
-      "jsx": "preserve",
-      "target": "es6"
-    },
-    "exclude": ["node_modules", "docs", "demo", "dist", "public"], 
-  }
+  "compilerOptions": {
+    "checkJs": true,
+    "jsx": "preserve",
+    "target": "es6"
+  },
+  "exclude": ["node_modules", "docs", "demo", "dist", "public"]
+}
