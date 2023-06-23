@@ -13,6 +13,24 @@ function FormPage() {
             <Form
                 data={data}
                 fields={fields}
+                typeValidations={{
+                    email: {
+                        validation: ({ data, isValid }) => {
+                            return isValid && data.indexOf('@') > -1 && data.indexOf('.') > -1;
+                        },
+                        renderer: ({ errorCode }) => (
+                            <div style={{ color: "red" }}>Please enter a valid email address.</div>
+                        )
+                    },
+                    tel: {
+                        validation: ({ data, isValid }) => {
+                            return isValid && data.indexOf('+') === 0 && data.length === 13;
+                        },
+                        renderer: ({ errorCode }) => (
+                            <div style={{ color: "red" }}>Please enter a valid phone number.</div>
+                        )
+                    }
+                }}
                 config={{
                     fields: () => {
                         return [
@@ -75,7 +93,25 @@ function FormPage() {
                                             At least one number
                                         </li>
                                     </ul>
-                                )
+                                ),
+                            },
+                            {
+                                id: "email1",
+                                label: "Email 1",
+                                type: "email",
+                                isRequired: true
+                            },
+                            {
+                                id: "email2",
+                                label: "Email 2",
+                                type: "email",
+                                isRequired: true
+                            },
+                            {
+                                id: "phone",
+                                label: "Phone",
+                                type: "tel",
+                                isRequired: true
                             },
                         ]
                     }
@@ -104,6 +140,16 @@ function FormPage() {
                             In this example we use error codes to tell the user which strong password rules are fulfilled.
                         </Paragraph>
                         {fieldProps.fields.password}
+                        <br />
+                        <Paragraph>
+                            Often you want the same validation for all fields with the same type, for example emails or phone numbers. 
+                            This can be achived with global type validations on the Form component:
+                        </Paragraph>
+                        {fieldProps.fields.email1}
+                        <br />
+                        {fieldProps.fields.email2}
+                        <br />
+                        {fieldProps.fields.phone}
                         <br />
                         <HR isDirty={fieldProps.isDirty} />
                         <br />
