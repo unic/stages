@@ -1627,19 +1627,33 @@ const Form = ({
 };
 
 Form.propTypes = {
+    //** @type {Object} The form configuration, can be a function or an object describing all fields */
     config: PropTypes.object.isRequired,
+    //** @type {Object} The form data, which sould come from React state and be udated from the onChange callback */
     data: PropTypes.object,
+    //** @type {React.ReactElement|Function} The render function which renders all the forms fields */
     render: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
+    //** @type {Object} An object containing all the possible fields */
     fields: PropTypes.object.isRequired,
+    //** @type {Function} A callback which is called when data has been changed. This should update the Form data. */
     onChange: PropTypes.func,
+    //** @type {boolean} Whether the form is visible */
     isVisible: PropTypes.bool,
+    //** @type {boolean} Whether the form is disabled */
     isDisabled: PropTypes.bool,
+    //** @type {string|number} The forms id. Will be displayed in the debugger and is used for the data key in a wizard */
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    //** @type {Function} A callback which is called when the form is being validated */
     onValidation: PropTypes.func,
+    //** @type {boolean} Whether the form is being validated */
     parentRunValidation: PropTypes.bool,
+    //** @type {string[]} An array of events on when to run validation */
     validateOn: PropTypes.array,
+    //** @type {Object} Custom collection rule handlers */
     customRuleHandlers: PropTypes.object,
+    //** @type {number} The maximum depth of undo steps */
     undoMaxDepth: PropTypes.number,
+    //** @type {Object} Global per type based custom validations */
     typeValidations: PropTypes.object
 };
 
