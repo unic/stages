@@ -377,11 +377,17 @@ const Stages = ({
 };
 
 Stages.propTypes = {
+    //** @type {React.ReactElement|Function} The steps of the wizard */
     children: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.node, PropTypes.func])).isRequired,
+    //** @type {Object} The initial data */
     initialData: PropTypes.object,
+    //** @type {React.ReactElement|Function} A render function which is called to render the wizard layout */
     render: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
+    //** @type {number} The initial step index */
     initialStep: PropTypes.number,
+    //** @type {boolean} Whether to validate the wizard on step change */
     validateOnStepChange: PropTypes.bool,
+    //** @type {string|number} The wizards id which is shown in the debugger */
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
