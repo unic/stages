@@ -69,7 +69,7 @@ const config = {
         return [
             {
                 id: "email1",
-                label: "Email 1",
+                labelFn: ({ fieldData }) => `Email 1 (${fieldData})`,
                 type: "email",
                 isRequired: true
             },

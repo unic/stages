@@ -1412,6 +1412,17 @@ const Form = ({
                 return value;
             };
 
+            // Each prop can be a dynamic property, by a naming convention. We need to loop through all props to find them.
+            // Convention is that xxxFn becomes xxx after executing the function with the current Form state.
+            if (!isReservedType(fieldConfig.type)) {
+                Object.keys(cleanedField).forEach(prop => {
+                    if (prop !== "id" && typeof cleanedField[prop] === "function" && prop.endsWith("Fn")) {
+                        cleanedField[prop.substring(0, prop.length - 2)] = cleanedField[prop]({ path, fieldData, alldata, interfaceState });
+                        delete cleanedField[prop];
+                    }
+                });
+            }
+
             if (fieldConfig.type !== "subform") {
                 return React.createElement(
                     fields[fieldConfig.type].component,

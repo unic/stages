@@ -46,7 +46,8 @@ const Stages = ({
      */
     const createInitialData = () => {
         // If autosave is enabled, read the data and trigger an onChange with it:
-        if (id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
+        if (
+            id && (autoSave === "local" || autoSave === "session" || (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")))) {
             const savedData = getDataFromStorage(id, typeof autoSave === "object" ? autoSave.type : autoSave);
             if (Object.keys(savedData).length > 0) {
                 return savedData;
@@ -310,7 +311,12 @@ const Stages = ({
         const lastValidStep = calculateLastValidStep();
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On change step "${step}"`, uniqId);
-        if ((typeof lastValidStep === "number" && typeof step === "number" && lastValidStep + 1 >= step) || validateOnStepChange === false) setCurrentStep(step);
+        if (
+            (typeof lastValidStep === "number" && typeof step === "number" && lastValidStep + 1 >= step) || 
+            validateOnStepChange === false
+        ) {
+            setCurrentStep(step);
+        }
     };
 
     /**
@@ -348,7 +354,9 @@ const Stages = ({
 
         Object.keys(errors).forEach((error, index) => {
             const stepData = getStepData(index);
-            if (index <= lastValidStep && Object.keys(errors[index]).length === 0 && Object.keys(stepData).length > 0) validSteps++;
+            if (index <= lastValidStep && Object.keys(errors[index]).length === 0 && Object.keys(stepData).length > 0) {
+                validSteps++;
+            }
         });
 
         return {
@@ -368,7 +376,14 @@ const Stages = ({
     */
     return render ? render({
         navigationProps: {
-            currentStep, data, onChangeStep, errors, keys, stepCount: activeChildren.length, lastValidStep: calculateLastValidStep(), reset
+            currentStep,
+            data,
+            onChangeStep,
+            errors,
+            keys,
+            stepCount: activeChildren.length,
+            lastValidStep: calculateLastValidStep(),
+            reset
         },
         progressionProps: calculateProgression(),
         routerProps: { step: currentStep, onChange: setCurrentStep, keys: keys },
