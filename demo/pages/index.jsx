@@ -48,6 +48,7 @@ function FormPage() {
                 <a href="/groups">Groups</a>{", "}
                 <a href="/customerrors">Custom Errors</a>{", "}
                 <a href="/typecasting">Typecasting</a>{", "}
+                <a href="/functionprops">Function Props</a>{", "}
                 <a href="/wysiwyg">WYSIWYG Editor</a>
             </Paragraph>
             <Heading>Collections</Heading>

@@ -41,6 +41,7 @@ const DemoNav = () => {
                         <option value="/groups">Groups</option>
                         <option value="/customerrors">Custom Errors</option>
                         <option value="/typecasting">Typecasting</option>
+                        <option value="/functionprops">Function Props</option>
                         <option value="/wysiwyg">WYSIWYG Editor</option>
                     </optgroup>
                     <optgroup label="Collections">
