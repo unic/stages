@@ -76,6 +76,40 @@ However, be careful to not make a form to dynamic, this can be irritating for th
 
 [Related Demo](https://stages-demo.vercel.app/dynamicfields)
 
+## Function Props
+
+For even more dynamicness, Stages has now support for function props. Basically you can turn any configuration property 
+into a function property by adding `Fn` to it. For example you can turn the property `label` into a function property by 
+naming it `labelFn`. This works for all non reserved props. Here's an example:
+
+```
+{
+    id: "email",
+    labelFn: ({ fieldData }) => {
+        if (fieldData && fieldData.indexOf('@') > -1 && fieldData.indexOf('.') > -1) {
+            return "Email 😎";
+        }
+        if (fieldData && (fieldData.indexOf('@') === -1 || fieldData.indexOf('.') === -1)) {
+            return "Email 🤕";
+        }
+        return "Email";
+    },
+    type: "email",
+    isRequired: true
+}
+```
+
+What we do here is render a different emoticon in the label based on the validity of the entered email.
+
+In all function props, you have access to the following data:
+
+- **path**: The fields path
+- **fieldData**: The current field data
+- **alldata**: All the forms data
+- **interfaceState**: The forms interface state
+
+[Related Demo](https://stages-demo.vercel.app/functionprops)
+
 ## The isRendered prop
 
 To help with dynamic fields, we've added the `isRendered` property. An example:
