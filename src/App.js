@@ -1,6 +1,7 @@
 import React, { Fragment, useState } from "react";
 import { Form, Actions } from "./lib/form";
 import { Stages, HashRouter, Progression, Navigation, Debugger } from "./lib/stages";
+import { get } from "./lib/index";
 import fields from "./lib/fieldsets/plain";
 
 import {
@@ -65,6 +66,64 @@ function App() {
     return (
         <>
             <Debugger />
+            <Form
+                data={data}
+                fields={fields}
+                id="test"
+                fieldsets={{
+                    dateRange: {
+                        params: {},
+                        config: () => {
+                            return [
+                                {
+                                    id: "from",
+                                    label: "From",
+                                    type: "date",
+                                    isRequired: true
+                                },
+                                {
+                                    id: "to",
+                                    label: "To",
+                                    type: "date",
+                                    isRequired: true
+                                }
+                            ];
+                        },
+                        render: ({ fieldProps }) => {
+                            return (
+                                <div>
+                                    {fieldProps.fields.from} to {fieldProps.fields.to}
+                                </div>
+                            );
+                        }
+                    }
+                }}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "title",
+                                label: "Title",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "range",
+                                label: "Date range",
+                                type: "dateRange"
+                            }
+                        ];
+                    }
+                }}
+                render={({ fieldProps }) => (
+                    <>
+                        {fieldProps.fields.title}
+                        <br />
+                        {fieldProps.fields.range}
+                    </>
+                )}
+                onChange={payload => setData(payload)}
+            />
             {/*
             <Form
                 data={data}
@@ -212,6 +271,7 @@ function App() {
                 onChange={payload => setData(payload)}
             />
             */}
+            {/*
             <Stages
                 initialData={{}}
                 render={({ navigationProps, progressionProps, routerProps, steps }) => (
@@ -237,7 +297,7 @@ function App() {
                 {({ data, allData, isActive, onChange, onNav, index, errors, setStepKey, initializing, reset }) => {
                     const key = setStepKey("basics", index);
                     if (initializing) return null;
-
+                    console.log("test:", get(allData, "basics.email1"));
                     return (
                         <Fragment key={`step-${key}`}>
                             {isActive ? <h2>Basics:</h2> : null}
@@ -337,6 +397,7 @@ function App() {
                     );
                 }}
             </Stages>
+            */}
         </>
     );
 }

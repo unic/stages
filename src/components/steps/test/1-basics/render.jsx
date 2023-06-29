@@ -47,6 +47,10 @@ const FormRenderer = ({ fields, onCollectionAction, modifyConfig, isDirty, dirty
                 {fields.postalcode}
             </div>
             <br />
+            <div>
+                {fields.q1}
+            </div>
+            <br />
             <fieldset>
                 {fields.participants ? fields.participants.map((subFields, index) => (
                     <div key={`program-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px" }}>

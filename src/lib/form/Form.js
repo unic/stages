@@ -116,7 +116,7 @@ const getFieldPaths = (fieldConfig, data) => {
                                 );
                             });
                         }
-                    } else if (item.type === "group") {
+                    } else if (item.type === "group" || item.type === "fieldset") {
                         getPathsForPath(`${path}[${index}].fields`, itemRenderPath);
                     }
                 });
@@ -137,14 +137,22 @@ const getFieldPaths = (fieldConfig, data) => {
  * @param {Object} asyncData all the loaded async data
  * @param {Object} interfaceState all the interface state
  * @param {Array<object>} modifiedConfigs config which was modified on runtime by user input
+ * @param {Object} fieldsets fieldsets which contain config and render for multiple fields
  * @returns {Array<object>} the parsed config
  */
-const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) => {
+const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, fieldsets) => {
     let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState) : [];
 
     const parseConfigItem = configItem => {
         if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
             return config.fieldConfigs[configItem](data, asyncData, interfaceState);
+        } else if (typeof configItem === "object" && fieldsets[configItem.type]) {
+            return {
+                id: configItem.id,
+                type: "fieldset",
+                fieldset: configItem.type,
+                fields: fieldsets[configItem.type].config(data, asyncData, interfaceState)
+            };
         } else if (typeof configItem === "function") {
             return configItem(data, asyncData, interfaceState);
         }
@@ -152,7 +160,7 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs) =
     };
 
     parsedConfig = parsedConfig.map(configItem => {
-        if (typeof configItem === "object" && (configItem.type === "group" || configItem.type === "collection") && Array.isArray(configItem.fields)) {
+        if (typeof configItem === "object" && (configItem.type === "group" || configItem.type === "collection" || configItem.type === "fieldset") && Array.isArray(configItem.fields)) {
             configItem.fields = configItem.fields.map(field => parseConfigItem(field));
         }
         return parseConfigItem(configItem);
@@ -208,7 +216,8 @@ const Form = ({
     undoMaxDepth,
     customRuleHandlers,
     autoSave,
-    typeValidations
+    typeValidations,
+    fieldsets
 }) => {
     // First we need to merge interfaceData with form data, whithout muting form data:
     const [interfaceState, setInterfaceState] = useState({});
@@ -234,7 +243,7 @@ const Form = ({
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
 
     // Lastly, we craete the actual objects we will work with:
-    const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs);
+    const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
     const fieldPaths = getFieldPaths(parsedFieldConfig, alldata);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
@@ -319,7 +328,7 @@ const Form = ({
      * @param {string} type string of the elemnts type
      * @returns {boolean} true if the type is a reserved type
      */
-    const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "config";
+    const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "fieldset" || type === "config";
 
     /**
      * Is a specific field valid based on current data?
@@ -1335,7 +1344,7 @@ const Form = ({
      * 
      * @return {object} An object of rendered fields, with each field represented as a React component.
      */
-    const createRenderedFields = () => {
+    const createRenderedFields = (startPath) => {
         const renderedFields = {};
 
         const createField = (fieldConfig, fieldData, path) => {
@@ -1423,6 +1432,10 @@ const Form = ({
                 });
             }
 
+            if (fieldConfig.type === "fieldset") {
+                return null;
+            }
+            
             if (fieldConfig.type !== "subform") {
                 return React.createElement(
                     fields[fieldConfig.type].component,
@@ -1459,8 +1472,23 @@ const Form = ({
         };
 
         fieldPaths.forEach(fieldPath => {
-            const fieldComponent = createField(fieldPath.config, fieldPath.data, fieldPath.path);
-            if (fieldComponent) set(renderedFields, fieldPath.path, fieldComponent);
+            if (startPath && !fieldPath.path.startsWith(`${startPath}.`)) return;
+
+            if (fieldPath.config.type === "fieldset" && fieldsets[fieldPath.config.fieldset]) {
+                // Fieldsets need to be rendered here, with the render function from the fieldset:
+                const fieldsetFields = createRenderedFields(fieldPath.path);
+                set(renderedFields, fieldPath.path, fieldsets[fieldPath.config.fieldset].render({
+                    fieldProps: {
+                        fields: fieldsetFields[fieldPath.config.id],
+                        onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields, get
+                    },
+                    actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
+                }));
+            } else {
+                // Regular fields:
+                const fieldComponent = createField(fieldPath.config, fieldPath.data, fieldPath.path);
+                if (fieldComponent) set(renderedFields, fieldPath.path, fieldComponent);
+            }
         });
 
         return renderedFields;
@@ -1473,7 +1501,7 @@ const Form = ({
      * @param {string} fieldKey the key for the field the collection belongs to
      * @param {string} action the type of action to perform on the collection
      * @param {number|string} index the index of the collection entry to perform the action on, or a string index if the collection is a union type
-     * @param {number} toIndex the index to move the entry to when the action is "move"
+     * @param {number|string} toIndex the index to move the entry to when the action is "move"
      */
     const onCollectionAction = (fieldKey, action, index, toIndex) => {
         const newData = Object.assign({}, alldata);
@@ -1482,6 +1510,8 @@ const Form = ({
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
         let updatedCollection = get(newData, fieldKey, []);
         let newErrors;
+        if (index === "last") index = updatedCollection.length - 1;
+        if (toIndex === "last") toIndex = updatedCollection.length - 1;
 
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On collection action "${fieldKey}"`, uniqId);
@@ -1514,7 +1544,7 @@ const Form = ({
         }
 
         // This action will move a certain entry from one index to another index, which is very useful with react-beautiful-dnd
-        if (action === "move" && typeof index === "number" && index > -1 && toIndex > -1) {
+        if (action === "move" && typeof index === "number" && typeof toIndex === "number" && index > -1 && toIndex > -1) {
             const [removed] = updatedCollection.splice(index, 1);
             updatedCollection.splice(toIndex, 0, removed);
         }
@@ -1665,7 +1695,9 @@ Form.propTypes = {
     //** @type {number} The maximum depth of undo steps */
     undoMaxDepth: PropTypes.number,
     //** @type {Object} Global per type based custom validations */
-    typeValidations: PropTypes.object
+    typeValidations: PropTypes.object,
+    //** @type {Object} Definition for fieldsets containing fields config and a render function for multiple fields */
+    fieldsets: PropTypes.object
 };
 
 Form.defaultProps = {
@@ -1677,7 +1709,8 @@ Form.defaultProps = {
     customRuleHandlers: {},
     undoMaxDepth: 10,
     autoSave: false,
-    typeValidations: {}
+    typeValidations: {},
+    fieldsets: {}
 };
 
 export default Form;

@@ -1,3 +1,4 @@
+export { get };
 export { default as Stages } from "./stages/Stages";
 export { default as HashRouter } from "./stages/HashRouter";
 export { default as Navigation } from "./stages/Navigation";
