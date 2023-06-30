@@ -129,6 +129,14 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
+/**
+ * Computes the fieldset parameters based on the given field configuration and fieldset parameter configuration.
+ * Additionally it warns the developer if a field is missing or has the wrong type
+ *
+ * @param {Object} fieldConfig - The configuration of the fields.
+ * @param {Object} paramConfig - The configuration of the fielkdset parameters.
+ * @return {Object} The computed fieldset parameters.
+ */
 const computeFieldsetParams = (fieldConfig, paramConfig) => {
     const params = {};
     Object.keys(paramConfig).forEach(key => {
