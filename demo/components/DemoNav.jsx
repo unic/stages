@@ -30,6 +30,7 @@ const DemoNav = () => {
                         <option value="/interfacestate">Interface State</option>
                         <option value="/subform">Subform</option>
                         <option value="/configtemplates">Config Templates</option>
+                        <option value="/fieldsets">Fieldsets</option>
                         <option value="/i18n">i18n</option>
                         <option value="/autosave">Auto Save</option>
                     </optgroup>
