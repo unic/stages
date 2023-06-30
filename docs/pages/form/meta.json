@@ -6,6 +6,7 @@
     "validation": "Validation",
     "collections": "Collections",
     "groups": "Groups",
+    "fieldsets": "Fieldsets",
     "computedvalues": "Computed Values",
     "filteredvalues": "Filtered Values",
     "asyncdata": "Async Data",
