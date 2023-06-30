@@ -129,6 +129,14 @@ const getFieldPaths = (fieldConfig, data) => {
     return paths;
 };
 
+const computeFieldsetParams = (fieldConfig, paramConfig) => {
+    const params = {};
+    Object.keys(paramConfig).forEach(key => {
+        params[key] = typeof fieldConfig[key] !== "undefined" ? fieldConfig[key] : paramConfig[key].default;
+    });
+    return params;
+};
+
 /**
  * Parse the configuration using all the available data
  * 
@@ -151,7 +159,8 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
                 id: configItem.id,
                 type: "fieldset",
                 fieldset: configItem.type,
-                fields: fieldsets[configItem.type].config(data, asyncData, interfaceState)
+                fields: fieldsets[configItem.type].config({data, asyncData, interfaceState, params: computeFieldsetParams(configItem.params || {}, fieldsets[configItem.type].params)}),
+                params: configItem.params
             };
         } else if (typeof configItem === "function") {
             return configItem(data, asyncData, interfaceState);
@@ -1478,6 +1487,7 @@ const Form = ({
                 // Fieldsets need to be rendered here, with the render function from the fieldset:
                 const fieldsetFields = createRenderedFields(fieldPath.path);
                 set(renderedFields, fieldPath.path, fieldsets[fieldPath.config.fieldset].render({
+                    params: computeFieldsetParams(fieldPath.config.params || {}, fieldsets[fieldPath.config.fieldset].params),
                     fieldProps: {
                         fields: get(fieldsetFields, fieldPath.path),
                         onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields, get

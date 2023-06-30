@@ -72,26 +72,33 @@ function App() {
                 id="test"
                 fieldsets={{
                     dateRange: {
-                        params: {},
-                        config: () => {
+                        params: {
+                            required: {
+                                type: "bool",
+                                required: false,
+                                default: true
+                            }
+                        },
+                        config: ({ params }) => {
                             return [
                                 {
                                     id: "from",
                                     label: "From",
                                     type: "date",
-                                    isRequired: true
+                                    isRequired: params.required
                                 },
                                 {
                                     id: "to",
                                     label: "To",
                                     type: "date",
-                                    isRequired: true
+                                    isRequired: params.required
                                 }
                             ];
                         },
-                        render: ({ fieldProps }) => {
+                        render: ({ fieldProps, params }) => {
                             return (
-                                <div style={{ display: "flex" }}>
+    
+                                <div style={{ display: "flex", color: params.required ? "red" : "green" }}>
                                     <div>{fieldProps.fields.from}</div>
                                     <div>{fieldProps.fields.to}</div>
                                 </div>
@@ -111,7 +118,10 @@ function App() {
                             {
                                 id: "range",
                                 label: "Date range",
-                                type: "dateRange"
+                                type: "dateRange",
+                                params: {
+                                    required: false
+                                }
                             },
                             {
                                 id: "grouprange",
