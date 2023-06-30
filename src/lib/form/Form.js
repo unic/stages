@@ -1479,7 +1479,7 @@ const Form = ({
                 const fieldsetFields = createRenderedFields(fieldPath.path);
                 set(renderedFields, fieldPath.path, fieldsets[fieldPath.config.fieldset].render({
                     fieldProps: {
-                        fields: fieldsetFields[fieldPath.config.id],
+                        fields: get(fieldsetFields, fieldPath.path),
                         onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields, get
                     },
                     actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },

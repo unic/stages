@@ -91,8 +91,9 @@ function App() {
                         },
                         render: ({ fieldProps }) => {
                             return (
-                                <div>
-                                    {fieldProps.fields.from} to {fieldProps.fields.to}
+                                <div style={{ display: "flex" }}>
+                                    <div>{fieldProps.fields.from}</div>
+                                    <div>{fieldProps.fields.to}</div>
                                 </div>
                             );
                         }
@@ -111,17 +112,49 @@ function App() {
                                 id: "range",
                                 label: "Date range",
                                 type: "dateRange"
+                            },
+                            {
+                                id: "grouprange",
+                                label: "Group range",
+                                type: "group",
+                                fields: [
+                                    {
+                                        id: "range",
+                                        label: "Date range",
+                                        type: "dateRange"
+                                    }
+                                ]
+                            },
+                            {
+                                id: "collectionrange",
+                                label: "Collection range",
+                                type: "collection",
+                                init: true,
+                                min: 1,
+                                fields: [
+                                    {
+                                        id: "range",
+                                        label: "Date range",
+                                        type: "dateRange"
+                                    }
+                                ]
                             }
                         ];
                     }
                 }}
-                render={({ fieldProps }) => (
-                    <>
-                        {fieldProps.fields.title}
-                        <br />
-                        {fieldProps.fields.range}
-                    </>
-                )}
+                render={({ fieldProps }) => {
+                    return (
+                        <>
+                            {fieldProps.fields.title}
+                            <br />
+                            {fieldProps.fields.range}
+                            <br />
+                            {fieldProps.fields.grouprange.range}
+                            <br />
+                            {fieldProps.fields.collectionrange ? fieldProps.fields.collectionrange[0].range : null}
+                        </>
+                    );
+                }}
                 onChange={payload => setData(payload)}
             />
             {/*
