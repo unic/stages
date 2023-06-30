@@ -74,7 +74,7 @@ function App() {
                     dateRange: {
                         params: {
                             required: {
-                                type: "bool",
+                                type: "boolean",
                                 required: false,
                                 default: true
                             }
@@ -131,7 +131,10 @@ function App() {
                                     {
                                         id: "range",
                                         label: "Date range",
-                                        type: "dateRange"
+                                        type: "dateRange",
+                                        params: {
+                                            required: true
+                                        }
                                     }
                                 ]
                             },

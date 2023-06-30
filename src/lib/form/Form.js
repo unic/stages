@@ -133,6 +133,8 @@ const computeFieldsetParams = (fieldConfig, paramConfig) => {
     const params = {};
     Object.keys(paramConfig).forEach(key => {
         params[key] = typeof fieldConfig[key] !== "undefined" ? fieldConfig[key] : paramConfig[key].default;
+        if (typeof fieldConfig[key] === "undefined" && paramConfig[key].required) console.warn(`Param "${key}" is required but is missing in field configs!`);
+        if (typeof fieldConfig[key] !== "undefined" && typeof fieldConfig[key] !== paramConfig[key].type) console.warn(`Param "${key}" is not of type "${paramConfig[key].type}"!`);
     });
     return params;
 };
