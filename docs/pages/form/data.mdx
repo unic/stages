@@ -1,0 +1,73 @@
+# Data
+
+Stages can handle deeply nested data structures and arrays. Internally it uses a flat data structure and 
+Lodash paths to loop through and access all the fields and data. A path can look something like this:
+
+```group1.mylist[2].field1```
+
+Here we first have a field with the id `group1` which is of type group. The field would be defined like this:
+
+```
+{
+    id: "group1",
+    type: "group",
+    fields: [...]
+}
+```
+
+The second part of the path is an array like collection, which is defined like this:
+
+```
+{
+    id: "group1",
+    type: "group",
+    fields: [
+        {
+            id: "mylist",
+            type: "collection",
+            fields: [...]
+        }    
+    ]
+}
+```
+
+And lastly, we have a regular input field inside the collection, which is defined like this:
+
+```
+{
+    id: "group1",
+    type: "group",
+    fields: [
+        {
+            id: "mylist",
+            type: "collection",
+            fields: [
+                {
+                    id: "field1",
+                    type: "text",
+                    label: "Field 1"
+                }
+            ]
+        }    
+    ]
+}
+```
+
+The resulting data from this form could than look like this:
+
+```
+{
+    group1: {
+        mylist: [
+            { field1: "Example input 1" },
+            { field1: "Example input 2" },
+            { field1: "Example input 3" }
+        ]
+    }
+}
+```
+
+Because accessing deeply nested data is so integral to Stages, for example in a custom validation, 
+we expose the `Lodash` `get` method directly from the library:
+
+```import { get } from "react-stages":```

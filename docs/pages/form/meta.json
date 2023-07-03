@@ -2,6 +2,7 @@
     "basics": "Basics",
     "configs": "Configs",
     "render": "Render",
+    "data": "Data",
     "actions": "Actions",
     "validation": "Validation",
     "collections": "Collections",
