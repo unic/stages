@@ -71,3 +71,14 @@ Because accessing deeply nested data is so integral to Stages, for example in a 
 we expose the `Lodash` `get` method directly from the library:
 
 ```import { get } from "react-stages":```
+
+## Data types
+
+Beside the main data, Stages forms manage more types of data, these are:
+
+- **Initial Data:** This is the data the form was initialized with, it's mainly used to calculate dirty fields
+- **Interface State:** This is data which is used to manage the interface state and is removed from the main data
+- **Undo Data:** This one stores a history of data changes for the undo / redo feature
+- **Async Data:** This is all data which was loaded in asynchronously
+
+Not all of that data is exposed.
