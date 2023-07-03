@@ -1,0 +1,53 @@
+# Interface State
+
+Sometimes you want to use form elements purely for interface state. For example a 
+checkbox which opens advanced options or a computed value which is purely to inform 
+the user, for example about the sum of the entered values.
+
+Telling stages what form field is interface state is very simple:
+
+```
+{
+    id: "advanced",
+    label: "Advanced Options:",
+    type: "checkbox",
+    isInterfaceState: true
+}
+```
+
+This way the value of `advanced` will not be added to data, but just to the internal interface 
+state. You can than for example use the value in the render prop to hide all the advanced 
+options like this:
+
+```
+{fieldProps.interfaceState.advanced ? (
+    <div>{fieldProps.fields.advancedoption}</div>
+) : null}
+```
+
+Interface state can be initialized on the form like this:
+
+```
+<Form
+    initialInterfaceState={{ advanced: true }}
+    ...
+/>
+```
+
+And if you want to remember the last interface state, it is available on the onChange 
+callback of the form:
+
+```
+<Form
+    onChange={(data, errors, id, fieldKey, interfaceState) => {
+        setData(data);
+        saveInterfaceState(interfaceState);
+    }}
+    ...
+/>
+```
+
+Unlike the data prop, it is only read on init, so not connected data, you can't constantly 
+update it from outside.
+
+[Related Demo](https://stages-demo.vercel.app/interfacestate)

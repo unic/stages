@@ -10,6 +10,7 @@
     "computedvalues": "Computed Values",
     "filteredvalues": "Filtered Values",
     "asyncdata": "Async Data",
+    "interfacestate": "Interface State",
     "customerrors": "Custom Errors",
     "dynamicfields": "Dynamic Fields",
     "dynamicoptions": "Dynamic and Computed Options",
