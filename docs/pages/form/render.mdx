@@ -30,15 +30,28 @@ You get two render properties which are essentially two collection of properties
 - **fieldProps**: This contain the renderer fields, props for handling collections and some additional stuff
     - **fields**: An object of rendered fields where the id is the key of the object
     - **onCollectionAction**: A callback to act on collections, like add a new entry or remove an existing one
+    - **modifyConfig**: Callback to modify the forms configuration
     - **data**: The current form data
+    - **interfaceState**: The interface state of the form
     - **errors**: The error object, being used mainly for collection errors
     - **asyncData**: All the data loaded from the `asyncDataLoader` function in the config
     - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
-    - **dirtyFields**: An object which contains keys for all dirty fields. Object props are `oldValue` and `newValue`
-- **actionProps**:
-    - **handleActionClick**: A callback to process a form action
-    - **isDisabled**: Actions can be disabled, for example if data has to be valid
-    - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
+    - **focusedField**: The currently focused field
+    - **lastFocusedField**: The last focused field
     - **dirtyFields**: An object which contains keys for all dirty fields. Object props are `oldValue` and `newValue`
 
+
+- **actionProps**:
+    - **handleActionClick**: A callback to process a form action
+    - **handleUndo**: Do an undo. This will revert the data to one saved state before the current one
+    - **handleRedo**: Do a redo. This will revert the undo (of course only if an undo was done)
+    - **isDisabled**: Actions can be disabled, for example if data has to be valid
+    - **isDirty**: A boolean which lets you know if the form has edited, dirty, non saved values
+    - **focusedField**: The currently focused field
+    - **lastFocusedField**: The last focused field
+    - **dirtyFields**: An object which contains keys for all dirty fields. Object props are `oldValue` and `newValue`
+    - **silentlyGetValidationErrors**: Silently validate the form without chnaging the error object, just returning them
+
 Read the page about collections and actions to get more details on those two features.
+
+If you use fieldsets, you get the same props on that render function.
