@@ -236,10 +236,11 @@ const Form = ({
     customRuleHandlers,
     autoSave,
     typeValidations,
-    fieldsets
+    fieldsets,
+    initialInterfaceState
 }) => {
     // First we need to merge interfaceData with form data, whithout muting form data:
-    const [interfaceState, setInterfaceState] = useState({});
+    const [interfaceState, setInterfaceState] = useState(initialInterfaceState);
     const alldata = Object.assign({}, data);
     merge(alldata, interfaceState);
 
@@ -877,10 +878,10 @@ const Form = ({
     const limitedOnChange = (newData, errors, id, fieldKey) => {
         let newLastOnChangeData;
         try {
-            newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey });
+            newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey, interfaceState });
         } catch(error) {};
         if (newLastOnChangeData !== lastOnChangeData) {
-            onChange(removeInterfaceState(newData), errors, id, fieldKey);
+            onChange(removeInterfaceState(newData), errors, id, fieldKey, interfaceState);
             lastOnChangeData = newLastOnChangeData;
         }
     };
@@ -1717,7 +1718,9 @@ Form.propTypes = {
     //** @type {Object} Global per type based custom validations */
     typeValidations: PropTypes.object,
     //** @type {Object} Definition for fieldsets containing fields config and a render function for multiple fields */
-    fieldsets: PropTypes.object
+    fieldsets: PropTypes.object,
+    //** @type {Object} The initial value for the forms interface state */
+    initialInterfaceState: PropTypes.object
 };
 
 Form.defaultProps = {
@@ -1730,7 +1733,8 @@ Form.defaultProps = {
     undoMaxDepth: 10,
     autoSave: false,
     typeValidations: {},
-    fieldsets: {}
+    fieldsets: {},
+    initialInterfaceState: {}
 };
 
 export default Form;

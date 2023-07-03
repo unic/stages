@@ -155,7 +155,7 @@ function App() {
                         ];
                     }
                 }}
-                render={({ fieldProps }) => {
+                render={({ fieldProps, actionProps }) => {
                     return (
                         <>
                             {fieldProps.fields.title}
@@ -165,6 +165,14 @@ function App() {
                             {fieldProps.fields.grouprange.range}
                             <br />
                             {fieldProps.fields.collectionrange ? fieldProps.fields.collectionrange[0].range : null}
+                            <br />
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
                         </>
                     );
                 }}
