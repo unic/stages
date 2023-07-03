@@ -121,4 +121,8 @@ You can of course store fieldsets in separate files and reuse them in different 
 default values for the params and does some additional type checking which is used in the console to warn devs 
 on wrong uses of a fieldset.
 
+There are a few reserved field types you are not allowed to use. These are `collection`, `group`, `subform`, `fieldset` and `config`.
+
+Additionally, you should avoid using types you've defined in your fields, as those would be overwritten.
+
 [Related Demo](https://stages-demo.vercel.app/fieldsets)
