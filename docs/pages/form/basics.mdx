@@ -8,7 +8,14 @@ This is how you use it:
 ```
 import { Form, plainFields as fields } from "react-stages";
 
+...
+
+const [data, setData] = useState({});
+
+...
+
 <Form
+    data={data}
     fields={fields}
     config={{
         fields: () => {
@@ -44,15 +51,18 @@ import { Form, plainFields as fields } from "react-stages";
             </button>
         </>
     )}
+    onChange={payload => setData(payload)}
 />
 ```
 
 Looks a little complicated at first, but only because the form component is built for flexibility and doesn't render any components on its own. You have to supply all the components!
 
-## The three main properties
+## The main properties
 
+- **data:** The current form data (from a React useState)
 - **fields:** This contains all your field components and default field validation, as a start you can import the plain fields
 - **config:** This one expects a function which return an array of field configurations, you need to set at least `id` and `type` on each field
 - **render:** The render function is where you take all the processed fields, and output them in whatever layout you desire
+- **onChange:** Stages is using connected inputs. The whole form acts as a connected input, as well. In other words you have to connect it to a React useState with the `onChange` prop
 
 More detailed info about them on the next pages.
