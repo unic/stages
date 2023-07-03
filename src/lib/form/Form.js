@@ -1501,9 +1501,29 @@ const Form = ({
                     params: computeFieldsetParams(fieldPath.config.params || {}, fieldsets[fieldPath.config.fieldset].params),
                     fieldProps: {
                         fields: get(fieldsetFields, fieldPath.path),
-                        onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields, get
+                        onCollectionAction,
+                        modifyConfig,
+                        data,
+                        interfaceState,
+                        errors,
+                        asyncData,
+                        isDirty,
+                        focusedField,
+                        lastFocusedField,
+                        dirtyFields,
+                        get
                     },
-                    actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
+                    actionProps: {
+                        handleActionClick,
+                        handleUndo,
+                        handleRedo,
+                        isDisabled,
+                        isDirty,
+                        focusedField,
+                        lastFocusedField,
+                        dirtyFields,
+                        silentlyGetValidationErrors
+                    },
                 }));
             } else {
                 // Regular fields:
@@ -1564,7 +1584,8 @@ const Form = ({
             if (minEntries < updatedCollection.length) updatedCollection.splice(index, 1);
         }
 
-        // This action will move a certain entry from one index to another index, which is very useful with react-beautiful-dnd
+        // This action will move a certain entry from one index to another index, which is very useful with 
+        // react-beautiful-dnd
         if (action === "move" && typeof index === "number" && typeof toIndex === "number" && index > -1 && toIndex > -1) {
             const [removed] = updatedCollection.splice(index, 1);
             updatedCollection.splice(toIndex, 0, removed);
@@ -1647,7 +1668,9 @@ const Form = ({
         // If this is a reset action, we reset back to the initial data:
         if (reset) {
             if (autoSave === "local" || autoSave === "session") removeDataFromStorage(id, autoSave);
-            if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) removeDataFromStorage(id, autoSave.type);
+            if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
+                removeDataFromStorage(id, autoSave.type);
+            }
             if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.remove === "function") {
                 autoSave.remove(id);
             }
@@ -1682,8 +1705,31 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: { handleActionClick, handleUndo, handleRedo, isDisabled, isDirty, focusedField, lastFocusedField, dirtyFields, silentlyGetValidationErrors },
-        fieldProps: { fields: createRenderedFields(), onCollectionAction, modifyConfig, data, interfaceState, errors, asyncData, isDirty, focusedField, lastFocusedField, dirtyFields, get },
+        actionProps: {
+            handleActionClick,
+            handleUndo,
+            handleRedo,
+            isDisabled,
+            isDirty,
+            focusedField,
+            lastFocusedField,
+            dirtyFields,
+            silentlyGetValidationErrors
+        },
+        fieldProps: {
+            fields: createRenderedFields(),
+            onCollectionAction,
+            modifyConfig,
+            data,
+            interfaceState,
+            errors,
+            asyncData,
+            isDirty,
+            focusedField,
+            lastFocusedField,
+            dirtyFields,
+            get
+        },
         loading
     }) : null;
 };
