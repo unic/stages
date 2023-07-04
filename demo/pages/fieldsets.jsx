@@ -92,7 +92,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Fieldsets</Heading>
                         <Paragraph>
                             With fieldsets you can build truly modular forms. Each fieldset you create, contains a 
@@ -123,7 +123,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

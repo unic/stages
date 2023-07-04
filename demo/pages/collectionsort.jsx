@@ -234,7 +234,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Collection Sort (Kanban Board):</Heading>
                         <Paragraph>
                             In this example we demonstrate two things. First we have a collection of tasks, which is sorted by 
@@ -344,7 +344,7 @@ function FormPage() {
                             )) : null}
                             <button type="button" onClick={() => fieldProps.onCollectionAction("members", "add")}>+</button>
                         </fieldset>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

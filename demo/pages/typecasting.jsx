@@ -48,7 +48,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Typecasting</Heading>
                         <Paragraph>
                             Ideally you always want the right kind of type in the data you receive from Stages. However, sometimes you 
@@ -79,7 +79,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

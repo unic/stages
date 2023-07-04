@@ -127,7 +127,7 @@ function InceptionPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div>
                             <Heading>Subform</Heading>
                             <Paragraph>
@@ -158,7 +158,7 @@ function InceptionPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

@@ -66,7 +66,7 @@ function AsyncPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div>
                             <Heading>Dynamic Options</Heading>
                             <Paragraph>
@@ -86,7 +86,7 @@ function AsyncPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

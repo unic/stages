@@ -1,25 +1,8 @@
-import Head from 'next/head';
 import DemoNav from "./DemoNav";
 
 const Layout = ({ children }) => {
     return (
         <>
-            <Head>
-                <link
-                    rel="stylesheet"
-                    href="https://unpkg.com/purecss@2.1.0/build/pure-min.css"
-                    integrity="sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH"
-                    crossorigin="anonymous"
-                />
-                <style>{`
-                    a {
-                        text-decoration: none;
-                    }
-                    a:hover {
-                        text-decoration: underline;
-                    }
-                `}</style>
-            </Head>
             <DemoNav />
             <div
                 style={{

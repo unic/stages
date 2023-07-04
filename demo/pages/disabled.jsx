@@ -74,7 +74,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div>
                             <Heading>Disabled Form</Heading>
                             <Paragraph>
@@ -104,7 +104,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

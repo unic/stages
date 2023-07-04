@@ -87,7 +87,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Dynamic Values</Heading>
                         <Paragraph>There are two types of dynamic values: Computed values which compute a value based on other fields and filtered values which filter user input.</Paragraph>
                         <Paragraph>The first example filters away all non numbers which you enter:</Paragraph>
@@ -134,7 +134,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

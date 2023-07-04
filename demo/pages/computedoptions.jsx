@@ -82,7 +82,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Computed Options:</Heading>
                         <Paragraph>
                             In this demo, the teams added in the first collection, are automatically added as options to the 
@@ -126,7 +126,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

@@ -50,7 +50,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div className="pure-g">
                             <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                             <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -65,7 +65,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData1(payload)}
             />
@@ -102,7 +102,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div className="pure-g">
                             <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                             <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -117,7 +117,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData2(payload)}
             />
@@ -154,7 +154,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div className="pure-g">
                             <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                             <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -169,7 +169,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData3(payload)}
             />
@@ -206,7 +206,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div className="pure-g">
                             <div className="pure-u-8-24">{fieldProps.fields.required}</div>
                             <div className="pure-u-8-24">{fieldProps.fields.email}</div>
@@ -221,7 +221,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData4(payload)}
             />
@@ -251,7 +251,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div className="pure-g">
                             <div className="pure-u-8-24">{fieldProps.fields.dynamicValidate}</div>
                         </div>
@@ -264,7 +264,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData4(payload)}
             />
@@ -314,7 +314,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div className="pure-g">
                             <div className="pure-u-8-24">{fieldProps.fields.country}</div>
                         </div>
@@ -331,7 +331,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData5(payload)}
             />

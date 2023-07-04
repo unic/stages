@@ -51,7 +51,7 @@ function AsyncPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div>
                             <Heading>Asyncronous Data</Heading>
                             <Paragraph>
@@ -75,7 +75,7 @@ function AsyncPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

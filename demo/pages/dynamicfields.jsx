@@ -56,7 +56,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>  
+                    <form>  
                         <Heading>Dynamic fields</Heading>
                         <Paragraph>Configuration of each field can be dynamic, based on any kind of data entered, interface state or async data</Paragraph>
                         <Heading>Dynamic requirements:</Heading>
@@ -88,7 +88,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

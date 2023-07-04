@@ -55,7 +55,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Interface State</Heading>
                         <Paragraph>
                             In this demo, we declare the summary as interface state, so that it doesn't show up in the exposed data. 
@@ -89,7 +89,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

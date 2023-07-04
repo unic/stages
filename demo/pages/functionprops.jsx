@@ -30,7 +30,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Function Props</Heading>
                         <Paragraph>
                             In this demo, we use function props to indicate if an email is valid, by dynamically rendering 
@@ -48,7 +48,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

@@ -44,7 +44,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Undo / Redo</Heading>
                         <Paragraph>
                             Add some data to the fields. The undo memory is updated on blur, so change fields between adding data. 
@@ -70,7 +70,7 @@ function FormPage() {
                         <button onClick={actionProps.handleUndo}>Undo</button>
                         {" "}
                         <button onClick={actionProps.handleRedo}>Redo</button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

@@ -433,7 +433,7 @@ function CollectionsPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <div>
                             <Heading>Collections</Heading>
                             <Paragraph>Collections in Stages are first class citizens. They are a very powerful construct and highly configuratable.</Paragraph>
@@ -547,7 +547,7 @@ function CollectionsPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

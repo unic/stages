@@ -117,7 +117,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Custom Errors</Heading>
                         <Paragraph>
                             In this first field, we wrote a custom validation which only accepts alphanumeric values and "-". Try entering 
@@ -159,7 +159,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

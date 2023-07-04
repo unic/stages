@@ -100,7 +100,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Simple nested groups</Heading>
                         <Paragraph>Nest you data as deeply as you want. (open the Debugger on the right to see how the data is structured)</Paragraph>
                         <div>
@@ -162,7 +162,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

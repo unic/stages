@@ -120,7 +120,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Collection Rules:</Heading>
                         <Paragraph>
                             In this demo we have to create a football (soccer) team. There has to be exactly one goal keeper, 
@@ -150,7 +150,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

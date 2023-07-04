@@ -80,7 +80,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Config Templates</Heading>
                         <Paragraph>
                             In this demo we're using a coordinates group temnplate with lat and lng fields multiple times. 
@@ -143,7 +143,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

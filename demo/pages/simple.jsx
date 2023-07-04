@@ -73,7 +73,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Simple Form</Heading>
                         <Paragraph>
                             A simple form with all plain fields from the default field library extended with additional 
@@ -102,7 +102,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

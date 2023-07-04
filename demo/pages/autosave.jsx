@@ -33,7 +33,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Auto Save</Heading>
                         <Paragraph>
                             If you enable Auto Save, than Stages automatically saves a users data in local or session storage. In 
@@ -61,7 +61,7 @@ function FormPage() {
                         >
                             Reset
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

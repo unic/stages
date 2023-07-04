@@ -33,7 +33,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>WYSIWYG Editor Integration</Heading>
                         <Paragraph>Stages makes it easy to integrate complex fields like WYSIWYG editors.</Paragraph>
                         <div>
@@ -52,7 +52,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 

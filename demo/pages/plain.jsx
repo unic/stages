@@ -71,7 +71,7 @@ function FormPage() {
                     }
                 }}
                 render={({ actionProps, fieldProps }) => (
-                    <>
+                    <form>
                         <Heading>Plain Form</Heading>
                         <Paragraph>
                             For testing purposes, a form with the plain fields from Stages.
@@ -99,7 +99,7 @@ function FormPage() {
                         >
                             Submit
                         </button>
-                    </>
+                    </form>
                 )}
                 onChange={payload => setData(payload)}
             /> 
