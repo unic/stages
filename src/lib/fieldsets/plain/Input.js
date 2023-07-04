@@ -40,17 +40,19 @@ const Input = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <div id={id}>
+        <div>
             {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <input
+                    id={id}
                     name={id}
                     value={value || ""}
                     placeholder={placeholder}
                     type={type || "text"}
                     disabled={!!isDisabled}
                     required={!!isRequired}
+                    autoComplete={type === "password" ? "current-password" : "off"}
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
                     }}

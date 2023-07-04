@@ -39,11 +39,12 @@ const Select = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <div id={id}>
+        <div>
             {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <select
+                    id={id}
                     name={id}
                     value={typeof value === "undefined" ? "" : value}
                     placeholder={placeholder}

@@ -116,6 +116,23 @@ function App() {
                                 isRequired: true
                             },
                             {
+                                id: "password",
+                                label: "Password",
+                                type: "password",
+                                isRequired: true
+                            },
+                            {
+                                id: "myradio",
+                                label: "Radio Example",
+                                type: "radio",
+                                options: [
+                                    {value: 1, text: "1"},
+                                    {value: 2, text: "2"},
+                                    {value: 3, text: "3"}
+                                ],
+                                isRequired: true
+                            },
+                            {
                                 id: "range",
                                 label: "Date range",
                                 type: "dateRange",
@@ -157,8 +174,12 @@ function App() {
                 }}
                 render={({ fieldProps, actionProps }) => {
                     return (
-                        <>
+                        <form>
                             {fieldProps.fields.title}
+                            <br />
+                            {fieldProps.fields.password}
+                            <br />
+                            {fieldProps.fields.myradio}
                             <br />
                             {fieldProps.fields.range}
                             <br />
@@ -173,7 +194,7 @@ function App() {
                             >
                                 Submit
                             </button>
-                        </>
+                        </form>
                     );
                 }}
                 onChange={payload => setData(payload)}
