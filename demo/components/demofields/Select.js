@@ -48,12 +48,13 @@ const Select = ({
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
     return (
-        <FieldWrapper id={id} isDirty={isDirty} hasFocus={hasFocus} hideDebugInfo={hideDebugInfo}>
+        <FieldWrapper isDirty={isDirty} hasFocus={hasFocus} hideDebugInfo={hideDebugInfo}>
             {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
             {hideDebugInfo ? null : <PathInfo id={id} type={type} />}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
                 <select
+                    id={id}
                     name={id}
                     value={typeof value === "undefined" ? type === "multiselect" ? [] : "" : value}
                     placeholder={placeholder}
