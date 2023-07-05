@@ -8,6 +8,7 @@ Stages, ultra flexible, super powerful and relatively lightweight (37.2 kb minif
 
 - [Demos (WIP)](https://stages-demo.vercel.app/)
 - [Docs (WIP)](https://stages-docs.vercel.app/)
+- [Stages Studio (online form editor, coming soon)](https://stages.studio/)
 
 ## Possible Usecases:
 
