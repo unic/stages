@@ -26,7 +26,51 @@ const FormLayout = ({ loading, fields, actions }) => <div>
 </div>;
 
 function App() {
-    const [data, setData] = useState({});
+    const [data, setData] = useState({
+        family: {
+            nodes: [
+                {
+                    id: "hans-muster",
+                    name: "Hans Muster",
+                    gender: "male"
+                },
+                {
+                    id: "vreni-beispiel",
+                    name: "Vreni Beispiel",
+                    gender: "female"
+                }
+            ],
+            edges: [
+                {
+                    nodes: ["hans-muster", "vreni-beispiel"],
+                    dir: "bidirectional",
+                    type: "marriage"
+                }
+            ]
+        },
+        forum: {
+            nodes: [
+                {
+                    __typename: "post",
+                    id: 0,
+                    title: "What is a graph?",
+                    content: "Can someone explain what a graph is?"
+                },
+                {
+                    __typename: "reply",
+                    id: 1,
+                    content: "A graph is a data structure."
+                }
+            ],
+            edges: [
+                {
+                    nodes: [0, 1],
+                    dir: "unidirectional",
+                    type: "reply"
+                }
+            ]
+        }
+    });
     const onSubmit = () => {
         console.log("submit:", data);
     };
