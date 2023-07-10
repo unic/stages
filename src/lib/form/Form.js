@@ -179,7 +179,7 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
     };
 
     parsedConfig = parsedConfig.map(configItem => {
-        if (typeof configItem === "object" && (configItem.type === "group" || configItem.type === "collection" || configItem.type === "fieldset") && Array.isArray(configItem.fields)) {
+        if (typeof configItem === "object" && (configItem.type === "group" || configItem.type === "collection" || configItem.type === "graph" || configItem.type === "fieldset") && Array.isArray(configItem.fields)) {
             configItem.fields = configItem.fields.map(field => parseConfigItem(field));
         }
         return parseConfigItem(configItem);
@@ -348,7 +348,7 @@ const Form = ({
      * @param {string} type string of the elemnts type
      * @returns {boolean} true if the type is a reserved type
      */
-    const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "fieldset" || type === "config";
+    const isReservedType = type => type === "collection" || type === "graph" || type === "subform" || type === "group" || type === "fieldset" || type === "config";
 
     /**
      * Is a specific field valid based on current data?

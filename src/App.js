@@ -110,64 +110,66 @@ function App() {
                     fields: () => {
                         return [
                             {
-                                id: "title",
-                                label: "Title",
-                                type: "text",
-                                isRequired: true
-                            },
-                            {
-                                id: "password",
-                                label: "Password",
-                                type: "password",
-                                isRequired: true
-                            },
-                            {
-                                id: "myradio",
-                                label: "Radio Example",
-                                type: "radio",
-                                options: [
-                                    {value: 1, text: "1"},
-                                    {value: 2, text: "2"},
-                                    {value: 3, text: "3"}
-                                ],
-                                isRequired: true
-                            },
-                            {
-                                id: "range",
-                                label: "Date range",
-                                type: "dateRange",
-                                params: {
-                                    required: false
-                                }
-                            },
-                            {
-                                id: "grouprange",
-                                label: "Group range",
-                                type: "group",
+                                id: "family",
+                                type: "graph",
+                                label: "Family Tree",
+                                unidirectional: true,
+                                circular: false,
                                 fields: [
                                     {
-                                        id: "range",
-                                        label: "Date range",
-                                        type: "dateRange",
-                                        params: {
-                                            required: true
+                                        id: "name",
+                                        label: "Name",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "gender",
+                                        label: "Gender",
+                                        type: "radio",
+                                        options: [
+                                            {
+                                                text: "Male",
+                                                value: "male"
+                                            },
+                                            {
+                                                text: "Female",
+                                                value: "female"
+                                            }
+                                        ],
+                                        isRequired: true
+                                    }
+                                ]
+                            },
+                            {
+                                id: "forum",
+                                type: "graph",
+                                label: "Forum",
+                                unidirectional: true,
+                                circular: false,
+                                fields: {
+                                    post: [
+                                        {
+                                            id: "title",
+                                            label: "Title",
+                                            type: "text",
+                                            isRequired: true
+                                        },
+                                        {
+                                            id: "content",
+                                            label: "Content",
+                                            type: "textarea",
+                                            isRequired: true
                                         }
-                                    }
-                                ]
-                            },
-                            {
-                                id: "collectionrange",
-                                label: "Collection range",
-                                type: "collection",
-                                init: true,
-                                min: 1,
-                                fields: [
-                                    {
-                                        id: "range",
-                                        label: "Date range",
-                                        type: "dateRange"
-                                    }
-                                ]
+                                    ],
+                                    reply: [
+                                        {  
+                                            id: "content",
+                                            label: "Content",
+                                            type: "textarea",
+                                            isRequired: true
+                                        }
+                                    ]
+                                }
                             }
                         ];
                     }
@@ -175,17 +177,9 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <form>
-                            {fieldProps.fields.title}
+                            {fieldProps.fields.family}
                             <br />
-                            {fieldProps.fields.password}
-                            <br />
-                            {fieldProps.fields.myradio}
-                            <br />
-                            {fieldProps.fields.range}
-                            <br />
-                            {fieldProps.fields.grouprange.range}
-                            <br />
-                            {fieldProps.fields.collectionrange ? fieldProps.fields.collectionrange[0].range : null}
+                            {fieldProps.fields.forum}
                             <br />
                             <br />
                             <button
