@@ -123,9 +123,20 @@ const getFieldPaths = (fieldConfig, data) => {
                             thisData.nodes.forEach((node) => {
                                 getPathsForPath(
                                     `${path}[${index}].fields`, renderPath ?
-                                        `${renderPath}.${item.id}.${node.id}` : 
-                                        `${item.id}.${node.id}`
+                                        `${renderPath}.${item.id}.nodes.${node.id}` : 
+                                        `${item.id}.nodes.${node.id}`
                                 );
+                            });
+                        }
+                        if (thisData && Array.isArray(thisData.edges)) {
+                            thisData.edges.forEach((edge) => {
+                                paths.push({
+                                    path: renderPath ?
+                                        `${renderPath}.${item.id}.edges.${edge.type}-${edge.nodes.join("-")}` : 
+                                        `${item.id}.edges.${edge.type}-${edge.nodes.join("-")}`,
+                                    config: item,
+                                    data: itemData,
+                                });
                             });
                         }
                     } else if (item.type === "group" || item.type === "fieldset") {
