@@ -166,7 +166,8 @@ function App() {
                                             id: "content",
                                             label: "Content",
                                             type: "textarea",
-                                            isRequired: true
+                                            isRequired: true,
+                                            allowedEdgesTo: ["post"]
                                         }
                                     ]
                                 }
@@ -177,9 +178,31 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <form>
-                            {fieldProps.fields.family}
+                            <h3>Family Tree</h3>
+                            {fieldProps.fields.family ? (
+                                <div>
+                                    {fieldProps.fields.family.nodes.map(node => (
+                                        <div key={node.id}>{node.name} (${node.gender})</div>
+                                    ))}
+                                    <hr />
+                                    {fieldProps.fields.family.edges.map(edge => (
+                                        <div key={edge.id}>{edge.fromId} zu (${edge.toId})</div>
+                                    ))}
+                                </div>
+                            ) : <p>No entries</p>}
                             <br />
-                            {fieldProps.fields.forum}
+                            <h3>Forum</h3>
+                            {fieldProps.fields.forum ? (
+                                <div>
+                                    {fieldProps.fields.forum.nodes.map(node => (
+                                        <div key={node.id}>{node.name} (${node.gender})</div>
+                                    ))}
+                                    <hr />
+                                    {fieldProps.fields.forum.edges.map(edge => (
+                                        <div key={edge.id}>{edge.fromId} zu (${edge.toId})</div>
+                                    ))}
+                                </div>
+                            ) : <p>No entries</p>}
                             <br />
                             <br />
                             <button
