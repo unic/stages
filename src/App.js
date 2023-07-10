@@ -220,6 +220,7 @@ function App() {
                     }
                 }}
                 render={({ fieldProps, actionProps }) => {
+                    console.log({ fieldProps });
                     return (
                         <form>
                             <h3>Family Tree</h3>

@@ -116,6 +116,18 @@ const getFieldPaths = (fieldConfig, data) => {
                                 );
                             });
                         }
+                    } else if (item.type === "graph") {
+                        const thisData = renderPath ? get(data, `${renderPath}.${item.id}`) : data[item.id];
+                        console.log({thisData});
+                        if (thisData && Array.isArray(thisData.nodes)) {
+                            thisData.nodes.forEach((node) => {
+                                getPathsForPath(
+                                    `${path}[${index}].fields`, renderPath ?
+                                        `${renderPath}.${item.id}.${node.id}` : 
+                                        `${item.id}.${node.id}`
+                                );
+                            });
+                        }
                     } else if (item.type === "group" || item.type === "fieldset") {
                         getPathsForPath(`${path}[${index}].fields`, itemRenderPath);
                     }
@@ -125,7 +137,7 @@ const getFieldPaths = (fieldConfig, data) => {
     }
 
     getPathsForPath();
-
+console.log({paths})
     return paths;
 };
 
