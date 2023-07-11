@@ -226,26 +226,36 @@ function App() {
                             <h3>Family Tree</h3>
                             {fieldProps.fields.family ? (
                                 <div>
-                                    {fieldProps.fields.family.nodes.map(node => (
-                                        <div key={node.id}>{node.name} (${node.gender})</div>
-                                    ))}
+                                    {Object.keys(fieldProps.fields.family.nodes).map(key => {
+                                        const node = fieldProps.fields.family.nodes[key];
+                                        return (
+                                            <div key={node.id}>{node.name}{node.gender}</div>
+                                        );
+                                    })}
+                                    {/*
                                     <hr />
                                     {fieldProps.fields.family.edges.map(edge => (
                                         <div key={edge.id}>{edge.fromId} zu (${edge.toId})</div>
                                     ))}
+                                    */}
                                 </div>
                             ) : <p>No entries</p>}
                             <br />
                             <h3>Forum</h3>
                             {fieldProps.fields.forum ? (
                                 <div>
-                                    {fieldProps.fields.forum.nodes.map(node => (
-                                        <div key={node.id}>{node.name} (${node.gender})</div>
-                                    ))}
+                                    {Object.keys(fieldProps.fields.forum.nodes).map(key => {
+                                        const node = fieldProps.fields.forum.nodes[key];
+                                        return (
+                                            <div key={node.id}>{node.title}</div>
+                                        );
+                                    })}
+                                    {/*
                                     <hr />
                                     {fieldProps.fields.forum.edges.map(edge => (
                                         <div key={edge.id}>{edge.fromId} zu (${edge.toId})</div>
                                     ))}
+                                    */}
                                 </div>
                             ) : <p>No entries</p>}
                             <br />
