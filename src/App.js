@@ -120,7 +120,7 @@ function App() {
                                 id: "password",
                                 label: "Password",
                                 type: "password",
-                                isRequired: true,
+                                isRequired: false,
                                 regexValidation: "^[0-9]{4}[A-Z]{1}$"
                             },
                             {

@@ -388,7 +388,7 @@ const Form = ({
             } else {
                 r = field.regexValidation;
             }
-            return r.test(thisData);
+            return isValid && (r.test(thisData) || !thisData);
         }
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
             data: thisData,
