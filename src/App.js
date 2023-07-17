@@ -113,13 +113,15 @@ function App() {
                                 id: "title",
                                 label: "Title",
                                 type: "text",
-                                isRequired: true
+                                isRequired: true,
+                                regexValidation: /^[0-9]{4}[A-Z]{1}$/i
                             },
                             {
                                 id: "password",
                                 label: "Password",
                                 type: "password",
-                                isRequired: true
+                                isRequired: true,
+                                regexValidation: "^[0-9]{4}[A-Z]{1}$"
                             },
                             {
                                 id: "myradio",

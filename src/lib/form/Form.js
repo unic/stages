@@ -377,6 +377,19 @@ const Form = ({
                 triggeringEvent
             });
         }
+        if ((typeof field.regexValidation === "string" || field.regexValidation instanceof RegExp) && !field.customValidation) {
+            let r;
+            if (typeof field.regexValidation === "string") {
+                try {
+                    r = new RegExp(field.regexValidation);
+                } catch(error) {
+                    // supplied Regex is invalid
+                }
+            } else {
+                r = field.regexValidation;
+            }
+            return r.test(thisData);
+        }
         return !isReservedType(field.type) && field.customValidation ? field.customValidation({
             data: thisData,
             allData: fieldData,
