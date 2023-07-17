@@ -14,7 +14,7 @@ const isValid = (value, config) => {
 More complicated field types can have more complicated default validations, for example a date range 
 field would validate that the "from date" is before the "to date".
 
-Additionally, you can validate on a per field basis, using the `customValidation` property in a field config. 
+Additionally, you can validate on a per field basis, using the `customValidation` or the `regexValidation` property in a field config. 
 This could look soemthing like this:
 
 ```
@@ -29,6 +29,20 @@ This could look soemthing like this:
     errorRenderer: (error) => <div style={{ color: "#f30" }}><br />Please fill out this field. Only alphanumeric values and '-' is allowed.</div>,
 }
 ```
+
+... or with Regex:
+
+```
+{
+    id: "password",
+    label: "Password",
+    type: "password",
+    isRequired: true,
+    regexValidation: "^[0-9]{4}[A-Z]{1}$"
+},
+```
+
+The property can either be a string as in the example or an actual Regex: `regexValidation: /^[0-9]{4}[A-Z]{1}$/i`
 
 The above mentioned date range custom validation:
 
