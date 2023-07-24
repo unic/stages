@@ -12,7 +12,7 @@ import merge from "lodash.merge";
 import stringify from "fast-json-stable-stringify";
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
-import { isElementInViewport, isDebugging } from "../utils/browser";
+import { isElementInViewport, isDebugging, isPromise } from "../utils/browser";
 
 /**
  * Cast a value to a specific type
@@ -261,6 +261,7 @@ const Form = ({
     const [focusedField, setFocusedField] = useState("");
     const [lastFocusedField, setLastFocusedField] = useState("");
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
+    const [pendingAsyncValidations, setPendingAsyncValidations] = useState({});
 
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
@@ -390,16 +391,31 @@ const Form = ({
             }
             return isValid && (r.test(thisData) || !thisData);
         }
-        return !isReservedType(field.type) && field.customValidation ? field.customValidation({
-            data: thisData,
-            allData: fieldData,
-            interfaceState,
-            fieldConfig: field,
-            isValid,
-            fieldHasFocus: !!(focusedField && focusedField === fieldKey),
-            fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
-            triggeringEvent
-        }) : isValid;
+
+        if (!isReservedType(field.type) && typeof field.customValidation === "function") {
+            const customValidationResult = field.customValidation({
+                data: thisData,
+                allData: fieldData,
+                interfaceState,
+                fieldConfig: field,
+                isValid,
+                fieldHasFocus: !!(focusedField && focusedField === fieldKey),
+                fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
+                triggeringEvent
+            });
+            console.log({customValidationResult});
+            if (isPromise(customValidationResult)) {
+                // Add to pending async validations, with timestamp and fieldkey, so that we prevent race conditions:
+                console.log("Adding to pending async validations");
+                customValidationResult.then((value) => {
+                    console.log("resolved promise", value);
+                  });
+            } else {
+                return customValidationResult;
+            }
+        }
+
+        return isValid;
     };
 
     /**

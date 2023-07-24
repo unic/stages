@@ -114,7 +114,11 @@ function App() {
                                 label: "Title",
                                 type: "text",
                                 isRequired: true,
-                                regexValidation: /^[0-9]{4}[A-Z]{1}$/i
+                                customValidation: async () => {
+                                    console.log("test");
+                                    await new Promise(resolve => setTimeout(resolve, 3000));
+                                    return Math.random() > 0.5 ? true : false;
+                                }
                             },
                             {
                                 id: "password",
