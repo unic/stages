@@ -405,10 +405,23 @@ const Form = ({
             });
             console.log({customValidationResult});
             if (isPromise(customValidationResult)) {
-                // Add to pending async validations, with timestamp and fieldkey, so that we prevent race conditions:
+                // Add to pending async validations, with timestamp and fieldkey, so that we can prevent race conditions:
                 console.log("Adding to pending async validations");
+
+                const now = + new Date();
+                setPendingAsyncValidations({...pendingAsyncValidations, [fieldKey]: now });
+
                 customValidationResult.then((value) => {
-                    console.log("resolved promise", value);
+                    // If validation result is false, add this field to errors and remove the pending async entry.
+                    // If validation result is true, remove the pending async entry and any errors generated asynchronously.
+                    // If there is already a new pending async validation for this key, than throw away this result 
+                    // and remove the pending entry.
+                    if (pendingAsyncValidations[fieldKey] !== now) return;
+                    if (value === false) {
+                        delete pendingAsyncValidations[fieldKey];
+                        setErrors({...errors, [fieldKey]: value});
+                    }
+                    console.log("resolved promise", value, pendingAsyncValidations);
                   });
             } else {
                 return customValidationResult;
