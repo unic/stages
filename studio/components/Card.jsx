@@ -3,7 +3,8 @@ import styled from "@emotion/styled";
 const CardContainer = styled.div`
     position: relative;
     z-index: 10;
-    height: 100%;
+    height: calc(100% - 32px);
+    margin-bottom: 32px;
 
     & > div {
         align-items: left;
@@ -25,6 +26,7 @@ const CardContainer = styled.div`
         font-weight: 400;
         font-size: 16px;
         margin: 0;
+        line-height: 25px;
     }
 
     &:before {

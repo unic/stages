@@ -5,7 +5,8 @@ import {
     Header,
     Footer,
     Grid,
-    Global
+    Global,
+    MantineProvider
 } from '@mantine/core';
 
 import Logo from '../components/Logo';
@@ -14,7 +15,7 @@ import PageSlogan from '../components/PageSlogan';
 
 export default function Page() {
     return (
-        <>
+        <MantineProvider withNormalizeCSS>
             <Head>
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -56,7 +57,7 @@ export default function Page() {
                     </Header>
                 }
             >
-                <div style={{ maxWidth: "1100px" }}>
+                <div style={{ maxWidth: "1100px", marginTop: "-32px" }}>
                     <Grid m="48px" gutter="64px">
                         <Grid.Col span={4}>
                             <Card>
@@ -97,6 +98,6 @@ export default function Page() {
                     </Grid>
                 </div>
             </AppShell>
-        </>
+        </MantineProvider>
     );
 };
