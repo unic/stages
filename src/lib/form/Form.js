@@ -420,6 +420,8 @@ const Form = ({
                     if (value === false) {
                         delete pendingAsyncValidations[fieldKey];
                         setErrors({...errors, [fieldKey]: value});
+                    } else {
+                        delete pendingAsyncValidations[fieldKey];
                     }
                     console.log("resolved promise", value, pendingAsyncValidations);
                   });
