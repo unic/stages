@@ -1,0 +1,28 @@
+{
+  "name": "stages-studio",
+  "version": "0.0.1",
+  "description": "Form Management System",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "form",
+    "mamagement",
+    "system"
+  ],
+  "author": "Fredi Bach",
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mantine/core": "^6.0.17",
+    "@mantine/hooks": "^6.0.17",
+    "next": "^13.4.12",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
