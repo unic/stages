@@ -1,4 +1,5 @@
 import styled from "@emotion/styled";
+import { motion } from "framer-motion"
 
 const CardContainer = styled.div`
     position: relative;
@@ -32,36 +33,38 @@ const CardContainer = styled.div`
     &:before {
         display: block;
         position: absolute;
-        top: -16px;
+        top: -24px;
         left: calc(100% / 4);
         content: "";
         width: calc(100% / 2);
-        height: calc(100% + 32px);
+        height: calc(100% + 48px);
         background: #A0F9FF;
         transform: skew(-15deg, 0deg);
-        z-index: -2;
+        z-index: -1;
+        mix-blend-mode: darken;
     }
 
     &:after {
         display: block;
         position: absolute;
-        top: -16px;
-        left: calc(100% / 4);
+        top: 8px;
+        left: 8px;
         content: "";
-        width: 16px;
-        height: calc(100% + 32px);
-        background: #FF485E;
-        transform: skew(-15deg, 0deg);
-        z-index: -1;
+        width: 100%;
+        height: 100%;
+        border: 1px #FF485E solid;
+        z-index: -2;
     }
 `;
 
 const Card = ({ children }) => {
     return (
         <CardContainer>
-            <div>
+            <motion.div
+                whileHover={{ marginLeft: "-8px", marginTop: "-8px", paddingLeft: "32px", paddingTop: "32px" }}
+            >
                 {children}
-            </div>
+            </motion.div>
         </CardContainer>
     );
 };
