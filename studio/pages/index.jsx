@@ -84,6 +84,30 @@ export default function Page() {
                             <p>Any type of text, like labels and placeholders or step summaries, can reference any form data and aggregations of it.</p>
                         </Card>
                     </Grid.Col>
+                    <Grid.Col span={3}>
+                        <Card>
+                            <h3>VISUAL EDITING</h3>
+                            <p>Inspired by Figma, Stages Studio has a visual editor where you can directly click on a field to edit it, or drag and drop a field to a new location.</p>
+                        </Card>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <Card>
+                            <h3>PROFESSIONAL FEATURES</h3>
+                            <p>Professional features like Undo/Redo, Interface State, Internationalisation, Autosaving etc. can be activated on any form.</p>
+                        </Card>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <Card>
+                            <h3>ACCESSIBILITY</h3>
+                            <p>Stages Studio is built with accessibility in mind. It is designed to be as accessible as possible without compromising on features.</p>
+                        </Card>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <Card>
+                            <h3>THEMING</h3>
+                            <p>Every part of a Form can be themed. You can choose from a wide range of themes or create your own. And when exported to React, no limits are placed on what you can do.</p>
+                        </Card>
+                    </Grid.Col>
                 </Grid>
             </div>
         </MantineProvider>
