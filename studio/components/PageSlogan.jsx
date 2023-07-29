@@ -27,6 +27,16 @@ const SloganContainer = styled.div`
         font-style: italic;
         color: #FF485E;
     }
+
+    @media screen and (max-width: 767px) {
+        text-align: center;
+        h2 {
+            font-size: 22px;
+        }
+        p {
+            font-size: 14px;
+        }
+    }
 `;
 
 const PageSlogan = () => {
