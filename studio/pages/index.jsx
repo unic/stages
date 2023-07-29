@@ -8,6 +8,7 @@ import styled from "@emotion/styled";
 import Logo from '../components/Logo';
 import Card from '../components/Card';
 import PageSlogan from '../components/PageSlogan';
+import ImageContainer from '../components/ImageContainer';
 
 const Header = styled.div`
     display: flex;
@@ -122,6 +123,14 @@ export default function Page() {
                         </Card>
                     </Grid.Col>
                 </Grid>
+                <ImageContainer>
+                    <div>
+                       <img
+                            src="/stages-studio-editor-preview.png"
+                            alt="Stages Studio editor preview"
+                        />
+                    </div>
+                </ImageContainer>
             </div>
         </MantineProvider>
     );
