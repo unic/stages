@@ -9,6 +9,7 @@ import Logo from '../components/Logo';
 import Card from '../components/Card';
 import PageSlogan from '../components/PageSlogan';
 import ImageContainer from '../components/ImageContainer';
+import InfoCard from '../components/InfoCard';
 
 const Header = styled.div`
     display: flex;
@@ -131,6 +132,19 @@ export default function Page() {
                         />
                     </div>
                 </ImageContainer>
+                <InfoCard>
+                    <div>
+                        <h2>Any level of complexity</h2>
+                        <img src="/infocard-simple-complex.svg" alt="infocard simple complex" />
+                        <p>
+                            With Stages Studio you can build forms of any complexity, and we mean any complexity! 
+                            From the simplest non-structured forms, with a linear structure from top to bottom, 
+                            to highly complex, dynamic wizards, with nested fields and modular fieldsets. You can 
+                            create array like structures with collections of fields and you can control the visibility 
+                            of fields and even whole wizard steps based on previously entered data.
+                        </p>
+                    </div>
+                </InfoCard>
             </div>
         </MantineProvider>
     );
