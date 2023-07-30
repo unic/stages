@@ -145,6 +145,20 @@ export default function Page() {
                         </p>
                     </div>
                 </InfoCard>
+                <InfoCard>
+                    <div>
+                        <h2>Storage options</h2>
+                        <img src="/storage-options.svg" alt="infocard storage options" />
+                        <p>
+                            Store data on our servers where you can choose any region which suites you, for example 
+                            if you need to follow EU law. You can also choose to store data on your own server by 
+                            creating a webhook which handles all the data we send to it. Or you go fully 
+                            custom and export the form to React and use it in your own project with your own data 
+                            storage. Fully up to you. By using your own storage option you loose some features, but 
+                            you gain full control over your data.
+                        </p>
+                    </div>
+                </InfoCard>
             </div>
         </MantineProvider>
     );
