@@ -141,6 +141,12 @@ export default function Page() {
                             <p>A large collection of freely themeable and accessible field types is available for each possible data type, for endless creations.</p>
                         </Card>
                     </Grid.Col>
+                    <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+                        <Card>
+                            <h3>BOT SPAM PREVENTION</h3>
+                            <p>Last thing you want is bots spamming your forms. Stages Studio has powerfull anti-bot spam built in to prevent this.</p>
+                        </Card>
+                    </Grid.Col>
                 </Grid>
                 <ImageContainer>
                     <div>
@@ -155,11 +161,7 @@ export default function Page() {
                         <h2>Any level of complexity</h2>
                         <img src="/infocard-simple-complex.svg" alt="infocard simple complex" />
                         <p>
-                            With Stages Studio you can build forms of any complexity, and we mean any complexity! 
-                            From the simplest non-structured forms, with a linear structure from top to bottom, 
-                            to highly complex, dynamic wizards, with nested fields and modular fieldsets. You can 
-                            create array like structures with collections of fields and you can control the visibility 
-                            of fields and even whole wizard steps based on previously entered data.
+                            With Stages Studio, you have the power to construct forms of unparalleled complexity. From the most basic, unstructured forms that follow a linear progression from top to bottom, to intricate and dynamic wizards featuring nested fields and modular fieldsets. You can effortlessly create array-like structures with collections of fields, and exercise complete control over the visibility of individual fields and even entire wizard steps, all based on previously entered data.
                         </p>
                     </div>
                 </InfoCard>
@@ -349,6 +351,18 @@ export default function Page() {
                             range choosers. For each data type, multiple field types are available to enter them. 
                             Complex types exists, as well, to enter complex data structures. And by freely combining 
                             them, you can craete the most complex data structures in your forms.
+                        </p>
+                    </div>
+                </InfoCard>
+                <InfoCard>
+                    <div>
+                        <h2>Bot Spam Prevention</h2>
+                        <img src="/infocard-bot-spam.svg" alt="infocard bot spam" />
+                        <p>
+                            Stages Studio comes with a powerful anti-bot spam system built in, which prevents bots from 
+                            spamming your forms. And it does that without users having to enter a cryptic captchas. 
+                            Additionally you can have invitation only forms or forms where only registered users can 
+                            enter data, to be even more restrictive.
                         </p>
                     </div>
                 </InfoCard>
