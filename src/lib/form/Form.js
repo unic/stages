@@ -202,6 +202,7 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
 };
 
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
+let pendingAsyncValidations; // Used to prevent race conditions with async validations
 
 let lastOnChange = 0; // Used to throttle onChange validations
 let timeoutRef; // Timeout ref used to throttle onChange validations
@@ -261,7 +262,6 @@ const Form = ({
     const [focusedField, setFocusedField] = useState("");
     const [lastFocusedField, setLastFocusedField] = useState("");
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
-    const [pendingAsyncValidations, setPendingAsyncValidations] = useState({});
 
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
@@ -405,26 +405,32 @@ const Form = ({
             });
             console.log({customValidationResult});
             if (isPromise(customValidationResult)) {
-                // Add to pending async validations, with timestamp and fieldkey, so that we can prevent race conditions:
-                console.log("Adding to pending async validations");
+                (function(){
+                    // Add to pending async validations, with timestamp and fieldkey, so that we can prevent race conditions:
+                    const now = + new Date();
+                    console.log("Adding to pending async validations", { now });
+                    pendingAsyncValidations = {...pendingAsyncValidations, [fieldKey]: now };
 
-                const now = + new Date();
-                setPendingAsyncValidations({...pendingAsyncValidations, [fieldKey]: now });
-
-                customValidationResult.then((value) => {
-                    // If validation result is false, add this field to errors and remove the pending async entry.
-                    // If validation result is true, remove the pending async entry and any errors generated asynchronously.
-                    // If there is already a new pending async validation for this key, than throw away this result 
-                    // and remove the pending entry.
-                    if (pendingAsyncValidations[fieldKey] !== now) return;
-                    if (value === false) {
-                        delete pendingAsyncValidations[fieldKey];
-                        setErrors({...errors, [fieldKey]: value});
-                    } else {
-                        delete pendingAsyncValidations[fieldKey];
-                    }
-                    console.log("resolved promise", value, pendingAsyncValidations);
-                  });
+                    customValidationResult.then((value) => {
+                        // If validation result is false, add this field to errors and remove the pending async entry.
+                        // If validation result is true, remove the pending async entry and any errors generated asynchronously.
+                        // If there is already a new pending async validation for this key, than throw away this result 
+                        // and remove the pending entry.
+                        console.log("value from promise", { value, fieldKey, now, pendingAsyncValidations });
+                        if (pendingAsyncValidations[fieldKey] !== now) return;
+                        if (value !== true) {
+                            console.log("Async not valid!!!");
+                            delete pendingAsyncValidations[fieldKey];
+                            setErrors({...errors, [fieldKey]: {
+                                field: field
+                            }});
+                        } else {
+                            delete pendingAsyncValidations[fieldKey];
+                        }
+                        pendingAsyncValidations = {...pendingAsyncValidations};
+                        console.log("resolved promise", value, pendingAsyncValidations);
+                    });
+                })();
             } else {
                 return customValidationResult;
             }
