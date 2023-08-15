@@ -21,7 +21,7 @@ const Dummy = ({
             <div id={id}>
                 {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
                 {secondaryText ? <div>{secondaryText}</div> : null}
-                {error && !!isValidating ? errorRenderer ? errorRenderer(error) : (
+                {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
                     <div style={{ color: "red" }}>Please fill out this field!</div>
                 ) : null}
                 {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
