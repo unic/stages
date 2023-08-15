@@ -22,8 +22,8 @@ function FormPage() {
                                 type: "text",
                                 isRequired: true,
                                 customValidation: async ({ data }) => {
-                                    await new Promise(resolve => setTimeout(resolve, 3000));
-                                    return data && data.length % 2 === 1;
+                                    await new Promise(resolve => setTimeout(resolve, 2000));
+                                    return data && data.length % 2 !== 1;
                                 },
                                 validateOn: ["blur", "action"]
                             }
@@ -35,9 +35,10 @@ function FormPage() {
                         <Heading>Async Validation</Heading>
                         <Paragraph>
                             In this demo, we simulate an async validation api call with a random timeout. The validation is simple. 
-                            All even character counts in the title field will be an error. We disable the action button while 
-                            async validations happen. Stages meanwhile takes care of any race conditions. While validating, 
-                            we display a note below the field.
+                            All odd character counts in the title field will be an error. We disable the action button while 
+                            async validations happen. Stages meanwhile takes care of any race conditions (each validations can 
+                            take between 0 and 2 seconds, so this is necessary as later api calls can finish before earlier calls). 
+                            While validating (on init, blur and action), we display a note below the field.
                         </Paragraph>
                         <div>
                             {fieldProps.fields.title}
