@@ -38,7 +38,8 @@ function FormPage() {
                 <a href="/configtemplates">Config Templates</a>{", "}
                 <a href="/fieldsets">Fieldsets</a>{", "}
                 <a href="/i18n">i18n</a>{", "}
-                <a href="/autosave">Auto Save</a>
+                <a href="/autosave">Auto Save</a>{", "}
+                <a href="/asyncvalidation">Async Validation</a>
             </Paragraph>
             <Heading>Fields</Heading>
             <Paragraph>

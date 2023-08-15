@@ -36,6 +36,7 @@ const CheckBox = ({
     isRequired,
     isDisabled,
     isDirty,
+    isValidating,
     hasFocus,
     prefix,
     suffix,
@@ -73,9 +74,10 @@ const CheckBox = ({
                 />
                 {suffix ? <span>{suffix}</span> : null} {secondaryText ? <span style={{ verticalAlign: "2px", marginLeft: "2px", fontSize: "14px", color: isDisabled ? "#999" : "#000" }}>{secondaryText}</span> : null}
             </div>
-            {error ? errorRenderer ? errorRenderer(error) : (
+            {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
                 <Error text="Please fill out this field!" error={error} />
             ) : null}
+            {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
         </FieldWrapper>
     );
 }

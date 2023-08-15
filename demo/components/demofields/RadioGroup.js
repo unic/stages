@@ -38,6 +38,7 @@ const RadioGroup = ({
     isRequired,
     isDisabled,
     isDirty,
+    isValidating,
     hasFocus,
     prefix,
     suffix,
@@ -82,9 +83,10 @@ const RadioGroup = ({
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <SecondaryText isDisabled={isDisabled}>{secondaryText}</SecondaryText> : null}
-            {error ? errorRenderer ? errorRenderer(error) : (
+            {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
                 <Error text="Please fill out this field!" error={error} />
             ) : null}
+            {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
         </FieldWrapper>
     );
 };

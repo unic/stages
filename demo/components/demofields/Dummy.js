@@ -19,6 +19,7 @@ const Dummy = ({
     isRequired,
     isDirty,
     isDisabled,
+    isValidating,
     hasFocus,
     secondaryText,
     errorRenderer,
@@ -30,9 +31,10 @@ const Dummy = ({
                 {label ? <Label id={id} label={label} isRequired={isRequired} isDisabled={isDisabled} /> : null}
                 <PathInfo id={id} type={type} />
                 {secondaryText ? <SecondaryText isDisabled={isDisabled}>{secondaryText}</SecondaryText> : null}
-                {error ? errorRenderer ? errorRenderer(error) : (
+                {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
                     <Error text="Please fill out this field!" error={error} />
                 ) : null}
+                {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
             </FieldWrapper>
         );
     }

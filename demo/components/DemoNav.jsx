@@ -33,6 +33,7 @@ const DemoNav = () => {
                         <option value="/fieldsets">Fieldsets</option>
                         <option value="/i18n">i18n</option>
                         <option value="/autosave">Auto Save</option>
+                        <option value="/asyncvalidation">Async Validation</option>
                     </optgroup>
                     <optgroup label="Fields">
                         <option value="/dynamicfields">Dynamic Fields</option>
