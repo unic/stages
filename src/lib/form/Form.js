@@ -393,6 +393,7 @@ const Form = ({
         }
 
         if (!isReservedType(field.type) && typeof field.customValidation === "function") {
+            // As this is an async call, only call it if data has changed!
             const customValidationResult = field.customValidation({
                 data: thisData,
                 allData: fieldData,
@@ -403,12 +404,10 @@ const Form = ({
                 fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
                 triggeringEvent
             });
-            console.log({customValidationResult});
             if (isPromise(customValidationResult)) {
                 (function(){
                     // Add to pending async validations, with timestamp and fieldkey, so that we can prevent race conditions:
                     const now = + new Date();
-                    console.log("Adding to pending async validations", { now });
                     pendingAsyncValidations = {...pendingAsyncValidations, [fieldKey]: now };
 
                     customValidationResult.then((value) => {
@@ -416,10 +415,8 @@ const Form = ({
                         // If validation result is true, remove the pending async entry and any errors generated asynchronously.
                         // If there is already a new pending async validation for this key, than throw away this result 
                         // and remove the pending entry.
-                        console.log("value from promise", { value, fieldKey, now, pendingAsyncValidations });
                         if (pendingAsyncValidations[fieldKey] !== now) return;
                         if (value !== true) {
-                            console.log("Async not valid!!!");
                             delete pendingAsyncValidations[fieldKey];
                             setErrors({...errors, [fieldKey]: {
                                 field: field
@@ -428,7 +425,6 @@ const Form = ({
                             delete pendingAsyncValidations[fieldKey];
                         }
                         pendingAsyncValidations = {...pendingAsyncValidations};
-                        console.log("resolved promise", value, pendingAsyncValidations);
                     });
                 })();
             } else {
@@ -1759,7 +1755,7 @@ const Form = ({
             handleActionClick,
             handleUndo,
             handleRedo,
-            isDisabled,
+            isDisabled: pendingAsyncValidations && Object.keys(pendingAsyncValidations).length > 0 ? true : isDisabled,
             isDirty,
             focusedField,
             lastFocusedField,

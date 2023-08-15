@@ -197,6 +197,7 @@ function App() {
                             <button
                                 type="button"
                                 onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                                disabled={actionProps.isDisabled}
                             >
                                 Submit
                             </button>
