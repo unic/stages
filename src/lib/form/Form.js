@@ -423,6 +423,7 @@ const Form = ({
                             }});
                         } else {
                             delete pendingAsyncValidations[fieldKey];
+                            setErrors({...errors});
                         }
                         pendingAsyncValidations = {...pendingAsyncValidations};
                     });
@@ -1482,7 +1483,6 @@ const Form = ({
 
             // If this field has a pending async validation, set isValidationg to true
             if (pendingAsyncValidations && pendingAsyncValidations[path]) cleanedField.isValidating = true;
-            console.log({ path, pendingAsyncValidations, cleanedField });
 
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);

@@ -115,7 +115,6 @@ function App() {
                                 type: "text",
                                 isRequired: true,
                                 customValidation: async () => {
-                                    console.log("test");
                                     await new Promise(resolve => setTimeout(resolve, 3000));
                                     return Math.random() > 0.5 ? true : false;
                                 }
