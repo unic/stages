@@ -67,7 +67,7 @@ const CheckBox = ({
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
-            {error ? errorRenderer ? errorRenderer(error) : (
+            {error && !!isValidating ? errorRenderer ? errorRenderer(error) : (
                 <div style={{ color: "red" }}>Please fill out this field!</div>
             ) : null}
             {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}

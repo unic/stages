@@ -114,10 +114,11 @@ function App() {
                                 label: "Title",
                                 type: "text",
                                 isRequired: true,
-                                customValidation: async () => {
+                                customValidation: async ({ data }) => {
                                     await new Promise(resolve => setTimeout(resolve, 3000));
-                                    return Math.random() > 0.5 ? true : false;
-                                }
+                                    return data && data.length % 2 === 1;
+                                },
+                                validateOn: ["blur", "action"]
                             },
                             {
                                 id: "password",
