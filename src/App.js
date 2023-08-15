@@ -114,7 +114,11 @@ function App() {
                                 label: "Title",
                                 type: "text",
                                 isRequired: true,
-                                regexValidation: /^[0-9]{4}[A-Z]{1}$/i
+                                customValidation: async ({ data }) => {
+                                    await new Promise(resolve => setTimeout(resolve, 3000));
+                                    return data && data.length % 2 === 1;
+                                },
+                                validateOn: ["blur", "action"]
                             },
                             {
                                 id: "password",
@@ -193,6 +197,7 @@ function App() {
                             <button
                                 type="button"
                                 onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                                disabled={actionProps.isDisabled}
                             >
                                 Submit
                             </button>

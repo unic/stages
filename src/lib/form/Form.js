@@ -12,7 +12,7 @@ import merge from "lodash.merge";
 import stringify from "fast-json-stable-stringify";
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
-import { isElementInViewport, isDebugging } from "../utils/browser";
+import { isElementInViewport, isDebugging, isPromise } from "../utils/browser";
 
 /**
  * Cast a value to a specific type
@@ -202,6 +202,7 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
 };
 
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
+let pendingAsyncValidations; // Used to prevent race conditions with async validations
 
 let lastOnChange = 0; // Used to throttle onChange validations
 let timeoutRef; // Timeout ref used to throttle onChange validations
@@ -390,16 +391,49 @@ const Form = ({
             }
             return isValid && (r.test(thisData) || !thisData);
         }
-        return !isReservedType(field.type) && field.customValidation ? field.customValidation({
-            data: thisData,
-            allData: fieldData,
-            interfaceState,
-            fieldConfig: field,
-            isValid,
-            fieldHasFocus: !!(focusedField && focusedField === fieldKey),
-            fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
-            triggeringEvent
-        }) : isValid;
+
+        if (!isReservedType(field.type) && typeof field.customValidation === "function") {
+            // As this is an async call, only call it if data has changed!
+            const customValidationResult = field.customValidation({
+                data: thisData,
+                allData: fieldData,
+                interfaceState,
+                fieldConfig: field,
+                isValid,
+                fieldHasFocus: !!(focusedField && focusedField === fieldKey),
+                fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined",
+                triggeringEvent
+            });
+            if (isPromise(customValidationResult)) {
+                (function(){
+                    // Add to pending async validations, with timestamp and fieldkey, so that we can prevent race conditions:
+                    const now = + new Date();
+                    pendingAsyncValidations = {...pendingAsyncValidations, [fieldKey]: now };
+
+                    customValidationResult.then((value) => {
+                        // If validation result is false, add this field to errors and remove the pending async entry.
+                        // If validation result is true, remove the pending async entry and any errors generated asynchronously.
+                        // If there is already a new pending async validation for this key, than throw away this result 
+                        // and remove the pending entry.
+                        if (pendingAsyncValidations[fieldKey] !== now) return;
+                        if (value !== true) {
+                            delete pendingAsyncValidations[fieldKey];
+                            setErrors({...errors, [fieldKey]: {
+                                field: field
+                            }});
+                        } else {
+                            delete pendingAsyncValidations[fieldKey];
+                            setErrors({...errors});
+                        }
+                        pendingAsyncValidations = {...pendingAsyncValidations};
+                    });
+                })();
+            } else {
+                return customValidationResult;
+            }
+        }
+
+        return isValid;
     };
 
     /**
@@ -1447,6 +1481,9 @@ const Form = ({
                 cleanedField.errorRenderer = typeValidations[fieldConfig.type].renderer;
             }
 
+            // If this field has a pending async validation, set isValidationg to true
+            if (pendingAsyncValidations && pendingAsyncValidations[path]) cleanedField.isValidating = true;
+
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "string") return castValueStrType(value, fieldConfig.cast.field);
@@ -1722,7 +1759,7 @@ const Form = ({
             handleActionClick,
             handleUndo,
             handleRedo,
-            isDisabled,
+            isDisabled: pendingAsyncValidations && Object.keys(pendingAsyncValidations).length > 0 ? true : isDisabled,
             isDirty,
             focusedField,
             lastFocusedField,

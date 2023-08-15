@@ -11,6 +11,7 @@ const Dummy = ({
     label,
     error,
     isRequired,
+    isValidating,
     secondaryText,
     errorRenderer,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
@@ -20,9 +21,10 @@ const Dummy = ({
             <div id={id}>
                 {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
                 {secondaryText ? <div>{secondaryText}</div> : null}
-                {error ? errorRenderer ? errorRenderer(error) : (
+                {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
                     <div style={{ color: "red" }}>Please fill out this field!</div>
                 ) : null}
+                {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
             </div>
         );
     }
