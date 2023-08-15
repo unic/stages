@@ -31,6 +31,7 @@ const Input = ({
     placeholder,
     isRequired,
     isDisabled,
+    isValidating,
     hasFocus,
     prefix,
     suffix,
@@ -69,6 +70,7 @@ const Input = ({
             {error ? errorRenderer ? errorRenderer(error) : (
                 <div style={{ color: "red" }}>Please fill out this field!</div>
             ) : null}
+            {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
         </div>
     );
 }

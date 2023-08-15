@@ -1480,6 +1480,10 @@ const Form = ({
                 cleanedField.errorRenderer = typeValidations[fieldConfig.type].renderer;
             }
 
+            // If this field has a pending async validation, set isValidationg to true
+            if (pendingAsyncValidations && pendingAsyncValidations[path]) cleanedField.isValidating = true;
+            console.log({ path, pendingAsyncValidations, cleanedField });
+
             const castValue = value => {
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "function") return fieldConfig.cast.field(value);
                 if (fieldConfig.cast && typeof fieldConfig.cast.field === "string") return castValueStrType(value, fieldConfig.cast.field);

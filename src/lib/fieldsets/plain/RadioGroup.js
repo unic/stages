@@ -31,6 +31,7 @@ const RadioGroup = ({
     error,
     isRequired,
     isDisabled,
+    isValidating,
     prefix,
     suffix,
     secondaryText,
@@ -74,6 +75,7 @@ const RadioGroup = ({
             {error ? errorRenderer ? errorRenderer(error) : (
                 <div style={{ color: "red" }}>Please fill out this field!</div>
             ) : null}
+            {isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
         </div>
     );
 };
