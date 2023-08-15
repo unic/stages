@@ -104,6 +104,48 @@ error to output:
 }
 ```
 
+## Async Validations
+
+Sometimes you can only know if a field is valid after checking an API asynchronously. That's why we 
+added async validations. The work the same way as custom validations, just with the async await pattern. 
+To avoid issues with unstable api response times, Stages handles any race conditions for you, no worries.
+Here's an example from the demos where we simulate an async call with a `setTimeout`:
+
+```
+{
+    id: "title",
+    label: "Title",
+    type: "text",
+    isRequired: true,
+    customValidation: async ({ data }) => {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return data && data.length % 2 !== 1;
+    },
+    validateOn: ["blur", "action"]
+}
+```
+
+It's a good idea to disable the submit actions while async validations are running:
+
+```
+<button
+    type="button"
+    onClick={() => {}}
+    disabled={actionProps.isDisabled}
+>
+    Submit
+</button>
+```
+
+And fields can optionally display the state of async validations with the `isValidating` prop:
+
+```
+{error && !isValidating ? errorRenderer ? errorRenderer(error) : (
+    <Error text="Please fill out this field!" error={error} />
+) : null}
+{isValidating ? <div style={{ color: "#999" }}>Field is validating ...</div> : null}
+```
+
 ## Global Per Type Validation
 
 Often you want the same validation for all fields with the same type, for example emails or phone numbers. 
