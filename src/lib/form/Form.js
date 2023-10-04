@@ -150,7 +150,7 @@ const computeFieldsetParams = (fieldConfig, paramConfig) => {
 /**
  * Parse the configuration using all the available data
  * 
- * @param {Object} config the dynamic form config
+ * @param {Object | Array<object> | function} config the dynamic form config
  * @param {Object} data the current data
  * @param {Object} asyncData all the loaded async data
  * @param {Object} interfaceState all the interface state
@@ -159,11 +159,17 @@ const computeFieldsetParams = (fieldConfig, paramConfig) => {
  * @returns {Array<object>} the parsed config
  */
 const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, fieldsets) => {
-    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState) : [];
+    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState) : 
+        typeof config === "function" ? config(data, asyncData, interfaceState) : 
+        Array.isArray(config) ? config : 
+        [];
 
     const parseConfigItem = configItem => {
         if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
             return config.fieldConfigs[configItem](data, asyncData, interfaceState);
+        } else if (typeof configItem === "object" && config.fieldConfigs && typeof config.fieldConfigs[configItem.type] === "function") {
+            const thisParsedConfig = config.fieldConfigs[configItem.type](data, asyncData, interfaceState);
+            return Object.assign({}, thisParsedConfig, configItem, { type: thisParsedConfig.type });
         } else if (typeof configItem === "object" && fieldsets[configItem.type]) {
             return {
                 id: configItem.id,
@@ -222,6 +228,7 @@ const Form = ({
     config,
     data,
     render,
+    renderFields,
     fields,
     onChange,
     isVisible,
@@ -1781,16 +1788,18 @@ const Form = ({
             get
         },
         loading
-    }) : null;
+    }) : renderFields ? renderFields(createRenderedFields()) : null;
 };
 
 Form.propTypes = {
     //** @type {Object} The form configuration, can be a function or an object describing all fields */
-    config: PropTypes.object.isRequired,
+    config: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]).isRequired,
     //** @type {Object} The form data, which sould come from React state and be udated from the onChange callback */
     data: PropTypes.object,
     //** @type {React.ReactElement|Function} The render function which renders all the forms fields */
-    render: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
+    render: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+    //** @type {React.ReactElement|Function} The simplified render function which renders only the forms fields */
+    renderFields: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
     //** @type {Object} An object containing all the possible fields */
     fields: PropTypes.object.isRequired,
     //** @type {Function} A callback which is called when data has been changed. This should update the Form data. */

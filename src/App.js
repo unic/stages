@@ -11,6 +11,11 @@ import {
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "./lib/utils/storage";
 
+function capitalize(s) {
+    if (!s) return s;
+    return s[0].toUpperCase() + s.slice(1);
+}
+
 const FormLayout = ({ loading, fields, actions }) => <div>
     {loading ? (
         <div>Loading data, please wait ...</div>
@@ -66,6 +71,166 @@ function App() {
     return (
         <>
             <Debugger />
+            <Form
+                data={data}
+                onChange={payload => setData(payload)}
+                fields={fields}
+                id="test"
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "title",
+                                label: "Title",
+                                type: "text",
+                                isRequired: true
+                            }
+                        ];
+                    }
+                }}
+                render={({ fieldProps, actionProps }) => {
+                    return (
+                        <div>
+                            {fieldProps.fields.title}
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    );
+                }}      
+            />
+            <br /><br />
+            <Form
+                data={data}
+                onChange={payload => setData(payload)}
+                fields={fields}
+                id="test"
+                config={(data) => [
+                    {
+                        id: "title",
+                        label: `Title (${data.title || ''})`,
+                        type: "text",
+                        isRequired: true
+                    }
+                ]}
+                render={({ fieldProps, actionProps }) => {
+                    return (
+                        <div>
+                            {fieldProps.fields.title}
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    );
+                }}      
+            />
+            <br /><br />
+            <Form
+                data={data}
+                onChange={payload => setData(payload)}
+                fields={fields}
+                id="test"
+                config={[
+                    {
+                        id: "title",
+                        label: "Title",
+                        type: "text",
+                        isRequired: true
+                    }
+                ]}
+                render={({ fieldProps, actionProps }) => {
+                    return (
+                        <div>
+                            {fieldProps.fields.title}
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    );
+                }}      
+            />
+            <br /><br />
+            <Form
+                data={data}
+                onChange={payload => setData(payload)}
+                fields={fields}
+                id="test"
+                config={{
+                    fieldConfigs: {
+                        requiredUppercaseInput: () => {
+                            return {
+                                id: "input",
+                                type: "text",
+                                isRequired: true,
+                                filter: value => typeof value === "string" ? value.toUpperCase() : value
+                            };
+                        }
+                    },
+                    fields: () => [
+                        {
+                            id: "title1",
+                            label: "Title 1",
+                            type: "requiredUppercaseInput"
+                        },
+                        {
+                            id: "title2",
+                            label: "Title 2",
+                            type: "requiredUppercaseInput"
+                        }
+                    ]
+                }}
+                render={({ fieldProps, actionProps }) => {
+                    return (
+                        <div>
+                            {fieldProps.fields.title1}
+                            <br />
+                            {fieldProps.fields.title2}
+                            <br />
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    );
+                }}      
+            />
+            <br /><br />
+            <Form
+                data={data}
+                onChange={payload => setData(payload)}
+                fields={fields}
+                id="test"
+                config={[
+                    {
+                        id: "title",
+                        label: "Title",
+                        type: "text",
+                        isRequired: true
+                    }
+                ]}
+                renderFields={fields => (
+                    <div>
+                        {fields.title}
+                    </div>
+                )}      
+            />
+
+            {/*
             <Form
                 data={data}
                 fields={fields}
@@ -147,6 +312,12 @@ function App() {
                                 }
                             },
                             {
+                                id: "prename",
+                                label: "Prename",
+                                type: "text",
+                                filter: (data) => capitalize(data)
+                            },
+                            {
                                 id: "grouprange",
                                 label: "Group range",
                                 type: "group",
@@ -187,6 +358,8 @@ function App() {
                             <br />
                             {fieldProps.fields.myradio}
                             <br />
+                            {fieldProps.fields.prename}
+                            <br />
                             {fieldProps.fields.range}
                             <br />
                             {fieldProps.fields.grouprange.range}
@@ -206,6 +379,7 @@ function App() {
                 }}
                 onChange={payload => setData(payload)}
             />
+            */}
             {/*
             <Form
                 data={data}
