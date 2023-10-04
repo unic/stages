@@ -55,3 +55,21 @@ You get two render properties which are essentially two collection of properties
 Read the page about collections and actions to get more details on those two features.
 
 If you use fieldsets, you get the same props on that render function.
+
+## Simple Render
+
+Sometimes, in very simple forms, all you want is render the fields. For that usecase, you can use the simplified 
+render prop `renderFields` like this:
+
+```
+<Form
+    ...
+    renderFields={fields => (
+        <div>
+            {fields.myField}
+        </div>
+    )}
+/>
+```
+
+Here you only get one render prop `fields` which is an object of all the rendered fields, which you can than layout.

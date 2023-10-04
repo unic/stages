@@ -1,9 +1,13 @@
 # Configs
 
-The `config` property is an object which has currently two properties:
+The `config` property is either an object which has the following possible properties:
 
 - **fields**: A function which returns an array of field configurations
-- **asyncDataLoader**: A function which returns a promise with data loaded from an API
+- **fieldConfigs**: An optional object of config templates
+- **asyncDataLoader**: An optional function which returns a promise with data loaded from an API
+
+Or it is just the function of the fields property or super simplified, an array of config objects. 
+Depending of the complexity of the form, choose your ideal option.
 
 ## Fields Configuration
 
@@ -204,6 +208,37 @@ The `modifyConfig` method has three parameters:
 - **path:** The data structure path of where to add the configuration
 - **template:** The key of the config template which should be added
 - **action:** The action, which can currently be either `add` or `remove`
+
+And finally a last use for field configs is to define basic fields first and than add or overwite properties 
+in your config. Here's an example where we first define a field config for a required field which always 
+uppercases each character and than use that template multiple times in the actual config:
+
+```
+config={{
+    fieldConfigs: {
+        requiredUppercaseInput: () => {
+            return {
+                id: "input",
+                type: "text",
+                isRequired: true,
+                filter: value => typeof value === "string" ? value.toUpperCase() : value
+            };
+        }
+    },
+    fields: () => [
+        {
+            id: "title1",
+            label: "Title 1",
+            type: "requiredUppercaseInput"
+        },
+        {
+            id: "title2",
+            label: "Title 2",
+            type: "requiredUppercaseInput"
+        }
+    ]
+}}
+```
 
 ## Config Functions
 
