@@ -1757,6 +1757,11 @@ const Form = ({
         if (!suppressCallback) callback();
     };
 
+    const getConfig = (path) => {
+        const fieldPath = find(fieldPaths, { path: path });
+        return fieldPath ? fieldPath.config : undefined;
+    };
+
     // If the form isn't visible, render nothing (this is needed for the Wizards step validation):
     if (isVisible === false) return null;
 
@@ -1785,7 +1790,8 @@ const Form = ({
             focusedField,
             lastFocusedField,
             dirtyFields,
-            get
+            get,
+            getConfig
         },
         loading
     }) : renderFields ? renderFields(createRenderedFields()) : null;
