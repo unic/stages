@@ -39,6 +39,8 @@ You get two render properties which are essentially two collection of properties
     - **focusedField**: The currently focused field
     - **lastFocusedField**: The last focused field
     - **dirtyFields**: An object which contains keys for all dirty fields. Object props are `oldValue` and `newValue`
+    - **get**: Lodash get exposed, so that you can access data from a path: `get(data, "profile.username")`
+    - **getConfig**: Access a config by it's path, for example for the field with `id` `username` inside a group `profile`: `getConfig("profile.username")`
 
 
 - **actionProps**:
