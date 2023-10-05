@@ -214,7 +214,6 @@ function App() {
                 data={data}
                 onChange={payload => setData(payload)}
                 fields={fields}
-                id="test"
                 config={[
                     {
                         id: "title",

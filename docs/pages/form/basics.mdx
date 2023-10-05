@@ -15,6 +15,7 @@ const [data, setData] = useState({});
 ...
 
 <Form
+    id="myForm"
     data={data}
     fields={fields}
     config={{
@@ -66,3 +67,33 @@ Looks a little complicated at first, but only because the form component is buil
 - **onChange:** Stages is using connected inputs. The whole form acts as a connected input, as well. In other words you have to connect it to a React useState with the `onChange` prop
 
 More detailed info about them on the next pages.
+
+For very basic forms, you can create a minimal setup like this:
+
+```
+import { Form, plainFields as fields } from "react-stages";
+
+...
+
+const [data, setData] = useState({});
+
+...
+
+<Form
+    data={data}
+    onChange={payload => setData(payload)}
+    fields={fields}
+    config={[
+        {
+            id: "myField",
+            label: "My Field",
+            type: "text"
+        }
+    ]}
+    renderFields={fields => (
+        <div>
+            {fields.myField}
+        </div>
+    )}      
+/>
+```

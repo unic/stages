@@ -1815,7 +1815,7 @@ Form.propTypes = {
     //** @type {boolean} Whether the form is disabled */
     isDisabled: PropTypes.bool,
     //** @type {string|number} The forms id. Will be displayed in the debugger and is used for the data key in a wizard */
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     //** @type {Function} A callback which is called when the form is being validated */
     onValidation: PropTypes.func,
     //** @type {boolean} Whether the form is being validated */
