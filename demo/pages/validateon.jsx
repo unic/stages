@@ -69,6 +69,58 @@ function FormPage() {
                 )}
                 onChange={payload => setData1(payload)}
             />
+            <br />
+            <Heading>Validate on init (and submit):</Heading>
+            <Form
+                id="form1"
+                data={data1}
+                fields={fields}
+                validateOn={["action", "init"]}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "required",
+                                label: "Required Field",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "email",
+                                label: "Email Validated Field",
+                                type: "email",
+                                isRequired: true,
+                                customValidation: ({ data, allData, isValid }) => isValid && data.indexOf('@') > -1 && data.indexOf('.') > -1
+                            },
+                            {
+                                id: "optional",
+                                label: "Optional Field",
+                                type: "text",
+                                isRequired: false
+                            }
+                        ]
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => (
+                    <form>
+                        <div className="pure-g">
+                            <div className="pure-u-8-24">{fieldProps.fields.required}</div>
+                            <div className="pure-u-8-24">{fieldProps.fields.email}</div>
+                            <div className="pure-u-8-24">{fieldProps.fields.optional}</div>
+                        </div>
+                        <br />
+                        <hr />
+                        <br />
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                    </form>
+                )}
+                onChange={payload => setData1(payload)}
+            />
             <br /><br />
             <Heading>Validate on blur (and submit):</Heading>
             <Form
