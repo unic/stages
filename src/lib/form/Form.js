@@ -1115,12 +1115,13 @@ const Form = ({
      * @param {Object} eventData - the data passed to the event handler
      * @returns {Array<string>} an array of active custom events
      */
-    const getActiveCustomEvents = (triggeringEvent, eventData) => {
+    const getActiveCustomEvents = (triggeringEvent, eventData, fieldValue) => {
         const activeCustomEvents = [];
 
         if (typeof customEvents === "object") {
             Object.keys(customEvents).forEach(key => {
                 if (typeof customEvents[key] === "function" && customEvents[key]({
+                    fieldValue,
                     data: eventData,
                     dirtyFields,
                     optionsLoaded,
@@ -1230,7 +1231,7 @@ const Form = ({
         };
 
         // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("change", newData);
+        const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
 
         // Only validate if change or throttledChange or a custom event validation is enabled:
         if (
@@ -1326,8 +1327,42 @@ const Form = ({
      * @param {string} fieldKey path key of the field
      */
     const handleFocus = (fieldKey) => {
+        const fieldConfig = getConfigForField(fieldKey);
+        const newData = Object.assign({}, alldata);
+        const value = get(newData, fieldKey);
+
         setFocusedField(fieldKey);
         setLastFocusedField(fieldKey);
+
+        // prepare the params for the validateOnCallback:
+        const validateOnParams = {
+            data: value,
+            fieldIsDirty: !!dirtyFields[fieldKey],
+            fieldConfig,
+            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
+        };
+
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("focus", newData, value);
+
+        // Only validate if blur validation or a custom event is enabled:
+        if (
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
+        ) {
+            const result = validateField(fieldKey, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
+            setErrors(Object.assign({}, errors, result.errors));
+            limitedOnChange(newData, result.errors, id, fieldKey);
+        } else if (
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf("focus") > -1) || 
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf("focus") > -1) || 
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf("focus") > -1) || 
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf("focus") > -1)
+        ) {
+            const result = validateField(fieldKey, "focus", newData, errors);
+            setErrors(Object.assign({}, errors, result.errors));
+            limitedOnChange(newData, result.errors, id, fieldKey);
+        }
     };
 
     /**
@@ -1340,6 +1375,7 @@ const Form = ({
         setFocusedField("");
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
+        const value = get(newData, fieldKey);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
@@ -1347,27 +1383,27 @@ const Form = ({
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
         // Run field cleanUp function if one is set:
-        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && get(newData, fieldKey)) {
-            set(newData, fieldKey, fieldConfig.cleanUp(get(newData, fieldKey)));
+        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && value) {
+            set(newData, fieldKey, fieldConfig.cleanUp(value));
             limitedOnChange(newData, errors, id, fieldKey);
         }
 
         // If precision is set, parse the value accordingly:
         if (typeof fieldConfig.precision === "number") {
-            set(newData, fieldKey, Number(get(newData, fieldKey)).toFixed(fieldConfig.precision));
+            set(newData, fieldKey, Number(value).toFixed(fieldConfig.precision));
             limitedOnChange(newData, errors, id, fieldKey);
         }
 
         // prepare the params for the validateOnCallback:
         const validateOnParams = {
-            data: get(newData, fieldKey),
+            data: value,
             fieldIsDirty: !!dirtyFields[fieldKey],
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
 
         // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("blur", newData);
+        const activeCustomEvents = getActiveCustomEvents("blur", newData, value);
 
         // Only validate if blur validation or a custom event is enabled:
         if (

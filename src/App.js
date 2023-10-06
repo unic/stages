@@ -86,6 +86,14 @@ function App() {
                 }}
                 fields={fields}
                 id="test"
+                customEvents={{
+                    'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
+                        if (!fieldValue && triggeringEvent === "blur") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length > 5 && triggeringEvent === "change") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length < 5 && triggeringEvent === "blur") return true;
+                        return false;
+                    }
+                }}
                 config={{
                     fields: () => {
                         return [
@@ -127,6 +135,22 @@ function App() {
                                 isRequired: true,
                                 validateOn: ["init", "action"],
                                 customValidation: customValidation
+                            },
+                            {
+                                id: "input6",
+                                label: "Input 6 (on focus, blur and action)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["focus", "blur", "action"],
+                                customValidation: customValidation
+                            },
+                            {
+                                id: "input7",
+                                label: "Input 7 (on onBlurAndChangeIfLong and action)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["onBlurAndChangeIfLong", "action"],
+                                customValidation: customValidation
                             }
                         ];
                     }
@@ -143,6 +167,10 @@ function App() {
                             {fieldProps.fields.input4}
                             <br />
                             {fieldProps.fields.input5}
+                            <br />
+                            {fieldProps.fields.input6}
+                            <br />
+                            {fieldProps.fields.input7}
                             <br />
                             <br />
                             <button
