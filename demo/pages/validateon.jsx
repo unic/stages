@@ -12,6 +12,7 @@ function FormPage() {
     const [data3, setData3] = useState({});
     const [data4, setData4] = useState({});
     const [data5, setData5] = useState({});
+    const [data6, setData6] = useState({});
     return (
         <Layout>
             <Heading>Validate On (Event)</Heading>
@@ -327,7 +328,7 @@ function FormPage() {
                 is defined as "only validate on change, if country is selected and has less than 3 characters".
             </Paragraph>
             <Form
-                id="form4"
+                id="form5"
                 data={data5}
                 fields={fields}
                 customEvents={{
@@ -358,7 +359,7 @@ function FormPage() {
                                 isRequired: true,
                                 validateOn: ["countryChange", "change"],
                                 customValidation: ({ data, allData, isValid, triggeringEvent }) => {
-                                    if (triggeringEvent === "countryChange") return isValid && data.length > 3;
+                                    if (triggeringEvent === "countryChange") return isValid && data.length > 2;
                                     return isValid;
                                 }
                             },
@@ -386,6 +387,56 @@ function FormPage() {
                     </form>
                 )}
                 onChange={payload => setData5(payload)}
+            />
+            <Paragraph>
+                In this second example, we run validation on blur for short strings (less than 5 chars) in the input, and validation on change for long.
+            </Paragraph>
+            <Form
+                id="form6"
+                data={data6}
+                fields={fields}
+                customEvents={{
+                    'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
+                        if (!fieldValue && triggeringEvent === "blur") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length >= 5 && triggeringEvent === "change") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length < 5 && triggeringEvent === "blur") return true;
+                        return false;
+                    }
+                }}
+                validateOn={["change"]}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "field1",
+                                label: "Input (only numbers allowed)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["onBlurAndChangeIfLong", "action"],
+                                customValidation: ({ data, isValid }) => {
+                                    return isValid && data.replace(/[^0-9]/gi, "") === data;
+                                }
+                            }
+                        ]
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => (
+                    <form>
+                        <div className="pure-g">
+                            <div className="pure-u-8-24">{fieldProps.fields.field1}</div>
+                        </div>
+                        <br />
+                        <hr />
+                        <br />
+                        <button
+                            type="button"
+                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                        >
+                            Submit
+                        </button>
+                    </form>
+                )}
+                onChange={payload => setData6(payload)}
             />
         </Layout>
     );
