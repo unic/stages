@@ -204,6 +204,7 @@ You have following options:
 - **blur**: This probably is the second most used, validation on input blur (or click on elemnts that don't support blur)
 - **change**: This is the most busy, validating on every change of the fields values
 - **throttledChange**: This is a throttled version of the change event (default: 400ms). To change the default, use the `throttleWait` property on the Form component.
+- **focus**: This validates on focusing of the field, for example when you click into an input, or tap navigate to a select
 - **collectionAction**: And this one validates on collection actions, like add or delete an entry
 - **yourCustomEventName**: If you have defined a custom event on the Form, you can use it here
 
@@ -248,16 +249,34 @@ This can look like this (a more specific change event):
 ```
 <Form>
     customEvents={{
-        'autocompleteChange': ({ data, dirtyFields, optionsLoaded, asyncData, errors, focusedField, triggeringEvent }) => {
+        'autocompleteChange': ({ data, fieldValue, dirtyFields, optionsLoaded, asyncData, errors, focusedField, triggeringEvent }) => {
             if (data.country && triggeringEvent === "change") return true;
             return false;
         }
     }}
     validateOn={["action", "autocompleteChange"]}
+    ...
 </Form>
 ```
 
 Basically return true for all states where this event should be called and than use the key in one of your 
 validateOn arrays, either on the Form or an individual field.
+
+Another example from the demo:
+
+```
+<Form
+    customEvents={{
+        'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
+            if (!fieldValue && triggeringEvent === "blur") return true;
+            if (typeof fieldValue === "string" && fieldValue.length >= 5 && triggeringEvent === "change") return true;
+            if (typeof fieldValue === "string" && fieldValue.length < 5 && triggeringEvent === "blur") return true;
+            return false;
+        }
+    }}
+    validateOn={["action", "onBlurAndChangeIfLong"]}
+    ...
+</Form>
+```
 
 [Related Demo](https://stages-demo.vercel.app/validateon)
