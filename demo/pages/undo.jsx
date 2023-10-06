@@ -8,9 +8,11 @@ import HR from "../components/HR";
 
 function FormPage() {
     const [data, setData] = useState({});
+    console.log({data});
     return (
         <Layout>
             <Form
+                id="test"
                 data={data}
                 fields={fields}
                 enableUndo
@@ -67,9 +69,9 @@ function FormPage() {
                             Submit
                         </button>
                         {" | "}
-                        <button onClick={actionProps.handleUndo}>Undo</button>
+                        <button type="button" onClick={actionProps.handleUndo}>Undo</button>
                         {" "}
-                        <button onClick={actionProps.handleRedo}>Redo</button>
+                        <button type="button" onClick={actionProps.handleRedo}>Redo</button>
                     </form>
                 )}
                 onChange={payload => setData(payload)}

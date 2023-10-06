@@ -86,6 +86,7 @@ function App() {
                 }}
                 fields={fields}
                 id="test"
+                enableUndo
                 config={{
                     fields: () => {
                         return [
@@ -119,6 +120,29 @@ function App() {
                                 isRequired: true,
                                 validateOn: ["throttledChange", "action"],
                                 customValidation: customValidation
+                            },
+                            {
+                                id: "field1",
+                                label: "Field 1",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "field2",
+                                label: "Field 2",
+                                type: "text",
+                                isRequired: true
+                            },
+                            {
+                                id: "country",
+                                label: "Country",
+                                type: "select",
+                                options: [
+                                    { value: "", text: "Bitte wählen ..." },
+                                    { value: "CH", text: "Switzerland" },
+                                    { value: "DE", text: "Germany" },
+                                    { value: "AT", text: "Austria" }
+                                ]
                             }
                         ];
                     }
@@ -134,12 +158,22 @@ function App() {
                             <br />
                             {fieldProps.fields.input4}
                             <br />
+                            {fieldProps.fields.field1}
+                            <br />
+                            {fieldProps.fields.field2}
+                            <br />
+                            {fieldProps.fields.country}
+                            <br />
                             <button
                                 type="button"
                                 onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
                             >
                                 Submit
                             </button>
+                            {" | "}
+                            <button onClick={actionProps.handleUndo}>Undo</button>
+                            {" "}
+                            <button onClick={actionProps.handleRedo}>Redo</button>
                         </div>
                     );
                 }}      
