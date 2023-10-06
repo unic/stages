@@ -86,7 +86,6 @@ function App() {
                 }}
                 fields={fields}
                 id="test"
-                enableUndo
                 config={{
                     fields: () => {
                         return [
@@ -122,27 +121,12 @@ function App() {
                                 customValidation: customValidation
                             },
                             {
-                                id: "field1",
-                                label: "Field 1",
+                                id: "input5",
+                                label: "Input 5 (on init and action)",
                                 type: "text",
-                                isRequired: true
-                            },
-                            {
-                                id: "field2",
-                                label: "Field 2",
-                                type: "text",
-                                isRequired: true
-                            },
-                            {
-                                id: "country",
-                                label: "Country",
-                                type: "select",
-                                options: [
-                                    { value: "", text: "Bitte wählen ..." },
-                                    { value: "CH", text: "Switzerland" },
-                                    { value: "DE", text: "Germany" },
-                                    { value: "AT", text: "Austria" }
-                                ]
+                                isRequired: true,
+                                validateOn: ["init", "action"],
+                                customValidation: customValidation
                             }
                         ];
                     }
@@ -158,11 +142,8 @@ function App() {
                             <br />
                             {fieldProps.fields.input4}
                             <br />
-                            {fieldProps.fields.field1}
+                            {fieldProps.fields.input5}
                             <br />
-                            {fieldProps.fields.field2}
-                            <br />
-                            {fieldProps.fields.country}
                             <br />
                             <button
                                 type="button"

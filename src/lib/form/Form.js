@@ -281,6 +281,7 @@ const Form = ({
             if (isDebugging()) window.stagesLogging("Set initial data", uniqId);
 
             // Scan through the fieldPaths to find fields with default data:
+            let newErrors;
             fieldPaths.forEach(fieldPath => {
                 if (typeof fieldPath.config.defaultValue !== "undefined") {
                     const originalData = get(data, fieldPath.path);
@@ -290,6 +291,15 @@ const Form = ({
                         set(alldata, fieldPath.path, defaultValue);
                     }
                 }
+                // And trigger validation of fields with validate on init:
+                if (
+                    (fieldPath.config.validateOn && fieldPath.config.validateOn.indexOf("init") > -1) || 
+                    (validateOn && validateOn.indexOf("init") > -1)
+                ) {
+                    const fieldErrors = validateField(fieldPath.path, "init", data, errors);
+                    newErrors = Object.assign({}, errors, fieldErrors);
+                }
+                if (newErrors) setErrors(newErrors);
             });
 
             const stringifiedData = stringify(data);
