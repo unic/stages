@@ -293,8 +293,8 @@ const Form = ({
                 }
                 // And trigger validation of fields with validate on init:
                 if (
-                    (fieldPath.config.validateOn && fieldPath.config.validateOn.indexOf("init") > -1) || 
-                    (validateOn && validateOn.indexOf("init") > -1)
+                    (Array.isArray(fieldPath.config.validateOn) && fieldPath.config.validateOn.indexOf("init") > -1) || 
+                    (Array.isArray(validateOn) && validateOn.indexOf("init") > -1)
                 ) {
                     const fieldErrors = validateField(fieldPath.path, "init", data, errors);
                     newErrors = Object.assign({}, errors, fieldErrors);
