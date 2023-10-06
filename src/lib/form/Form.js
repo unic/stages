@@ -1302,7 +1302,7 @@ const Form = ({
             }
         }
 
-        limitedOnChange(newData, newErrors || errors, id, fieldKey);
+        limitedOnChange(newData, validationErrors(false, newData), id, fieldKey);
     };
 
     /*

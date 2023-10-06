@@ -32,9 +32,12 @@ const FormLayout = ({ loading, fields, actions }) => <div>
 
 function App() {
     const [data, setData] = useState({});
+    const [errors, setErrors] = useState({});
     const onSubmit = () => {
         console.log("submit:", data);
     };
+
+    console.log({ errors, data });
 
     const createActionButtonConfig = (type, onNav, onFormSubmit, data, reset) => {
         if (type === "first") {
@@ -68,22 +71,54 @@ function App() {
         ];
     };
 
+    const customValidation = ({ data, isValid }) => {
+        return isValid && data.replace(/[^a-z0-9-]/gi, "") === data;
+    };
+
     return (
         <>
             <Debugger />
             <Form
                 data={data}
-                onChange={payload => setData(payload)}
+                onChange={(payload, errors) => {
+                    setData(payload);
+                    setErrors(errors);
+                }}
                 fields={fields}
                 id="test"
                 config={{
                     fields: () => {
                         return [
                             {
-                                id: "title",
-                                label: "Title",
+                                id: "input1",
+                                label: "Input 1 (default)",
                                 type: "text",
-                                isRequired: true
+                                isRequired: true,
+                                customValidation: customValidation
+                            },
+                            {
+                                id: "input2",
+                                label: "Input 2 (on blur and action)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["blur", "action"],
+                                customValidation: customValidation
+                            },
+                            {
+                                id: "input3",
+                                label: "Input 3 (on change and action)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["change", "action"],
+                                customValidation: customValidation
+                            },
+                            {
+                                id: "input4",
+                                label: "Input 4 (on throttledChange and action)",
+                                type: "text",
+                                isRequired: true,
+                                validateOn: ["throttledChange", "action"],
+                                customValidation: customValidation
                             }
                         ];
                     }
@@ -91,7 +126,13 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <div>
-                            {fieldProps.fields.title}
+                            {fieldProps.fields.input1}
+                            <br />
+                            {fieldProps.fields.input2}
+                            <br />
+                            {fieldProps.fields.input3}
+                            <br />
+                            {fieldProps.fields.input4}
                             <br />
                             <button
                                 type="button"
@@ -103,6 +144,7 @@ function App() {
                     );
                 }}      
             />
+            {/*
             <br /><br />
             <Form
                 data={data}
@@ -229,7 +271,6 @@ function App() {
                 )}      
             />
 
-            {/*
             <Form
                 data={data}
                 fields={fields}
