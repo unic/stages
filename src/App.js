@@ -86,6 +86,7 @@ function App() {
                 }}
                 fields={fields}
                 id="test"
+                autoSave="local"
                 customEvents={{
                     'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
                         if (!fieldValue && triggeringEvent === "blur") return true;
@@ -106,9 +107,10 @@ function App() {
                             },
                             {
                                 id: "input2",
-                                label: "Input 2 (on blur and action)",
+                                label: "Input 2 (on blur and action, excluded from autoSave)",
                                 type: "text",
                                 isRequired: true,
+                                disableAutoSave: true,
                                 validateOn: ["blur", "action"],
                                 customValidation: customValidation
                             },

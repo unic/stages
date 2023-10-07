@@ -1375,6 +1375,7 @@ const Form = ({
         setFocusedField("");
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
+        const autoSavedData = Object.assign({}, alldata);
         const value = get(newData, fieldKey);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
@@ -1436,26 +1437,35 @@ const Form = ({
                 ) {
                     createDynamicOptions(fieldPath.config.id, fieldPath.config.dynamicOptions, newData);
                 }
+                if (typeof autoSave !== "undefined") {
+                    // if autoSave is enabled, but a field has autoSave disabled, remove it from autoSavedData:
+                    if (fieldPath.config.disableAutoSave) {
+                        unset(autoSavedData, fieldPath.path);
+                    }
+                }
             });
         }
 
         addNewUndoEntry(newData);
 
         // Auto save data if enabled:
-        if (autoSave === "local" || autoSave === "session") {
-            const currentErrors = validationErrors(false, newData);
-            if (Object.keys(currentErrors).length === 0) saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave);
-        } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
-            const currentErrors = validationErrors(false, newData);
-            if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
-                saveDataToStorage(id, { data: newData, isDirty, dirtyFields }, autoSave.type);
-            }
-        } else if (typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
-            const currentErrors = validationErrors(false, newData);
-            if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
-                autoSave.save(id, { data: newData, isDirty, dirtyFields });
+        if (typeof autoSave !== "undefined") {
+            if (autoSave === "local" || autoSave === "session") {
+                const currentErrors = validationErrors(false, newData);
+                if (Object.keys(currentErrors).length === 0) saveDataToStorage(id, { data: autoSavedData, isDirty, dirtyFields }, autoSave);
+            } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
+                const currentErrors = validationErrors(false, newData);
+                if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
+                    saveDataToStorage(id, { data: autoSavedData, isDirty, dirtyFields }, autoSave.type);
+                }
+            } else if (typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
+                const currentErrors = validationErrors(false, newData);
+                if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
+                    autoSave.save(id, { data: autoSavedData, isDirty, dirtyFields });
+                }
             }
         }
+        
     };
 
     /**
