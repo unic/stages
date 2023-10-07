@@ -29,6 +29,12 @@ function FormPage() {
                                 label: "Non required field",
                                 type: "text"
                             },
+                            {
+                                id: "field3",
+                                label: "Field with disabled autoSave",
+                                type: "text",
+                                disableAutoSave: true
+                            },
                         ]
                     }
                 }}
@@ -44,6 +50,8 @@ function FormPage() {
                             {fieldProps.fields.field1}
                             <br />
                             {fieldProps.fields.field2}
+                            <br />
+                            {fieldProps.fields.field3}
                         </div>
                         <br />
                         <HR isDirty={fieldProps.isDirty} />

@@ -51,6 +51,19 @@ A custom auto save implementation could look like this:
 />
 ```
 
+For fields which should not be auto saved, like for example password fields, add the `disableAutoSave` to its
+config like this and its data wont be persisted:
+
+```
+{
+    id: "password",
+    label: "Password",
+    type: "password",
+    isRequired: true,
+    disableAutoSave: true
+},
+```
+
 Autosave is also available on the wizard component:
 
 ```
