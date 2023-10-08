@@ -147,6 +147,20 @@ const computeFieldsetParams = (fieldConfig, paramConfig) => {
     return params;
 };
 
+const isTransformForEvent = (t, event, activeCustomEvents) => {
+    return (
+        (
+            t.on === event || 
+            activeCustomEvents.indexOf(t.on) > -1 || 
+            (
+                Array.isArray(t.on) && 
+                (t.on.indexOf(event) > -1 || t.on.some(onEvent => activeCustomEvents.includes(onEvent)))
+            )
+        ) && 
+        typeof t.fn === "function"
+    );
+};
+
 /**
  * Parse the configuration using all the available data
  * 
@@ -1191,6 +1205,7 @@ const Form = ({
         let throttleValidation = false;
         let newErrors;
         const timestamp = +new Date();
+        let newValue = value;
 
         if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
             if (timeoutRef) clearTimeout(timeoutRef);
@@ -1203,7 +1218,24 @@ const Form = ({
         const fieldConfig = getConfigForField(fieldKey);
         
         let newData = Object.assign({}, outsideData || alldata);
-        let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
+
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
+        
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && newValue) {
+            let transformed = false;
+            fieldConfig.transform.forEach((t) => {
+                if (isTransformForEvent(t, "change", activeCustomEvents)) {
+                    newValue = t.fn(newValue);
+                    transformed = true;
+                };
+            });
+            if (transformed) {
+                set(newData, fieldKey, newValue);
+                limitedOnChange(newData, errors, id, fieldKey);
+            }
+        }
 
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
@@ -1229,9 +1261,6 @@ const Form = ({
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
-
-        // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
 
         // Only validate if change or throttledChange or a custom event validation is enabled:
         if (
@@ -1329,10 +1358,28 @@ const Form = ({
     const handleFocus = (fieldKey) => {
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
-        const value = get(newData, fieldKey);
+        let value = get(newData, fieldKey);
 
         setFocusedField(fieldKey);
         setLastFocusedField(fieldKey);
+
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("focus", newData, value);
+
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && value) {
+            let transformed = false;
+            fieldConfig.transform.forEach((t) => {
+                if (isTransformForEvent(t, "focus", activeCustomEvents)) {
+                    value = t.fn(value);
+                    transformed = true;
+                };
+            });
+            if (transformed) {
+                set(newData, fieldKey, value);
+                limitedOnChange(newData, errors, id, fieldKey);
+            }
+        }
 
         // prepare the params for the validateOnCallback:
         const validateOnParams = {
@@ -1341,9 +1388,6 @@ const Form = ({
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
-
-        // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("focus", newData, value);
 
         // Only validate if blur validation or a custom event is enabled:
         if (
@@ -1376,23 +1420,29 @@ const Form = ({
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
         const autoSavedData = Object.assign({}, alldata);
-        const value = get(newData, fieldKey);
+        let value = get(newData, fieldKey);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
-        // Run field cleanUp function if one is set:
-        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && value) {
-            set(newData, fieldKey, fieldConfig.cleanUp(value));
-            limitedOnChange(newData, errors, id, fieldKey);
-        }
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("blur", newData, value);
 
-        // If precision is set, parse the value accordingly:
-        if (typeof fieldConfig.precision === "number") {
-            set(newData, fieldKey, Number(value).toFixed(fieldConfig.precision));
-            limitedOnChange(newData, errors, id, fieldKey);
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && value) {
+            let transformed = false;
+            fieldConfig.transform.forEach((t) => {
+                if (isTransformForEvent(t, "blur", activeCustomEvents)) {
+                    value = t.fn(value);
+                    transformed = true;
+                };
+            });
+            if (transformed) {
+                set(newData, fieldKey, value);
+                limitedOnChange(newData, errors, id, fieldKey);
+            }
         }
 
         // prepare the params for the validateOnCallback:
@@ -1402,9 +1452,6 @@ const Form = ({
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
-
-        // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("blur", newData, value);
 
         // Only validate if blur validation or a custom event is enabled:
         if (

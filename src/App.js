@@ -86,6 +86,84 @@ function App() {
                 }}
                 fields={fields}
                 id="test"
+                customEvents={{
+                    'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
+                        if (!fieldValue && triggeringEvent === "blur") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length > 5 && triggeringEvent === "change") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length < 5 && triggeringEvent === "blur") return true;
+                        return false;
+                    }
+                }}
+                config={{
+                    fields: () => {
+                        return [
+                            {
+                                id: "input1",
+                                label: "Input 1 (default)",
+                                type: "text",
+                                isRequired: true,
+                                validation: {
+                                    allowedChars: "^[A-Z0-9]*$",
+                                    phone: ({ data }) => {
+                                        return true;
+                                    },
+                                    swissPhone: {
+                                        on: ["change","blur"],
+                                        check: ({ data }) => {
+                                            return true;
+                                        },
+                                        then: ["field2", "group1.input4"]
+                                    }
+                                },
+                                transform: [
+                                    {
+                                        on: "change",
+                                        fn: value => {
+                                            return value.toUpperCase();
+                                        }
+                                    },
+                                    {
+                                        on: ["blur", "action"],
+                                        fn: value => {
+                                            return value.trim();
+                                        }
+                                    },
+                                    {
+                                        on: "onBlurAndChangeIfLong",
+                                        fn: value => {
+                                            return value.replace("1", "2");
+                                        }
+                                    }
+                                ]
+                            }
+                        ];
+                    }
+                }}
+                render={({ fieldProps, actionProps }) => {
+                    return (
+                        <div>
+                            {fieldProps.fields.input1}
+                            <br />
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    );
+                }}      
+            />
+            {/*
+            <Form
+                data={data}
+                onChange={(payload, errors) => {
+                    setData(payload);
+                    setErrors(errors);
+                }}
+                fields={fields}
+                id="test"
                 autoSave="local"
                 customEvents={{
                     'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
@@ -189,6 +267,7 @@ function App() {
                     );
                 }}      
             />
+            */}
             {/*
             <br /><br />
             <Form
