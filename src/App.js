@@ -123,7 +123,7 @@ function App() {
                                         }
                                     },
                                     {
-                                        on: ["blur", "action"],
+                                        on: ["action"],
                                         fn: value => {
                                             return value.trim();
                                         }
@@ -132,6 +132,12 @@ function App() {
                                         on: "onBlurAndChangeIfLong",
                                         fn: value => {
                                             return value.replace("1", "2");
+                                        }
+                                    },
+                                    {
+                                        on: "init",
+                                        fn: value => {
+                                            return !value ? "1" : value;
                                         }
                                     }
                                 ]

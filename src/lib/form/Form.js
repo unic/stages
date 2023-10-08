@@ -305,6 +305,26 @@ const Form = ({
                         set(alldata, fieldPath.path, defaultValue);
                     }
                 }
+
+                // Are there any custom events active?
+                const activeCustomEvents = getActiveCustomEvents("init", data);
+
+                let value = fieldPath.data;
+                
+                // Run field transform functions:
+                if (fieldPath.config.transform && Array.isArray(fieldPath.config.transform)) {
+                    let transformed = false;
+                    fieldPath.config.transform.forEach((t) => {
+                        if (isTransformForEvent(t, "init", activeCustomEvents)) {
+                            value = t.fn(value);
+                            transformed = true;
+                        };
+                    });
+                    if (transformed) {
+                        set(alldata, fieldPath.path, value);
+                    }
+                }
+
                 // And trigger validation of fields with validate on init:
                 if (
                     (Array.isArray(fieldPath.config.validateOn) && fieldPath.config.validateOn.indexOf("init") > -1) || 
@@ -1367,7 +1387,7 @@ const Form = ({
         const activeCustomEvents = getActiveCustomEvents("focus", newData, value);
 
         // Run field transform functions:
-        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && value) {
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform)) {
             let transformed = false;
             fieldConfig.transform.forEach((t) => {
                 if (isTransformForEvent(t, "focus", activeCustomEvents)) {
@@ -1431,7 +1451,7 @@ const Form = ({
         const activeCustomEvents = getActiveCustomEvents("blur", newData, value);
 
         // Run field transform functions:
-        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && value) {
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform)) {
             let transformed = false;
             fieldConfig.transform.forEach((t) => {
                 if (isTransformForEvent(t, "blur", activeCustomEvents)) {
@@ -1842,6 +1862,25 @@ const Form = ({
         // Are there any custom events active?
         const activeCustomEvents = getActiveCustomEvents("action", alldata);
         let suppressCallback = false;
+
+        fieldPaths.forEach(fieldPath => {
+            let value = fieldPath.data;
+            // Run field transform functions:
+            if (fieldPath.config.transform && Array.isArray(fieldPath.config.transform)) {
+                let transformed = false;
+                fieldPath.config.transform.forEach((t) => {
+                    if (isTransformForEvent(t, "action", activeCustomEvents)) {
+                        value = t.fn(value);
+                        transformed = true;
+                    };
+                });
+                if (transformed) {
+                    const newData = Object.assign({}, alldata);
+                    set(newData, fieldPath.path, value);
+                    limitedOnChange(newData, errors, id, fieldPath.path);
+                }
+            }
+        });
 
         // Only validate if action validation is enabled (which is the default):
         if (
