@@ -497,7 +497,7 @@ const Form = ({
      * @param {string} [firstErrorField] key of first error field
      * @returns {object} an object containing the errors
      */
-    const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
+    const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField, errorCode) => {
         const field = find(fieldPaths, { path: fieldKey }).config;
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Validate field "${fieldKey}"`, uniqId);
@@ -1222,7 +1222,7 @@ const Form = ({
      * @param {boolean} syntheticCall true if this is a synthetic call
      */
     const handleChange = (fieldKey, value, outsideData, syntheticCall = false) => {
-        let throttleValidation = false;
+        let event = "change";
         let newErrors;
         const timestamp = +new Date();
         let newValue = value;
@@ -1230,7 +1230,7 @@ const Form = ({
         if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
             if (timeoutRef) clearTimeout(timeoutRef);
             timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 100);
-            throttleValidation = true;
+            event = "throttledChange";
         }
 
         if (!syntheticCall) lastOnChange = timestamp;
@@ -1240,13 +1240,13 @@ const Form = ({
         let newData = Object.assign({}, outsideData || alldata);
 
         // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
+        const activeCustomEvents = getActiveCustomEvents(event, newData, newValue);
         
         // Run field transform functions:
         if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && newValue) {
             let transformed = false;
             fieldConfig.transform.forEach((t) => {
-                if (isTransformForEvent(t, "change", activeCustomEvents)) {
+                if (isTransformForEvent(t, event, activeCustomEvents)) {
                     newValue = t.fn(newValue);
                     transformed = true;
                 };
@@ -1262,7 +1262,7 @@ const Form = ({
         if (fieldConfig.cast && Array.isArray(fieldConfig.cast.data)) newValue = castValueStrType(newValue, fieldConfig.cast.data[0], true);
 
         // @ts-ignore
-        if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
+        if (isDebugging()) window.stagesLogging(`Handle ${event} for field "${fieldKey}"`, uniqId);
 
         if (newValue) {
             set(newData, fieldKey, newValue);
@@ -1274,35 +1274,17 @@ const Form = ({
         // Now run over all computed value fields to recalculate all dynamic data:
         newData = computeValues(newData);
 
-        // prepare the params for the validateOnCallback:
-        const validateOnParams = {
-            data: get(newData, fieldKey),
-            fieldIsDirty: !!dirtyFields[fieldKey],
-            fieldConfig,
-            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
-        };
-
-        // Only validate if change or throttledChange or a custom event validation is enabled:
-        if (
-            (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
-            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
-        ) {
-            const result = validateField(fieldKey, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
-            newErrors = Object.assign({}, errors, result.errors);
-            setErrors(newErrors);
-        } else if (
-            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('change') > -1) ||
-            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('change') > -1) ||
-            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1 && !throttleValidation) ||
-            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation) || 
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('change') > -1) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('change') > -1) ||
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation)
-        ) {
-            const result = validateField(fieldKey, "change", newData, errors);
-            newErrors = Object.assign({}, errors, result.errors);
-            setErrors(newErrors);
+        // Is there any validation to run?
+        if (fieldConfig.validation) {
+            Object.keys(fieldConfig.validation).forEach(errorCode => {
+                const validation = fieldConfig.validation[errorCode];
+                let events = typeof validation === "object" ? Array.isArray(validation.on) ? validation.on : [validation.on] : validateOn;
+                if (events.indexOf(event) > -1 && activeCustomEvents.some(r => events.indexOf(r) > -1)) {
+                    const result = validateField(fieldKey, event, newData, errors, undefined, errorCode);
+                    newErrors = Object.assign({}, errors, result.errors);
+                    setErrors(newErrors);
+                }
+            });
         }
 
         // Set the isDirty flag and per field object:
