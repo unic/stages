@@ -80,9 +80,10 @@ function App() {
             <Debugger />
             <Form
                 data={data}
-                onChange={(payload, errors) => {
+                onChange={(payload, errors, id, fieldKey, interfaceState, allErrors) => {
                     setData(payload);
                     setErrors(errors);
+                    console.log({allErrors});
                 }}
                 fields={fields}
                 id="test"
