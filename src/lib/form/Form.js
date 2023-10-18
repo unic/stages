@@ -1191,17 +1191,9 @@ const Form = ({
         let throttleValidation = false;
         let newErrors;
         const timestamp = +new Date();
-
-        if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
-            if (timeoutRef) clearTimeout(timeoutRef);
-            timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 100);
-        } else {
-            throttleValidation = true;
-        }
+        const fieldConfig = getConfigForField(fieldKey);
 
         if (!syntheticCall) lastOnChange = timestamp;
-
-        const fieldConfig = getConfigForField(fieldKey);
         
         let newData = Object.assign({}, outsideData || alldata);
         let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
@@ -1230,6 +1222,20 @@ const Form = ({
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
+
+        if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
+            if (
+                (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1) ||
+                (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1) || 
+                (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1) ||
+                (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1)
+            ) {
+                if (timeoutRef) clearTimeout(timeoutRef);
+                timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 100);
+            }
+        } else {
+            throttleValidation = true;
+        }
 
         // Are there any custom events active?
         const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
