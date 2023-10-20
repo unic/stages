@@ -87,7 +87,6 @@ function App() {
                 }}
                 fields={fields}
                 id="test"
-                autoSave="local"
                 customEvents={{
                     'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
                         if (!fieldValue && triggeringEvent === "blur") return true;
@@ -128,6 +127,7 @@ function App() {
                                 label: "Input 4 (on throttledChange and action)",
                                 type: "text",
                                 isRequired: true,
+                                cleanUp: (value) => value.replace(/ +/g, ' ').trim(),
                                 validateOn: ["throttledChange", "action"],
                                 customValidation: customValidation
                             },

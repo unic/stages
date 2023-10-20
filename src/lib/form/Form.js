@@ -939,12 +939,12 @@ const Form = ({
      * @param {string} id id of the form
      * @param {string} [fieldKey] the field path key
      */
-    const limitedOnChange = (newData, errors, id, fieldKey) => {
+    const limitedOnChange = (newData, errors, id, fieldKey, forceChange = false) => {
         let newLastOnChangeData;
         try {
             newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey, interfaceState });
         } catch(error) {};
-        if (newLastOnChangeData !== lastOnChangeData) {
+        if (newLastOnChangeData !== lastOnChangeData || forceChange) {
             onChange(removeInterfaceState(newData), errors, id, fieldKey, interfaceState, validationErrors(false, newData));
             lastOnChangeData = newLastOnChangeData;
         }
@@ -1383,7 +1383,7 @@ const Form = ({
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
         const autoSavedData = Object.assign({}, alldata);
-        const value = get(newData, fieldKey);
+        let value = get(newData, fieldKey);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
@@ -1391,9 +1391,10 @@ const Form = ({
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
         // Run field cleanUp function if one is set:
-        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && value) {
-            set(newData, fieldKey, fieldConfig.cleanUp(value));
-            limitedOnChange(newData, errors, id, fieldKey);
+        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && typeof value !== "undefined") {
+            value = fieldConfig.cleanUp(value);
+            set(newData, fieldKey, value);
+            handleChange(fieldKey, value, newData, true); // As this is a change, we need to run the onChange handler!
         }
 
         // If precision is set, parse the value accordingly:
