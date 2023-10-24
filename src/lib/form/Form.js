@@ -1672,6 +1672,7 @@ const Form = ({
         const maxEntries = field && field.max ? Number(field.max) : 99999999999999; // easiest to just add an impossible high number
         let updatedCollection = get(newData, fieldKey, []);
         let newErrors;
+        let collectionIsUpdated = false;
         if (index === "last") index = updatedCollection.length - 1;
         if (toIndex === "last") toIndex = updatedCollection.length - 1;
 
@@ -1698,11 +1699,13 @@ const Form = ({
                     }
                 }
             }
+            collectionIsUpdated = true;
         }
 
         // This will remove a specific entry in the collection:
         if (action === "remove") {
             if (minEntries < updatedCollection.length) updatedCollection.splice(index, 1);
+            collectionIsUpdated = true;
         }
 
         // This action will move a certain entry from one index to another index, which is very useful with 
@@ -1710,24 +1713,50 @@ const Form = ({
         if (action === "move" && typeof index === "number" && typeof toIndex === "number" && index > -1 && toIndex > -1) {
             const [removed] = updatedCollection.splice(index, 1);
             updatedCollection.splice(toIndex, 0, removed);
+            collectionIsUpdated = true;
         }
 
         // This action uses Lodash sortBy to sort the collection:
         if (action === "sort" && updatedCollection.length > 0 && index) {
             updatedCollection = sortBy(updatedCollection, index);
+            collectionIsUpdated = true;
         }
 
         // This action duplicates a specific collection entry:
         if (action === "duplicate" && typeof index === "number" && index > -1) {
             updatedCollection.splice(index+1, 0, Object.assign({}, updatedCollection[index]));
+            collectionIsUpdated = true;
         }
 
         if (field.sort && field.sort.by) {
             updatedCollection = sortBy(updatedCollection, field.sort.by);
             if (field.sort.dir === "desc") updatedCollection = updatedCollection.reverse();
+            collectionIsUpdated = true;
         }
 
         set(newData, fieldKey, updatedCollection);
+
+        if (collectionIsUpdated) {
+            const oldCollectionData = get(initialData, fieldKey);
+            const newCollectionData = get(newData, fieldKey);
+            try {
+                if (JSON.stringify(oldCollectionData) !== JSON.stringify(newCollectionData)) {
+                    setIsDirty(true);
+                    dirtyFields[fieldKey] = {
+                        oldData: oldCollectionData,
+                        newData: newCollectionData
+                    }
+                    setDirtyFields(dirtyFields);
+                } else {
+                    delete dirtyFields[fieldKey];
+                    Object.keys(dirtyFields).forEach(key => {
+                        if (key.startsWith(fieldKey)) delete dirtyFields[key];
+                    });
+                    setDirtyFields(dirtyFields);
+                    setIsDirty(Object.keys(dirtyFields).length > 0);
+                }
+            } catch (e) {}
+        }
 
         // Only validate if collection action validation is enabled:
         if (validateOn.indexOf("collectionAction") > -1) {

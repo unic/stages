@@ -31,7 +31,13 @@ const FormLayout = ({ loading, fields, actions }) => <div>
 </div>;
 
 function App() {
-    const [data, setData] = useState({});
+    const [data, setData] = useState({
+        mycollection: [
+            { f1: "jhj", f2: "dskjlf" },
+            { f1: "2r2", f2: "fgrt3" },
+            { f1: "yxcds", f2: "u7k6" }
+        ]
+    });
     const [errors, setErrors] = useState({});
     const onSubmit = () => {
         console.log("submit:", data);
@@ -154,13 +160,32 @@ function App() {
                                 isRequired: true,
                                 validateOn: ["onBlurAndChangeIfLong", "action"],
                                 customValidation: customValidation
+                            },
+                            {
+                                id: "mycollection",
+                                label: "Collection",
+                                type: "collection",
+                                init: true,
+                                min: 1,
+                                fields: [
+                                    {
+                                        id: "f1",
+                                        label: "Col Field 1",
+                                        type: "text"
+                                    },
+                                    {
+                                        id: "f2",
+                                        label: "Col Field 2",
+                                        type: "text"
+                                    }
+                                ]
                             }
                         ];
                     }
                 }}
                 render={({ fieldProps, actionProps }) => {
                     return (
-                        <div>
+                        <div style={{ border: `2px solid ${fieldProps.isDirty ? "red" : "gray"}`, padding: "8px" }}>
                             {fieldProps.fields.input1}
                             <br />
                             {fieldProps.fields.input2}
@@ -174,6 +199,20 @@ function App() {
                             {fieldProps.fields.input6}
                             <br />
                             {fieldProps.fields.input7}
+                            <br />
+                            {fieldProps.fields.mycollection ? fieldProps.fields.mycollection.map((subFields, index) => {
+                                return (
+                                    <div key={`mycollection-${index}`} style={{ background: "#fff", margin: "8px", padding: "8px", display: "flex" }}>
+                                        {subFields.f1}
+                                        {subFields.f2}
+                                        <button type="button" onClick={() => fieldProps.onCollectionAction("mycollection", "remove", index)}>-</button>
+                                    </div>
+                                );
+                            }) : null}
+                            <button
+                                type="button"
+                                onClick={() => fieldProps.onCollectionAction("mycollection", "add")}
+                            >+</button>
                             <br />
                             <br />
                             <button
