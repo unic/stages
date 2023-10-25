@@ -284,6 +284,9 @@ const Form = ({
         };
     }, []);
 
+    // Checks if the component is mounted, to prevent memory leaks for all callbacks from outside
+    const isMounted = () => (mounted && mounted.current === true);
+
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
         if (data && !initialData) {
@@ -964,6 +967,7 @@ const Form = ({
      * Form action handler for undo
      */
     const handleUndo = () => {
+        if (!isMounted()) return;
         if (enableUndo && activeUndoIndex > 0) {
             const newIndex = activeUndoIndex - 1;
             const oldState = JSON.parse(undoData[newIndex]);
@@ -981,6 +985,7 @@ const Form = ({
      * Form action handler for redo
      */
     const handleRedo = () => {
+        if (!isMounted()) return;
         if (enableUndo && activeUndoIndex < undoData.length - 1) {
             const newIndex = activeUndoIndex + 1;
             const oldState = JSON.parse(undoData[newIndex]);
@@ -1198,6 +1203,8 @@ const Form = ({
      * @param {boolean} syntheticCall true if this is a synthetic call
      */
     const handleChange = (fieldKey, value, outsideData, syntheticCall = false) => {
+        if (!isMounted()) return;
+
         let throttleValidation = false;
         let newErrors;
         const timestamp = +new Date();
@@ -1344,6 +1351,8 @@ const Form = ({
      * @param {string} fieldKey path key of the field
      */
     const handleFocus = (fieldKey) => {
+        if (!isMounted()) return;
+
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
         const value = get(newData, fieldKey);
@@ -1389,6 +1398,8 @@ const Form = ({
      * @param {string} fieldKey path key of the field
      */
     const handleBlur = (fieldKey) => {
+        if (!isMounted()) return;
+
         setFocusedField("");
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
@@ -1676,7 +1687,7 @@ const Form = ({
      * @param {number|string} toIndex the index to move the entry to when the action is "move"
      */
     const onCollectionAction = (fieldKey, action, index, toIndex) => {
-        if (mounted && mounted.current === false) return;
+        if (!isMounted()) return;
 
         const newData = Object.assign({}, alldata);
         const field = getConfigForField(fieldKey);
