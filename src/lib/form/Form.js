@@ -1676,7 +1676,7 @@ const Form = ({
      * @param {number|string} toIndex the index to move the entry to when the action is "move"
      */
     const onCollectionAction = (fieldKey, action, index, toIndex) => {
-        if (!mounted.current) return;
+        if (mounted && mounted.current === false) return;
 
         const newData = Object.assign({}, alldata);
         const field = getConfigForField(fieldKey);
