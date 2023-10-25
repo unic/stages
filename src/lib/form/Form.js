@@ -1747,9 +1747,11 @@ const Form = ({
         }
 
         // Use this one if you manually updated the collection and want Stages to recalculate isDirty and validations:
-        if (action === "update") collectionIsUpdated = true;
-
-        set(newData, fieldKey, updatedCollection);
+        if (action === "update") {
+            collectionIsUpdated = true;
+        } else {
+            set(newData, fieldKey, updatedCollection);
+        }
 
         if (collectionIsUpdated) {
             const oldCollectionData = get(initialData, fieldKey);
