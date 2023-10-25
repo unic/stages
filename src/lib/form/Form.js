@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import find from "lodash.find";
 import sortBy from "lodash.sortby";
@@ -247,6 +247,8 @@ const Form = ({
     fieldsets,
     initialInterfaceState
 }) => {
+    const mounted = useRef(false);
+
     // First we need to merge interfaceData with form data, whithout muting form data:
     const [interfaceState, setInterfaceState] = useState(initialInterfaceState);
     const alldata = Object.assign({}, data);
@@ -273,6 +275,14 @@ const Form = ({
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
     const fieldPaths = getFieldPaths(parsedFieldConfig, alldata);
+
+    // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
 
     // Save the initial data so we can compare it to the current data so we can decide if a form is dirty:
     useEffect(() => {
@@ -1666,6 +1676,8 @@ const Form = ({
      * @param {number|string} toIndex the index to move the entry to when the action is "move"
      */
     const onCollectionAction = (fieldKey, action, index, toIndex) => {
+        if (!mounted.current) return;
+
         const newData = Object.assign({}, alldata);
         const field = getConfigForField(fieldKey);
         const minEntries = field && field.min ? Number(field.min) : 0;
