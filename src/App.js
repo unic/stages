@@ -167,16 +167,19 @@ function App() {
                                 type: "collection",
                                 init: true,
                                 min: 1,
+                                validateOn: ["collectionAction"],
                                 fields: [
                                     {
                                         id: "f1",
                                         label: "Col Field 1",
-                                        type: "text"
+                                        type: "text",
+                                        isRequired: true
                                     },
                                     {
                                         id: "f2",
                                         label: "Col Field 2",
-                                        type: "text"
+                                        type: "text",
+                                        isRequired: true
                                     }
                                 ]
                             }

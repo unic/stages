@@ -1759,8 +1759,9 @@ const Form = ({
         }
 
         // Only validate if collection action validation is enabled:
-        if (validateOn.indexOf("collectionAction") > -1) {
-            newErrors = validationErrors();
+        if (validateOn.indexOf("collectionAction") > -1 || (field.validateOn && field.validateOn.indexOf("collectionAction") > -1)) {
+            const result = validateField(fieldKey, "collectionAction", newData, errors);
+            newErrors = Object.assign({}, errors, result.errors);
             setErrors(newErrors);
         }
 
