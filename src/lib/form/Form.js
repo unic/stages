@@ -1747,8 +1747,9 @@ const Form = ({
         }
 
         // Use this one if you manually updated the collection and want Stages to recalculate isDirty and validations:
-        if (action === "update") {
+        if (action === "update" && Array.isArray(index)) {
             collectionIsUpdated = true;
+            set(newData, fieldKey, index);
         } else {
             set(newData, fieldKey, updatedCollection);
         }
