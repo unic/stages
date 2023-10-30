@@ -1240,18 +1240,19 @@ const Form = ({
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
 
-        if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
-            if (
-                (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1) ||
-                (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1) || 
-                (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1) ||
-                (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1)
-            ) {
-                if (timeoutRef) clearTimeout(timeoutRef);
-                timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 100);
+        if (!syntheticCall) {
+            if (lastOnChange === 0 || timestamp - lastOnChange < Number(throttleWait || 400)) {
+                if (
+                    (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1) ||
+                    (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1) || 
+                    (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1) ||
+                    (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1)
+                ) {
+                    if (timeoutRef) clearTimeout(timeoutRef);
+                    timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 400);
+                    throttleValidation = true;
+                }
             }
-        } else {
-            throttleValidation = true;
         }
 
         // Are there any custom events active?
@@ -1268,12 +1269,12 @@ const Form = ({
         } else if (
             (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('change') > -1) ||
             (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('change') > -1) ||
-            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1 && throttleValidation) ||
-            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1 && throttleValidation) || 
+            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf('throttledChange') > -1 && !throttleValidation) ||
+            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf('throttledChange') > -1 && !throttleValidation) || 
             (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('change') > -1) ||
             (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('change') > -1) ||
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1 && throttleValidation) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && throttleValidation)
+            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation) ||
+            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1 && !throttleValidation)
         ) {
             const result = validateField(fieldKey, "change", newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
