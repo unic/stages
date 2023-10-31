@@ -1249,7 +1249,7 @@ const Form = ({
                     (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf('throttledChange') > -1)
                 ) {
                     if (timeoutRef) clearTimeout(timeoutRef);
-                    timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), 400);
+                    timeoutRef = setTimeout(() => handleChange(fieldKey, value, outsideData, true), throttleWait || 400);
                     throttleValidation = true;
                 }
             }
