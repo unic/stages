@@ -37,3 +37,132 @@ Note: Since v0.4.0 Stages is now using a path based approach, which removes any 
 - Accordion Form (stages rendered inside an accordion)
 - Slideshow (multiple stages, no validation, keyboard navigation)
 - Router (for SPAs)
+
+## Roadmap to v1
+
+- All callbacks take an object, no exceptions! They can either be named `onX` for events or `handleX` for actions
+- `transform` property replaces filter and cleanUp, and can have dependencies. A new `then` property can be used to then revalidate other fields
+- `validate` property replaces `customValidation`, `regexValidation` and `validateOn` (With `on`, `check` and `then` options. Path in then array can have wildcards)
+- `compute` replaces `computedOptions` and `computedValues` and can have dependencies (fields to watch for changes)
+- `value` property replaces `defaultValue`, `isInterfaceState` etc.
+- `options` property which replaces both dynamic and computed options
+- Add fluid API options wherever it makes sense (string, object and function as options)
+- All boolean options must start with is: isRequired, isDisabled …
+- Add random in front of an option and it is an array, and it will be chosen randomly from the array, for example `randomPlaceholder: ["text1", "text2"]`
+- Fields objects will have a new `props` property, which tells Stages exactly which properties to map to the field. The mappings can have functions to convert between field component and Staged. Stages will warn if a required prop is missing.
+- Fields object each has an optional `transform` prop to transform the value going to the component and coming back, so you can make any component work with Stages
+- Each field prop function gets an object with: data, path, config
+- Configure when to call the Forms `onChange`, for example only on data change, but not error change or interface data change
+- Replace `data` property on callbacks with `value`, and `allData` with `data`
+- Nested configs can be set (or overwritten in the case of `fieldConfigs`) with paths like: `"validation.render": ...`
+- Combine `fieldSets` and `filedConfigs` into one which can do both, so basically the render function can be optional or if it’s just a function, that it’s one field.
+- In the forms render function, combine `actionProps` and `fieldProps` and remove duplicates. No need to nest them as people can select which ones they need. Rename some if needed.
+- Make it possible to repopulate undo data (for example to use server saved version history)
+- Collection actions can trigger revalidation of all or certain fields inside the same collection
+- Expand the autoSave feature to have an option for async server calls
+- Name the global form config `globals` and put `validateOn` and other global configs in there
+- Improve logging and the Debugger component (Chrome extension?)
+
+### New API proposal for field validations:
+
+```
+validation: {
+  allowedChars: "^[A-Z0-9]*$",
+  phone: ({ data }) => {
+    return true;
+  },
+  swissPhone: {
+    on: ["change","blur"],
+    check: ({ data }) => {
+      return true;
+    },
+    then: ["field2", "group1.input4", "group.*"]
+  },
+  render: ({ errorCode }) => { return <>Test</> }
+}
+```
+
+### New API proposal for field value transforms:
+
+```
+transform: [
+  {
+    on: "change",
+    fn: ({ data }) => {
+      return capitalize(data);
+    },
+    then: {
+      field2: [
+        "clear",
+        "validate",
+        ({ data }) => {
+          if (data === "") return "clear";
+        }
+      ]
+    }
+  },
+  {
+    on: ["blur", "action"],
+    fn: ({ data }) => {
+      return data.trim();
+    }
+  }
+]
+```
+
+### New API proposal for the fields object:
+
+```
+{
+	text: {
+		component: Input,
+		validate: defaultValidation,
+		props: ["label", "id", "isRequired", ...]
+	},
+	longtext: {
+		component: Input,
+		validate: defaultValidation,
+		props: props => ["label", "id", "isRequired", ...props]
+	},
+	textarea: {
+		component: Input,
+		validate: defaultValidation,
+		props: [
+			"label",
+			"id:string",
+			{isRequired: "required"},
+			...
+		]
+	},
+	select: {
+		component: Input,
+		validate: defaultValidation,
+		props: [
+			"label",
+			"id",
+			{
+				options: value => {
+					return {
+						prop: "options",
+						value: value.map(item => {
+							return {
+								value: item.val,
+								text: item.name
+							};
+						})
+					};
+				}
+			},
+			...
+		]
+	},
+	date: {
+		component: Input,
+		validate: defaultValidation,
+		transform: {
+			in: data => new Date(data),
+			out: data => string(data)
+		}
+	}
+}
+```
