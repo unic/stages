@@ -218,6 +218,15 @@ function App() {
                             >+</button>
                             <br />
                             <br />
+                            <button type="button" onClick={() => actionProps.updateData({
+                                input1: 'Test 1',
+                                input4: 'test 4',
+                                mycollection: [
+                                    {
+                                        f1: 'Collection Test 1',
+                                    }
+                                ]
+                            })}>Update Data</button>
                             <button
                                 type="button"
                                 onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}

@@ -1881,6 +1881,28 @@ const Form = ({
         if (!suppressCallback) callback();
     };
 
+    const updateData = (data) => {
+        limitedOnChange(data, validationErrors(), id);
+
+        // We need to recalculate dirty fields!
+        let newIsDirty = false;
+        let newDirtyFields = {};
+        fieldPaths.forEach(fieldPath => {
+            if (!fieldPath.config.isInterfaceState) {
+                const newPathData = get(data, fieldPath.path);
+                const initialPathData = get(initialData, fieldPath.path);
+                if (newPathData !== initialPathData) {
+                    newIsDirty = true;
+                    if (typeof newPathData !== "undefined") {
+                        newDirtyFields[fieldPath.path] = { oldData: initialPathData, newData: newPathData };
+                    }
+                }
+            }
+        });
+        setIsDirty(newIsDirty);
+        setDirtyFields(newDirtyFields);
+    };
+
     const getConfig = (path) => {
         const fieldPath = find(fieldPaths, { path: path });
         return fieldPath ? fieldPath.config : undefined;
@@ -1900,7 +1922,8 @@ const Form = ({
             focusedField,
             lastFocusedField,
             dirtyFields,
-            silentlyGetValidationErrors
+            silentlyGetValidationErrors,
+            updateData
         },
         fieldProps: {
             fields: createRenderedFields(),
