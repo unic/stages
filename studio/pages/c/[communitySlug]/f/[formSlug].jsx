@@ -64,7 +64,41 @@ const CommunityForm = () => {
                                 label: "Switch",
                                 type: "switch",
                                 isRequired: true
-                            }
+                            },
+                            {
+                                id: "field7",
+                                label: "Number",
+                                type: "number",
+                                isRequired: true
+                            },
+                            {
+                                id: "field8",
+                                label: "Rating",
+                                type: "rating",
+                                isRequired: true
+                            },
+                            {
+                                id: "field9",
+                                label: "Buttons",
+                                type: "buttons",
+                                options: [
+                                    {
+                                        text: "Option 1",
+                                        value: "option1"
+                                    },
+                                    {
+                                        text: "Option 2",
+                                        value: "option2"
+                                    }
+                                ],
+                                isRequired: true
+                            },
+                            {
+                                id: "field10",
+                                label: "Slider",
+                                type: "slider",
+                                isRequired: true
+                            },
                         ]
                     }
                 }}
@@ -82,6 +116,14 @@ const CommunityForm = () => {
                             {fieldProps.fields.field5}
                             <br /><br />
                             {fieldProps.fields.field6}
+                            <br /><br />
+                            {fieldProps.fields.field7}
+                            <br /><br />
+                            {fieldProps.fields.field8}
+                            <br /><br />
+                            {fieldProps.fields.field9}
+                            <br /><br />
+                            {fieldProps.fields.field10}
                         </div>
                         <hr />
                         <button

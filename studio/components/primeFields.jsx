@@ -4,6 +4,10 @@ import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
 import { Checkbox } from 'primereact/checkbox';
 import { InputSwitch } from 'primereact/inputswitch';
+import { InputNumber } from 'primereact/inputnumber';
+import { Rating } from 'primereact/rating';
+import { SelectButton } from 'primereact/selectbutton';
+import { Slider } from 'primereact/slider';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -55,6 +59,16 @@ const MappedDropdown = (props) => {
     return <Dropdown {...mappedProps} />;
 };
 
+const MappedSelectButton = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    mappedProps.optionLabel = 'text';
+    return <SelectButton {...mappedProps} />;
+};
+
 const MappedCalendar = (props) => {
     const mappedProps = removeStagesProps(props);
     if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
@@ -85,9 +99,47 @@ const MappedInputSwitch = (props) => {
     return <InputSwitch {...mappedProps} />;
 };
 
+const MappedRating = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.type = 'text';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.value);
+    };
+    return <Rating {...mappedProps} />;
+};
+
+const MappedInputNumber = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.type = 'text';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.value);
+    };
+    return <InputNumber {...mappedProps} />;
+};
+
+const MappedSlider = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.type = 'text';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.value);
+    };
+    return <Slider {...mappedProps} />;
+};
+
 const primeFields = {
     text: {
         component: MappedInputText,
+        isValid: () => true
+    },
+    number: {
+        component: MappedInputNumber,
+        isValid: () => true
+    },
+    slider: {
+        component: MappedSlider,
         isValid: () => true
     },
     textarea: {
@@ -108,6 +160,14 @@ const primeFields = {
     },
     switch: {
         component: MappedInputSwitch,
+        isValid: () => true
+    },
+    rating: {
+        component: MappedRating,
+        isValid: () => true
+    },
+    buttons: {
+        component: MappedSelectButton,
         isValid: () => true
     }
 };
