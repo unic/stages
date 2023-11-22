@@ -129,6 +129,12 @@ const CommunityForm = () => {
                                 type: "mask",
                                 mask: "99-999999",
                                 isRequired: true
+                            },
+                            {
+                                id: "field16",
+                                label: "Password",
+                                type: "password",
+                                isRequired: true
                             }
                         ]
                     }
@@ -165,6 +171,8 @@ const CommunityForm = () => {
                             {fieldProps.fields.field14}
                             <br /><br />
                             {fieldProps.fields.field15}
+                            <br /><br />
+                            {fieldProps.fields.field16}
                         </div>
                         <hr />
                         <button

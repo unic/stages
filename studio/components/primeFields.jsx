@@ -13,6 +13,7 @@ import { Editor } from 'primereact/editor';
 import { Chips } from 'primereact/chips';
 import { ColorPicker } from 'primereact/colorpicker';
 import { InputMask } from 'primereact/inputmask';
+import { Password } from 'primereact/password';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -182,6 +183,15 @@ const MappedColorPicker = (props) => {
     return <ColorPicker {...mappedProps} />;
 };
 
+const MappedPassword = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    return <Password {...mappedProps} />;
+};
+
 const primeFields = {
     text: {
         component: MappedInputText,
@@ -241,6 +251,10 @@ const primeFields = {
     },
     mask: {
         component: MappedInputMask,
+        isValid: () => true
+    },
+    password: {
+        component: MappedPassword,
         isValid: () => true
     }
 };
