@@ -110,6 +110,25 @@ const CommunityForm = () => {
                                 label: "Editor",
                                 type: "editor",
                                 isRequired: true
+                            },
+                            {
+                                id: "field13",
+                                label: "Chips",
+                                type: "chips",
+                                isRequired: true
+                            },
+                            {
+                                id: "field14",
+                                label: "Color",
+                                type: "color",
+                                isRequired: true
+                            },
+                            {
+                                id: "field15",
+                                label: "Mask",
+                                type: "mask",
+                                mask: "99-999999",
+                                isRequired: true
                             }
                         ]
                     }
@@ -140,6 +159,12 @@ const CommunityForm = () => {
                             {fieldProps.fields.field11}
                             <br /><br />
                             {fieldProps.fields.field12}
+                            <br /><br />
+                            {fieldProps.fields.field13}
+                            <br /><br />
+                            {fieldProps.fields.field14}
+                            <br /><br />
+                            {fieldProps.fields.field15}
                         </div>
                         <hr />
                         <button

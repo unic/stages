@@ -10,6 +10,9 @@ import { SelectButton } from 'primereact/selectbutton';
 import { Slider } from 'primereact/slider';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Editor } from 'primereact/editor';
+import { Chips } from 'primereact/chips';
+import { ColorPicker } from 'primereact/colorpicker';
+import { InputMask } from 'primereact/inputmask';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -40,6 +43,16 @@ const MappedInputText = (props) => {
         props.onChange(e.target.value);
     };
     return <InputText {...mappedProps} />;
+};
+
+const MappedInputMask = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.type = 'text';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    return <InputMask {...mappedProps} />;
 };
 
 const MappedInputTextarea = (props) => {
@@ -150,6 +163,25 @@ const MappedSlider = (props) => {
     return <Slider {...mappedProps} />;
 };
 
+const MappedChips = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.value);
+    };
+    return <Chips {...mappedProps} />;
+};
+
+const MappedColorPicker = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = 'ffffff';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.value);
+    };
+    mappedProps.format = 'hex';
+    return <ColorPicker {...mappedProps} />;
+};
+
 const primeFields = {
     text: {
         component: MappedInputText,
@@ -197,6 +229,18 @@ const primeFields = {
     },
     buttons: {
         component: MappedSelectButton,
+        isValid: () => true
+    },
+    chips: {
+        component: MappedChips,
+        isValid: () => true
+    },
+    color: {
+        component: MappedColorPicker,
+        isValid: () => true
+    },
+    mask: {
+        component: MappedInputMask,
         isValid: () => true
     }
 };
