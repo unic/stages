@@ -99,6 +99,18 @@ const CommunityForm = () => {
                                 type: "slider",
                                 isRequired: true
                             },
+                            {
+                                id: "field11",
+                                label: "Toggle",
+                                type: "toggle",
+                                isRequired: true
+                            },
+                            {
+                                id: "field12",
+                                label: "Editor",
+                                type: "editor",
+                                isRequired: true
+                            }
                         ]
                     }
                 }}
@@ -124,6 +136,10 @@ const CommunityForm = () => {
                             {fieldProps.fields.field9}
                             <br /><br />
                             {fieldProps.fields.field10}
+                            <br /><br />
+                            {fieldProps.fields.field11}
+                            <br /><br />
+                            {fieldProps.fields.field12}
                         </div>
                         <hr />
                         <button

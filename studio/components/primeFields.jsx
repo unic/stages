@@ -8,6 +8,8 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Rating } from 'primereact/rating';
 import { SelectButton } from 'primereact/selectbutton';
 import { Slider } from 'primereact/slider';
+import { ToggleButton } from 'primereact/togglebutton';
+import { Editor } from 'primereact/editor';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -47,6 +49,15 @@ const MappedInputTextarea = (props) => {
         props.onChange(e.target.value);
     };
     return <InputTextarea {...mappedProps} />;
+};
+
+const MappedEditor = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    return <Editor {...mappedProps} />;
 };
 
 const MappedDropdown = (props) => {
@@ -99,6 +110,16 @@ const MappedInputSwitch = (props) => {
     return <InputSwitch {...mappedProps} />;
 };
 
+const MappedToggleButton = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = false;
+    mappedProps.checked = !!mappedProps.value;
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    return <ToggleButton {...mappedProps} />;
+};
+
 const MappedRating = (props) => {
     const mappedProps = removeStagesProps(props);
     if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
@@ -146,6 +167,10 @@ const primeFields = {
         component: MappedInputTextarea,
         isValid: () => true
     },
+    editor: {
+        component: MappedEditor,
+        isValid: () => true
+    },
     select: {
         component: MappedDropdown,
         isValid: () => true
@@ -160,6 +185,10 @@ const primeFields = {
     },
     switch: {
         component: MappedInputSwitch,
+        isValid: () => true
+    },
+    toggle: {
+        component: MappedToggleButton,
         isValid: () => true
     },
     rating: {
