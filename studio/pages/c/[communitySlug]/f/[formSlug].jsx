@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, isValidElement } from 'react';
 import { useRouter } from 'next/router';
 import { Form } from "react-stages";
 import primeFields from '../../../../components/primeFields';
@@ -9,6 +9,26 @@ const CommunityForm = () => {
     } = useRouter();
     const [data, setData] = useState({});
     console.log({data});
+
+    const renderFields = (fields, isGroup) => {
+        console.log({fields});
+        if (typeof fields !== "object") return null;
+        return (
+            <>
+                {Object.keys(fields).map(key => {
+                    const field = fields[key];
+                    console.log({ field });
+                    if (isValidElement(field)) {
+                        if (isGroup) return <div className="flex-1">{field}</div>;
+                        return <div>{field}</div>;
+                    } else if (typeof field === "object") {
+                        return <div className="flex">{renderFields(field, true)}</div>;
+                    }
+                })}
+            </>
+        );
+    };
+
     return (
         <div>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
@@ -20,10 +40,22 @@ const CommunityForm = () => {
                     fields: () => {
                         return [
                             {
-                                id: "field1",
-                                label: "Text",
-                                type: "text",
-                                isRequired: true
+                                id: "textgroup",
+                                type: "group",
+                                fields: [  
+                                    {
+                                        id: "field1",
+                                        label: "Text 1",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "field2",
+                                        label: "Text 2",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                ]
                             },
                             {
                                 id: "field2",
@@ -139,50 +171,15 @@ const CommunityForm = () => {
                         ]
                     }
                 }}
-                render={({ actionProps, fieldProps }) => (
-                    <form>
-                        <div>
-                            {fieldProps.fields.field1}
-                            <br /><br />
-                            {fieldProps.fields.field2}
-                            <br /><br />
-                            {fieldProps.fields.field3}
-                            <br /><br />
-                            {fieldProps.fields.field4}
-                            <br /><br />
-                            {fieldProps.fields.field5}
-                            <br /><br />
-                            {fieldProps.fields.field6}
-                            <br /><br />
-                            {fieldProps.fields.field7}
-                            <br /><br />
-                            {fieldProps.fields.field8}
-                            <br /><br />
-                            {fieldProps.fields.field9}
-                            <br /><br />
-                            {fieldProps.fields.field10}
-                            <br /><br />
-                            {fieldProps.fields.field11}
-                            <br /><br />
-                            {fieldProps.fields.field12}
-                            <br /><br />
-                            {fieldProps.fields.field13}
-                            <br /><br />
-                            {fieldProps.fields.field14}
-                            <br /><br />
-                            {fieldProps.fields.field15}
-                            <br /><br />
-                            {fieldProps.fields.field16}
-                        </div>
-                        <hr />
-                        <button
-                            type="button"
-                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
-                        >
-                            Submit
-                        </button>
-                    </form>
-                )}
+                render={({ actionProps, fieldProps }) => {
+                    return (
+                        <form>
+                            <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
+                                {renderFields(fieldProps.fields)}
+                            </div>
+                        </form>
+                    );
+                }}
                 onChange={payload => setData(payload)}
             />
         </div>

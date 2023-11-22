@@ -36,6 +36,15 @@ const removeStagesProps = (props) => {
     return cleanedProps;
 };
 
+const InputWrapper = ({ children, id, label }) => {
+    return (
+        <div className="field">
+            <label htmlFor={id}>{label}</label>
+            <div className="w-full">{children}</div>
+        </div>
+    );
+};
+
 const MappedInputText = (props) => {
     const mappedProps = removeStagesProps(props);
     if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
@@ -43,7 +52,7 @@ const MappedInputText = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputText {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><InputText {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputMask = (props) => {
@@ -53,7 +62,7 @@ const MappedInputMask = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputMask {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><InputMask {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputTextarea = (props) => {
@@ -71,7 +80,7 @@ const MappedEditor = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <Editor {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Editor {...mappedProps} /></InputWrapper>;
 };
 
 const MappedDropdown = (props) => {
@@ -81,7 +90,7 @@ const MappedDropdown = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.optionLabel = 'text';
-    return <Dropdown {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Dropdown {...mappedProps} /></InputWrapper>;
 };
 
 const MappedSelectButton = (props) => {
@@ -91,7 +100,7 @@ const MappedSelectButton = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.optionLabel = 'text';
-    return <SelectButton {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><SelectButton {...mappedProps} /></InputWrapper>;
 };
 
 const MappedCalendar = (props) => {
@@ -101,7 +110,8 @@ const MappedCalendar = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.showIcon = true;
-    return <Calendar {...mappedProps} />;
+    mappedProps.locale = "en";
+    return <InputWrapper {...mappedProps}><Calendar {...mappedProps} /></InputWrapper>;
 };
 
 const MappedCheckbox = (props) => {
@@ -111,7 +121,7 @@ const MappedCheckbox = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(!!e.checked);
     };
-    return <Checkbox {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Checkbox {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputSwitch = (props) => {
@@ -121,7 +131,7 @@ const MappedInputSwitch = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputSwitch {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><InputSwitch {...mappedProps} /></InputWrapper>;
 };
 
 const MappedToggleButton = (props) => {
@@ -131,7 +141,7 @@ const MappedToggleButton = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <ToggleButton {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><ToggleButton {...mappedProps} /></InputWrapper>;
 };
 
 const MappedRating = (props) => {
@@ -141,7 +151,7 @@ const MappedRating = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <Rating {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Rating {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputNumber = (props) => {
@@ -151,7 +161,7 @@ const MappedInputNumber = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <InputNumber {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><InputNumber {...mappedProps} /></InputWrapper>;
 };
 
 const MappedSlider = (props) => {
@@ -161,7 +171,7 @@ const MappedSlider = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <Slider {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Slider {...mappedProps} /></InputWrapper>;
 };
 
 const MappedChips = (props) => {
@@ -170,7 +180,7 @@ const MappedChips = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <Chips {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Chips {...mappedProps} /></InputWrapper>;
 };
 
 const MappedColorPicker = (props) => {
@@ -180,7 +190,7 @@ const MappedColorPicker = (props) => {
         props.onChange(e.value);
     };
     mappedProps.format = 'hex';
-    return <ColorPicker {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><ColorPicker {...mappedProps} /></InputWrapper>;
 };
 
 const MappedPassword = (props) => {
@@ -189,7 +199,7 @@ const MappedPassword = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <Password {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><Password {...mappedProps} /></InputWrapper>;
 };
 
 const primeFields = {
