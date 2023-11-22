@@ -10,19 +10,34 @@ const CommunityForm = () => {
     const [data, setData] = useState({});
     console.log({data});
 
-    const renderFields = (fields, isGroup) => {
-        console.log({fields});
+    const renderFields = (fieldProps, fields, type = "field") => {
         if (typeof fields !== "object") return null;
         return (
             <>
                 {Object.keys(fields).map(key => {
                     const field = fields[key];
-                    console.log({ field });
                     if (isValidElement(field)) {
-                        if (isGroup) return <div className="flex-1">{field}</div>;
+                        if (type === "group") return <div className="flex-1">{field}</div>;
                         return <div>{field}</div>;
                     } else if (typeof field === "object") {
-                        return <div className="flex">{renderFields(field, true)}</div>;
+                        if (Array.isArray(field)) {
+                            // collection array
+                            return (
+                                <div style={{ margin: "16px 0 32px 0" }}>
+                                    {field.map((entry, index) => (
+                                        <div className="flex">
+                                            {renderFields(fieldProps, entry, "group")}
+                                            <div className="flex-1" style={{ marginTop: "32px" }}>
+                                                <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
+                                </div>
+                            );
+                        } else {
+                            return <div className="flex">{renderFields(fieldProps, field, "group")}</div>;
+                        }
                     }
                 })}
             </>
@@ -42,6 +57,26 @@ const CommunityForm = () => {
                             {
                                 id: "textgroup",
                                 type: "group",
+                                fields: [  
+                                    {
+                                        id: "field1",
+                                        label: "Text 1",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                    {
+                                        id: "field2",
+                                        label: "Text 2",
+                                        type: "text",
+                                        isRequired: true
+                                    },
+                                ]
+                            },
+                            {
+                                id: "textcollection",
+                                type: "collection",
+                                min: 1,
+                                init: true,
                                 fields: [  
                                     {
                                         id: "field1",
@@ -175,7 +210,7 @@ const CommunityForm = () => {
                     return (
                         <form>
                             <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
-                                {renderFields(fieldProps.fields)}
+                                {renderFields(fieldProps, fieldProps.fields)}
                             </div>
                         </form>
                     );
