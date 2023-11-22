@@ -1,6 +1,9 @@
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
+import { Calendar } from 'primereact/calendar';
+import { Checkbox } from 'primereact/checkbox';
+import { InputSwitch } from 'primereact/inputswitch';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -52,6 +55,36 @@ const MappedDropdown = (props) => {
     return <Dropdown {...mappedProps} />;
 };
 
+const MappedCalendar = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    mappedProps.showIcon = true;
+    return <Calendar {...mappedProps} />;
+};
+
+const MappedCheckbox = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = false;
+    mappedProps.checked = !!mappedProps.value;
+    mappedProps.onChange = (e) => {
+        props.onChange(!!e.checked);
+    };
+    return <Checkbox {...mappedProps} />;
+};
+
+const MappedInputSwitch = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = false;
+    mappedProps.checked = !!mappedProps.value;
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    return <InputSwitch {...mappedProps} />;
+};
+
 const primeFields = {
     text: {
         component: MappedInputText,
@@ -65,6 +98,18 @@ const primeFields = {
         component: MappedDropdown,
         isValid: () => true
     },
+    calendar: {
+        component: MappedCalendar,
+        isValid: () => true
+    },
+    checkbox: {
+        component: MappedCheckbox,
+        isValid: () => true
+    },
+    switch: {
+        component: MappedInputSwitch,
+        isValid: () => true
+    }
 };
 
 export default primeFields;

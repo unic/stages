@@ -8,7 +8,7 @@ const CommunityForm = () => {
       query: { communitySlug, formSlug },
     } = useRouter();
     const [data, setData] = useState({});
-
+    console.log({data});
     return (
         <div>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
@@ -46,6 +46,24 @@ const CommunityForm = () => {
                                     }
                                 ],
                                 isRequired: true
+                            },
+                            {
+                                id: "field4",
+                                label: "Calendar",
+                                type: "calendar",
+                                isRequired: true
+                            },
+                            {
+                                id: "field5",
+                                label: "Checkbox",
+                                type: "checkbox",
+                                isRequired: true
+                            },
+                            {
+                                id: "field6",
+                                label: "Switch",
+                                type: "switch",
+                                isRequired: true
                             }
                         ]
                     }
@@ -58,6 +76,12 @@ const CommunityForm = () => {
                             {fieldProps.fields.field2}
                             <br /><br />
                             {fieldProps.fields.field3}
+                            <br /><br />
+                            {fieldProps.fields.field4}
+                            <br /><br />
+                            {fieldProps.fields.field5}
+                            <br /><br />
+                            {fieldProps.fields.field6}
                         </div>
                         <hr />
                         <button
