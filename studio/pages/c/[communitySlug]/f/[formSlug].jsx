@@ -10,10 +10,10 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
         <div className={inGroup ? "flex-1" : undefined} style={{
             padding: "8px",
             borderRadius: "5px",
-            border: isInEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
+            border: isInEditMode && isEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
             position: "relative"
-        }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(false)}>
-            {isInEditMode ? <button style={{ position: "absolute", top: "4px", right: "4px" }} type="button" onClick={() => setSelectedElement(path)}>edit</button> : null}
+        }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}>
+            {isInEditMode && isEditMode ? <button style={{ position: "absolute", top: "4px", right: "4px" }} type="button" onClick={() => setSelectedElement(path)}>edit</button> : null}
             {field}
         </div>
     );
@@ -178,7 +178,7 @@ const CommunityForm = () => {
         }
     ]);
 
-    console.log({data});
+    console.log({data, isEditMode, selectedElement});
 
     const renderFields = (fieldProps, fields, type = "field") => {
         if (typeof fields !== "object") return null;
