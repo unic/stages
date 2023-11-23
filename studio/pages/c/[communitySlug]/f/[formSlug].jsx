@@ -82,6 +82,40 @@ const fieldProps = {
     }
 };
 
+const renderFields = (setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
+    if (typeof fields !== "object") return null;
+    return (
+        <>
+            {Object.keys(fields).map(key => {
+                const field = fields[key];
+                if (isValidElement(field)) {
+                    if (type === "group") return <EditableBlock setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
+                    return <EditableBlock setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
+                } else if (typeof field === "object") {
+                    if (Array.isArray(field)) {
+                        // collection array
+                        return (
+                            <div style={{ margin: "16px 0 32px 0" }}>
+                                {field.map((entry, index) => (
+                                    <div className="flex">
+                                        {renderFields(setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
+                                        <div className="flex-1" style={{ marginTop: "32px" }}>
+                                            <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
+                            </div>
+                        );
+                    } else {
+                        return <div className="flex">{renderFields(setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</div>;
+                    }
+                }
+            })}
+        </>
+    );
+};
+
 const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
 
@@ -99,6 +133,7 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
 };
 
 const FiledConfigEditor = ({ path, config, handleEditFieldConfig }) => {
+    const [data, setData] = useState(config);
     return (
         <>
             <code>{path}</code>
@@ -111,6 +146,30 @@ const FiledConfigEditor = ({ path, config, handleEditFieldConfig }) => {
                     }} /></div>
                 );
             }) : null}
+            {typeof config === "object" ? <Form
+                id="configForm"
+                data={data}
+                fields={primeFields}
+                config={{
+                    fields: () => {
+                        return [
+                            fieldProps[config.type]
+                        ];
+                    }
+                }}
+                render={({ actionProps, fieldProps }) => {
+                    return (
+                        <>
+                            <form>
+                                <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
+                                    {renderFields(fieldProps, fieldProps.fields)}
+                                </div>
+                            </form>
+                         </>
+                    );
+                }}
+                onChange={payload => setData(payload)}
+            /> : null}
         </>
     );
 };
@@ -281,40 +340,6 @@ const CommunityForm = () => {
 
     console.log({data, isEditMode, selectedElement, currentConfig});
 
-    const renderFields = (fieldProps, fields, type = "field") => {
-        if (typeof fields !== "object") return null;
-        return (
-            <>
-                {Object.keys(fields).map(key => {
-                    const field = fields[key];
-                    if (isValidElement(field)) {
-                        if (type === "group") return <EditableBlock setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
-                        return <EditableBlock setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
-                    } else if (typeof field === "object") {
-                        if (Array.isArray(field)) {
-                            // collection array
-                            return (
-                                <div style={{ margin: "16px 0 32px 0" }}>
-                                    {field.map((entry, index) => (
-                                        <div className="flex">
-                                            {renderFields(fieldProps, entry, "group")}
-                                            <div className="flex-1" style={{ marginTop: "32px" }}>
-                                                <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
-                                </div>
-                            );
-                        } else {
-                            return <div className="flex">{renderFields(fieldProps, field, "group")}</div>;
-                        }
-                    }
-                })}
-            </>
-        );
-    };
-
     return (
         <div style={{ marginRight: "350px" }}>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
@@ -333,7 +358,7 @@ const CommunityForm = () => {
                         <>
                             <form>
                                 <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
-                                    {renderFields(fieldProps, fieldProps.fields)}
+                                    {renderFields(setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
                                 </div>
                             </form>
                             {isEditMode ? (
