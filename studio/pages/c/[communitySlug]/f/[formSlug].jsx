@@ -1,4 +1,4 @@
-import { useState, isValidElement } from 'react';
+import { useState, useEffect, isValidElement } from 'react';
 import { useRouter } from 'next/router';
 import { Form } from "react-stages";
 import { ScrollPanel } from 'primereact/scrollpanel';
@@ -8,16 +8,19 @@ import set from "lodash.set";
 
 const globalFieldProps = {
     id: {
+        id: "id",
         type: "text",
-        label: "Text",
+        label: "ID",
         isRequired: true,
     },
     label: {
+        id: "label",
         type: "text",
-        label: "Text",
+        label: "Label",
         isRequired: true,
     },
     type: {
+        id: "type",
         type: "select",
         label: "Type",
         isRequired: true,
@@ -37,30 +40,32 @@ const globalFieldProps = {
         ]
     },
     isRequired: {
+        id: "isRequired",
         type: "checkbox",
         label: "Required?"
     }
 }
 
 const fieldProps = {
-    text: {
-        id: globalFieldProps.id,
-        label: globalFieldProps.label,
-        type: globalFieldProps.type,
-        isRequired: globalFieldProps.isRequired
-    },
-    textarea: {
-        id: globalFieldProps.id,
-        label: globalFieldProps.label,
-        type: globalFieldProps.type,
-        isRequired: globalFieldProps.isRequired
-    },
-    select: {
-        id: globalFieldProps.id,
-        label: globalFieldProps.label,
-        type: globalFieldProps.type,
-        isRequired: globalFieldProps.isRequired,
-        options: {
+    text: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    textarea: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    select: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired,
+        {
+            id: "options",
             type: "collection",
             min: 1,
             init: true,
@@ -79,7 +84,7 @@ const fieldProps = {
                 }
             ]
         }
-    }
+    ]
 };
 
 const renderFields = (setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
@@ -134,42 +139,42 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
 
 const FiledConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     const [data, setData] = useState(config);
+
+    useEffect(() => {
+        setData(config);
+    }, [config]);
+
     return (
         <>
             <code>{path}</code>
             <br /><br />
-            {typeof config === "object" ? Object.keys(config).map((key, index) => {
-                return (
-                    <div>{key}: <InputText value={config[key]} onChange={(e) => {
-                        config[key] = e.target.value;
-                        handleEditFieldConfig(path, config);
-                    }} /></div>
-                );
-            }) : null}
-            {typeof config === "object" ? <Form
-                id="configForm"
-                data={data}
-                fields={primeFields}
-                config={{
-                    fields: () => {
-                        return [
-                            fieldProps[config.type]
-                        ];
-                    }
-                }}
-                render={({ actionProps, fieldProps }) => {
-                    return (
-                        <>
-                            <form>
-                                <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
-                                    {renderFields(fieldProps, fieldProps.fields)}
-                                </div>
-                            </form>
-                         </>
-                    );
-                }}
-                onChange={payload => setData(payload)}
-            /> : null}
+            {typeof config === "object" ? (
+                <Form
+                    id="configForm"
+                    data={data}
+                    fields={primeFields}
+                    config={{
+                        fields: () => {
+                            return fieldProps[config.type];
+                        }
+                    }}
+                    render={({ actionProps, fieldProps }) => {
+                        return (
+                            <>
+                                <form>
+                                    <div style={{ position: "relative" }}>
+                                        {renderFields(() => {}, false, '', fieldProps, fieldProps.fields)}
+                                    </div>
+                                </form>
+                            </>
+                        );
+                    }}
+                    onChange={payload => {
+                        setData(payload);
+                        handleEditFieldConfig(path, payload);
+                    }}
+                />
+            ) : null}
         </>
     );
 };
@@ -337,8 +342,6 @@ const CommunityForm = () => {
         const newConfig = [...currentConfig];
         setCurrentConfig(set(newConfig, path, config));
     };
-
-    console.log({data, isEditMode, selectedElement, currentConfig});
 
     return (
         <div style={{ marginRight: "350px" }}>
