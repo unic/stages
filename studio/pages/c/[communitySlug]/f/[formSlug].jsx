@@ -316,7 +316,7 @@ const CommunityForm = () => {
     };
 
     return (
-        <div>
+        <div style={{ marginRight: "350px" }}>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
             {isEditMode ? <button type="button" onClick={() => setIsEditMode(false)}>Preview</button> : <button type="button" onClick={() => setIsEditMode(true)}>Edit</button>}
             <Form
