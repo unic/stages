@@ -3,11 +3,28 @@ import { useRouter } from 'next/router';
 import { Form } from "react-stages";
 import primeFields from '../../../../components/primeFields';
 
+const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup }) => {
+    const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
+
+    return (
+        <div className={inGroup ? "flex-1" : undefined} style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: isInEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
+        }} onMouseOver={() => setIsInEditMode(true)} onMouseOut={() => setIsInEditMode(false)}>
+            {field}
+        </div>
+    );
+}
+
 const CommunityForm = () => {
     const {
       query: { communitySlug, formSlug },
     } = useRouter();
     const [data, setData] = useState({});
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedElement, setSelectedElement] = useState('');
+
     console.log({data});
 
     const renderFields = (fieldProps, fields, type = "field") => {
@@ -17,8 +34,8 @@ const CommunityForm = () => {
                 {Object.keys(fields).map(key => {
                     const field = fields[key];
                     if (isValidElement(field)) {
-                        if (type === "group") return <div className="flex-1">{field}</div>;
-                        return <div>{field}</div>;
+                        if (type === "group") return <EditableBlock inGroup field={field} path="" isEditMode={isEditMode} selectedElement={selectedElement} />;
+                        return <EditableBlock field={field} path="" isEditMode={isEditMode} selectedElement={selectedElement} />;
                     } else if (typeof field === "object") {
                         if (Array.isArray(field)) {
                             // collection array
@@ -47,6 +64,7 @@ const CommunityForm = () => {
     return (
         <div>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
+            {isEditMode ? <button type="button" onClick={() => setIsEditMode(false)}>Preview</button> : <button type="button" onClick={() => setIsEditMode(true)}>Edit</button>}
             <Form
                 id="myForm"
                 data={data}
