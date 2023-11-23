@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { Form } from "react-stages";
 import primeFields from '../../../../components/primeFields';
 
-const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup }) => {
+const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
 
     return (
@@ -11,7 +11,9 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup }) =>
             padding: "8px",
             borderRadius: "5px",
             border: isInEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
-        }} onMouseOver={() => setIsInEditMode(true)} onMouseOut={() => setIsInEditMode(false)}>
+            position: "relative"
+        }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(false)}>
+            {isInEditMode ? <button style={{ position: "absolute", top: "4px", right: "4px" }} type="button" onClick={() => setSelectedElement(path)}>edit</button> : null}
             {field}
         </div>
     );
@@ -185,8 +187,8 @@ const CommunityForm = () => {
                 {Object.keys(fields).map(key => {
                     const field = fields[key];
                     if (isValidElement(field)) {
-                        if (type === "group") return <EditableBlock inGroup field={field} path="" isEditMode={isEditMode} selectedElement={selectedElement} />;
-                        return <EditableBlock field={field} path="" isEditMode={isEditMode} selectedElement={selectedElement} />;
+                        if (type === "group") return <EditableBlock setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
+                        return <EditableBlock setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
                     } else if (typeof field === "object") {
                         if (Array.isArray(field)) {
                             // collection array
