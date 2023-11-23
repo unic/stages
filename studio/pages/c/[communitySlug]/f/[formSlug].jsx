@@ -61,9 +61,23 @@ const fieldProps = {
         type: globalFieldProps.type,
         isRequired: globalFieldProps.isRequired,
         options: {
-            type: "table",
-            label: "Options",
-            isRequired: true,
+            type: "collection",
+            min: 1,
+            init: true,
+            fields: [
+                {
+                    id: "value",
+                    label: "Value",
+                    type: "text",
+                    isRequired: true
+                },
+                {
+                    id: "text",
+                    label: "Text",
+                    type: "text",
+                    isRequired: true
+                }
+            ]
         }
     }
 };
@@ -257,23 +271,6 @@ const CommunityForm = () => {
             label: "Password",
             type: "password",
             isRequired: true
-        }
-        ,
-        {
-            id: "field17",
-            label: "Data Table",
-            type: "datatable",
-            isRequired: true,
-            columns: [
-                {
-                    field: "field1",
-                    header: "Field 1"
-                },
-                {
-                    field: "field2",
-                    header: "Field 2"
-                }
-            ]
         }
     ]);
 
