@@ -6,6 +6,68 @@ import primeFields from '../../../../components/primeFields';
 import { InputText } from 'primereact/inputtext';
 import set from "lodash.set";
 
+const globalFieldProps = {
+    id: {
+        type: "text",
+        label: "Text",
+        isRequired: true,
+    },
+    label: {
+        type: "text",
+        label: "Text",
+        isRequired: true,
+    },
+    type: {
+        type: "select",
+        label: "Type",
+        isRequired: true,
+        options: [
+            {
+                value: "text",
+                text: "Textfield"
+            },
+            {
+                value: "textarea",
+                text: "Textarea"
+            },
+            {
+                value: "select",
+                text: "Select"
+            }
+        ]
+    },
+    isRequired: {
+        type: "checkbox",
+        label: "Required?"
+    }
+}
+
+const fieldProps = {
+    text: {
+        id: globalFieldProps.id,
+        label: globalFieldProps.label,
+        type: globalFieldProps.type,
+        isRequired: globalFieldProps.isRequired
+    },
+    textarea: {
+        id: globalFieldProps.id,
+        label: globalFieldProps.label,
+        type: globalFieldProps.type,
+        isRequired: globalFieldProps.isRequired
+    },
+    select: {
+        id: globalFieldProps.id,
+        label: globalFieldProps.label,
+        type: globalFieldProps.type,
+        isRequired: globalFieldProps.isRequired,
+        options: {
+            type: "table",
+            label: "Options",
+            isRequired: true,
+        }
+    }
+};
+
 const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
 
@@ -195,6 +257,23 @@ const CommunityForm = () => {
             label: "Password",
             type: "password",
             isRequired: true
+        }
+        ,
+        {
+            id: "field17",
+            label: "Data Table",
+            type: "datatable",
+            isRequired: true,
+            columns: [
+                {
+                    field: "field1",
+                    header: "Field 1"
+                },
+                {
+                    field: "field2",
+                    header: "Field 2"
+                }
+            ]
         }
     ]);
 

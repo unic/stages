@@ -14,6 +14,8 @@ import { Chips } from 'primereact/chips';
 import { ColorPicker } from 'primereact/colorpicker';
 import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -202,6 +204,28 @@ const MappedPassword = (props) => {
     return <InputWrapper {...mappedProps}><Password {...mappedProps} /></InputWrapper>;
 };
 
+const MappedDataTable = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = [];
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    const onCellEditComplete = (e) => {
+        console.log({e});
+    }
+    return (
+        <InputWrapper {...mappedProps}>
+            <DataTable value={mappedProps.value} editMode="cell" tableStyle={{ minWidth: '50rem' }}>
+                {mappedProps.columns.map(({ field, header }) => {
+                    return <Column key={field} field={field} header={header}
+                        style={{ width: '25%' }}
+                        editor={(options) => console.log(options)} onCellEditComplete={onCellEditComplete} />;
+                })}
+            </DataTable>
+        </InputWrapper>
+    );
+};
+
 const primeFields = {
     text: {
         component: MappedInputText,
@@ -265,6 +289,10 @@ const primeFields = {
     },
     password: {
         component: MappedPassword,
+        isValid: () => true
+    },
+    datatable: {
+        component: MappedDataTable,
         isValid: () => true
     }
 };
