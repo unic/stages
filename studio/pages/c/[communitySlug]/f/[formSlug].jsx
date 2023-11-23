@@ -1,7 +1,10 @@
 import { useState, isValidElement } from 'react';
 import { useRouter } from 'next/router';
 import { Form } from "react-stages";
+import { ScrollPanel } from 'primereact/scrollpanel';
 import primeFields from '../../../../components/primeFields';
+import { InputText } from 'primereact/inputtext';
+import set from "lodash.set";
 
 const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
@@ -17,7 +20,24 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
             {field}
         </div>
     );
-}
+};
+
+const FiledConfigEditor = ({ path, config, handleEditFieldConfig }) => {
+    return (
+        <>
+            <code>{path}</code>
+            <br /><br />
+            {typeof config === "object" ? Object.keys(config).map((key, index) => {
+                return (
+                    <div>{key}: <InputText value={config[key]} onChange={(e) => {
+                        config[key] = e.target.value;
+                        handleEditFieldConfig(path, config);
+                    }} /></div>
+                );
+            }) : null}
+        </>
+    );
+};
 
 const CommunityForm = () => {
     const {
@@ -178,7 +198,12 @@ const CommunityForm = () => {
         }
     ]);
 
-    console.log({data, isEditMode, selectedElement});
+    const handleEditFieldConfig = (path, config) => {
+        const newConfig = [...currentConfig];
+        setCurrentConfig(set(newConfig, path, config));
+    };
+
+    console.log({data, isEditMode, selectedElement, currentConfig});
 
     const renderFields = (fieldProps, fields, type = "field") => {
         if (typeof fields !== "object") return null;
@@ -229,11 +254,19 @@ const CommunityForm = () => {
                 }}
                 render={({ actionProps, fieldProps }) => {
                     return (
-                        <form>
-                            <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
-                                {renderFields(fieldProps, fieldProps.fields)}
-                            </div>
-                        </form>
+                        <>
+                            <form>
+                                <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
+                                    {renderFields(fieldProps, fieldProps.fields)}
+                                </div>
+                            </form>
+                            {isEditMode ? (
+                                <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, borderLeft: "1px solid #ccc", padding: "12px" }}>
+                                    <h3>Inspector:</h3>
+                                    <FiledConfigEditor path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} />
+                                </ScrollPanel> 
+                            ) : null}
+                         </>
                     );
                 }}
                 onChange={payload => setData(payload)}
