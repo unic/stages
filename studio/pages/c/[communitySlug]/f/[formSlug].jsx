@@ -37,6 +37,58 @@ const globalFieldProps = {
             {
                 value: "select",
                 text: "Select"
+            },
+            {
+                value: "calendar",
+                text: "Calendar"
+            },
+            {
+                value: "checkbox",
+                text: "Checkbox"
+            },
+            {
+                value: "switch",
+                text: "Switch"
+            },
+            {
+                value: "number",
+                text: "Number"
+            },
+            {
+                value: "rating",
+                text: "Rating"
+            },
+            {
+                value: "buttons",
+                text: "Buttons"
+            },
+            {
+                value: "slider",
+                text: "Slider"
+            },
+            {
+                value: "toggle",
+                text: "Toggle"
+            },
+            {
+                value: "editor",
+                text: "Editor"
+            },
+            {
+                value: "chips",
+                text: "Chips"
+            },
+            {
+                value: "color",
+                text: "Color"
+            },
+            {
+                value: "mask",
+                text: "Mask"
+            },
+            {
+                value: "password",
+                text: "Password"
             }
         ]
     },
@@ -44,6 +96,41 @@ const globalFieldProps = {
         id: "isRequired",
         type: "checkbox",
         label: "Required?"
+    },
+    tooltip: {
+        id: "tooltip",
+        type: "text",
+        label: "Tooltip"
+    },
+    options: {
+        id: "options",
+        type: "collection",
+        min: 1,
+        init: true,
+        fields: [
+            {
+                id: "value",
+                label: "Value",
+                type: "text",
+                isRequired: true
+            },
+            {
+                id: "text",
+                label: "Text",
+                type: "text",
+                isRequired: true
+            }
+        ]
+    },
+    autoResize: {
+        id: "autoResize",
+        type: "checkbox",
+        label: "Auto resize?"
+    },
+    placeholder: {
+        id: "placeholder",
+        type: "text",
+        label: "Placeholder"
     }
 }
 
@@ -52,45 +139,76 @@ const fieldProps = {
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.tooltip
     ],
     textarea: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.tooltip,
+        globalFieldProps.autoResize
     ],
     select: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.type,
         globalFieldProps.isRequired,
-        {
-            id: "options",
-            type: "collection",
-            min: 1,
-            init: true,
-            fields: [
-                {
-                    id: "value",
-                    label: "Value",
-                    type: "text",
-                    isRequired: true
-                },
-                {
-                    id: "text",
-                    label: "Text",
-                    type: "text",
-                    isRequired: true
-                }
-            ]
-        }
+        globalFieldProps.options,
+        globalFieldProps.placeholder,
+        globalFieldProps.tooltip
     ],
     calendar: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.tooltip,
+        {
+            id: "numberOfMonths",
+            type: "number",
+            label: "Number of Months"
+        },
+        {
+            id: "selectionMode",
+            type: "select",
+            label: "Selection Mode",
+            options: [
+                {
+                    value: "single",
+                    text: "Single"
+                },
+                {
+                    value: "range",
+                    text: "Range"
+                },
+                {
+                    value: "multiple",
+                    text: "Multiple"
+                }
+            ]
+        },
+        {
+            id: "inline",
+            type: "checkbox",
+            label: "Inline?"
+        },
+        {
+            id: "showButtonBar",
+            type: "checkbox",
+            label: "Show button bar?"
+        },
+        {
+            id: "showIcon",
+            type: "checkbox",
+            label: "Show icon?"
+        },
+        {
+            id: "showTime",
+            type: "checkbox",
+            label: "Show time?"
+        },
     ],
     checkbox: [
         globalFieldProps.id,
@@ -121,26 +239,7 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.type,
         globalFieldProps.isRequired,
-        {
-            id: "options",
-            type: "collection",
-            min: 1,
-            init: true,
-            fields: [
-                {
-                    id: "value",
-                    label: "Value",
-                    type: "text",
-                    isRequired: true
-                },
-                {
-                    id: "text",
-                    label: "Text",
-                    type: "text",
-                    isRequired: true
-                }
-            ]
-        }
+        globalFieldProps.options
     ],
     slider: [
         globalFieldProps.id,
@@ -482,7 +581,7 @@ const CommunityForm = () => {
                             {isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, borderLeft: "1px solid #ccc", padding: "12px" }}>
                                     <h3>Inspector:</h3>
-                                    <FiledConfigEditor path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} />
+                                    {selectedElement ? <FiledConfigEditor path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
                                 </ScrollPanel> 
                             ) : null}
                          </>
