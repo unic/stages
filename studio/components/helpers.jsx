@@ -13,21 +13,21 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
     if (typeof fields !== "object") return null;
     return (
         <>
-            <InsertBlock isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
                             <>
-                                {index > 0 && <InsertBlock isEditMode={isEditMode} path={createKey(parent, key)} direction="column" />}
+                                {index > 0 && <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="column" />}
                                 <EditableBlock key={createKey(parent, key)} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
                             </>
                         );
                     }
                     return (
                         <>
-                            {index > 0 && <InsertBlock isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />}
+                            {index > 0 && <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />}
                             <EditableBlock key={createKey(parent, key)} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
                         </>
                     );
@@ -36,7 +36,7 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                         // collection array
                         return (
                             <>
-                                <InsertBlock isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
+                                <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
                                 <div key={key} style={{ margin: "16px 0 32px 0" }}>
                                     {field.map((entry, index) => (
                                         <div key={`field-${key}-${index}`} className="flex">
@@ -55,7 +55,7 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                     }
                 }
             })}
-            <InsertBlock isEditMode={isEditMode} path={`${parent}.`} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={`${parent}.`} direction={type === "group" ? "column" : "row"} />
         </>
     );
 };

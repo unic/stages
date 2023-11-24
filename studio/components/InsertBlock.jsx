@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const InsertBlock = ({ path, direction, isEditMode }) => {
+const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, contextMenuRef }) => {
     const [isHover, setIsHover] = useState(false);
 
    const handleMouseEnter = () => {
@@ -26,6 +26,11 @@ const InsertBlock = ({ path, direction, isEditMode }) => {
             lineHeight: "100%",
             opacity: isHover && isEditMode ? 1 : 0,
             cursor: isHover && isEditMode ? "pointer" : "default"
+        }} onContextMenu={(e) => {
+            if (contextMenuRef && contextMenuRef.current) {
+                contextMenuRef.current.show(e);
+                setActiveContextMenuInput(`insert > ${path}`, true);
+            }
         }}><div>+</div></div>
     )
 };

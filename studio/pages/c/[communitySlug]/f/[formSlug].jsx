@@ -175,10 +175,15 @@ const CommunityForm = () => {
 
     console.log({ isEditMode, activeContextMenuInput, clipboard, currentConfig });
 
-    const contextMenuItems = [
+    const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(activeContextMenuInput) }
+    ];
+
+    const insertContextMenuItems = [
+        { label: 'Insert', icon: 'pi pi-fw pi-trash', command: () => handleInsertBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(activeContextMenuInput.replace("insert > ", "")) }
     ];
 
     const handleCutField = (path) => {
@@ -203,6 +208,28 @@ const CommunityForm = () => {
         }
     };
 
+    const handleInsertBetweenFields = (path) => {
+        // Add dummy field after path:
+        /*
+        const newConfig = [...currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        set(newConfig, realPath, clipboard);
+        setCurrentConfig(newConfig);
+        */
+    };
+
+    const handlePasteBetweenFields = (path) => {
+        // Add clipboard content after path:
+        /*
+        if (clipboard) {
+            const newConfig = [...currentConfig];
+            const realPath = getConfigPathFromDataPath(path, newConfig);
+            set(newConfig, realPath, clipboard);
+            setCurrentConfig(newConfig);
+        }
+        */
+    };
+
     const handleEditFieldConfig = (path, config) => {
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
@@ -217,7 +244,7 @@ const CommunityForm = () => {
     return (
         <div style={{ marginRight: "350px" }}>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
-            {isEditMode ? <ContextMenu model={contextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
+            {isEditMode ? <ContextMenu model={activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
             {isEditMode ? <button type="button" onClick={() => setIsEditMode(false)}>Preview</button> : <button type="button" onClick={() => setIsEditMode(true)}>Edit</button>}
             <Form
                 id="myForm"
