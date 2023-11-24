@@ -342,6 +342,20 @@ const renderFields = (setActiveContextMenuInput, contextMenuRef, setSelectedElem
     );
 };
 
+const getConfigPathFromDataPath = (path, config) => {
+    const pathSplit = path.split(".");
+    let realPath = '';
+    pathSplit.forEach((key) => {
+        const index = findIndex(realPath ? get(config, realPath) : config, { id: key.replace(/\[(\d+)\]/, "") });
+        if (index > -1) {
+            realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
+            const thisConfig = get(config, realPath);
+            if (thisConfig.fields) realPath += ".fields";
+        }
+    });
+    return realPath;
+}
+
 const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement, contextMenuRef, setActiveContextMenuInput }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
 
@@ -573,32 +587,14 @@ const CommunityForm = () => {
 
     const handleRemoveField = (path) => {
         const newConfig = [...currentConfig];
-        const pathSplit = path.split(".");
-        let realPath = '';
-        pathSplit.forEach((key) => {
-            const index = findIndex(realPath ? get(newConfig, realPath) : newConfig, { id: key.replace(/\[(\d+)\]/, "") });
-            if (index > -1) {
-                realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
-                const thisConfig = get(newConfig, realPath);
-                if (thisConfig.fields) realPath += ".fields";
-            }
-        });
+        const realPath = getConfigPathFromDataPath(path, newConfig);
         unset(newConfig, realPath);
         setCurrentConfig(newConfig);
     };
 
     const handleEditFieldConfig = (path, config) => {
         const newConfig = [...currentConfig];
-        const pathSplit = path.split(".");
-        let realPath = '';
-        pathSplit.forEach((key) => {
-            const index = findIndex(realPath ? get(newConfig, realPath) : newConfig, { id: key.replace(/\[(\d+)\]/, "") });
-            if (index > -1) {
-                realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
-                const thisConfig = get(newConfig, realPath);
-                if (thisConfig.fields) realPath += ".fields";
-            }
-        });
+        const realPath = getConfigPathFromDataPath(path, newConfig);
         if (realPath && Object.keys(config).length > 0) {
             const oldConfig = get(currentConfig, realPath);
             if (oldConfig.id !== config.id) setSelectedElement(config.id);
