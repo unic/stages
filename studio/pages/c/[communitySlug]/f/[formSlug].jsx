@@ -429,6 +429,7 @@ const CommunityForm = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedElement, setSelectedElement] = useState('');
     const [activeContextMenuInput, setActiveContextMenuInput] = useState('');
+    const [clipboard, setClipboard] = useState(null);
     const [currentConfig, setCurrentConfig] = useState([
         {
             id: "textgroup",
@@ -581,15 +582,34 @@ const CommunityForm = () => {
         }
     ]);
 
+    console.log({ isEditMode, activeContextMenuInput, clipboard, currentConfig });
+
     const contextMenuItems = [
-        { label: 'Delete', icon: 'pi pi-fw pi-trash', command: () => handleRemoveField(activeContextMenuInput) },
+        { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
+        { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
+        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(activeContextMenuInput) }
     ];
 
-    const handleRemoveField = (path) => {
+    const handleCutField = (path) => {
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
+        setClipboard(get(newConfig, realPath));
         unset(newConfig, realPath);
         setCurrentConfig(newConfig);
+    };
+
+    const handleCopyField = (path) => {
+        const realPath = getConfigPathFromDataPath(path, currentConfig);
+        setClipboard(get(currentConfig, realPath));
+    };
+
+    const handlePasteField = (path) => {
+        if (clipboard) {
+            const newConfig = [...currentConfig];
+            const realPath = getConfigPathFromDataPath(path, newConfig);
+            set(newConfig, realPath, clipboard);
+            setCurrentConfig(newConfig);
+        }
     };
 
     const handleEditFieldConfig = (path, config) => {
