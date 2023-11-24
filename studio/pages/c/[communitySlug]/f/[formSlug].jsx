@@ -344,7 +344,7 @@ const CommunityForm = () => {
         const pathSplit = path.split(".");
         let realPath = '';
         pathSplit.forEach((key) => {
-            const index = findIndex(realPath ? get(newConfig, realPath) : newConfig, { id: key });
+            const index = findIndex(realPath ? get(newConfig, realPath) : newConfig, { id: key.replace(/\[(\d+)\]/, "") });
             if (index > -1) {
                 realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
                 const thisConfig = get(newConfig, realPath);
