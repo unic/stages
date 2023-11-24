@@ -28,6 +28,8 @@ const removeStagesProps = (props) => {
     delete cleanedProps.errorRenderer;
     delete cleanedProps.validateOn;
     delete cleanedProps.initialValue;
+    delete cleanedProps.isRequired;
+    delete cleanedProps.isDisabled;
     delete cleanedProps.isDirty;
     delete cleanedProps.hasFocus;
     delete cleanedProps.regexValidation;
@@ -51,7 +53,7 @@ const MappedInputText = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><InputText {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isDisabled={props.isDisabled}><InputText {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputMask = (props) => {
