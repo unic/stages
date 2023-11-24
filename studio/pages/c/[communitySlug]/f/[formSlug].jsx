@@ -85,7 +85,105 @@ const fieldProps = {
                 }
             ]
         }
-    ]
+    ],
+    calendar: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    checkbox: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    switch: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    number: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    rating: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    buttons: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired,
+        {
+            id: "options",
+            type: "collection",
+            min: 1,
+            init: true,
+            fields: [
+                {
+                    id: "value",
+                    label: "Value",
+                    type: "text",
+                    isRequired: true
+                },
+                {
+                    id: "text",
+                    label: "Text",
+                    type: "text",
+                    isRequired: true
+                }
+            ]
+        }
+    ],
+    slider: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    toggle: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    editor: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    chips: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    color: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    mask: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
+    password: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.type,
+        globalFieldProps.isRequired
+    ],
 };
 
 const renderFields = (setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {

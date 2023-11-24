@@ -71,7 +71,7 @@ const MappedInputTextarea = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputTextarea {...mappedProps} />;
+    return <InputWrapper {...mappedProps}><InputTextarea {...mappedProps} /></InputWrapper>;
 };
 
 const MappedEditor = (props) => {
