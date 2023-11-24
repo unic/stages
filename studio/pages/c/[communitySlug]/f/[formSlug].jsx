@@ -233,7 +233,7 @@ const CommunityForm = () => {
                         <>
                             <form>
                                 <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
-                                    {renderFields(setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
+                                    {renderFields("", setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
                                 </div>
                             </form>
                             {isEditMode ? (

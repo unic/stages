@@ -4,50 +4,58 @@ import findIndex from "lodash.findindex";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 
-export const renderFields = (setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
+const createKey = (parent, key) => {
+    if (!parent) return key;
+    return `${parent}.${key}`;
+}
+
+export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
     if (typeof fields !== "object") return null;
     return (
         <>
-            <InsertBlock isEditMode={isEditMode} path="" direction={type === "group" ? "column" : "row"} />
+            <InsertBlock isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
                             <>
-                                {index > 0 && <InsertBlock isEditMode={isEditMode} path="" direction="column" />}
-                                <EditableBlock key={key} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
+                                {index > 0 && <InsertBlock isEditMode={isEditMode} path={createKey(parent, key)} direction="column" />}
+                                <EditableBlock key={createKey(parent, key)} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
                             </>
                         );
                     }
                     return (
                         <>
-                            {index > 0 && <InsertBlock isEditMode={isEditMode} path="" direction="row" />}
-                            <EditableBlock key={key} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
+                            {index > 0 && <InsertBlock isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />}
+                            <EditableBlock key={createKey(parent, key)} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
                         </>
                     );
                 } else if (typeof field === "object") {
                     if (Array.isArray(field)) {
                         // collection array
                         return (
-                            <div key={key} style={{ margin: "16px 0 32px 0" }}>
-                                {field.map((entry, index) => (
-                                    <div key={`field-${key}-${index}`} className="flex">
-                                        {renderFields(setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
-                                        <div className="flex-1" style={{ marginTop: "32px" }}>
-                                            <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
+                            <>
+                                <InsertBlock isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
+                                <div key={key} style={{ margin: "16px 0 32px 0" }}>
+                                    {field.map((entry, index) => (
+                                        <div key={`field-${key}-${index}`} className="flex">
+                                            {renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
+                                            <div className="flex-1" style={{ marginTop: "32px" }}>
+                                                <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                                <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
-                            </div>
+                                    ))}
+                                    <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
+                                </div>
+                            </>
                         );
                     } else {
-                        return <div key={key} className="flex">{renderFields(setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</div>;
+                        return <div key={key} className="flex">{renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</div>;
                     }
                 }
             })}
-            <InsertBlock isEditMode={isEditMode} path="" direction={type === "group" ? "column" : "row"} />
+            <InsertBlock isEditMode={isEditMode} path={`${parent}.`} direction={type === "group" ? "column" : "row"} />
         </>
     );
 };

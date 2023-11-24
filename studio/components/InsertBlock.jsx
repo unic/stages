@@ -12,7 +12,7 @@ const InsertBlock = ({ path, direction, isEditMode }) => {
    };
 
     return (
-        <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} style={{
+        <div title={path} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} style={{
             padding: "4px",
             margin: direction === "row" ? "4px 0" : "0 4px",
             border: "1px dashed #0A94F8",
