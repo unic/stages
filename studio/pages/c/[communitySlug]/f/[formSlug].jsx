@@ -249,7 +249,8 @@ const FiledConfigEditor = ({ path, config, handleEditFieldConfig }) => {
             <br /><br />
             {typeof config === "object" ? (
                 <Form
-                    id="configForm"
+                    key={`configForm-${config.type}`}
+                    id={`configForm-${config.type}`}
                     data={data}
                     fields={primeFields}
                     config={{
@@ -454,7 +455,6 @@ const CommunityForm = () => {
             if (oldConfig.id !== config.id) setSelectedElement(config.id);
             set(newConfig, realPath, config);
         }
-        console.log({ path, config, newConfig, realPath });
         setCurrentConfig(newConfig);
     };
 
