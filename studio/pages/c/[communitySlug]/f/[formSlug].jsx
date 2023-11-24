@@ -3,8 +3,9 @@ import { useRouter } from 'next/router';
 import { Form } from "react-stages";
 import { ScrollPanel } from 'primereact/scrollpanel';
 import primeFields from '../../../../components/primeFields';
-import { InputText } from 'primereact/inputtext';
 import set from "lodash.set";
+import get from "lodash.get";
+import findIndex from "lodash.findindex";
 
 const globalFieldProps = {
     id: {
@@ -340,7 +341,19 @@ const CommunityForm = () => {
 
     const handleEditFieldConfig = (path, config) => {
         const newConfig = [...currentConfig];
-        setCurrentConfig(set(newConfig, path, config));
+        const pathSplit = path.split(".");
+        let realPath = '';
+        pathSplit.forEach((key) => {
+            const index = findIndex(realPath ? get(newConfig, realPath) : newConfig, { id: key });
+            if (index > -1) {
+                realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
+                const thisConfig = get(newConfig, realPath);
+                if (thisConfig.fields) realPath += ".fields";
+            }
+        });
+        if (realPath && Object.keys(config).length > 0) set(newConfig, realPath, config);
+        console.log({ path, config, newConfig, realPath });
+        setCurrentConfig(newConfig);
     };
 
     return (
