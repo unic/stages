@@ -24,8 +24,6 @@ const removeStagesProps = (props) => {
             ? cleanedProps.errorRenderer(cleanedProps.error, props)
             : cleanedProps.errorRenderer
         : cleanedProps.error;
-    delete cleanedProps.isDisabled;
-    delete cleanedProps.isRequired;
     delete cleanedProps.customValidation;
     delete cleanedProps.errorRenderer;
     delete cleanedProps.validateOn;
@@ -36,10 +34,11 @@ const removeStagesProps = (props) => {
     return cleanedProps;
 };
 
-const InputWrapper = ({ children, id, label }) => {
+const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText }) => {
     return (
-        <div className="field">
-            <label htmlFor={id}>{label}</label>
+        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none" } : {}}>
+            <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label>
+            {secondaryText ? <p className="w-full">{secondaryText}</p> : null}
             <div className="w-full">{children}</div>
         </div>
     );

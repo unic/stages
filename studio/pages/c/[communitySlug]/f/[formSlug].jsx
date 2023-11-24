@@ -20,6 +20,11 @@ const globalFieldProps = {
         label: "Label",
         isRequired: true,
     },
+    secondaryText: {
+        id: "secondaryText",
+        type: "text",
+        label: "Secondary Text"
+    },
     type: {
         id: "type",
         type: "select",
@@ -138,6 +143,7 @@ const fieldProps = {
     text: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.tooltip
@@ -145,6 +151,7 @@ const fieldProps = {
     textarea: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.tooltip,
@@ -153,6 +160,7 @@ const fieldProps = {
     select: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.options,
@@ -162,6 +170,7 @@ const fieldProps = {
     calendar: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.tooltip,
@@ -213,30 +222,35 @@ const fieldProps = {
     checkbox: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     switch: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     number: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     rating: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     buttons: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.options
@@ -244,42 +258,49 @@ const fieldProps = {
     slider: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     toggle: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     editor: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     chips: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     color: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     mask: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
     password: [
         globalFieldProps.id,
         globalFieldProps.label,
+        globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired
     ],
