@@ -449,7 +449,11 @@ const CommunityForm = () => {
                 if (thisConfig.fields) realPath += ".fields";
             }
         });
-        if (realPath && Object.keys(config).length > 0) set(newConfig, realPath, config);
+        if (realPath && Object.keys(config).length > 0) {
+            const oldConfig = get(currentConfig, realPath);
+            if (oldConfig.id !== config.id) setSelectedElement(config.id);
+            set(newConfig, realPath, config);
+        }
         console.log({ path, config, newConfig, realPath });
         setCurrentConfig(newConfig);
     };
