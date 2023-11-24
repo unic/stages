@@ -2,16 +2,30 @@ import { isValidElement } from 'react';
 import get from "lodash.get";
 import findIndex from "lodash.findindex";
 import EditableBlock from './EditableBlock';
+import InsertBlock from './InsertBlock';
 
 export const renderFields = (setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
     if (typeof fields !== "object") return null;
     return (
         <>
-            {Object.keys(fields).map(key => {
+            <InsertBlock isEditMode={isEditMode} path="" direction={type === "group" ? "column" : "row"} />
+            {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 if (isValidElement(field)) {
-                    if (type === "group") return <EditableBlock key={key} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
-                    return <EditableBlock key={key} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />;
+                    if (type === "group") {
+                        return (
+                            <>
+                                {index > 0 && <InsertBlock isEditMode={isEditMode} path="" direction="column" />}
+                                <EditableBlock key={key} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
+                            </>
+                        );
+                    }
+                    return (
+                        <>
+                            {index > 0 && <InsertBlock isEditMode={isEditMode} path="" direction="row" />}
+                            <EditableBlock key={key} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
+                        </>
+                    );
                 } else if (typeof field === "object") {
                     if (Array.isArray(field)) {
                         // collection array
@@ -33,6 +47,7 @@ export const renderFields = (setActiveContextMenuInput, contextMenuRef, setSelec
                     }
                 }
             })}
+            <InsertBlock isEditMode={isEditMode} path="" direction={type === "group" ? "column" : "row"} />
         </>
     );
 };
