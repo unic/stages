@@ -10,7 +10,6 @@ const createKey = (parent, key) => {
 }
 
 export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
-    console.log({parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type});
     if (typeof fields !== "object") return null;
     return (
         <>
@@ -52,11 +51,11 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                             </>
                         );
                     } else {
-                        return <div key={key} className="flex">{renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</div>;
+                        return <div key={key} className="flex" style={{ flexWrap: "wrap" }}>{renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</div>;
                     }
                 }
             })}
-            <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={`${parent}.`} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
         </>
     );
 };

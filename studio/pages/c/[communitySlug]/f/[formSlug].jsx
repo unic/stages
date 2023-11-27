@@ -173,8 +173,6 @@ const CommunityForm = () => {
         }
     ]);
 
-    console.log({ isEditMode, selectedElement, activeContextMenuInput, clipboard, currentConfig, data });
-
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
@@ -212,11 +210,12 @@ const CommunityForm = () => {
 
     const handleInsertFieldBetweenFields = (path) => {
         // Add new group between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
         const newConfig = [...currentConfig];
-        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
-        const index = parseInt(realPath.substring(lastArrayIndex + 1));
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
             arrayToInsertInto = get(newConfig, parentOfRealPath);
@@ -234,11 +233,12 @@ const CommunityForm = () => {
 
     const handleInsertGroupBetweenFields = (path) => {
         // Add new group between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
         const newConfig = [...currentConfig];
-        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
-        const index = parseInt(realPath.substring(lastArrayIndex + 1));
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
             arrayToInsertInto = get(newConfig, parentOfRealPath);

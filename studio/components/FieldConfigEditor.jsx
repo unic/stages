@@ -7,8 +7,6 @@ import { renderFields } from './helpers';
 const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     const [data, setData] = useState(config);
 
-    console.log("FieldConfigEditor", { path, config });
-
     useEffect(() => {
         setData(config);
     }, [config]);
@@ -29,7 +27,6 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
                         }
                     }}
                     render={({ actionProps, fieldProps }) => {
-                        console.log({ fieldProps });
                         return (
                             <>
                                 <form>
