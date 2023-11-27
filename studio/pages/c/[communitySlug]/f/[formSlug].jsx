@@ -220,14 +220,17 @@ const CommunityForm = () => {
 
     const handlePasteBetweenFields = (path) => {
         // Add clipboard content after path:
-        /*
         if (clipboard) {
             const newConfig = [...currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
-            set(newConfig, realPath, clipboard);
+            const lastArrayIndex = realPath.lastIndexOf("[");
+            const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+            const index = parseInt(realPath.substring(lastArrayIndex + 1));
+            const arrayToInsertInto = get(newConfig, parentOfRealPath);
+            arrayToInsertInto.splice(index, 0, {...clipboard, id: `pasted-${new Date().getTime()}`});
+            set(newConfig, parentOfRealPath, arrayToInsertInto);
             setCurrentConfig(newConfig);
         }
-        */
     };
 
     const handleEditFieldConfig = (path, config) => {
