@@ -3,13 +3,15 @@ import { useState } from 'react';
 const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, contextMenuRef }) => {
     const [isHover, setIsHover] = useState(false);
 
-   const handleMouseEnter = () => {
-      setIsHover(true);
-   };
+    const handleMouseEnter = () => {
+        setIsHover(true);
+    };
 
-   const handleMouseLeave = () => {
-      setIsHover(false);
-   };
+    const handleMouseLeave = () => {
+        setIsHover(false);
+    };
+
+    if (!isEditMode) return null;
 
     return (
         <div title={path} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} style={{
