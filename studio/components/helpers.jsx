@@ -11,7 +11,7 @@ const createKey = (parent, key) => {
     return `${parent}.${key}`;
 }
 
-export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
+export const renderFields = (handleEditCollection, handleEditGroup, parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
     if (typeof fields !== "object") return null;
     return (
         <>
@@ -39,10 +39,10 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                         return (
                             <>
                                 <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
-                                <CollectionContainer key={key}>
+                                <CollectionContainer key={key} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
                                     {field.map((entry, index) => (
                                         <div key={`field-${key}-${index}`} className="flex">
-                                            {renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
+                                            {renderFields(handleEditCollection, handleEditGroup, createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
                                             <div className="flex-1" style={{ marginTop: "32px" }}>
                                                 <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
                                             </div>
@@ -53,7 +53,7 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                             </>
                         );
                     } else {
-                        return <GroupContainer key={key}>{renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</GroupContainer>;
+                        return <GroupContainer handleEditGroup={handleEditGroup} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} key={key}>{renderFields(handleEditCollection, handleEditGroup, createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</GroupContainer>;
                     }
                 }
             })}

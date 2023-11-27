@@ -131,6 +131,27 @@ const globalFieldProps = {
 }
 
 const fieldProps = {
+    group: [
+        globalFieldProps.id,
+    ],
+    collection: [
+        globalFieldProps.id,
+        {
+            id: "init",
+            type: "checkbox",
+            label: "Init?"
+        },
+        {
+            id: "min",
+            type: "number",
+            label: "Min entries"
+        },
+        {
+            id: "max",
+            type: "number",
+            label: "Max entries"
+        },
+    ],
     text: [
         globalFieldProps.id,
         globalFieldProps.label,

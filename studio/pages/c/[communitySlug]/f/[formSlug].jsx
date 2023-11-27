@@ -343,6 +343,16 @@ const CommunityForm = () => {
         setCurrentConfig(newConfig);
     };
 
+    const handleEditCollection = (path) => {
+        console.log("edit collection", {path});
+        setSelectedElement(path);
+    };
+    
+    const handleEditGroup = (path) => {
+        console.log("edit group", {path});
+        setSelectedElement(path);
+    };
+
     return (
         <div style={{ marginRight: "350px" }}>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
@@ -362,7 +372,7 @@ const CommunityForm = () => {
                         <>
                             <form>
                                 <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
-                                    {renderFields("", setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
+                                    {renderFields(handleEditCollection, handleEditGroup, "", setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
                                 </div>
                             </form>
                             {isEditMode ? (
