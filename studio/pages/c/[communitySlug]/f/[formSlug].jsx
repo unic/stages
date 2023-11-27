@@ -226,7 +226,12 @@ const CommunityForm = () => {
             const lastArrayIndex = realPath.lastIndexOf("[");
             const parentOfRealPath = realPath.substring(0, lastArrayIndex);
             const index = parseInt(realPath.substring(lastArrayIndex + 1));
-            const arrayToInsertInto = get(newConfig, parentOfRealPath);
+            let arrayToInsertInto;
+            if (parentOfRealPath !== "") {
+                arrayToInsertInto = get(newConfig, parentOfRealPath);
+            } else {
+                arrayToInsertInto = newConfig;
+            }
             arrayToInsertInto.splice(index, 0, {...clipboard, id: `pasted-${new Date().getTime()}`});
             set(newConfig, parentOfRealPath, arrayToInsertInto);
             setCurrentConfig(newConfig);
