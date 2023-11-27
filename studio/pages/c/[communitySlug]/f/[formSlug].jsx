@@ -182,8 +182,9 @@ const CommunityForm = () => {
     ];
 
     const insertContextMenuItems = [
-        { label: 'Insert', icon: 'pi pi-fw pi-trash', command: () => handleInsertBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(activeContextMenuInput.replace("insert > ", "")) }
+        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
     ];
 
     const handleCutField = (path) => {
@@ -208,14 +209,76 @@ const CommunityForm = () => {
         }
     };
 
-    const handleInsertBetweenFields = (path) => {
-        // Add dummy field after path:
-        /*
+    const handleInsertGroupBetweenFields = (path) => {
+        // Add new group between fields:
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
-        set(newConfig, realPath, clipboard);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1));
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: `pasted-${new Date().getTime()}`,
+            type: "group",
+            fields: [  
+                {
+                    id: "field1",
+                    label: "Field 1",
+                    type: "text",
+                    isRequired: true
+                },
+                {
+                    id: "field2",
+                    label: "Field 2",
+                    type: "text",
+                    isRequired: true
+                }
+            ]
+        });
+        set(newConfig, parentOfRealPath, arrayToInsertInto);
         setCurrentConfig(newConfig);
-        */
+    };
+
+    const handleInsertCollectionBetweenFields = (path) => {
+        // Add new group between fields:
+        const newConfig = [...currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1));
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: `pasted-${new Date().getTime()}`,
+            type: "collection",
+            init: true,
+            min: 1,
+            fields: [  
+                {
+                    id: "field1",
+                    label: "Field 1",
+                    type: "text",
+                    isRequired: true
+                },
+                {
+                    id: "field2",
+                    label: "Field 2",
+                    type: "text",
+                    isRequired: true
+                }
+            ]
+        });
+        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        setCurrentConfig(newConfig);
     };
 
     const handlePasteBetweenFields = (path) => {
