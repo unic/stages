@@ -173,7 +173,7 @@ const CommunityForm = () => {
         }
     ]);
 
-    console.log({ isEditMode, selectedElement, activeContextMenuInput, clipboard, currentConfig });
+    console.log({ isEditMode, selectedElement, activeContextMenuInput, clipboard, currentConfig, data });
 
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
@@ -183,6 +183,7 @@ const CommunityForm = () => {
 
     const insertContextMenuItems = [
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
     ];
@@ -209,6 +210,28 @@ const CommunityForm = () => {
         }
     };
 
+    const handleInsertFieldBetweenFields = (path) => {
+        // Add new group between fields:
+        const newConfig = [...currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1));
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: `inserted-${new Date().getTime()}`,
+            type: "text",
+            label: "Field",
+        });
+        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        setCurrentConfig(newConfig);
+    };
+
     const handleInsertGroupBetweenFields = (path) => {
         // Add new group between fields:
         const newConfig = [...currentConfig];
@@ -223,7 +246,7 @@ const CommunityForm = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: `pasted-${new Date().getTime()}`,
+            id: `inserted-${new Date().getTime()}`,
             type: "group",
             fields: [  
                 {
@@ -251,6 +274,7 @@ const CommunityForm = () => {
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
         const index = parseInt(realPath.substring(lastArrayIndex + 1));
+        const newTempId =`inserted-${new Date().getTime()}`
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
             arrayToInsertInto = get(newConfig, parentOfRealPath);
@@ -258,7 +282,7 @@ const CommunityForm = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: `pasted-${new Date().getTime()}`,
+            id: newTempId,
             type: "collection",
             init: true,
             min: 1,
@@ -277,8 +301,15 @@ const CommunityForm = () => {
                 }
             ]
         });
+
+        // Update config:
         set(newConfig, parentOfRealPath, arrayToInsertInto);
         setCurrentConfig(newConfig);
+
+        // Update data (for collections, a new empty array has to be addeed):
+        const newData = {...data};
+        newData[newTempId] = [{}];
+        setData(newData);
     };
 
     const handlePasteBetweenFields = (path) => {
