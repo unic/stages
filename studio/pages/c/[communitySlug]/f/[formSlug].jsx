@@ -338,7 +338,11 @@ const CommunityForm = () => {
         if (realPath && Object.keys(config).length > 0) {
             const oldConfig = get(currentConfig, realPath);
             if (oldConfig.id !== config.id) setSelectedElement(config.id);
-            set(newConfig, realPath, config);
+            if (config.type === "group" || config.type === "collection") {
+                set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
+            } else {
+                set(newConfig, realPath, config);
+            }
         }
         setCurrentConfig(newConfig);
     };

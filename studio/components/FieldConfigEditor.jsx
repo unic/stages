@@ -31,7 +31,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
                             <>
                                 <form>
                                     <div style={{ position: "relative" }}>
-                                        {renderFields("", () => {}, null, () => {}, false, '', fieldProps, fieldProps.fields)}
+                                        {renderFields(() => {}, () => {}, "", () => {}, null, () => {}, false, '', fieldProps, fieldProps.fields)}
                                     </div>
                                 </form>
                             </>
