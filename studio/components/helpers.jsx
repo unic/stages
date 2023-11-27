@@ -10,6 +10,7 @@ const createKey = (parent, key) => {
 }
 
 export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type = "field") => {
+    console.log({parent, setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fields, type});
     if (typeof fields !== "object") return null;
     return (
         <>

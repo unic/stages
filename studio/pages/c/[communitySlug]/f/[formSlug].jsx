@@ -173,7 +173,7 @@ const CommunityForm = () => {
         }
     ]);
 
-    console.log({ isEditMode, activeContextMenuInput, clipboard, currentConfig });
+    console.log({ isEditMode, selectedElement, activeContextMenuInput, clipboard, currentConfig });
 
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
