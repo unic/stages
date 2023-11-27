@@ -3,6 +3,8 @@ import get from "lodash.get";
 import findIndex from "lodash.findindex";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
+import GroupContainer from './GroupContainer';
+import CollectionContainer from './CollectionContainer';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -37,7 +39,7 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                         return (
                             <>
                                 <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
-                                <div key={key} style={{ margin: "16px 0 32px 0" }}>
+                                <CollectionContainer key={key}>
                                     {field.map((entry, index) => (
                                         <div key={`field-${key}-${index}`} className="flex">
                                             {renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
@@ -47,11 +49,11 @@ export const renderFields = (parent, setActiveContextMenuInput, contextMenuRef, 
                                         </div>
                                     ))}
                                     <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
-                                </div>
+                                </CollectionContainer>
                             </>
                         );
                     } else {
-                        return <div key={key} className="flex" style={{ flexWrap: "wrap" }}>{renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</div>;
+                        return <GroupContainer key={key}>{renderFields(createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</GroupContainer>;
                     }
                 }
             })}
