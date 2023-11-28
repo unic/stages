@@ -333,6 +333,7 @@ const CommunityForm = () => {
     };
 
     const handleEditFieldConfig = (path, config) => {
+        if (!config.id) return;
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         if (realPath && Object.keys(config).length > 0) {
