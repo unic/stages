@@ -397,6 +397,7 @@ const CommunityForm = () => {
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
             {isEditMode ? <ContextMenu model={activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
             {isEditMode ? <button type="button" onClick={() => setIsEditMode(false)}>Preview</button> : <button type="button" onClick={() => setIsEditMode(true)}>Edit</button>}
+            {!isEditMode ? <div><br /></div> : null}
             <Form
                 id="myForm"
                 data={data}
