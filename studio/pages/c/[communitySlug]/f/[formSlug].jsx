@@ -424,11 +424,12 @@ const CommunityForm = () => {
             {isEditMode ? <ContextMenu model={activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
             {isEditMode ? <button type="button" onClick={() => setIsEditMode(false)}>Preview</button> : <button type="button" onClick={() => setIsEditMode(true)}>Edit</button>}
             {isEditMode ? (
-                <div>
+                <>
+                    {" "}
                     <button type='button' onClick={exportToJson}>
                         Export Config
                     </button>
-                </div>
+                </>
             ) : null}
             {!isEditMode ? <div><br /></div> : null}
             <Form
