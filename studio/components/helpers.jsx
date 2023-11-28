@@ -41,9 +41,9 @@ export const renderFields = (handleEditCollection, handleEditGroup, parent, setA
                                 <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
                                 <CollectionContainer key={key} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
                                     {field.map((entry, index) => (
-                                        <div key={`field-${key}-${index}`} className="flex">
+                                        <div key={`field-${key}-${index}`} className="flex" style={{ position: "relative" }}>
                                             {renderFields(handleEditCollection, handleEditGroup, createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
-                                            <div className="flex-1" style={{ marginTop: "32px" }}>
+                                            <div style={{ position: "absolute", right: "8px", top: "calc(50% - 4px)" }}>
                                                 <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
                                             </div>
                                         </div>

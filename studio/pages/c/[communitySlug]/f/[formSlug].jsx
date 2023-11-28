@@ -373,7 +373,7 @@ const CommunityForm = () => {
                     return (
                         <>
                             <form>
-                                <div style={{ position: "relative", maxWidth: "800px", margin: "0 auto" }}>
+                                <div style={{ position: "relative", maxWidth: "960px", margin: "0 auto" }}>
                                     {renderFields(handleEditCollection, handleEditGroup, "", setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
                                 </div>
                             </form>
