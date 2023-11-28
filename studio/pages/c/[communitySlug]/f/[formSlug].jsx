@@ -177,7 +177,8 @@ const CommunityForm = () => {
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(activeContextMenuInput) },
-        { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(activeContextMenuInput) }
+        { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(activeContextMenuInput) },
+        { label: 'Add to collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(activeContextMenuInput) }
     ];
 
     const insertContextMenuItems = [
@@ -206,6 +207,27 @@ const CommunityForm = () => {
         }
         set(newConfig, realPath, newFieldConfig);
         setCurrentConfig(newConfig);
+    };
+
+    const handleCollectionField = (path) => {
+        const newConfig = [...currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const oldFieldConfig = get(newConfig, realPath);
+        const newTempId = `collection-${new Date().getTime()}`
+        const newFieldConfig = {
+            id: newTempId,
+            type: "collection",
+            init: true,
+            min: 1,
+            fields: [oldFieldConfig]
+        }
+        set(newConfig, realPath, newFieldConfig);
+        setCurrentConfig(newConfig);
+
+        // Update data (for collections, a new empty array has to be addeed):
+        const newData = {...data};
+        newData[newTempId] = [{}];
+        setData(newData);
     };
 
     const handleCopyField = (path) => {
