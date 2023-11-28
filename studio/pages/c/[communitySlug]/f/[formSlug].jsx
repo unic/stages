@@ -348,12 +348,10 @@ const CommunityForm = () => {
     };
 
     const handleEditCollection = (path) => {
-        console.log("edit collection", {path});
         setSelectedElement(path);
     };
     
     const handleEditGroup = (path) => {
-        console.log("edit group", {path});
         setSelectedElement(path);
     };
 
@@ -382,7 +380,7 @@ const CommunityForm = () => {
                             {isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, borderLeft: "1px solid #ccc", padding: "12px" }}>
                                     <h3>Inspector:</h3>
-                                    {selectedElement ? <FieldConfigEditor path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                    {selectedElement ? <FieldConfigEditor key={selectedElement} path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
                                 </ScrollPanel> 
                             ) : null}
                          </>

@@ -9,7 +9,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
 
     useEffect(() => {
         setData(config);
-    }, [config]);
+    }, [config, path]);
 
     return (
         <>
