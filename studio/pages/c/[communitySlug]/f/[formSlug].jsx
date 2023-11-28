@@ -176,7 +176,8 @@ const CommunityForm = () => {
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
-        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(activeContextMenuInput) }
+        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(activeContextMenuInput) },
+        { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(activeContextMenuInput) }
     ];
 
     const insertContextMenuItems = [
@@ -191,6 +192,19 @@ const CommunityForm = () => {
         const realPath = getConfigPathFromDataPath(path, newConfig);
         setClipboard(get(newConfig, realPath));
         unset(newConfig, realPath);
+        setCurrentConfig(newConfig);
+    };
+
+    const handleGroupField = (path) => {
+        const newConfig = [...currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const oldFieldConfig = get(newConfig, realPath);
+        const newFieldConfig = {
+            id: `group-${new Date().getTime()}`,
+            type: "group",
+            fields: [oldFieldConfig]
+        }
+        set(newConfig, realPath, newFieldConfig);
         setCurrentConfig(newConfig);
     };
 
