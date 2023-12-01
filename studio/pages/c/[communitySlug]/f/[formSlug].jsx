@@ -265,6 +265,7 @@ const CommunityForm = () => {
         });
         set(newConfig, parentOfRealPath, arrayToInsertInto);
         setCurrentConfig(newConfig);
+        setSelectedElement('');
     };
 
     const handleInsertGroupBetweenFields = (path) => {
@@ -301,6 +302,7 @@ const CommunityForm = () => {
         });
         set(newConfig, parentOfRealPath, arrayToInsertInto);
         setCurrentConfig(newConfig);
+        setSelectedElement('');
     };
 
     const handleInsertCollectionBetweenFields = (path) => {
@@ -346,6 +348,8 @@ const CommunityForm = () => {
         const newData = {...data};
         newData[newTempId] = [{}];
         setData(newData);
+
+        setSelectedElement('');
     };
 
     const handlePasteBetweenFields = (path) => {
@@ -366,6 +370,7 @@ const CommunityForm = () => {
             set(newConfig, parentOfRealPath, arrayToInsertInto);
             setCurrentConfig(newConfig);
         }
+        setSelectedElement('');
     };
 
     const handleEditFieldConfig = (path, config) => {
@@ -420,7 +425,8 @@ const CommunityForm = () => {
 
     const doesPathExist = (path) => {
         const configPath = getConfigPathFromDataPath(path, currentConfig);
-        return configPath !== '';
+        const config = get(currentConfig, configPath);
+        return configPath !== '' && config;
     };
 
     return (

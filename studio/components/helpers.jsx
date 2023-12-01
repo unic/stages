@@ -67,11 +67,9 @@ export const getConfigPathFromDataPath = (path, config) => {
     let realPath = '';
     pathSplit.forEach((key) => {
         const index = findIndex(realPath ? get(config, realPath) : config, { id: key.replace(/\[(\d+)\]/, "") });
-        if (index > -1) {
-            realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
-            const thisConfig = get(config, realPath);
-            if (thisConfig.fields) realPath += ".fields";
-        }
+        realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
+        const thisConfig = get(config, realPath);
+        if (thisConfig && thisConfig.fields) realPath += ".fields";
     });
     return realPath;
 };
