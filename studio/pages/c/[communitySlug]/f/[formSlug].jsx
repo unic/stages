@@ -374,12 +374,12 @@ const CommunityForm = () => {
         const realPath = getConfigPathFromDataPath(path, newConfig);
         if (realPath && Object.keys(config).length > 0) {
             const oldConfig = get(currentConfig, realPath);
-            if (oldConfig.id !== config.id) setSelectedElement(config.id);
             if (config.type === "group" || config.type === "collection") {
                 set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
             } else {
                 set(newConfig, realPath, config);
             }
+            if (oldConfig.id !== config.id) setSelectedElement(config.id);
         }
         setCurrentConfig(newConfig);
     };
@@ -418,6 +418,11 @@ const CommunityForm = () => {
         })
     }
 
+    const doesPathExist = (path) => {
+        console.log(path);
+        return false;
+    };
+
     return (
         <div style={{ marginRight: "350px" }}>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
@@ -452,7 +457,7 @@ const CommunityForm = () => {
                             {isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, borderLeft: "1px solid #ccc", padding: "12px" }}>
                                     <h3>Inspector:</h3>
-                                    {selectedElement ? <FieldConfigEditor key={selectedElement} path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                    {selectedElement ? <FieldConfigEditor key={selectedElement} path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} doesPathExist={doesPathExist} /> : null}
                                 </ScrollPanel> 
                             ) : null}
                          </>

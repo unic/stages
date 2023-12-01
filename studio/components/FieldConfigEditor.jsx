@@ -7,7 +7,9 @@ import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { renderFields } from './helpers';
 
-const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
+const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist }) => {
+    if (!config) return null;
+    
     const [data, setData] = useState(config);
     const [newId, setNewId] = useState(config.id);
     const [showIdEditDialog, setShowIdEditDialog] = useState(false);
@@ -17,8 +19,11 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     }, [config, path]);
 
     const handleChangeId = () => {
-        if (newId) handleEditFieldConfig(path, {...data, id: newId});
-        setShowIdEditDialog(false);
+        const newPath = path.indexOf(".") === -1 ? newId : path.split('.').slice(0,-1).join('.') + '.' + newId;
+        if (newId && !doesPathExist(newPath)) {
+            handleEditFieldConfig(path, {...data, id: newId});
+            setShowIdEditDialog(false);
+        }
     }
 
     return (
@@ -28,7 +33,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
                 <Button label="Change" onClick={() => handleChangeId()} />
             )}>
                 <p className="m-0">
-                    Change id of field from <strong>{data.id}</strong> to <InputText value={data.id} onChange={e => setNewId(e.target.value)} />
+                    Change id of field from <strong>{data.id}</strong> to <InputText value={newId} onChange={e => setNewId(e.target.value)} />
                 </p>
                 <p style={{ color: "red" }}>Note: The id has to be unique.</p>
             </Dialog>
