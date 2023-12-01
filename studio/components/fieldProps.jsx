@@ -4,6 +4,7 @@ const globalFieldProps = {
         type: "text",
         label: "ID",
         isRequired: true,
+        isDisabled: true
     },
     label: {
         id: "label",
