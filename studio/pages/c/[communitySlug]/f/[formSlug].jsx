@@ -419,8 +419,8 @@ const CommunityForm = () => {
     }
 
     const doesPathExist = (path) => {
-        console.log(path);
-        return false;
+        const configPath = getConfigPathFromDataPath(path, currentConfig);
+        return configPath !== '';
     };
 
     return (
