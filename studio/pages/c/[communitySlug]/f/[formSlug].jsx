@@ -188,6 +188,24 @@ const CommunityForm = () => {
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
     ];
 
+    const doesPathExist = (path) => {
+        const configPath = getConfigPathFromDataPath(path, currentConfig);
+        const config = get(currentConfig, configPath);
+        return configPath !== '' && config;
+    };
+
+    const createNewFieldID = (path, type) => {
+        const parentPath = path.substring(0, path.lastIndexOf("."));
+        let counter = 1;
+        let newFieldID = `${type}${counter}`;
+        while (doesPathExist(parentPath ? `${parentPath}.${newFieldID}` : newFieldID)) {
+            counter++;
+            newFieldID = `${type}${counter}`;
+        }
+        console.log({path, parentPath, type, newFieldID, currentConfig});
+        return newFieldID;
+    };
+
     const handleCutField = (path) => {
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
@@ -201,7 +219,7 @@ const CommunityForm = () => {
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
         const newFieldConfig = {
-            id: `group-${new Date().getTime()}`,
+            id: createNewFieldID(path, "group"),
             type: "group",
             fields: [oldFieldConfig]
         }
@@ -213,7 +231,7 @@ const CommunityForm = () => {
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
-        const newTempId = `collection-${new Date().getTime()}`
+        const newTempId = createNewFieldID(path, "collection");
         const newFieldConfig = {
             id: newTempId,
             type: "collection",
@@ -259,7 +277,7 @@ const CommunityForm = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: `inserted-${new Date().getTime()}`,
+            id: createNewFieldID(path, "text"),
             type: "text",
             label: "Field",
         });
@@ -283,7 +301,7 @@ const CommunityForm = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: `inserted-${new Date().getTime()}`,
+            id: createNewFieldID(path, "group"),
             type: "group",
             fields: [  
                 {
@@ -312,7 +330,7 @@ const CommunityForm = () => {
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
         const index = parseInt(realPath.substring(lastArrayIndex + 1));
-        const newTempId =`inserted-${new Date().getTime()}`
+        const newTempId = createNewFieldID(path, "collection");
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
             arrayToInsertInto = get(newConfig, parentOfRealPath);
@@ -366,7 +384,7 @@ const CommunityForm = () => {
             } else {
                 arrayToInsertInto = newConfig;
             }
-            arrayToInsertInto.splice(index, 0, {...clipboard, id: `pasted-${new Date().getTime()}`});
+            arrayToInsertInto.splice(index, 0, {...clipboard, id: createNewFieldID(path, clipboard.type)});
             set(newConfig, parentOfRealPath, arrayToInsertInto);
             setCurrentConfig(newConfig);
         }
@@ -422,12 +440,6 @@ const CommunityForm = () => {
             fileType: 'text/json',
         })
     }
-
-    const doesPathExist = (path) => {
-        const configPath = getConfigPathFromDataPath(path, currentConfig);
-        const config = get(currentConfig, configPath);
-        return configPath !== '' && config;
-    };
 
     return (
         <div style={{ marginRight: "350px" }}>
