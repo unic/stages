@@ -172,7 +172,7 @@ const CommunityForm = () => {
             isRequired: true
         }
     ]);
-
+console.log({ currentConfig, selectedElement, clipboard });
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
@@ -202,19 +202,20 @@ const CommunityForm = () => {
             counter++;
             newFieldID = `${type}${counter}`;
         }
-        console.log({path, parentPath, type, newFieldID, currentConfig});
         return newFieldID;
     };
 
     const handleCutField = (path) => {
+        console.log("--> handleCutField <--");
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         setClipboard(get(newConfig, realPath));
         unset(newConfig, realPath);
-        setCurrentConfig(newConfig);
+        setCurrentConfig(Array.isArray(newConfig) ? newConfig.filter(item => item) : newConfig);
     };
 
     const handleGroupField = (path) => {
+        console.log("--> handleGroupField <--");
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
@@ -228,6 +229,7 @@ const CommunityForm = () => {
     };
 
     const handleCollectionField = (path) => {
+        console.log("--> handleCollectionField <--");
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
@@ -249,11 +251,13 @@ const CommunityForm = () => {
     };
 
     const handleCopyField = (path) => {
+        console.log("--> handleCopyField <--");
         const realPath = getConfigPathFromDataPath(path, currentConfig);
         setClipboard(get(currentConfig, realPath));
     };
 
     const handlePasteField = (path) => {
+        console.log("--> handlePasteField <--");
         if (clipboard) {
             const newConfig = [...currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
@@ -263,6 +267,7 @@ const CommunityForm = () => {
     };
 
     const handleInsertFieldBetweenFields = (path) => {
+        console.log("--> handleInsertFieldBetweenFields <--");
         // Add new group between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
         const newConfig = [...currentConfig];
@@ -287,6 +292,7 @@ const CommunityForm = () => {
     };
 
     const handleInsertGroupBetweenFields = (path) => {
+        console.log("--> handleInsertGroupBetweenFields <--");
         // Add new group between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
         const newConfig = [...currentConfig];
@@ -324,6 +330,7 @@ const CommunityForm = () => {
     };
 
     const handleInsertCollectionBetweenFields = (path) => {
+        console.log("--> handleInsertCollectionBetweenFields <--");
         // Add new group between fields:
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
@@ -371,9 +378,10 @@ const CommunityForm = () => {
     };
 
     const handlePasteBetweenFields = (path) => {
+        console.log("--> handlePasteBetweenFields <--");
         // Add clipboard content after path:
         if (clipboard) {
-            const newConfig = [...currentConfig];
+            let newConfig = [...currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
             const lastArrayIndex = realPath.lastIndexOf("[");
             const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -385,13 +393,19 @@ const CommunityForm = () => {
                 arrayToInsertInto = newConfig;
             }
             arrayToInsertInto.splice(index, 0, {...clipboard, id: createNewFieldID(path, clipboard.type)});
-            set(newConfig, parentOfRealPath, arrayToInsertInto);
+            if (parentOfRealPath) {
+                set(newConfig, parentOfRealPath, arrayToInsertInto);
+            } else {
+                newConfig = arrayToInsertInto;
+            }
+            console.log({ path, realPath, parentOfRealPath, clipboard, arrayToInsertInto, newConfig });
             setCurrentConfig(newConfig);
         }
         setSelectedElement('');
     };
 
     const handleEditFieldConfig = (path, config) => {
+        console.log("--> handleEditFieldConfig <--");
         if (!config.id) return;
         const newConfig = [...currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
@@ -408,10 +422,12 @@ const CommunityForm = () => {
     };
 
     const handleEditCollection = (path) => {
+        console.log("--> handleEditCollection <--");
         setSelectedElement(path);
     };
     
     const handleEditGroup = (path) => {
+        console.log("--> handleEditGroup <--");
         setSelectedElement(path);
     };
 
