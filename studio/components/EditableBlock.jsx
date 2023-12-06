@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement, contextMenuRef, setActiveContextMenuInput }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
+
+    useEffect(() => {
+        if (selectedElement !== path) setIsInEditMode(false);
+    }, [path, selectedElement]);
 
     return (
         <div className={inGroup ? "flex-1" : undefined} style={{
@@ -15,8 +19,12 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
                 contextMenuRef.current.show(e);
                 setActiveContextMenuInput(path);
             }
-        }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}>
-            {isInEditMode && isEditMode ? <button style={{ position: "absolute", top: "4px", right: "4px" }} type="button" onClick={() => setSelectedElement(path)}>edit</button> : null}
+        }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
+        onClick={() => isInEditMode && isEditMode ? setSelectedElement(path) : null}
+        >
+            {isInEditMode && isEditMode ? (
+                <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit</span>
+            ) : null}
             {field}
         </div>
     );
