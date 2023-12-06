@@ -1,8 +1,26 @@
-const GroupContainer = ({ children, handleEditGroup, isEditMode, path }) => {
+import { useState, useEffect } from 'react';
+
+const GroupContainer = ({ children, handleEditGroup, isEditMode, path, selectedElement }) => {
+    const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
+
+    useEffect(() => {
+        if (selectedElement !== path) setIsInEditMode(false);
+    }, [path, selectedElement]);
+
     return (
-        <div className="flex" style={{ position: "relative", flexWrap: "wrap", border: "1px #bbb dashed", borderRadius: "5px", padding: "2px", margin: "0 4px 4px 0" }}>
+        <div
+            className="flex"
+            style={{ position: "relative", flexWrap: "wrap", border: isInEditMode && isEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)", borderRadius: "5px", padding: "2px", margin: "0 4px 4px 0" }}
+            onClick={(e) => {
+                e.stopPropagation();
+                if (isEditMode) handleEditGroup(path);
+            }}
+            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
+        >
             {children}
-            {isEditMode ? <button style={{ position: "absolute", top: "-16px", right: "4px" }} type="button" onClick={() => handleEditGroup(path)}>edit group</button> : null}
+            {isEditMode && isInEditMode ? (
+                <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit group</span>
+            ) : null}
         </div>
     );
 };

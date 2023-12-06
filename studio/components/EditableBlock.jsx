@@ -20,7 +20,10 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
                 setActiveContextMenuInput(path);
             }
         }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
-        onClick={() => isInEditMode && isEditMode ? setSelectedElement(path) : null}
+        onClick={(e) => {
+            e.stopPropagation();
+            if (isInEditMode && isEditMode ) setSelectedElement(path);
+        }}
         >
             {isInEditMode && isEditMode ? (
                 <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit</span>

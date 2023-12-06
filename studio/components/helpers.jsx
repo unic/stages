@@ -39,7 +39,7 @@ export const renderFields = (handleEditCollection, handleEditGroup, parent, setA
                         return (
                             <>
                                 <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
-                                <CollectionContainer key={key} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
+                                <CollectionContainer key={key} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
                                     {field.map((entry, index) => (
                                         <div key={`field-${key}-${index}`} className="flex" style={{ position: "relative" }}>
                                             {renderFields(handleEditCollection, handleEditGroup, createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, entry, "group")}
@@ -53,7 +53,7 @@ export const renderFields = (handleEditCollection, handleEditGroup, parent, setA
                             </>
                         );
                     } else {
-                        return <GroupContainer handleEditGroup={handleEditGroup} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} key={key}>{renderFields(handleEditCollection, handleEditGroup, createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</GroupContainer>;
+                        return <GroupContainer selectedElement={selectedElement} handleEditGroup={handleEditGroup} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} key={key}>{renderFields(handleEditCollection, handleEditGroup, createKey(parent, key), setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, field, "group")}</GroupContainer>;
                     }
                 }
             })}
