@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, contextMenuRef }) => {
+const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, contextMenuRef, grow }) => {
     const [isHover, setIsHover] = useState(false);
 
     const handleMouseEnter = () => {
@@ -15,7 +15,7 @@ const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, c
 
     return (
         <div title={path} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} style={{
-            padding: "4px",
+            padding: grow ? "4px 32px" : "4px",
             margin: direction === "row" ? "4px 0" : "0 4px",
             border: "1px dashed #0A94F8",
             borderRadius: "5px",

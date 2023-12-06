@@ -49,7 +49,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     return (
         <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none" } : {}}>
             <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label>
-            {secondaryText ? <p className="w-full">{secondaryText}</p> : null}
+            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
             <div className="w-full">{children}</div>
         </div>
     );

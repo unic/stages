@@ -57,7 +57,7 @@ export const renderFields = (handleEditCollection, handleEditGroup, parent, setA
                     }
                 }
             })}
-            <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock grow setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
         </>
     );
 };
