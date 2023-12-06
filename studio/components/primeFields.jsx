@@ -42,7 +42,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
             <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>
                 <div style={{ flexGrow: 1 }}><label htmlFor={id}>{label}{isRequired ? " *" : ""}</label></div>
                 <div>&nbsp;</div>
-                <div style={{ minWidth: "212px", maxWidth: "212px" }}>{children}</div>
+                <div style={{ minWidth: "202px", maxWidth: "202px" }}>{children}</div>
             </div>
         );
     }

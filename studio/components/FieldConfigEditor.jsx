@@ -7,6 +7,17 @@ import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { renderFields } from './helpers';
 
+const InspectorSpacer = () => {
+    return (
+        <div style={{
+            width: "100%",
+            height: "1px",
+            margin: "16px 0",
+            backgroundColor: "#eee"
+        }} />
+    );
+};
+
 const parseConfig = config => {
     if (Array.isArray(config)) {
         return config.map(c => {
@@ -40,7 +51,11 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist 
 
     return (
         <>
-            <Button label="Edit ID" outlined onClick={() => setShowIdEditDialog(true)} size="small" />
+            <div className="flex">
+                <div className="flex-grow-1" style={{ paddingTop: "6px" }}><code>{path}</code></div>
+                <div><Button label="Edit Field ID" outlined onClick={() => setShowIdEditDialog(true)} size="small" /></div>
+            </div>
+            <InspectorSpacer />
             <Dialog header="Header" visible={showIdEditDialog} style={{ width: '50vw' }} onHide={() => setShowIdEditDialog(false)} footer={(
                 <Button label="Change" onClick={() => handleChangeId()} />
             )}>
@@ -49,7 +64,6 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist 
                 </p>
                 <p style={{ color: "red" }}>Note: The id has to be unique.</p>
             </Dialog>
-            <br /><br />
             {typeof config === "object" ? (
                 <Form
                     key={`configForm-${config.type}`}

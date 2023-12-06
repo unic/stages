@@ -484,12 +484,12 @@ console.log({ currentConfig, selectedElement, clipboard });
                     return (
                         <>
                             <form>
-                                <div style={{ position: "relative", maxWidth: "960px", margin: "0 auto" }}>
+                                <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto" }}>
                                     {renderFields(handleEditCollection, handleEditGroup, "", setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
                                 </div>
                             </form>
                             {isEditMode ? (
-                                <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, borderLeft: "1px solid #ccc", padding: "12px" }}>
+                                <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, padding: "12px", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
                                     <h3>Inspector:</h3>
                                     {selectedElement ? <FieldConfigEditor key={selectedElement} path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} doesPathExist={doesPathExist} /> : null}
                                 </ScrollPanel> 
