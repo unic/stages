@@ -7,12 +7,22 @@ import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { renderFields } from './helpers';
 
+const parseConfig = config => {
+    if (Array.isArray(config)) {
+        return config.map(c => {
+            return {...c, isInInspector: true};
+        });
+    }
+    return config;
+}
+
 const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist }) => {
     if (!config) return null;
     
     const [data, setData] = useState(config);
     const [newId, setNewId] = useState(config.id);
     const [showIdEditDialog, setShowIdEditDialog] = useState(false);
+    const actualConfig = parseConfig(fieldProps[config.type]);
 
     useEffect(() => {
         setData(config);
@@ -26,9 +36,11 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist 
         }
     }
 
+    console.log({ path, config, actualConfig });
+
     return (
         <>
-            <code>{path} <Button label="Edit ID" onClick={() => setShowIdEditDialog(true)} size="small" /></code>
+            <Button label="Edit ID" outlined onClick={() => setShowIdEditDialog(true)} size="small" />
             <Dialog header="Header" visible={showIdEditDialog} style={{ width: '50vw' }} onHide={() => setShowIdEditDialog(false)} footer={(
                 <Button label="Change" onClick={() => handleChangeId()} />
             )}>
@@ -46,14 +58,14 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist 
                     fields={primeFields}
                     config={{
                         fields: () => {
-                            return fieldProps[config.type];
+                            return actualConfig;
                         }
                     }}
                     render={({ actionProps, fieldProps }) => {
                         return (
                             <>
                                 <form>
-                                    <div style={{ position: "relative" }}>
+                                    <div style={{ position: "relative", margin: "-8px" }}>
                                         {renderFields(() => {}, () => {}, "", () => {}, null, () => {}, false, '', fieldProps, fieldProps.fields)}
                                     </div>
                                 </form>

@@ -36,7 +36,16 @@ const removeStagesProps = (props) => {
     return cleanedProps;
 };
 
-const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText }) => {
+const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, isInInspector }) => {
+    if (isInInspector) {
+        return (
+            <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>
+                <div style={{ flexGrow: 1 }}><label htmlFor={id}>{label}{isRequired ? " *" : ""}</label></div>
+                <div>&nbsp;</div>
+                <div style={{ minWidth: "212px", maxWidth: "212px" }}>{children}</div>
+            </div>
+        );
+    }
     return (
         <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none" } : {}}>
             <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label>
