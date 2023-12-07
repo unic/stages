@@ -9,6 +9,7 @@ import unset from "lodash.unset";
 import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
 import useStagesStore from '../../../../components/store';
+import StagesIcon from '../../../../components/StagesIcon';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -271,7 +272,8 @@ const CommunityForm = () => {
     }
 
     return (
-        <div style={{ marginRight: "350px" }}>
+        <div style={{ marginRight: store.isEditMode ? "350px" : 0, position: "relative" }}>
+            <div style={{ position: "absolute", top: 0, right: "16px" }}><StagesIcon /></div>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
             {store.isEditMode ? <ContextMenu model={store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
             {store.isEditMode ? <button type="button" onClick={() => store.setPreviewMode()}>Preview</button> : <button type="button" onClick={() => store.setEditMode()}>Edit</button>}
