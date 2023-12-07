@@ -6,7 +6,7 @@ import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
 import CollectionContainer from './CollectionContainer';
-import InspectorSpacer from './InspectorSpacer';
+import useStagesStore from './store';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -19,7 +19,6 @@ export const FieldRenderer = ({
     parent,
     setActiveContextMenuInput,
     contextMenuRef,
-    setSelectedElement,
     isEditMode,
     selectedElement,
     fieldProps,
@@ -27,6 +26,7 @@ export const FieldRenderer = ({
     type,
     isFieldConfigEditor
 }) => {
+    const store = useStagesStore();
     if (typeof fields !== "object" || !typeof window) return null;
     if (!type) type = "field";
 
@@ -55,21 +55,21 @@ export const FieldRenderer = ({
 
     return (
         <>
-            <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
                             <>
-                                {index > 0 && <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="column" />}
+                                {index > 0 && <InsertBlock contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="column" />}
                                 <EditableBlock key={createKey(parent, key)} contextMenuRef={contextMenuRef} inGroup field={field} path={field.key} selectedElement={selectedElement} />
                             </>
                         );
                     }
                     return (
                         <>
-                            {index > 0 && <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />}
+                            {index > 0 && <InsertBlock contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
                             <EditableBlock key={createKey(parent, key)} contextMenuRef={contextMenuRef} field={field} path={field.key} selectedElement={selectedElement} />
                         </>
                     );
@@ -79,7 +79,7 @@ export const FieldRenderer = ({
                         const collectionConfig = fieldProps.getConfig(key);
                         return (
                             <>
-                                <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
+                                <InsertBlock contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />
                                 <CollectionContainer key={key} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
                                     {collectionConfig.label ? <label style={{ marginLeft: "6px" }}>{collectionConfig.label}</label> : null}
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
@@ -109,7 +109,6 @@ export const FieldRenderer = ({
                                                                             parent={createKey(parent, key)}
                                                                             setActiveContextMenuInput={setActiveContextMenuInput}
                                                                             contextMenuRef={contextMenuRef}
-                                                                            setSelectedElement={setSelectedElement}
                                                                             isEditMode={isEditMode}
                                                                             selectedElement={selectedElement}
                                                                             fieldProps={fieldProps}
@@ -141,7 +140,6 @@ export const FieldRenderer = ({
                                 parent={createKey(parent, key)}
                                 setActiveContextMenuInput={setActiveContextMenuInput}
                                 contextMenuRef={contextMenuRef}
-                                setSelectedElement={setSelectedElement}
                                 isEditMode={isEditMode}
                                 selectedElement={selectedElement}
                                 fieldProps={fieldProps}
@@ -152,7 +150,7 @@ export const FieldRenderer = ({
                     }
                 }
             })}
-            <InsertBlock grow setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
             {isFieldConfigEditor ? (
                 <div style={{ marginLeft: "8px" }}>
                     <br /><br />

@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import useStagesStore from './store';
 
-const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, contextMenuRef, grow }) => {
+const InsertBlock = ({ path, direction, contextMenuRef, grow }) => {
+    const store = useStagesStore();
     const [isHover, setIsHover] = useState(false);
 
     const handleMouseEnter = () => {
@@ -11,7 +13,7 @@ const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, c
         setIsHover(false);
     };
 
-    if (!isEditMode) return null;
+    if (!store.isEditMode) return null;
 
     return (
         <div title={path} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} style={{
@@ -26,12 +28,12 @@ const InsertBlock = ({ path, direction, isEditMode, setActiveContextMenuInput, c
             alignContent: "center",
             flexDirection: "column",
             lineHeight: "100%",
-            opacity: isHover && isEditMode ? 1 : 0,
-            cursor: isHover && isEditMode ? "pointer" : "default"
+            opacity: isHover && store.isEditMode ? 1 : 0,
+            cursor: isHover && store.isEditMode ? "pointer" : "default"
         }} onContextMenu={(e) => {
             if (contextMenuRef && contextMenuRef.current) {
                 contextMenuRef.current.show(e);
-                setActiveContextMenuInput(`insert > ${path}`, true);
+                store.setActiveContextMenuInput(`insert > ${path}`, true);
             }
         }}><div>+</div></div>
     )
