@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Form } from "react-stages";
+import { TabMenu } from 'primereact/tabmenu';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import primeFields from '../../../../components/primeFields';
 import set from "lodash.set";
@@ -10,6 +11,8 @@ import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
 import useStagesStore from '../../../../components/store';
 import StagesIcon from '../../../../components/StagesIcon';
+import GeneralConfig from '../../../../components/GeneralConfig';
+import DataInspector from '../../../../components/DataInspector';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -250,16 +253,19 @@ const CommunityForm = () => {
             if (oldConfig.id !== config.id) store.setSelectedElement(config.id);
         }
         store.updateCurrentConfig(newConfig);
+        store.setEditorTabIndex(1);
     };
 
     const handleEditCollection = (path) => {
         console.log("--> handleEditCollection <--");
         store.setSelectedElement(path);
+        store.setEditorTabIndex(1);
     };
     
     const handleEditGroup = (path) => {
         console.log("--> handleEditGroup <--");
         store.setSelectedElement(path);
+        store.setEditorTabIndex(1);
     };
 
     const handleExportToJson = e => {
@@ -316,8 +322,15 @@ const CommunityForm = () => {
                             </form>
                             {store.isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, padding: "12px", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
-                                    <h3>Inspector:</h3>
-                                    {store.selectedElement ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                    <TabMenu model={[
+                                        {label: 'General Config'},
+                                        {label: 'Inspector'},
+                                        {label: 'Data'}
+                                    ]} activeIndex={store.editorTabIndex} onTabChange={(e) => store.setEditorTabIndex(e.index)} />
+                                    <br />
+                                    {store.selectedElement && store.editorTabIndex === 1 ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                    {store.editorTabIndex === 0 ? <GeneralConfig /> : null}
+                                    {store.editorTabIndex === 2 ? <DataInspector /> : null}
                                 </ScrollPanel> 
                             ) : null}
                          </>
