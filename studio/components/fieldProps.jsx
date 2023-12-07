@@ -102,6 +102,7 @@ const globalFieldProps = {
     options: {
         id: "options",
         type: "collection",
+        label: "Options",
         min: 1,
         init: true,
         fields: [

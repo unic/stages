@@ -34,9 +34,9 @@ export const FieldRenderer = ({
     });
     const getItemStyle = (isDragging, draggableStyle) => ({
         userSelect: "none",
-        width: "calc(100% - 32px)",
-        margin: "8px",
-        padding: "8px",
+        width: "calc(100% + 32px)",
+        margin: "4px 0",
+        padding: "4px",
         position: "relative",
         background: isDragging ? "#f8f8f8" : "#fbfbfb",
         ...draggableStyle
@@ -73,10 +73,12 @@ export const FieldRenderer = ({
                 } else if (typeof field === "object") {
                     if (Array.isArray(field)) {
                         // collection array
+                        const collectionConfig = fieldProps.getConfig(key);
                         return (
                             <>
                                 <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />
                                 <CollectionContainer key={key} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
+                                    {collectionConfig.label ? <label style={{ marginLeft: "6px" }}>{collectionConfig.label}</label> : null}
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
                                         <Droppable droppableId="droppable">
                                             {(provided, snapshot) => (
@@ -124,7 +126,7 @@ export const FieldRenderer = ({
                                         )}
                                         </Droppable>
                                     </DragDropContext>
-                                    <button type="button" onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
+                                    <button type="button" style={{marginLeft: "8px"}} onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
                                 </CollectionContainer>
                             </>
                         );
