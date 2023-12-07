@@ -19,3 +19,31 @@ export const doesPathExist = (path, store) => {
     const config = get(store.currentConfig, configPath);
     return configPath !== '' && config;
 };
+
+export const createNewFieldID = (path, type, store) => {
+    const parentPath = path.substring(0, path.lastIndexOf("."));
+    let counter = 1;
+    let newFieldID = `${type}${counter}`;
+    while (doesPathExist(parentPath ? `${parentPath}.${newFieldID}` : newFieldID, store)) {
+        counter++;
+        newFieldID = `${type}${counter}`;
+    }
+    return newFieldID;
+};
+
+export const downloadFile = ({ data, fileName, fileType }) => {
+    // Create a blob with the data we want to download as a file
+    const blob = new Blob([data], { type: fileType });
+    // Create an anchor element and dispatch a click event on it
+    // to trigger a download
+    const a = document.createElement('a');
+    a.download = fileName;
+    a.href = window.URL.createObjectURL(blob);
+    const clickEvt = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+    });
+    a.dispatchEvent(clickEvt);
+    a.remove();
+};

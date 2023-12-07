@@ -10,7 +10,7 @@ import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
 import useStagesStore from '../../../../components/store';
 
-import { getConfigPathFromDataPath, doesPathExist } from '../../../../components/helpers';
+import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
 
 const CommunityForm = () => {
@@ -35,17 +35,6 @@ const CommunityForm = () => {
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
 
-    const createNewFieldID = (path, type) => {
-        const parentPath = path.substring(0, path.lastIndexOf("."));
-        let counter = 1;
-        let newFieldID = `${type}${counter}`;
-        while (doesPathExist(parentPath ? `${parentPath}.${newFieldID}` : newFieldID, store)) {
-            counter++;
-            newFieldID = `${type}${counter}`;
-        }
-        return newFieldID;
-    };
-
     const handleCutField = (path) => {
         console.log("--> handleCutField <--");
         const newConfig = [...store.currentConfig];
@@ -61,7 +50,7 @@ const CommunityForm = () => {
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
         const newFieldConfig = {
-            id: createNewFieldID(path, "group"),
+            id: createNewFieldID(path, "group", store),
             type: "group",
             fields: [oldFieldConfig]
         }
@@ -74,7 +63,7 @@ const CommunityForm = () => {
         const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
-        const newTempId = createNewFieldID(path, "collection");
+        const newTempId = createNewFieldID(path, "collection", store);
         const newFieldConfig = {
             id: newTempId,
             type: "collection",
@@ -123,7 +112,7 @@ const CommunityForm = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: createNewFieldID(path, "text"),
+            id: createNewFieldID(path, "text", store),
             type: "text",
             label: "Field",
         });
@@ -148,7 +137,7 @@ const CommunityForm = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: createNewFieldID(path, "group"),
+            id: createNewFieldID(path, "group", store),
             type: "group",
             fields: [  
                 {
@@ -178,7 +167,7 @@ const CommunityForm = () => {
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
         const index = parseInt(realPath.substring(lastArrayIndex + 1));
-        const newTempId = createNewFieldID(path, "collection");
+        const newTempId = createNewFieldID(path, "collection", store);
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
             arrayToInsertInto = get(newConfig, parentOfRealPath);
@@ -233,7 +222,7 @@ const CommunityForm = () => {
             } else {
                 arrayToInsertInto = newConfig;
             }
-            arrayToInsertInto.splice(index, 0, {...store.clipboard, id: createNewFieldID(path, store.clipboard.type)});
+            arrayToInsertInto.splice(index, 0, {...store.clipboard, id: createNewFieldID(path, store.clipboard.type, store)});
             if (parentOfRealPath) {
                 set(newConfig, parentOfRealPath, arrayToInsertInto);
             } else {
@@ -272,24 +261,7 @@ const CommunityForm = () => {
         store.setSelectedElement(path);
     };
 
-    const downloadFile = ({ data, fileName, fileType }) => {
-        // Create a blob with the data we want to download as a file
-        const blob = new Blob([data], { type: fileType });
-        // Create an anchor element and dispatch a click event on it
-        // to trigger a download
-        const a = document.createElement('a');
-        a.download = fileName;
-        a.href = window.URL.createObjectURL(blob);
-        const clickEvt = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-        });
-        a.dispatchEvent(clickEvt);
-        a.remove();
-    }
-
-    const exportToJson = e => {
+    const handleExportToJson = e => {
         e.preventDefault();
         downloadFile({
             data: JSON.stringify(store.currentConfig),
@@ -306,7 +278,7 @@ const CommunityForm = () => {
             {store.isEditMode ? (
                 <>
                     {" "}
-                    <button type='button' onClick={exportToJson}>
+                    <button type='button' onClick={handleExportToJson}>
                         Export Config
                     </button>
                 </>
