@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import useStagesStore from './store';
 
-const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setSelectedElement, contextMenuRef, setActiveContextMenuInput }) => {
-    const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
+const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef }) => {
+    const store = useStagesStore();
+    const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && selectedElement === path);
 
     useEffect(() => {
         if (selectedElement !== path) setIsInEditMode(false);
@@ -11,21 +13,24 @@ const EditableBlock = ({ field, path, isEditMode, selectedElement, inGroup, setS
         <div className={inGroup ? "flex-1" : undefined} style={{
             padding: "8px",
             borderRadius: "5px",
-            border: isInEditMode && isEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
+            border: isInEditMode && store.isEditMode ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
             position: "relative",
             maxWidth: inGroup ? "33%" : "100%"
         }} onContextMenu={(e) => {
             if (contextMenuRef && contextMenuRef.current) {
                 contextMenuRef.current.show(e);
-                setActiveContextMenuInput(path);
+                store.setActiveContextMenuInput(path);
             }
-        }} onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
+        }} onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
         onClick={(e) => {
             e.stopPropagation();
-            if (isInEditMode && isEditMode ) setSelectedElement(path);
+            if (isInEditMode && store.isEditMode ) {
+                store.setSelectedElement(path);
+                store.setEditorTabIndex(1);
+            }
         }}
         >
-            {isInEditMode && isEditMode ? (
+            {isInEditMode && store.isEditMode ? (
                 <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit</span>
             ) : null}
             {field}

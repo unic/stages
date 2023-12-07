@@ -63,14 +63,14 @@ export const FieldRenderer = ({
                         return (
                             <>
                                 {index > 0 && <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="column" />}
-                                <EditableBlock key={createKey(parent, key)} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} inGroup field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
+                                <EditableBlock key={createKey(parent, key)} contextMenuRef={contextMenuRef} inGroup field={field} path={field.key} selectedElement={selectedElement} />
                             </>
                         );
                     }
                     return (
                         <>
                             {index > 0 && <InsertBlock setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, key)} direction="row" />}
-                            <EditableBlock key={createKey(parent, key)} setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} setSelectedElement={setSelectedElement} field={field} path={field.key} isEditMode={isEditMode} selectedElement={selectedElement} />
+                            <EditableBlock key={createKey(parent, key)} contextMenuRef={contextMenuRef} field={field} path={field.key} selectedElement={selectedElement} />
                         </>
                     );
                 } else if (typeof field === "object") {
