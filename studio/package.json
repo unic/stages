@@ -34,6 +34,7 @@
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
-    "react-stages": "^0.7.23"
+    "react-stages": "^0.7.23",
+    "zustand": "^4.4.7"
   }
 }

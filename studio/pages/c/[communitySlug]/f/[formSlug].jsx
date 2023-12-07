@@ -8,6 +8,7 @@ import get from "lodash.get";
 import unset from "lodash.unset";
 import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
+import useStagesStore from '../../../../components/store';
 
 import { renderFields, getConfigPathFromDataPath } from '../../../../components/helpers';
 
@@ -15,182 +16,27 @@ const CommunityForm = () => {
     const {
       query: { communitySlug, formSlug },
     } = useRouter();
-    const [data, setData] = useState({});
     const contextMenuRef = useRef(null);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [selectedElement, setSelectedElement] = useState('');
-    const [activeContextMenuInput, setActiveContextMenuInput] = useState('');
-    const [clipboard, setClipboard] = useState(null);
-    const [currentConfig, setCurrentConfig] = useState([
-        {
-            id: "textgroup",
-            type: "group",
-            fields: [  
-                {
-                    id: "field1",
-                    label: "Text 1",
-                    type: "text",
-                    isRequired: true
-                },
-                {
-                    id: "field2",
-                    label: "Text 2",
-                    type: "text",
-                    isRequired: true
-                },
-            ]
-        },
-        {
-            id: "textcollection",
-            type: "collection",
-            min: 1,
-            init: true,
-            fields: [  
-                {
-                    id: "field1",
-                    label: "Text 1",
-                    type: "text",
-                    isRequired: true
-                },
-                {
-                    id: "field2",
-                    label: "Text 2",
-                    type: "text",
-                    isRequired: true
-                },
-            ]
-        },
-        {
-            id: "field2",
-            label: "Textarea",
-            type: "textarea",
-            isRequired: true
-        },
-        {
-            id: "field3",
-            label: "Select",
-            type: "select",
-            options: [
-                {
-                    text: "Option 1",
-                    value: "option1"
-                },
-                {
-                    text: "Option 2",
-                    value: "option2"
-                }
-            ],
-            isRequired: true
-        },
-        {
-            id: "field4",
-            label: "Calendar",
-            type: "calendar",
-            isRequired: true
-        },
-        {
-            id: "field5",
-            label: "Checkbox",
-            type: "checkbox",
-            isRequired: true
-        },
-        {
-            id: "field6",
-            label: "Switch",
-            type: "switch",
-            isRequired: true
-        },
-        {
-            id: "field7",
-            label: "Number",
-            type: "number",
-            isRequired: true
-        },
-        {
-            id: "field8",
-            label: "Rating",
-            type: "rating",
-            isRequired: true
-        },
-        {
-            id: "field9",
-            label: "Buttons",
-            type: "buttons",
-            options: [
-                {
-                    text: "Option 1",
-                    value: "option1"
-                },
-                {
-                    text: "Option 2",
-                    value: "option2"
-                }
-            ],
-            isRequired: true
-        },
-        {
-            id: "field10",
-            label: "Slider",
-            type: "slider",
-            isRequired: true
-        },
-        {
-            id: "field11",
-            label: "Toggle",
-            type: "toggle",
-            isRequired: true
-        },
-        {
-            id: "field12",
-            label: "Editor",
-            type: "editor",
-            isRequired: true
-        },
-        {
-            id: "field13",
-            label: "Chips",
-            type: "chips",
-            isRequired: true
-        },
-        {
-            id: "field14",
-            label: "Color",
-            type: "color",
-            isRequired: true
-        },
-        {
-            id: "field15",
-            label: "Mask",
-            type: "mask",
-            mask: "99-999999",
-            isRequired: true
-        },
-        {
-            id: "field16",
-            label: "Password",
-            type: "password",
-            isRequired: true
-        }
-    ]);
-console.log({ currentConfig, selectedElement, clipboard });
+    const store = useStagesStore();
+    
     const fieldContextMenuItems = [
-        { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(activeContextMenuInput) },
-        { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(activeContextMenuInput) },
-        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(activeContextMenuInput) },
-        { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(activeContextMenuInput) },
-        { label: 'Add to collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(activeContextMenuInput) }
+        { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
+        { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
+        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(store.activeContextMenuInput) },
+        { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
+        { label: 'Add to collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) }
     ];
 
     const insertContextMenuItems = [
-        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
 
     const doesPathExist = (path) => {
-        const configPath = getConfigPathFromDataPath(path, currentConfig);
-        const config = get(currentConfig, configPath);
+        const configPath = getConfigPathFromDataPath(path, store.currentConfig);
+        const config = get(store.currentConfig, configPath);
         return configPath !== '' && config;
     };
 
@@ -207,16 +53,16 @@ console.log({ currentConfig, selectedElement, clipboard });
 
     const handleCutField = (path) => {
         console.log("--> handleCutField <--");
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
-        setClipboard(get(newConfig, realPath));
+        store.setClipboard(get(newConfig, realPath));
         unset(newConfig, realPath);
-        setCurrentConfig(Array.isArray(newConfig) ? newConfig.filter(item => item) : newConfig);
+        store.updateCurrentConfig(Array.isArray(newConfig) ? newConfig.filter(item => item) : newConfig);
     };
 
     const handleGroupField = (path) => {
         console.log("--> handleGroupField <--");
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
         const newFieldConfig = {
@@ -225,12 +71,12 @@ console.log({ currentConfig, selectedElement, clipboard });
             fields: [oldFieldConfig]
         }
         set(newConfig, realPath, newFieldConfig);
-        setCurrentConfig(newConfig);
+        store.updateCurrentConfig(newConfig);
     };
 
     const handleCollectionField = (path) => {
         console.log("--> handleCollectionField <--");
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = get(newConfig, realPath);
         const newTempId = createNewFieldID(path, "collection");
@@ -242,27 +88,27 @@ console.log({ currentConfig, selectedElement, clipboard });
             fields: [oldFieldConfig]
         }
         set(newConfig, realPath, newFieldConfig);
-        setCurrentConfig(newConfig);
+        store.updateCurrentConfig(newConfig);
 
         // Update data (for collections, a new empty array has to be addeed):
-        const newData = {...data};
+        const newData = {...store.data};
         newData[newTempId] = [{}];
-        setData(newData);
+        store.setData(newData);
     };
 
     const handleCopyField = (path) => {
         console.log("--> handleCopyField <--");
-        const realPath = getConfigPathFromDataPath(path, currentConfig);
-        setClipboard(get(currentConfig, realPath));
+        const realPath = getConfigPathFromDataPath(path, store.currentConfig);
+        store.setClipboard(get(store.currentConfig, realPath));
     };
 
     const handlePasteField = (path) => {
         console.log("--> handlePasteField <--");
-        if (clipboard) {
-            const newConfig = [...currentConfig];
+        if (store.clipboard) {
+            const newConfig = [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
-            set(newConfig, realPath, clipboard);
-            setCurrentConfig(newConfig);
+            set(newConfig, realPath, store.clipboard);
+            store.updateCurrentConfig(newConfig);
         }
     };
 
@@ -270,7 +116,7 @@ console.log({ currentConfig, selectedElement, clipboard });
         console.log("--> handleInsertFieldBetweenFields <--");
         // Add new group between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -287,15 +133,15 @@ console.log({ currentConfig, selectedElement, clipboard });
             label: "Field",
         });
         set(newConfig, parentOfRealPath, arrayToInsertInto);
-        setCurrentConfig(newConfig);
-        setSelectedElement('');
+        store.updateCurrentConfig(newConfig);
+        store.setSelectedElement('');
     };
 
     const handleInsertGroupBetweenFields = (path) => {
         console.log("--> handleInsertGroupBetweenFields <--");
         // Add new group between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -325,14 +171,14 @@ console.log({ currentConfig, selectedElement, clipboard });
             ]
         });
         set(newConfig, parentOfRealPath, arrayToInsertInto);
-        setCurrentConfig(newConfig);
-        setSelectedElement('');
+        store.updateCurrentConfig(newConfig);
+        store.setSelectedElement('');
     };
 
     const handleInsertCollectionBetweenFields = (path) => {
         console.log("--> handleInsertCollectionBetweenFields <--");
         // Add new group between fields:
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -367,21 +213,21 @@ console.log({ currentConfig, selectedElement, clipboard });
 
         // Update config:
         set(newConfig, parentOfRealPath, arrayToInsertInto);
-        setCurrentConfig(newConfig);
+        store.updateCurrentConfig(newConfig);
 
         // Update data (for collections, a new empty array has to be addeed):
-        const newData = {...data};
+        const newData = {...store.data};
         newData[newTempId] = [{}];
-        setData(newData);
+        store.setData(newData);
 
-        setSelectedElement('');
+        store.setSelectedElement('');
     };
 
     const handlePasteBetweenFields = (path) => {
         console.log("--> handlePasteBetweenFields <--");
         // Add clipboard content after path:
-        if (clipboard) {
-            let newConfig = [...currentConfig];
+        if (store.clipboard) {
+            let newConfig = [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
             const lastArrayIndex = realPath.lastIndexOf("[");
             const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -392,43 +238,43 @@ console.log({ currentConfig, selectedElement, clipboard });
             } else {
                 arrayToInsertInto = newConfig;
             }
-            arrayToInsertInto.splice(index, 0, {...clipboard, id: createNewFieldID(path, clipboard.type)});
+            arrayToInsertInto.splice(index, 0, {...store.clipboard, id: createNewFieldID(path, store.clipboard.type)});
             if (parentOfRealPath) {
                 set(newConfig, parentOfRealPath, arrayToInsertInto);
             } else {
                 newConfig = arrayToInsertInto;
             }
-            console.log({ path, realPath, parentOfRealPath, clipboard, arrayToInsertInto, newConfig });
-            setCurrentConfig(newConfig);
+            console.log({ path, realPath, parentOfRealPath, clipboard: store.clipboard, arrayToInsertInto, newConfig });
+            store.updateCurrentConfig(newConfig);
         }
-        setSelectedElement('');
+        store.setSelectedElement('');
     };
 
     const handleEditFieldConfig = (path, config) => {
         console.log("--> handleEditFieldConfig <--");
         if (!config.id) return;
-        const newConfig = [...currentConfig];
+        const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         if (realPath && Object.keys(config).length > 0) {
-            const oldConfig = get(currentConfig, realPath);
+            const oldConfig = get(store.currentConfig, realPath);
             if (config.type === "group" || config.type === "collection") {
                 set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
             } else {
                 set(newConfig, realPath, config);
             }
-            if (oldConfig.id !== config.id) setSelectedElement(config.id);
+            if (oldConfig.id !== config.id) store.setSelectedElement(config.id);
         }
-        setCurrentConfig(newConfig);
+        store.updateCurrentConfig(newConfig);
     };
 
     const handleEditCollection = (path) => {
         console.log("--> handleEditCollection <--");
-        setSelectedElement(path);
+        store.setSelectedElement(path);
     };
     
     const handleEditGroup = (path) => {
         console.log("--> handleEditGroup <--");
-        setSelectedElement(path);
+        store.setSelectedElement(path);
     };
 
     const downloadFile = ({ data, fileName, fileType }) => {
@@ -451,7 +297,7 @@ console.log({ currentConfig, selectedElement, clipboard });
     const exportToJson = e => {
         e.preventDefault();
         downloadFile({
-            data: JSON.stringify(currentConfig),
+            data: JSON.stringify(store.currentConfig),
             fileName: 'stages-config.json',
             fileType: 'text/json',
         })
@@ -460,9 +306,9 @@ console.log({ currentConfig, selectedElement, clipboard });
     return (
         <div style={{ marginRight: "350px" }}>
             <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
-            {isEditMode ? <ContextMenu model={activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
-            {isEditMode ? <button type="button" onClick={() => setIsEditMode(false)}>Preview</button> : <button type="button" onClick={() => setIsEditMode(true)}>Edit</button>}
-            {isEditMode ? (
+            {store.isEditMode ? <ContextMenu model={store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
+            {store.isEditMode ? <button type="button" onClick={() => store.setPreviewMode()}>Preview</button> : <button type="button" onClick={() => store.setEditMode()}>Edit</button>}
+            {store.isEditMode ? (
                 <>
                     {" "}
                     <button type='button' onClick={exportToJson}>
@@ -470,14 +316,14 @@ console.log({ currentConfig, selectedElement, clipboard });
                     </button>
                 </>
             ) : null}
-            {!isEditMode ? <div><br /></div> : null}
+            {!store.isEditMode ? <div><br /></div> : null}
             <Form
                 id="myForm"
-                data={data}
+                data={store.data}
                 fields={primeFields}
                 config={{
                     fields: () => {
-                        return currentConfig;
+                        return store.currentConfig;
                     }
                 }}
                 render={({ actionProps, fieldProps }) => {
@@ -485,19 +331,19 @@ console.log({ currentConfig, selectedElement, clipboard });
                         <>
                             <form>
                                 <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto" }}>
-                                    {renderFields(handleEditCollection, handleEditGroup, "", setActiveContextMenuInput, contextMenuRef, setSelectedElement, isEditMode, selectedElement, fieldProps, fieldProps.fields)}
+                                    {renderFields(handleEditCollection, handleEditGroup, "", store.setActiveContextMenuInput, contextMenuRef, store.setSelectedElement, store.isEditMode, store.selectedElement, fieldProps, fieldProps.fields)}
                                 </div>
                             </form>
-                            {isEditMode ? (
+                            {store.isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, padding: "12px", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
                                     <h3>Inspector:</h3>
-                                    {selectedElement ? <FieldConfigEditor key={selectedElement} path={selectedElement} config={fieldProps.getConfig(selectedElement)} handleEditFieldConfig={handleEditFieldConfig} doesPathExist={doesPathExist} /> : null}
+                                    {store.selectedElement ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} doesPathExist={doesPathExist} /> : null}
                                 </ScrollPanel> 
                             ) : null}
                          </>
                     );
                 }}
-                onChange={payload => setData(payload)}
+                onChange={payload => store.setData(payload)}
             />
         </div>
     )
