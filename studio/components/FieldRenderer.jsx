@@ -153,7 +153,7 @@ export const FieldRenderer = ({
                 }
             })}
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
-            {isFieldConfigEditor ? (
+            {isFieldConfigEditor && !parent ? (
                 <div style={{ marginLeft: "8px" }}>
                     <br /><br />
                     <Dropdown options={[
