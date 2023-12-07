@@ -80,7 +80,7 @@ export const FieldRenderer = ({
                         return (
                             <>
                                 <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />
-                                <CollectionContainer key={key} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
+                                <CollectionContainer key={key} isFieldConfigEditor={isFieldConfigEditor} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
                                     {collectionConfig.label ? <label style={{ marginLeft: "6px" }}>{collectionConfig.label}</label> : null}
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
                                         <Droppable droppableId="droppable">
@@ -104,6 +104,7 @@ export const FieldRenderer = ({
                                                                 >
                                                                     <div className="flex" style={{ position: "relative" }}>
                                                                         <FieldRenderer
+                                                                            isFieldConfigEditor={isFieldConfigEditor}
                                                                             handleEditCollection={handleEditCollection}
                                                                             handleEditGroup={handleEditGroup}
                                                                             parent={createKey(parent, key)}
@@ -133,8 +134,9 @@ export const FieldRenderer = ({
                             </>
                         );
                     } else {
-                        return <GroupContainer selectedElement={selectedElement} handleEditGroup={handleEditGroup} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} key={key}>
+                        return <GroupContainer isFieldConfigEditor={isFieldConfigEditor} selectedElement={selectedElement} handleEditGroup={handleEditGroup} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} key={key}>
                             <FieldRenderer
+                                isFieldConfigEditor={isFieldConfigEditor}
                                 handleEditCollection={handleEditCollection}
                                 handleEditGroup={handleEditGroup}
                                 parent={createKey(parent, key)}
