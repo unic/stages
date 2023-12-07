@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useStagesStore from './store';
 
-const InsertBlock = ({ path, direction, contextMenuRef, grow }) => {
+const InsertBlock = ({ path, direction, contextMenuRef, grow, isFieldConfigEditor }) => {
     const store = useStagesStore();
     const [isHover, setIsHover] = useState(false);
 
@@ -13,7 +13,7 @@ const InsertBlock = ({ path, direction, contextMenuRef, grow }) => {
         setIsHover(false);
     };
 
-    if (!store.isEditMode) return null;
+    if (!store.isEditMode || isFieldConfigEditor) return null;
 
     return (
         <div title={path} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} style={{
