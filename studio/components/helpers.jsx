@@ -13,3 +13,9 @@ export const getConfigPathFromDataPath = (path, config) => {
     });
     return realPath;
 };
+
+export const doesPathExist = (path, store) => {
+    const configPath = getConfigPathFromDataPath(path, store.currentConfig);
+    const config = get(store.currentConfig, configPath);
+    return configPath !== '' && config;
+};

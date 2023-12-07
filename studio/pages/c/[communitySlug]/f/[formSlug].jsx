@@ -10,7 +10,7 @@ import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
 import useStagesStore from '../../../../components/store';
 
-import { getConfigPathFromDataPath } from '../../../../components/helpers';
+import { getConfigPathFromDataPath, doesPathExist } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
 
 const CommunityForm = () => {
@@ -35,17 +35,11 @@ const CommunityForm = () => {
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
 
-    const doesPathExist = (path) => {
-        const configPath = getConfigPathFromDataPath(path, store.currentConfig);
-        const config = get(store.currentConfig, configPath);
-        return configPath !== '' && config;
-    };
-
     const createNewFieldID = (path, type) => {
         const parentPath = path.substring(0, path.lastIndexOf("."));
         let counter = 1;
         let newFieldID = `${type}${counter}`;
-        while (doesPathExist(parentPath ? `${parentPath}.${newFieldID}` : newFieldID)) {
+        while (doesPathExist(parentPath ? `${parentPath}.${newFieldID}` : newFieldID, store)) {
             counter++;
             newFieldID = `${type}${counter}`;
         }
@@ -349,7 +343,7 @@ const CommunityForm = () => {
                             {store.isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, padding: "12px", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
                                     <h3>Inspector:</h3>
-                                    {store.selectedElement ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} doesPathExist={doesPathExist} /> : null}
+                                    {store.selectedElement ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
                                 </ScrollPanel> 
                             ) : null}
                          </>

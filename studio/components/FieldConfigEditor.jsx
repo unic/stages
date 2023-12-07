@@ -6,6 +6,8 @@ import { InputText } from 'primereact/inputtext';
 import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
+import { doesPathExist } from './helpers';
+import useStagesStore from './store';
 
 const InspectorSpacer = () => {
     return (
@@ -27,9 +29,10 @@ const parseConfig = config => {
     return config;
 }
 
-const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist }) => {
+const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     if (!config) return null;
     
+    const store = useStagesStore();
     const [data, setData] = useState(config);
     const [newId, setNewId] = useState(config.id);
     const [showIdEditDialog, setShowIdEditDialog] = useState(false);
@@ -41,7 +44,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist 
 
     const handleChangeId = () => {
         const newPath = path.indexOf(".") === -1 ? newId : path.split('.').slice(0,-1).join('.') + '.' + newId;
-        if (newId && !doesPathExist(newPath)) {
+        if (newId && !doesPathExist(newPath, store)) {
             handleEditFieldConfig(path, {...data, id: newId});
             setShowIdEditDialog(false);
         }
