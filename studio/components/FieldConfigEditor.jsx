@@ -8,17 +8,7 @@ import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
 import { doesPathExist } from './helpers';
 import useStagesStore from './store';
-
-const InspectorSpacer = () => {
-    return (
-        <div style={{
-            width: "100%",
-            height: "1px",
-            margin: "16px 0",
-            backgroundColor: "#eee"
-        }} />
-    );
-};
+import InspectorSpacer from './InspectorSpacer';
 
 const parseConfig = config => {
     if (Array.isArray(config)) {
@@ -87,6 +77,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
                                             parent=""
                                             fieldProps={fieldProps}
                                             fields={fieldProps.fields}
+                                            isFieldConfigEditor
                                         />
                                     </div>
                                 </form>

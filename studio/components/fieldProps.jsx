@@ -129,6 +129,45 @@ const globalFieldProps = {
         id: "placeholder",
         type: "text",
         label: "Placeholder"
+    },
+    textValidation: {
+        id: "validation",
+        type: "collection",
+        label: "Validations",
+        fields: {
+            email: [
+                {
+                    id: "strong",
+                    type: "checkbox",
+                    label: "Strong email validation?"
+                }
+            ],
+            phone: [
+                {
+                    id: "type",
+                    type: "select",
+                    label: "Country specific phone",
+                    isRequired: true,
+                    options: [
+                        {
+                            value: "all",
+                            text: "All Country Codes"
+                        },
+                        {
+                            value: "CH",
+                            text: "Switzerland"
+                        }
+                    ]
+                }
+            ],
+            regex: [
+                {
+                    id: "rule",
+                    type: "text",
+                    label: "Regex"
+                }
+            ],
+        }
     }
 }
 
@@ -160,7 +199,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
-        globalFieldProps.tooltip
+        globalFieldProps.tooltip,
+        globalFieldProps.textValidation
     ],
     textarea: [
         globalFieldProps.id,

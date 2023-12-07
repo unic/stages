@@ -1,10 +1,12 @@
 // @ts-nocheck
 import { isValidElement } from 'react';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Dropdown } from 'primereact/dropdown';
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
 import CollectionContainer from './CollectionContainer';
+import InspectorSpacer from './InspectorSpacer';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -22,7 +24,8 @@ export const FieldRenderer = ({
     selectedElement,
     fieldProps,
     fields,
-    type
+    type,
+    isFieldConfigEditor
 }) => {
     if (typeof fields !== "object" || !typeof window) return null;
     if (!type) type = "field";
@@ -150,6 +153,16 @@ export const FieldRenderer = ({
                 }
             })}
             <InsertBlock grow setActiveContextMenuInput={setActiveContextMenuInput} contextMenuRef={contextMenuRef} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
+            {isFieldConfigEditor ? (
+                <div style={{ marginLeft: "8px" }}>
+                    <br /><br />
+                    <Dropdown options={[
+                        { label: "Email", value: "email" },
+                        { label: "Phone", value: "phone" },
+                        { label: "Regex", value: "regex" }
+                    ]} placeholder="Add validation rule ..." onChange={(e) => fieldProps.onCollectionAction("validation", "add", e.target.value)} />
+                </div>
+            ) : null}
         </>
     );
 };
