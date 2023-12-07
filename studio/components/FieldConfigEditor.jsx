@@ -5,7 +5,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
-import { renderFields } from './helpers';
+import { FieldRenderer } from './FieldRenderer';
 
 const InspectorSpacer = () => {
     return (
@@ -80,7 +80,11 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, doesPathExist 
                             <>
                                 <form>
                                     <div style={{ position: "relative", margin: "-8px" }}>
-                                        {renderFields(() => {}, () => {}, "", () => {}, null, () => {}, false, '', fieldProps, fieldProps.fields)}
+                                        <FieldRenderer
+                                            parent=""
+                                            fieldProps={fieldProps}
+                                            fields={fieldProps.fields}
+                                        />
                                     </div>
                                 </form>
                             </>

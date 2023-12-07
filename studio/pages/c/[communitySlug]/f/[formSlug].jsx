@@ -10,7 +10,8 @@ import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
 import useStagesStore from '../../../../components/store';
 
-import { renderFields, getConfigPathFromDataPath } from '../../../../components/helpers';
+import { getConfigPathFromDataPath } from '../../../../components/helpers';
+import { FieldRenderer } from '../../../../components/FieldRenderer';
 
 const CommunityForm = () => {
     const {
@@ -331,7 +332,18 @@ const CommunityForm = () => {
                         <>
                             <form>
                                 <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto" }}>
-                                    {renderFields(handleEditCollection, handleEditGroup, "", store.setActiveContextMenuInput, contextMenuRef, store.setSelectedElement, store.isEditMode, store.selectedElement, fieldProps, fieldProps.fields)}
+                                    <FieldRenderer
+                                        handleEditCollection={handleEditCollection}
+                                        handleEditGroup={handleEditGroup}
+                                        parent=""
+                                        setActiveContextMenuInput={store.setActiveContextMenuInput}
+                                        contextMenuRef={contextMenuRef}
+                                        setSelectedElement={store.setSelectedElement}
+                                        isEditMode={store.isEditMode}
+                                        selectedElement={store.selectedElement}
+                                        fieldProps={fieldProps}
+                                        fields={fieldProps.fields}
+                                    />
                                 </div>
                             </form>
                             {store.isEditMode ? (
