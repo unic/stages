@@ -31,7 +31,19 @@ const GeneralConfig = () => {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <div>
                     <span className="p-input-icon-right" style={{ margin: "16px 0" }}>
-                        <AutoComplete dropdown={true} dropdownIcon={<Search color="#fff" size={16} />} placeholder="stepkey.fieldkey" value={searchValue} suggestions={items} completeMethod={search} onChange={(e) => setSearchValue(e.value)} />
+                        <AutoComplete
+                            dropdown={true}
+                            dropdownIcon={<Search color="#fff" size={16} />}
+                            placeholder="stepkey.fieldkey"
+                            value={searchValue}
+                            suggestions={items}
+                            completeMethod={search} 
+                            onChange={(e) => setSearchValue(e.value)}
+                            onSelect={(e) => {
+                                store.setSelectedElement(e.value);
+                                store.setEditorTabIndex(1);
+                            }}
+                        />
                     </span>
                 </div>
                 <div style={{ paddingTop: "24px" }}>
