@@ -6,6 +6,7 @@ import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
 import useStagesStore from './store';
 import InspectorSpacer from './InspectorSpacer';
+import FormattedPath from './FormattedPath';
 
 const parseConfig = config => {
     if (Array.isArray(config)) {
@@ -32,7 +33,9 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     return (
         <>
             <div className="flex">
-                <div className="flex-grow-1" style={{ paddingTop: "6px" }}><code>{path}</code></div>
+                <div className="flex-grow-1" style={{ paddingTop: "6px" }}>
+                    <FormattedPath path={path} />
+                </div>
             </div>
             <InspectorSpacer />
             {typeof config === "object" ? (
