@@ -16,6 +16,7 @@ import GeneralConfig from '../../../../components/GeneralConfig';
 import DataInspector from '../../../../components/DataInspector';
 import InspectorHeader from '../../../../components/InspectorHeader';
 import { GitFork } from 'lucide-react';
+import { Button } from 'primereact/button';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -288,7 +289,9 @@ const CommunityForm = () => {
 
     return (
         <div style={{ marginRight: store.isEditMode ? "350px" : 0, position: "relative" }}>
-            <div style={{ position: "absolute", top: 0, right: "16px" }}><StagesIcon /></div>
+            <div style={{ position: "absolute", top: 0, right: "16px", cursor: "pointer" }}>
+                <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
+            </div>
             <div>
                 <h2>
                     {store.generalConfig.title}
@@ -301,15 +304,6 @@ const CommunityForm = () => {
                 
             </div>
             {store.isEditMode ? <ContextMenu model={store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
-            {store.isEditMode ? <button type="button" onClick={() => store.setPreviewMode()}>Preview</button> : <button type="button" onClick={() => store.setEditMode()}>Edit</button>}
-            {store.isEditMode ? (
-                <>
-                    {" "}
-                    <button type='button' onClick={handleExportToJson}>
-                        Export Config
-                    </button>
-                </>
-            ) : null}
             {!store.isEditMode ? <div><br /></div> : null}
             <Form
                 id="myForm"
@@ -356,8 +350,13 @@ const CommunityForm = () => {
                                             {store.editorTabIndex === 2 ? <DataInspector /> : null}
                                         </div>
                                         <div style={{ backgroundColor: "#fff", padding: "16px 12px", borderTop: "1px #EAEAEA solid", display: "flex", justifyContent: "space-between" }}>
-                                            <div><GitFork color="#000" size={16} /></div>
-                                            <div style={{ fontSize: "12px", color: "#999" }}>v 2023-03-27 16:11</div>
+                                            <div style={{ paddingTop: "4px" }}><GitFork color="#000" size={16} /></div>
+                                            <div>
+                                            <Button link severity="secondary" onClick={handleExportToJson} style={{ padding: 0, fontSize: "14px" }}>
+                                                Export Config
+                                            </Button>
+                                            </div>
+                                            <div style={{ fontSize: "12px", color: "#999", paddingTop: "6px" }}>v 2023-03-27 16:11</div>
                                         </div>
                                     </div>
                                 </ScrollPanel> 
