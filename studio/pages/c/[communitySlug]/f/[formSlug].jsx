@@ -14,6 +14,7 @@ import useStagesStore from '../../../../components/store';
 import StagesIcon from '../../../../components/StagesIcon';
 import GeneralConfig from '../../../../components/GeneralConfig';
 import DataInspector from '../../../../components/DataInspector';
+import InspectorHeader from '../../../../components/InspectorHeader';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -339,6 +340,7 @@ const CommunityForm = () => {
                             </form>
                             {store.isEditMode ? (
                                 <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, padding: "12px", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
+                                    <InspectorHeader />
                                     <TabMenu model={[
                                         {label: 'General Config'},
                                         {label: 'Inspector'},
