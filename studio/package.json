@@ -27,6 +27,7 @@
     "lodash.get": "^4.4.2",
     "lodash.set": "^4.3.2",
     "lodash.unset": "^4.5.2",
+    "lucide-react": "^0.294.0",
     "next": "^13.4.12",
     "primeflex": "^3.3.1",
     "primereact": "^10.1.1",
