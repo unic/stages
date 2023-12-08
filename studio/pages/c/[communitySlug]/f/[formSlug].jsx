@@ -15,6 +15,7 @@ import StagesIcon from '../../../../components/StagesIcon';
 import GeneralConfig from '../../../../components/GeneralConfig';
 import DataInspector from '../../../../components/DataInspector';
 import InspectorHeader from '../../../../components/InspectorHeader';
+import { GitFork } from 'lucide-react';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -339,17 +340,26 @@ const CommunityForm = () => {
                                 </div>
                             </form>
                             {store.isEditMode ? (
-                                <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, padding: "12px", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
-                                    <InspectorHeader />
-                                    <TabMenu model={[
-                                        {label: 'General Config'},
-                                        {label: 'Inspector'},
-                                        {label: 'Data'}
-                                    ]} activeIndex={store.editorTabIndex} onTabChange={(e) => store.setEditorTabIndex(e.index)} />
-                                    <br />
-                                    {store.editorTabIndex === 1 ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
-                                    {store.editorTabIndex === 0 ? <GeneralConfig /> : null}
-                                    {store.editorTabIndex === 2 ? <DataInspector /> : null}
+                                <ScrollPanel style={{ width: '350px', height: '100vh', position: "fixed", top: 0, right: 0, backgroundColor: "#FCFCFC", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", flexDirection: "column", height: "100%" }}>
+                                        <InspectorHeader />
+                                        <div style={{ backgroundColor: "#fff", padding: "0 12px 0 12px" }}>
+                                            <TabMenu model={[
+                                                {label: 'General Config'},
+                                                {label: 'Inspector'},
+                                                {label: 'Data'}
+                                            ]} activeIndex={store.editorTabIndex} onTabChange={(e) => store.setEditorTabIndex(e.index)} />
+                                        </div>
+                                        <div style={{ padding: "16px 12px", flexGrow: 1 }}>
+                                            {store.editorTabIndex === 1 ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                            {store.editorTabIndex === 0 ? <GeneralConfig /> : null}
+                                            {store.editorTabIndex === 2 ? <DataInspector /> : null}
+                                        </div>
+                                        <div style={{ backgroundColor: "#fff", padding: "16px 12px", borderTop: "1px #EAEAEA solid", display: "flex", justifyContent: "space-between" }}>
+                                            <div><GitFork color="#000" size={16} /></div>
+                                            <div style={{ fontSize: "12px", color: "#999" }}>v 2023-03-27 16:11</div>
+                                        </div>
+                                    </div>
                                 </ScrollPanel> 
                             ) : null}
                          </>

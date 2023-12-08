@@ -8,7 +8,7 @@ const GeneralConfig = () => {
     const store = useStagesStore();
 
     return (
-        <div style={{ marginBottom: "16px" }}>
+        <div style={{ padding: "16px 12px", backgroundColor: "#fff" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <div style={{ fontSize: "18px", fontWeight: 400 }}>Stages Studio</div>
                 <div style={{ fontSize: "12px", color: "#999999", lineHeight: "25px" }}>{store.generalConfig.status}</div>
