@@ -1,11 +1,20 @@
+import React, { useState } from "react";
 import useStagesStore from './store';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
 import { Search } from 'lucide-react';
 import { Filter } from 'lucide-react';
+import { AutoComplete } from "primereact/autocomplete";
+import { getAllPaths } from "./helpers";
 
 const GeneralConfig = () => {
     const store = useStagesStore();
+    const allPaths = getAllPaths(store.currentConfig)
+    const [searchValue, setSearchValue] = useState('');
+    const [items, setItems] = useState(allPaths);
+
+    const search = (event) => {
+        setItems(allPaths.filter(item => item.indexOf(event.query) !== -1));
+    }
 
     return (
         <div style={{ padding: "16px 12px", backgroundColor: "#fff" }}>
@@ -22,8 +31,7 @@ const GeneralConfig = () => {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <div>
                     <span className="p-input-icon-right" style={{ margin: "16px 0" }}>
-                        <Search color="#999999" size={16} />
-                        <InputText placeholder="stepkey.fieldkey" />
+                        <AutoComplete dropdown={true} dropdownIcon={<Search color="#fff" size={16} />} placeholder="stepkey.fieldkey" value={searchValue} suggestions={items} completeMethod={search} onChange={(e) => setSearchValue(e.value)} />
                     </span>
                 </div>
                 <div style={{ paddingTop: "24px" }}>
