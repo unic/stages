@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Form } from "react-stages";
+import Sugar from "sugar";
 import { TabMenu } from 'primereact/tabmenu';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import primeFields from '../../../../components/primeFields';
@@ -277,10 +278,26 @@ const CommunityForm = () => {
         })
     }
 
+    const fromDate = store.generalConfig.date.from ? new Sugar.Date(store.generalConfig.date.from) : "";
+    const toDate = store.generalConfig.date.to ? new Sugar.Date(store.generalConfig.date.to) : "";
+    const now = new Date();
+
+    console.log({ fromDate, toDate });
+
     return (
         <div style={{ marginRight: store.isEditMode ? "350px" : 0, position: "relative" }}>
             <div style={{ position: "absolute", top: 0, right: "16px" }}><StagesIcon /></div>
-            <h2>Community "{communitySlug}" - Form "{formSlug}"</h2>
+            <div>
+                <h2>
+                    {store.generalConfig.title}
+                    <span style={{ color: "#999", fontSize: "12px", fontWeight: "300", marginLeft: "16px", display: "inline-block" }}>
+                        {fromDate ? `From ${fromDate.long()}, in ${fromDate.relativeTo(now)}` : ""}
+                        {fromDate && toDate ? " - " : ""}
+                        {toDate ? `Due date ${toDate.long()}, in ${toDate.relativeTo(now)}` : ""}
+                    </span>
+                </h2>
+                
+            </div>
             {store.isEditMode ? <ContextMenu model={store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
             {store.isEditMode ? <button type="button" onClick={() => store.setPreviewMode()}>Preview</button> : <button type="button" onClick={() => store.setEditMode()}>Edit</button>}
             {store.isEditMode ? (
