@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Form } from "react-stages";
+import { Message } from 'primereact/message';
 import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
@@ -16,8 +17,10 @@ const parseConfig = config => {
 }
 
 const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
-    if (!config) return null;
-    
+    if (!config || typeof config !== "object" || !path) {
+        return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
+    }
+
     const store = useStagesStore();
     const [data, setData] = useState(config);
     const actualConfig = parseConfig(fieldProps[config.type]);
@@ -25,8 +28,6 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     useEffect(() => {
         setData(config);
     }, [config, path]);
-
-    console.log({ path, config, actualConfig });
 
     return (
         <>

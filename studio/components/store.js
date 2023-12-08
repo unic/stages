@@ -21,6 +21,7 @@ const useStagesStore = create((set) => ({
     clipboard: null,
     currentConfig: initialConfig,
     generalConfig: initialGeneralConfig,
+    updateGeneralConfig: (generalConfig) => set(() => ({ generalConfig })),
     setEditMode: () => set(() => ({ isEditMode: true })),
     setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),
     setPreviewMode: () => set(() => ({ isEditMode: false })),

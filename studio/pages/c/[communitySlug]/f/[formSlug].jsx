@@ -345,7 +345,7 @@ const CommunityForm = () => {
                                         {label: 'Data'}
                                     ]} activeIndex={store.editorTabIndex} onTabChange={(e) => store.setEditorTabIndex(e.index)} />
                                     <br />
-                                    {store.selectedElement && store.editorTabIndex === 1 ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                    {store.editorTabIndex === 1 ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
                                     {store.editorTabIndex === 0 ? <GeneralConfig /> : null}
                                     {store.editorTabIndex === 2 ? <DataInspector /> : null}
                                 </ScrollPanel> 

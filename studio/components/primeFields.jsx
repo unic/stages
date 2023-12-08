@@ -132,7 +132,11 @@ const MappedSelectButton = (props) => {
 
 const MappedCalendar = (props) => {
     const mappedProps = removeStagesProps(props);
-    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    if (typeof mappedProps.value === 'undefined') {
+        mappedProps.value = '';
+    } else {
+        mappedProps.value = typeof mappedProps.value === 'string' ? mappedProps.value : String(mappedProps.value);
+    }
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
