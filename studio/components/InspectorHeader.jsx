@@ -15,6 +15,7 @@ const GeneralConfig = () => {
                     {store.generalConfig.status === "archived" && <Button link label="fork" onClick={() => store.fork()} />}
                 </div>
             </div>
+            <div><span style={{ color: "#5AA510" }}>fredi-bach</span>.<span style={{ color: "#C10B99" }}>{store.generalConfig.slug}</span></div>
         </div>
     )
 };
