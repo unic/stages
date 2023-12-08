@@ -1,10 +1,9 @@
 const globalFieldProps = {
     id: {
         id: "id",
-        type: "text",
+        type: "blurtext",
         label: "ID",
-        isRequired: true,
-        isDisabled: true
+        isRequired: true
     },
     label: {
         id: "label",

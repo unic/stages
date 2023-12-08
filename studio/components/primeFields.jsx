@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
@@ -62,6 +63,22 @@ const MappedInputText = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isDisabled={props.isDisabled}><InputText {...mappedProps} /></InputWrapper>;
+};
+
+const MappedInputTextBlur = (props) => {
+    const [currentValue, setCurrentValue] = useState(props.value);
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    mappedProps.type = 'text';
+    mappedProps.onChange = (e) => {
+        setCurrentValue(e.target.value);
+    };
+    mappedProps.onBlur = (e) => {
+        props.onChange(currentValue);
+        props.onBlur();
+    };
+    mappedProps.value = currentValue;
     return <InputWrapper {...mappedProps} isRequired={props.isRequired} isDisabled={props.isDisabled}><InputText {...mappedProps} /></InputWrapper>;
 };
 
@@ -215,6 +232,10 @@ const MappedPassword = (props) => {
 const primeFields = {
     text: {
         component: MappedInputText,
+        isValid: () => true
+    },
+    blurtext: {
+        component: MappedInputTextBlur,
         isValid: () => true
     },
     number: {
