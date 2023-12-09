@@ -1,11 +1,11 @@
-const BlockPathLabel = ({ path, inCollection }) => {
+const BlockPathLabel = ({ path, inCollection, isHovered }) => {
     return (
         <span style={{
             position: "absolute",
             top: inCollection ? "-13px" : "-9px",
             right: "16px",
             fontSize: "11px",
-            color: "#ccc",
+            color: isHovered ? "#0A94F8" : "#ccc",
             background: "#fff",
             padding: "1px 4px",
             borderRadius: "3px",

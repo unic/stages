@@ -32,7 +32,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             }
         }}
         >
-            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} /> : null}
+            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} /> : null}
             {field}
         </div>
     );

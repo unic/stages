@@ -25,7 +25,7 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, selectedE
             }}
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
         >
-            {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} /> : null}
+            {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} /> : null}
             {children}
         </div>
     );
