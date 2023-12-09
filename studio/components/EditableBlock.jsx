@@ -15,9 +15,9 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             position: "relative",
             padding: "8px",
             borderRadius: "5px",
-            border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor ? "1px dashed #ccc" : "1px solid rgba(0,0,0,0)",
-            position: "relative",
-            maxWidth: inGroup ? "33%" : "100%"
+            border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
+            maxWidth: inGroup ? "33%" : "100%",
+            background: !isFieldConfigEditor ? "rgba(255, 255, 255, 0.2)" : "transparent"
         }} onContextMenu={(e) => {
             if (contextMenuRef && contextMenuRef.current) {
                 contextMenuRef.current.show(e);
@@ -32,10 +32,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             }
         }}
         >
-            <BlockPathLabel path={path} />
-            {isInEditMode && store.isEditMode && !isFieldConfigEditor ? (
-                <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit</span>
-            ) : null}
+            {!isFieldConfigEditor ? <BlockPathLabel path={path} /> : null}
             {field}
         </div>
     );

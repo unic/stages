@@ -7,6 +7,7 @@ import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
 import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
+import BlockPathLabel from './BlockPathLabel';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -31,17 +32,18 @@ export const FieldRenderer = ({
     if (!type) type = "field";
 
     const getListStyle = isDraggingOver => ({
-        background: "f8f8f8",
-        width: "calc(100% - 16px)",
+        width: "calc(100% - 32px)",
         padding: "8px"
     });
     const getItemStyle = (isDragging, draggableStyle) => ({
         userSelect: "none",
         width: "calc(100% + 32px)",
-        margin: "4px 0",
+        margin: "4px 0 8px 0",
         padding: "4px",
         position: "relative",
-        background: isDragging ? "#f8f8f8" : "#fbfbfb",
+        border: "1px dashed #ddd",
+        borderRadius: "3px",
+        background: isDragging ? "rgba(0, 0, 0, 0.2)" : "rgba(255, 255, 255, 0.2)",
         ...draggableStyle
     });
     const onDragEnd = (key, result) => {
@@ -103,6 +105,7 @@ export const FieldRenderer = ({
                                                                     )}
                                                                 >
                                                                     <div className="flex" style={{ position: "relative" }}>
+                                                                        {!isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
                                                                             handleEditCollection={handleEditCollection}
@@ -116,7 +119,7 @@ export const FieldRenderer = ({
                                                                             fields={entry}
                                                                             type="group"
                                                                         />
-                                                                        <div style={{ position: "absolute", right: "8px", top: "calc(50% - 4px)" }}>
+                                                                        <div style={{ position: "absolute", right: "8px", top: "calc(50% - 12px)" }}>
                                                                             <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
                                                                         </div>
                                                                     </div>
@@ -129,7 +132,7 @@ export const FieldRenderer = ({
                                         )}
                                         </Droppable>
                                     </DragDropContext>
-                                    <button type="button" style={{marginLeft: "8px"}} onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
+                                    <button type="button" style={{margin: "-4px 0 8px 8px"}} onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
                                 </CollectionContainer>
                             </>
                         );

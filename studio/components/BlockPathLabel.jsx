@@ -1,11 +1,11 @@
-const BlockPathLabel = ({ path }) => {
+const BlockPathLabel = ({ path, inCollection }) => {
     return (
         <span style={{
             position: "absolute",
-            top: "-8px",
+            top: inCollection ? "-13px" : "-9px",
             right: "16px",
             fontSize: "11px",
-            color: "#bbb",
+            color: "#ccc",
             background: "#fff",
             padding: "1px 4px",
             borderRadius: "3px",
