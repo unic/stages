@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import BlockPathLabel from './BlockPathLabel';
 
 const CollectionContainer = ({ children, handleEditCollection, isEditMode, path, selectedElement, isFieldConfigEditor }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
@@ -16,6 +17,7 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
             }}
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
         >
+            <BlockPathLabel path={path} />
             {children}
             {isEditMode && isInEditMode && !isFieldConfigEditor ? (
                 <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit collection</span>

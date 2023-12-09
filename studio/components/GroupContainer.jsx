@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import BlockPathLabel from './BlockPathLabel';
 
 const GroupContainer = ({ children, handleEditGroup, isEditMode, path, selectedElement, isFieldConfigEditor }) => {
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
@@ -17,6 +18,7 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, selectedE
             }}
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
         >
+            <BlockPathLabel path={path} />
             {children}
             {isEditMode && isInEditMode && !isFieldConfigEditor ? (
                 <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit group</span>
