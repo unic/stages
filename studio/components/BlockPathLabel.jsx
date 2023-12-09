@@ -1,5 +1,3 @@
-import { Group } from 'lucide-react';
-
 const BlockPathLabel = ({ path, inCollection, isHovered, type }) => {
     return (
         <span style={{
