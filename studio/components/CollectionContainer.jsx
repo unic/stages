@@ -24,7 +24,7 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
             }}
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
         >
-            {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} /> : null}
+            {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="collection" /> : null}
             {children}
         </div>
     );

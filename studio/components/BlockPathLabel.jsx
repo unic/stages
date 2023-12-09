@@ -1,4 +1,6 @@
-const BlockPathLabel = ({ path, inCollection, isHovered }) => {
+import { Group } from 'lucide-react';
+
+const BlockPathLabel = ({ path, inCollection, isHovered, type }) => {
     return (
         <span style={{
             position: "absolute",
@@ -9,7 +11,7 @@ const BlockPathLabel = ({ path, inCollection, isHovered }) => {
             background: "#fff",
             padding: "1px 4px",
             borderRadius: "3px",
-        }}>{path}</span>
+        }}>{type === "group" ? "[••] " : null}{type === "collection" ? "[=] " : null}{type === "field" ? "[ ] " : null}{path}</span>
     );  
 };
 
