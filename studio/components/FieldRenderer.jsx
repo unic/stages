@@ -43,7 +43,7 @@ export const FieldRenderer = ({
         position: "relative",
         border: "1px dashed #ddd",
         borderRadius: "3px",
-        background: isDragging ? "rgba(0, 0, 0, 0.2)" : "rgba(255, 255, 255, 0.2)",
+        background: isDragging ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.2)",
         ...draggableStyle
     });
     const onDragEnd = (key, result) => {
@@ -105,7 +105,7 @@ export const FieldRenderer = ({
                                                                     )}
                                                                 >
                                                                     <div className="flex" style={{ position: "relative" }}>
-                                                                        {!isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
+                                                                        {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
                                                                             handleEditCollection={handleEditCollection}

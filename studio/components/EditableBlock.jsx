@@ -15,7 +15,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             position: "relative",
             padding: "8px",
             borderRadius: "5px",
-            border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
+            border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && store.isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
             maxWidth: inGroup ? "33%" : "100%",
             background: !isFieldConfigEditor ? "rgba(255, 255, 255, 0.2)" : "transparent"
         }} onContextMenu={(e) => {
@@ -32,7 +32,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             }
         }}
         >
-            {!isFieldConfigEditor ? <BlockPathLabel path={path} /> : null}
+            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} /> : null}
             {field}
         </div>
     );
