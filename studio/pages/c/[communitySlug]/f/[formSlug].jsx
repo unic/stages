@@ -17,6 +17,7 @@ import DataInspector from '../../../../components/DataInspector';
 import InspectorHeader from '../../../../components/InspectorHeader';
 import { GitFork } from 'lucide-react';
 import { Button } from 'primereact/button';
+import EditorBGPattern from '../../../../components/EditorBGPattern';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -288,11 +289,11 @@ const CommunityForm = () => {
     console.log({ fromDate, toDate });
 
     return (
-        <div style={{ marginRight: store.isEditMode ? "350px" : 0, position: "relative" }}>
-            <div style={{ position: "absolute", top: 0, right: "16px", cursor: "pointer" }}>
+        <div style={{ marginTop: "-16px", paddingTop: "16px", marginLeft: "-16px", paddingLeft: "16px", marginRight: store.isEditMode ? "350px" : 0, position: "relative", background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
+            <div style={{ position: "absolute", top: "18px", right: "16px", cursor: "pointer" }}>
                 <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
             </div>
-            <div>
+            <div style={{ marginLeft: "8px", marginTop: "-11px" }}>
                 <h2>
                     {store.generalConfig.title}
                     <span style={{ color: "#999", fontSize: "12px", fontWeight: "300", marginLeft: "16px", display: "inline-block" }}>
@@ -301,7 +302,6 @@ const CommunityForm = () => {
                         {toDate ? `Due date ${toDate.long()}, in ${toDate.relativeTo(now)}` : ""}
                     </span>
                 </h2>
-                
             </div>
             {store.isEditMode ? <ContextMenu model={store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
             {!store.isEditMode ? <div><br /></div> : null}
