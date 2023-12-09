@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import useStagesStore from './store';
+import BlockPathLabel from './BlockPathLabel';
 
 const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, isFieldConfigEditor }) => {
     const store = useStagesStore();
@@ -11,9 +12,10 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
 
     return (
         <div className={inGroup ? "flex-1" : undefined} style={{
+            position: "relative",
             padding: "8px",
             borderRadius: "5px",
-            border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)",
+            border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor ? "1px dashed #ccc" : "1px solid rgba(0,0,0,0)",
             position: "relative",
             maxWidth: inGroup ? "33%" : "100%"
         }} onContextMenu={(e) => {
@@ -30,6 +32,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             }
         }}
         >
+            <BlockPathLabel path={path} />
             {isInEditMode && store.isEditMode && !isFieldConfigEditor ? (
                 <span style={{ position: "absolute", top: "6px", right: "6px", color: "#0A94F8", fontSize: "11px" }}>edit</span>
             ) : null}

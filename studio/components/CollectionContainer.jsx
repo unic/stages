@@ -9,7 +9,7 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
 
     return (
         <div
-            style={{ position: "relative", flexWrap: "wrap", border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : "1px solid rgba(0,0,0,0)", borderRadius: "5px", padding: "2px", margin: "0 4px 4px 0" }}
+            style={{ position: "relative", flexWrap: "wrap", border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor ? "1px dashed #ccc" : "1px solid rgba(0,0,0,0)", borderRadius: "5px", padding: "2px", margin: "0 4px 4px 0" }}
             onClick={(e) => {
                 e.stopPropagation();
                 if (isEditMode) handleEditCollection(path);
