@@ -28,7 +28,7 @@ const CommunityForm = () => {
     } = useRouter();
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
-    
+    console.log({ store });
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
@@ -261,15 +261,15 @@ const CommunityForm = () => {
         store.setEditorTabIndex(1);
     };
 
-    const handleEditCollection = (path) => {
+    const handleEditCollection = (path, isShiftKey) => {
         console.log("--> handleEditCollection <--");
-        store.setSelectedElement(path);
+        store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
     };
     
-    const handleEditGroup = (path) => {
+    const handleEditGroup = (path, isShiftKey) => {
         console.log("--> handleEditGroup <--");
-        store.setSelectedElement(path);
+        store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
     };
 

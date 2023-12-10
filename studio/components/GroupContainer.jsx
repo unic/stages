@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import BlockPathLabel from './BlockPathLabel';
+import { pathIsSelected } from './helpers';
 
 const GroupContainer = ({ children, handleEditGroup, isEditMode, path, selectedElement, isFieldConfigEditor }) => {
-    const [isInEditMode, setIsInEditMode] = useState(isEditMode && selectedElement === path);
+    const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement));
 
     useEffect(() => {
-        if (selectedElement !== path) setIsInEditMode(false);
+        if (!pathIsSelected(path, selectedElement)) setIsInEditMode(false);
     }, [path, selectedElement]);
 
     return (
@@ -21,9 +22,9 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, selectedE
             }}
             onClick={(e) => {
                 e.stopPropagation();
-                if (isEditMode) handleEditGroup(path);
+                if (isEditMode) handleEditGroup(path, e.shiftKey);
             }}
-            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
+            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement) ? true : false)}
         >
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="group" /> : null}
             {children}

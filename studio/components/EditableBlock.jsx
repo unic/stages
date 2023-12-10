@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
+import { pathIsSelected } from './helpers';
 
 const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, isFieldConfigEditor }) => {
     const store = useStagesStore();
-    const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && selectedElement === path);
+    const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement));
 
     useEffect(() => {
-        if (selectedElement !== path) setIsInEditMode(false);
+        if (!pathIsSelected(path, selectedElement)) setIsInEditMode(false);
     }, [path, selectedElement]);
 
     return (
@@ -23,11 +24,11 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
                 contextMenuRef.current.show(e);
                 store.setActiveContextMenuInput(path);
             }
-        }} onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(selectedElement === path ? true : false)}
+        }} onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement) ? true : false)}
         onClick={(e) => {
             e.stopPropagation();
             if (isInEditMode && store.isEditMode && !isFieldConfigEditor) {
-                store.setSelectedElement(path);
+                store.setSelectedElement(path, e.shiftKey);
                 store.setEditorTabIndex(1);
             }
         }}

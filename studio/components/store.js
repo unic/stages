@@ -26,7 +26,16 @@ const useStagesStore = create((set) => ({
     setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),
     setPreviewMode: () => set(() => ({ isEditMode: false })),
     setData: (data) => set(() => ({ data })),
-    setSelectedElement: (selectedElement) => set(() => ({ selectedElement })),
+    setSelectedElement: (selectedElement, isShiftKey) => set((state) => {
+        if (isShiftKey && state.selectedElement) {
+            if (Array.isArray(state.selectedElement)) {
+                return { selectedElement: [...state.selectedElement, selectedElement] };
+            }
+            return { selectedElement: [selectedElement, state.selectedElement] };
+        } else {
+            return { selectedElement };
+        }
+    }),
     setActiveContextMenuInput: (activeContextMenuInput) => set(() => ({ activeContextMenuInput })),
     setClipboard: (clipboard) => set(() => ({ clipboard })),
     updateCurrentConfig: (currentConfig) => set(() => ({ currentConfig })),

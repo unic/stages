@@ -60,3 +60,7 @@ export const getAllPaths = (config, path = "") => {
     }
     return paths;
 };
+
+export const pathIsSelected = (path, selectedElement) => {
+    return selectedElement === path || (Array.isArray(selectedElement) && selectedElement.includes(path));
+}
