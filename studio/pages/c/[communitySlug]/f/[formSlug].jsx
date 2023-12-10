@@ -28,7 +28,7 @@ const CommunityForm = () => {
     } = useRouter();
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
-    console.log({ store });
+
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
@@ -245,20 +245,36 @@ const CommunityForm = () => {
 
     const handleEditFieldConfig = (path, config) => {
         console.log("--> handleEditFieldConfig <--");
-        if (!config.id) return;
-        const newConfig = [...store.currentConfig];
-        const realPath = getConfigPathFromDataPath(path, newConfig);
-        if (realPath && Object.keys(config).length > 0) {
-            const oldConfig = get(store.currentConfig, realPath);
-            if (config.type === "group" || config.type === "collection") {
-                set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
-            } else {
-                set(newConfig, realPath, config);
+        if (Array.isArray(path)) {
+            const newConfig = [...store.currentConfig];
+            path.forEach(p => {
+                // p = path, config = diff 
+                const realPath = getConfigPathFromDataPath(p, newConfig);
+                if (realPath && config.length > 0) {
+                    const editedConfig = get(store.currentConfig, realPath);
+                    config.forEach(c => {
+                        editedConfig[c[0]] = c[1];
+                    });
+                    set(newConfig, realPath, editedConfig);
+                }
+            });
+            store.updateCurrentConfig(newConfig);
+        } else {
+            if (!config.id) return;
+            const newConfig = [...store.currentConfig];
+            const realPath = getConfigPathFromDataPath(path, newConfig);
+            if (realPath && Object.keys(config).length > 0) {
+                const oldConfig = get(store.currentConfig, realPath);
+                if (config.type === "group" || config.type === "collection") {
+                    set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
+                } else {
+                    set(newConfig, realPath, config);
+                }
+                if (oldConfig.id !== config.id) store.setSelectedElement(config.id);
             }
-            if (oldConfig.id !== config.id) store.setSelectedElement(config.id);
+            store.updateCurrentConfig(newConfig);
+            store.setEditorTabIndex(1);
         }
-        store.updateCurrentConfig(newConfig);
-        store.setEditorTabIndex(1);
     };
 
     const handleEditCollection = (path, isShiftKey) => {
@@ -285,8 +301,6 @@ const CommunityForm = () => {
     const fromDate = store.generalConfig.date.from ? new Sugar.Date(store.generalConfig.date.from) : "";
     const toDate = store.generalConfig.date.to ? new Sugar.Date(store.generalConfig.date.to) : "";
     const now = new Date();
-
-    console.log({ fromDate, toDate });
 
     return (
         <div style={{ marginTop: "-16px", paddingTop: "16px", marginLeft: "-16px", paddingLeft: "16px", marginRight: store.isEditMode ? "350px" : 0, position: "relative", background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
