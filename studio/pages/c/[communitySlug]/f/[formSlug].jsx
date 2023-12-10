@@ -345,7 +345,14 @@ const CommunityForm = () => {
                                             ]} activeIndex={store.editorTabIndex} onTabChange={(e) => store.setEditorTabIndex(e.index)} />
                                         </div>
                                         <div style={{ padding: "16px 12px", flexGrow: 1 }}>
-                                            {store.editorTabIndex === 1 ? <FieldConfigEditor key={store.selectedElement} path={store.selectedElement} config={fieldProps.getConfig(store.selectedElement)} handleEditFieldConfig={handleEditFieldConfig} /> : null}
+                                            {store.editorTabIndex === 1 ? (
+                                                <FieldConfigEditor
+                                                    key={store.selectedElement}
+                                                    path={store.selectedElement}
+                                                    config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => fieldProps.getConfig(item)) : fieldProps.getConfig(store.selectedElement)}
+                                                    handleEditFieldConfig={handleEditFieldConfig}
+                                                />
+                                            ) : null}
                                             {store.editorTabIndex === 0 ? <GeneralConfig /> : null}
                                             {store.editorTabIndex === 2 ? <DataInspector /> : null}
                                         </div>

@@ -18,7 +18,7 @@ const parseConfig = config => {
 }
 
 const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
-    if (!config || typeof config !== "object" || !path) {
+    if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
         return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
     }
 
@@ -29,16 +29,16 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     useEffect(() => {
         setData(config);
     }, [config, path]);
-
+console.log({ path, config });
     return (
         <>
             <div className="flex">
                 <div className="flex-grow-1" style={{ paddingTop: "6px" }}>
-                    <FormattedPath path={path} />
+                    {Array.isArray(path) ? path.map((p, i) => <FormattedPath key={i} path={p} />) : <FormattedPath path={path} />}
                 </div>
             </div>
             <InspectorSpacer />
-            {typeof config === "object" ? (
+            {typeof config === "object" && !Array.isArray(config) ? (
                 <Form
                     key={`configForm-${config.type}`}
                     id={`configForm-${config.type}`}
