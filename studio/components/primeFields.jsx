@@ -91,7 +91,7 @@ const MappedInputMask = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><InputMask {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><InputMask {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputTextarea = (props) => {
@@ -100,7 +100,7 @@ const MappedInputTextarea = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><InputTextarea {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><InputTextarea {...mappedProps} /></InputWrapper>;
 };
 
 const MappedEditor = (props) => {
@@ -109,7 +109,7 @@ const MappedEditor = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><Editor {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Editor {...mappedProps} /></InputWrapper>;
 };
 
 const MappedDropdown = (props) => {
@@ -119,7 +119,7 @@ const MappedDropdown = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.optionLabel = 'text';
-    return <InputWrapper {...mappedProps}><Dropdown {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Dropdown {...mappedProps} /></InputWrapper>;
 };
 
 const MappedSelectButton = (props) => {
@@ -129,7 +129,7 @@ const MappedSelectButton = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.optionLabel = 'text';
-    return <InputWrapper {...mappedProps}><SelectButton {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><SelectButton {...mappedProps} /></InputWrapper>;
 };
 
 const MappedCalendar = (props) => {
@@ -144,7 +144,7 @@ const MappedCalendar = (props) => {
     };
     mappedProps.showIcon = true;
     mappedProps.locale = "en";
-    return <InputWrapper {...mappedProps}><Calendar {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Calendar {...mappedProps} /></InputWrapper>;
 };
 
 const MappedCheckbox = (props) => {
@@ -154,7 +154,7 @@ const MappedCheckbox = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(!!e.checked);
     };
-    return <InputWrapper {...mappedProps}><Checkbox {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Checkbox {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputSwitch = (props) => {
@@ -164,7 +164,7 @@ const MappedInputSwitch = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><InputSwitch {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><InputSwitch {...mappedProps} /></InputWrapper>;
 };
 
 const MappedToggleButton = (props) => {
@@ -174,7 +174,7 @@ const MappedToggleButton = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><ToggleButton {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><ToggleButton {...mappedProps} /></InputWrapper>;
 };
 
 const MappedRating = (props) => {
@@ -184,7 +184,7 @@ const MappedRating = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <InputWrapper {...mappedProps}><Rating {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Rating {...mappedProps} /></InputWrapper>;
 };
 
 const MappedInputNumber = (props) => {
@@ -194,7 +194,7 @@ const MappedInputNumber = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <InputWrapper {...mappedProps}><InputNumber {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><InputNumber {...mappedProps} /></InputWrapper>;
 };
 
 const MappedSlider = (props) => {
@@ -204,7 +204,7 @@ const MappedSlider = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <InputWrapper {...mappedProps}><Slider {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Slider {...mappedProps} /></InputWrapper>;
 };
 
 const MappedChips = (props) => {
@@ -213,7 +213,7 @@ const MappedChips = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.value);
     };
-    return <InputWrapper {...mappedProps}><Chips {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Chips {...mappedProps} /></InputWrapper>;
 };
 
 const MappedColorPicker = (props) => {
@@ -223,7 +223,7 @@ const MappedColorPicker = (props) => {
         props.onChange(e.value);
     };
     mappedProps.format = 'hex';
-    return <InputWrapper {...mappedProps}><ColorPicker {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><ColorPicker {...mappedProps} /></InputWrapper>;
 };
 
 const MappedPassword = (props) => {
@@ -232,7 +232,7 @@ const MappedPassword = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps}><Password {...mappedProps} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Password {...mappedProps} /></InputWrapper>;
 };
 
 const primeFields = {
