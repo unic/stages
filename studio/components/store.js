@@ -39,6 +39,13 @@ const useStagesStore = create((set) => ({
     setActiveContextMenuInput: (activeContextMenuInput) => set(() => ({ activeContextMenuInput })),
     setClipboard: (clipboard) => set(() => ({ clipboard })),
     updateCurrentConfig: (currentConfig) => set(() => ({ currentConfig })),
+    removePathFromSelectedElements: (path) => set((state) => {
+        if (Array.isArray(state.selectedElement)) {
+            return { selectedElement: state.selectedElement.filter(p => p !== path) };
+        } else if (path === state.selectedElement) {
+            return { selectedElement: '' };
+        }
+    })
 }));
 
 export default useStagesStore;

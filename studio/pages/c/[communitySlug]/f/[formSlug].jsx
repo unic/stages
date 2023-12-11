@@ -50,6 +50,8 @@ const CommunityForm = () => {
         store.setClipboard(get(newConfig, realPath));
         unset(newConfig, realPath);
         store.updateCurrentConfig(Array.isArray(newConfig) ? newConfig.filter(item => item) : newConfig);
+        // If field is selected, unselect it
+        store.removePathFromSelectedElements(path);
     };
 
     const handleGroupField = (path) => {
