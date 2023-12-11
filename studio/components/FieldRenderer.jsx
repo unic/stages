@@ -106,7 +106,7 @@ export const FieldRenderer = ({
                                                                         provided.draggableProps.style
                                                                     )}
                                                                 >
-                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: "8px 2px" }}>
+                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: isFieldConfigEditor ? 0 : "8px 2px" }}>
                                                                         {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
@@ -121,7 +121,7 @@ export const FieldRenderer = ({
                                                                             fields={entry}
                                                                             type="group"
                                                                         />
-                                                                        <div style={{ position: "absolute", right: "8px", top: "calc(50% - 12px)" }}>
+                                                                        <div style={{ position: "absolute", right: isFieldConfigEditor ? "2px" : "8px", top: isFieldConfigEditor ? "calc(50% - 6px)" : "calc(50% - 12px)" }}>
                                                                             <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
                                                                         </div>
                                                                     </div>
