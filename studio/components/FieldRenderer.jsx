@@ -106,7 +106,7 @@ export const FieldRenderer = ({
                                                                         provided.draggableProps.style
                                                                     )}
                                                                 >
-                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap" }}>
+                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: "8px 2px" }}>
                                                                         {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
