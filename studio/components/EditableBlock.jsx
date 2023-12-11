@@ -21,8 +21,8 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
                 borderRadius: "5px",
                 border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && store.isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 maxWidth: inGroup ? "33%" : "100%",
-                background: !isFieldConfigEditor ? "#fff" : "transparent",
-                boxShadow: !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
+                background: store.isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
+                boxShadow: store.isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
             }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
