@@ -18,7 +18,8 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
                 border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 borderRadius: "5px",
                 padding: "2px",
-                background: !isFieldConfigEditor ? "rgba(255, 255, 255, 0.2)" : "transparent"
+                background: !isFieldConfigEditor ? "#fff" : "transparent",
+                boxShadow: !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
             }}
             onClick={(e) => {
                 e.stopPropagation();
