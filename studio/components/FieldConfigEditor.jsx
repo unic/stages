@@ -20,7 +20,7 @@ const parseConfig = config => {
 
 const getSameProperties = configs => {
     const parsedConfigs = configs.map(c => {
-        return parseConfig(fieldProps[c.type])
+        return parseConfig(fieldProps[c.type]);
     });
     const ids = {};
     const properties = [];

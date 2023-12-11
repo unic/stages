@@ -17,7 +17,6 @@ import DataInspector from '../../../../components/DataInspector';
 import InspectorHeader from '../../../../components/InspectorHeader';
 import { GitFork } from 'lucide-react';
 import { Button } from 'primereact/button';
-import EditorBGPattern from '../../../../components/EditorBGPattern';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -237,7 +236,6 @@ const CommunityForm = () => {
             } else {
                 newConfig = arrayToInsertInto;
             }
-            console.log({ path, realPath, parentOfRealPath, clipboard: store.clipboard, arrayToInsertInto, newConfig });
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
@@ -363,7 +361,7 @@ const CommunityForm = () => {
                                                 <FieldConfigEditor
                                                     key={store.selectedElement}
                                                     path={store.selectedElement}
-                                                    config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => fieldProps.getConfig(item)) : fieldProps.getConfig(store.selectedElement)}
+                                                    config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => fieldProps.getConfig(item)).filter(item => item) : fieldProps.getConfig(store.selectedElement)}
                                                     handleEditFieldConfig={handleEditFieldConfig}
                                                 />
                                             ) : null}
