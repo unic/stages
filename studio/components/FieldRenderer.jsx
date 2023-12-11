@@ -81,7 +81,7 @@ console.log({ fields, parent, type });
                         const collectionConfig = fieldProps.getConfig(key);
                         return (
                             <>
-                                <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />
+                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
                                 <CollectionContainer key={key} isFieldConfigEditor={isFieldConfigEditor} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
                                     {collectionConfig.label ? <label style={{ marginLeft: "6px" }}>{collectionConfig.label}</label> : null}
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
@@ -140,7 +140,7 @@ console.log({ fields, parent, type });
                         const groupPath = createKey(parent, key);
                         return (
                             <>
-                                <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />
+                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
                                 <GroupContainer
                                     isFieldConfigEditor={isFieldConfigEditor}
                                     selectedElement={selectedElement}
