@@ -30,14 +30,16 @@ export const FieldRenderer = ({
     const store = useStagesStore();
     if (typeof fields !== "object" || !typeof window) return null;
     if (!type) type = "field";
-console.log({ fields, parent, type });
+
     const getListStyle = isDraggingOver => ({
         width: "calc(100% - 32px)",
+        maxWidth: "calc(100% - 32px)",
         padding: "8px"
     });
     const getItemStyle = (isDragging, draggableStyle) => ({
         userSelect: "none",
         width: "calc(100% + 32px)",
+        maxWidth: "calc(100% + 32px)",
         margin: "4px 0 8px 0",
         padding: "4px",
         position: "relative",
@@ -104,7 +106,7 @@ console.log({ fields, parent, type });
                                                                         provided.draggableProps.style
                                                                     )}
                                                                 >
-                                                                    <div className="flex" style={{ position: "relative" }}>
+                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap" }}>
                                                                         {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}

@@ -11,6 +11,7 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
 
     return (
         <div
+            className="flex"
             style={{
                 position: "relative",
                 flexWrap: "wrap",

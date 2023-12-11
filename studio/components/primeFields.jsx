@@ -50,7 +50,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
         );
     }
     return (
-        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none" } : {}}>
+        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: "200px" } : { minWidth: "200px" }}>
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{label}{isRequired ? " *" : ""}</label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
             <div className="w-full">{children}</div>
