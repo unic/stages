@@ -36,14 +36,14 @@ export const FieldRenderer = ({
         maxWidth: "calc(100% - 32px)",
         padding: "8px"
     });
-    const getItemStyle = (isDragging, draggableStyle) => ({
+    const getItemStyle = (isDragging, draggableStyle, isFieldConfigEditor) => ({
         userSelect: "none",
         width: "calc(100% + 32px)",
         maxWidth: "calc(100% + 32px)",
-        margin: "4px 0 8px 0",
-        padding: "4px",
+        margin: isFieldConfigEditor ? "0 0 -16px 0" : "4px 0 8px 0",
+        padding: isFieldConfigEditor ? 0 : "4px",
         position: "relative",
-        border: "1px dashed #ddd",
+        border: isFieldConfigEditor ? "none" : "1px dashed #ddd",
         borderRadius: "3px",
         background: isDragging ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.2)",
         ...draggableStyle
@@ -103,7 +103,8 @@ export const FieldRenderer = ({
                                                                     {...provided.dragHandleProps}
                                                                     style={getItemStyle(
                                                                         snapshot.isDragging,
-                                                                        provided.draggableProps.style
+                                                                        provided.draggableProps.style,
+                                                                        isFieldConfigEditor
                                                                     )}
                                                                 >
                                                                     <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: isFieldConfigEditor ? 0 : "8px 2px" }}>
