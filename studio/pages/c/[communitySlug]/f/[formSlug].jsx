@@ -223,11 +223,12 @@ const CommunityForm = () => {
         console.log("--> handlePasteBetweenFields <--");
         // Add clipboard content after path:
         if (store.clipboard) {
+            const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
             let newConfig = [...store.currentConfig];
-            const realPath = getConfigPathFromDataPath(path, newConfig);
+            const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
             const lastArrayIndex = realPath.lastIndexOf("[");
             const parentOfRealPath = realPath.substring(0, lastArrayIndex);
-            const index = parseInt(realPath.substring(lastArrayIndex + 1));
+            const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
             let arrayToInsertInto;
             if (parentOfRealPath !== "") {
                 arrayToInsertInto = get(newConfig, parentOfRealPath);
