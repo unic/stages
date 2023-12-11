@@ -47,10 +47,16 @@ const useStagesStore = create((set) => ({
     updateCurrentConfig: (currentConfig) => set(() => ({ currentConfig })),
     removePathFromSelectedElements: (path) => set((state) => {
         if (Array.isArray(state.selectedElement)) {
-            return { selectedElement: state.selectedElement.filter(p => p !== path) };
+            const newElements = state.selectedElement.filter(p => p !== path);
+            if (newElements.length > 1) {
+                return { selectedElement: newElements };
+            } else {
+                return { selectedElement: newElements[0] };
+            }
         } else if (path === state.selectedElement) {
             return { selectedElement: '' };
         }
+        return { selectedElement: state.selectedElement };
     })
 }));
 

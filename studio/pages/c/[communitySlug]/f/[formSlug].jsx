@@ -28,6 +28,8 @@ const CommunityForm = () => {
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
 
+    if (!store) return <div>Something went wrong, store not found!</div>;
+
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
@@ -298,8 +300,8 @@ const CommunityForm = () => {
         })
     }
 
-    const fromDate = store.generalConfig.date.from ? new Sugar.Date(store.generalConfig.date.from) : "";
-    const toDate = store.generalConfig.date.to ? new Sugar.Date(store.generalConfig.date.to) : "";
+    const fromDate = store?.generalConfig?.date?.from ? new Sugar.Date(store.generalConfig.date.from) : "";
+    const toDate = store?.generalConfig?.date?.to ? new Sugar.Date(store.generalConfig.date.to) : "";
     const now = new Date();
 
     return (
