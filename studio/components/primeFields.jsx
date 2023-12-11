@@ -15,6 +15,7 @@ import { Chips } from 'primereact/chips';
 import { ColorPicker } from 'primereact/colorpicker';
 import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
+import useStagesStore from './store';
 
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
@@ -38,6 +39,7 @@ const removeStagesProps = (props) => {
 };
 
 const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, isInInspector }) => {
+    const store = useStagesStore();
     if (isInInspector) {
         return (
             <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>
@@ -49,7 +51,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     }
     return (
         <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none" } : {}}>
-            <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label>
+            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{label}{isRequired ? " *" : ""}</label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
             <div className="w-full">{children}</div>
         </div>

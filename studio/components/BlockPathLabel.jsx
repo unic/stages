@@ -9,6 +9,7 @@ const BlockPathLabel = ({ path, inCollection, isHovered, type }) => {
             background: "#fff",
             padding: "1px 4px",
             borderRadius: "3px",
+            userSelect: "none"
         }}>{type === "group" ? "[••] " : null}{type === "collection" ? "[=] " : null}{type === "field" ? "[ ] " : null}{path}</span>
     );  
 };
