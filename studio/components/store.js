@@ -29,10 +29,16 @@ const useStagesStore = create((set) => ({
     setSelectedElement: (selectedElement, isShiftKey) => set((state) => {
         if (isShiftKey && state.selectedElement) {
             if (Array.isArray(state.selectedElement)) {
+                if (state.selectedElement.indexOf(selectedElement) !== -1) {
+                    return { selectedElement: state.selectedElement.filter(p => p !== selectedElement) };
+                }
                 return { selectedElement: [...state.selectedElement, selectedElement] };
             }
             return { selectedElement: [selectedElement, state.selectedElement] };
         } else {
+            if (state.selectedElement === selectedElement) {
+                return { selectedElement: '' };
+            }
             return { selectedElement };
         }
     }),
