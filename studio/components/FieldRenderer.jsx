@@ -30,7 +30,7 @@ export const FieldRenderer = ({
     const store = useStagesStore();
     if (typeof fields !== "object" || !typeof window) return null;
     if (!type) type = "field";
-
+console.log({ fields, parent, type });
     const getListStyle = isDraggingOver => ({
         width: "calc(100% - 32px)",
         padding: "8px"
@@ -137,21 +137,34 @@ export const FieldRenderer = ({
                             </>
                         );
                     } else {
-                        return <GroupContainer isFieldConfigEditor={isFieldConfigEditor} selectedElement={selectedElement} handleEditGroup={handleEditGroup} isEditMode={isEditMode} path={createKey(parent, Object.keys(fields)[0])} key={key}>
-                            <FieldRenderer
-                                isFieldConfigEditor={isFieldConfigEditor}
-                                handleEditCollection={handleEditCollection}
-                                handleEditGroup={handleEditGroup}
-                                parent={createKey(parent, key)}
-                                setActiveContextMenuInput={setActiveContextMenuInput}
-                                contextMenuRef={contextMenuRef}
-                                isEditMode={isEditMode && !isFieldConfigEditor}
-                                selectedElement={selectedElement}
-                                fieldProps={fieldProps}
-                                fields={field}
-                                type="group"
-                            />
-                        </GroupContainer>;
+                        const groupPath = createKey(parent, key);
+                        return (
+                            <>
+                                <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />
+                                <GroupContainer
+                                    isFieldConfigEditor={isFieldConfigEditor}
+                                    selectedElement={selectedElement}
+                                    handleEditGroup={handleEditGroup}
+                                    isEditMode={isEditMode}
+                                    path={groupPath}
+                                    key={groupPath}
+                                >
+                                    <FieldRenderer
+                                        isFieldConfigEditor={isFieldConfigEditor}
+                                        handleEditCollection={handleEditCollection}
+                                        handleEditGroup={handleEditGroup}
+                                        parent={groupPath}
+                                        setActiveContextMenuInput={setActiveContextMenuInput}
+                                        contextMenuRef={contextMenuRef}
+                                        isEditMode={isEditMode && !isFieldConfigEditor}
+                                        selectedElement={selectedElement}
+                                        fieldProps={fieldProps}
+                                        fields={field}
+                                        type="group"
+                                    />
+                                </GroupContainer>
+                            </>
+                        );
                     }
                 }
             })}
