@@ -6,6 +6,10 @@ const initialConfig = [
         isRequired: true
     },
     {
+        id: "divider1",
+        type: "divider"
+    },
+    {
         id: "email",
         label: "Email",
         type: "email",
@@ -32,6 +36,10 @@ const initialConfig = [
         ]
     },
     {
+        id: "divider2",
+        type: "divider"
+    },
+    {
         id: "hobbies",
         type: "collection",
         label: "Hobbies",
@@ -52,6 +60,10 @@ const initialConfig = [
                 isRequired: false
             },
         ]
+    },
+    {
+        id: "divider3",
+        type: "divider"
     },
     {
         id: "comments",

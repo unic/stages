@@ -15,6 +15,7 @@ import { Chips } from 'primereact/chips';
 import { ColorPicker } from 'primereact/colorpicker';
 import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
+import { Divider } from 'primereact/divider';
 import useStagesStore from './store';
 
 const isValid = (value, config) => {
@@ -255,6 +256,12 @@ const MappedPassword = (props) => {
     return <InputWrapper {...mappedProps} isRequired={props.isRequired}><Password {...mappedProps} /></InputWrapper>;
 };
 
+const MappedDivider = (props) => {
+    console.log("Divider", {props});
+    return <Divider type={props.borderType || "dashed"} layout={props.layout || "horizontal"} align={props.align}>{props.text}</Divider>;
+};
+
+
 const primeFields = {
     text: {
         component: MappedInputText,
@@ -323,6 +330,10 @@ const primeFields = {
     password: {
         component: MappedPassword,
         isValid: isValid
+    },
+    divider: {
+        component: MappedDivider,
+        isValid: () => true
     }
 };
 

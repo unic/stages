@@ -171,6 +171,79 @@ const globalFieldProps = {
 }
 
 const fieldProps = {
+    divider: [
+        globalFieldProps.id,
+        {
+            id: "text",
+            type: "text",
+            label: "Text",
+            isRequired: false,
+        },
+        {
+            id: "align",
+            type: "select",
+            label: "Text Alignment",
+            defaultValue: "right",
+            options: [
+                {
+                    value: "center",
+                    text: "Center"
+                },
+                {
+                    value: "left",
+                    text: "Left"
+                },
+                {
+                    value: "right",
+                    text: "Right"
+                },
+                {
+                    value: "top",
+                    text: "Top"
+                },
+                {
+                    value: "bottom",
+                    text: "Bottom"
+                }
+            ]
+        },
+        {
+            id: "layout",
+            type: "select",
+            label: "Layout",
+            defaultValue: "horizontal",
+            options: [
+                {
+                    value: "horizontal",
+                    text: "Horizontal"
+                },
+                {
+                    value: "vertical",
+                    text: "Vertical"
+                }
+            ]
+        },
+        {
+            id: "borderType",
+            type: "select",
+            label: "Border Type",
+            defaultValue: "dashed",
+            options: [
+                {
+                    value: "dashed",
+                    text: "Dashed"
+                },
+                {
+                    value: "dotted",
+                    text: "Dotted"
+                },
+                {
+                    value: "solid",
+                    text: "Solid"
+                }
+            ]
+        }
+    ],
     group: [
         globalFieldProps.id,
         globalFieldProps.label,
