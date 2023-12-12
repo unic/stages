@@ -257,8 +257,18 @@ const MappedPassword = (props) => {
 };
 
 const MappedDivider = (props) => {
-    console.log("Divider", {props});
     return <Divider type={props.borderType || "dashed"} layout={props.layout || "horizontal"} align={props.align}>{props.text}</Divider>;
+};
+
+const MappedHeading = (props) => {
+    return (
+        <div>
+            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}>{props.title}</h2>}
+            {props.level === 3 && <h3 style={{ marginTop: 0 }}>{props.title}</h3>}
+            {props.level === 4 && <h4 style={{ marginTop: 0 }}>{props.title}</h4>}
+            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}>{props.text}</p>}
+        </div>
+    );
 };
 
 
@@ -333,6 +343,10 @@ const primeFields = {
     },
     divider: {
         component: MappedDivider,
+        isValid: () => true
+    },
+    heading: {
+        component: MappedHeading,
         isValid: () => true
     }
 };

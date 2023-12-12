@@ -1,5 +1,11 @@
 const initialConfig = [
     {
+        id: "heading1",
+        type: "heading",
+        title: "Sign Up",
+        text: "This is an example sign up form."
+    },
+    {
         id: "username",
         label: "Username",
         type: "text",

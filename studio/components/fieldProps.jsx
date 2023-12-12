@@ -171,6 +171,41 @@ const globalFieldProps = {
 }
 
 const fieldProps = {
+    heading: [
+        globalFieldProps.id,
+        {
+            id: "title",
+            type: "text",
+            label: "Title",
+            isRequired: true,
+        },
+        {
+            id: "level",
+            type: "select",
+            label: "Level",
+            defaultValue: 2,
+            options: [
+                {
+                    value: 2,
+                    text: "2"
+                },
+                {
+                    value: 3,
+                    text: "3"
+                },
+                {
+                    value: 4,
+                    text: "4"
+                }
+            ]
+        },
+        {
+            id: "text",
+            type: "textarea",
+            label: "Text",
+            isRequired: false,
+        },
+    ],
     divider: [
         globalFieldProps.id,
         {
