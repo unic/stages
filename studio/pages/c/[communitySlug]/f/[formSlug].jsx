@@ -43,6 +43,7 @@ const CommunityForm = () => {
         { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
 
     const handleCutField = (path) => {
@@ -216,6 +217,30 @@ const CommunityForm = () => {
         newData[newTempId] = [{}];
         store.setData(newData);
 
+        store.setSelectedElement('');
+    };
+
+    const handleInsertDividerBetweenFields = (path) => {
+        console.log("--> handleInsertDividerBetweenFields <--");
+        // Add new group between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: createNewFieldID(path, "divider", store),
+            type: "divider"
+        });
+        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
     };
 
