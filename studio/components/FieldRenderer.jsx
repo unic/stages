@@ -141,6 +141,7 @@ export const FieldRenderer = ({
                         );
                     } else {
                         const groupPath = createKey(parent, key);
+                        const groupConfig = fieldProps.getConfig(groupPath);
                         return (
                             <>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
@@ -150,6 +151,7 @@ export const FieldRenderer = ({
                                     handleEditGroup={handleEditGroup}
                                     isEditMode={isEditMode}
                                     path={groupPath}
+                                    label={groupConfig?.label}
                                     key={groupPath}
                                 >
                                     <FieldRenderer
