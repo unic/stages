@@ -16,6 +16,11 @@ const globalFieldProps = {
         type: "text",
         label: "Secondary Text"
     },
+    computedValue: {
+        id: "computedValue",
+        type: "textarea",
+        label: "Computed Value"
+    },
     type: {
         id: "type",
         type: "select",
@@ -317,6 +322,7 @@ const fieldProps = {
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
         globalFieldProps.tooltip,
+        globalFieldProps.computedValue,
         globalFieldProps.textValidation
     ],
     textarea: [
