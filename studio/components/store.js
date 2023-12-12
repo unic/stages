@@ -21,11 +21,39 @@ const useStagesStore = create((set) => ({
     clipboard: null,
     currentConfig: initialConfig,
     generalConfig: initialGeneralConfig,
+    undoData: [JSON.stringify(initialConfig)],
+    activeUndoIndex: 1,
     updateGeneralConfig: (generalConfig) => set(() => ({ generalConfig })),
     setEditMode: () => set(() => ({ isEditMode: true })),
     setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),
     setPreviewMode: () => set(() => ({ isEditMode: false })),
     setData: (data) => set(() => ({ data })),
+    setUndoData: (undoData) => set(() => ({ undoData })),
+    setActiveUndoIndex: (activeUndoIndex) => set(() => ({ activeUndoIndex })),
+    undo: () => set((state) => {
+        if (state.activeUndoIndex > 0) {
+            const newIndex = state.activeUndoIndex - 1;
+            const oldConfig = JSON.parse(state.undoData[newIndex]);
+            return { activeUndoIndex: newIndex, currentConfig: oldConfig };
+        } else {
+            return { activeUndoIndex: 0 };
+        }
+    }),
+    redo: () => set((state) => {
+        if (state.activeUndoIndex < state.undoData.length - 1) {
+            const newIndex = state.activeUndoIndex + 1;
+            const oldConfig = JSON.parse(state.undoData[newIndex]);
+
+            return { activeUndoIndex: state.activeUndoIndex, currentConfig: oldConfig };
+        } else {
+            return { activeUndoIndex: state.activeUndoIndex };
+        }
+    }),
+    updateCurrentConfig: (currentConfig) => set((state) => {
+        const newUndoData = [...state.undoData];
+        newUndoData.push(JSON.stringify(currentConfig));
+        return { currentConfig, undoData: newUndoData, activeUndoIndex: newUndoData.length - 1 };
+    }),
     setSelectedElement: (selectedElement, isShiftKey) => set((state) => {
         if (isShiftKey && state.selectedElement) {
             if (Array.isArray(state.selectedElement)) {
@@ -44,7 +72,6 @@ const useStagesStore = create((set) => ({
     }),
     setActiveContextMenuInput: (activeContextMenuInput) => set(() => ({ activeContextMenuInput })),
     setClipboard: (clipboard) => set(() => ({ clipboard })),
-    updateCurrentConfig: (currentConfig) => set(() => ({ currentConfig })),
     removePathFromSelectedElements: (path) => set((state) => {
         if (Array.isArray(state.selectedElement)) {
             const newElements = state.selectedElement.filter(p => p !== path);

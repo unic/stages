@@ -17,6 +17,8 @@ import DataInspector from '../../../../components/DataInspector';
 import InspectorHeader from '../../../../components/InspectorHeader';
 import { GitFork } from 'lucide-react';
 import { Button } from 'primereact/button';
+import { Undo } from 'lucide-react';
+import { Redo } from 'lucide-react';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -375,6 +377,12 @@ const CommunityForm = () => {
             <div style={{ position: "absolute", top: "18px", right: "16px", cursor: "pointer" }}>
                 <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
             </div>
+            {store.isEditMode ? (
+                <div style={{ position: "absolute", top: "24px", right: "60px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
+                    <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.undo()}><Undo color="#999" size={16} /></button>
+                    <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.redo()}><Redo color="#999" size={16} /></button>
+                </div>
+            ) : null}
             <div style={{ marginLeft: "8px", marginTop: "-11px" }}>
                 <h2>
                     {store.generalConfig.title}
