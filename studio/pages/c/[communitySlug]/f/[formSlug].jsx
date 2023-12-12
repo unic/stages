@@ -306,7 +306,7 @@ const CommunityForm = () => {
     const now = new Date();
 
     return (
-        <div style={{ marginTop: "-16px", paddingTop: "16px", marginLeft: "-16px", paddingLeft: "16px", marginRight: store.isEditMode ? "350px" : 0, position: "relative", background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
+        <div style={{ minHeight: "100vh", marginTop: "-16px", paddingTop: "16px", marginLeft: "-16px", paddingLeft: "16px", marginRight: store.isEditMode ? "350px" : 0, position: "relative", background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
             <div style={{ position: "absolute", top: "18px", right: "16px", cursor: "pointer" }}>
                 <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
             </div>
