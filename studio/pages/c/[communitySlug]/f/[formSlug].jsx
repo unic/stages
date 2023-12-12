@@ -312,7 +312,7 @@ const CommunityForm = () => {
     };
 
     const handleEditFieldConfig = (path, config) => {
-        console.log("--> handleEditFieldConfig <--");
+        console.log("--> handleEditFieldConfig <--", { path, config });
         if (Array.isArray(path)) {
             const newConfig = [...store.currentConfig];
             path.forEach(p => {
@@ -338,7 +338,7 @@ const CommunityForm = () => {
                 } else {
                     set(newConfig, realPath, config);
                 }
-                if (oldConfig.id !== config.id) store.setSelectedElement(config.id);
+                if (oldConfig.id !== config.id && config.id && oldConfig.id) store.setSelectedElement(config.id);
             }
             store.updateCurrentConfig(newConfig);
             store.setEditorTabIndex(1);
@@ -352,7 +352,7 @@ const CommunityForm = () => {
     };
     
     const handleEditGroup = (path, isShiftKey) => {
-        console.log("--> handleEditGroup <--");
+        console.log("--> handleEditGroup <--", { path, isShiftKey });
         store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
     };
