@@ -320,7 +320,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.tooltip,
-        globalFieldProps.autoResize
+        globalFieldProps.autoResize,
+        globalFieldProps.textValidation
     ],
     select: [
         globalFieldProps.id,
@@ -439,7 +440,8 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.textValidation
     ],
     chips: [
         globalFieldProps.id,
@@ -460,14 +462,16 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.textValidation
     ],
     password: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.textValidation
     ],
 };
 

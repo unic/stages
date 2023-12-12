@@ -63,6 +63,7 @@ export const FieldRenderer = ({
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
+                const fieldConfig = fieldProps.getConfig(createKey(parent, key));
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
