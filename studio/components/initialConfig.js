@@ -15,6 +15,7 @@ const initialConfig = [
         id: "passwords",
         type: "group",
         label: "Passwords",
+        secondaryText: "Must be at least 8 characters.",
         fields: [  
             {
                 id: "password1",
@@ -33,6 +34,8 @@ const initialConfig = [
     {
         id: "hobbies",
         type: "collection",
+        label: "Hobbies",
+        secondaryText: "List and rate your hobbies.",
         min: 1,
         init: true,
         fields: [  

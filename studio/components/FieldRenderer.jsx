@@ -84,8 +84,16 @@ export const FieldRenderer = ({
                         return (
                             <>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
-                                <CollectionContainer key={key} isFieldConfigEditor={isFieldConfigEditor} selectedElement={selectedElement} handleEditCollection={handleEditCollection} isEditMode={isEditMode} path={createKey(parent, key)}>
-                                    {collectionConfig.label ? <label style={{ marginLeft: "6px" }}>{collectionConfig.label}</label> : null}
+                                <CollectionContainer
+                                    key={key}
+                                    isFieldConfigEditor={isFieldConfigEditor}
+                                    selectedElement={selectedElement}
+                                    handleEditCollection={handleEditCollection}
+                                    isEditMode={isEditMode}
+                                    path={createKey(parent, key)}
+                                    label={collectionConfig?.label}
+                                    secondaryText={collectionConfig?.secondaryText}
+                                >
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
                                         <Droppable droppableId="droppable">
                                             {(provided, snapshot) => (
