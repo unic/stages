@@ -8,6 +8,7 @@ import GroupContainer from './GroupContainer';
 import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
+import InspectorSpacer from './InspectorSpacer';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -84,6 +85,7 @@ export const FieldRenderer = ({
                         return (
                             <>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
+                                {isFieldConfigEditor && key === "validation" ? <InspectorSpacer /> : null}
                                 <CollectionContainer
                                     key={key}
                                     isFieldConfigEditor={isFieldConfigEditor}
@@ -115,7 +117,7 @@ export const FieldRenderer = ({
                                                                         isFieldConfigEditor
                                                                     )}
                                                                 >
-                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: isFieldConfigEditor ? 0 : "8px 2px" }}>
+                                                                    <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: isFieldConfigEditor ? "8px 0" : "8px 2px" }}>
                                                                         {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
@@ -185,7 +187,7 @@ export const FieldRenderer = ({
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
             {isFieldConfigEditor && !parent ? (
                 <div style={{ marginLeft: "8px" }}>
-                    <br /><br />
+                    <br />
                     <Dropdown options={[
                         { label: "Email", value: "email" },
                         { label: "Phone", value: "phone" },
