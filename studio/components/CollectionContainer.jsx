@@ -28,7 +28,7 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement) ? true : false)}
         >
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="collection" /> : null}
-            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "0 0 8px 8px" }}>{label}</label> : null}
+            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "6px 0 8px 8px" }}>{label}</label> : null}
             {secondaryText ? <div style={{ margin: "-4px 0 0 8px", color: "#999", flex: "0 0 100%" }}>{secondaryText}</div> : null}
             {children}
         </div>
