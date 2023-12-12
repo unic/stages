@@ -17,6 +17,11 @@ import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
 import useStagesStore from './store';
 
+const isValid = (value, config) => {
+    if (config.isRequired && (value === "" || typeof value === "undefined")) return false;
+    return true;
+};
+
 const removeStagesProps = (props) => {
     const cleanedProps = { ...props };
     cleanedProps.disabled = cleanedProps.isDisabled;
@@ -38,7 +43,7 @@ const removeStagesProps = (props) => {
     return cleanedProps;
 };
 
-const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, isInInspector }) => {
+const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, isInInspector, error, isValidating, errorRenderer }) => {
     const store = useStagesStore();
     if (isInInspector) {
         return (
@@ -54,18 +59,33 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{label}{isRequired ? " *" : ""}</label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
             <div className="w-full">{children}</div>
+            {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
+                <div style={{ color: "red", fontSize: "14px", marginTop: "4px" }}>Please fill out this field!</div>
+            ) : null}
         </div>
     );
 };
 
 const MappedInputText = (props) => {
+    console.log({ props });
     const mappedProps = removeStagesProps(props);
     if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
     mappedProps.type = 'text';
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isDisabled={props.isDisabled}><InputText {...mappedProps} /></InputWrapper>;
+    return (
+        <InputWrapper 
+            {...mappedProps}
+            error={props.error}
+            errorRenderer={props.errorRenderer}
+            isValidating={props.isValidating}
+            isRequired={props.isRequired}
+            isDisabled={props.isDisabled}
+        >
+            <InputText {...mappedProps} />
+        </InputWrapper>
+    );
 };
 
 const MappedInputTextBlur = (props) => {
@@ -238,71 +258,71 @@ const MappedPassword = (props) => {
 const primeFields = {
     text: {
         component: MappedInputText,
-        isValid: () => true
+        isValid: isValid
     },
     blurtext: {
         component: MappedInputTextBlur,
-        isValid: () => true
+        isValid: isValid
     },
     number: {
         component: MappedInputNumber,
-        isValid: () => true
+        isValid: isValid
     },
     slider: {
         component: MappedSlider,
-        isValid: () => true
+        isValid: isValid
     },
     textarea: {
         component: MappedInputTextarea,
-        isValid: () => true
+        isValid: isValid
     },
     editor: {
         component: MappedEditor,
-        isValid: () => true
+        isValid: isValid
     },
     select: {
         component: MappedDropdown,
-        isValid: () => true
+        isValid: isValid
     },
     calendar: {
         component: MappedCalendar,
-        isValid: () => true
+        isValid: isValid
     },
     checkbox: {
         component: MappedCheckbox,
-        isValid: () => true
+        isValid: isValid
     },
     switch: {
         component: MappedInputSwitch,
-        isValid: () => true
+        isValid: isValid
     },
     toggle: {
         component: MappedToggleButton,
-        isValid: () => true
+        isValid: isValid
     },
     rating: {
         component: MappedRating,
-        isValid: () => true
+        isValid: isValid
     },
     buttons: {
         component: MappedSelectButton,
-        isValid: () => true
+        isValid: isValid
     },
     chips: {
         component: MappedChips,
-        isValid: () => true
+        isValid: isValid
     },
     color: {
         component: MappedColorPicker,
-        isValid: () => true
+        isValid: isValid
     },
     mask: {
         component: MappedInputMask,
-        isValid: () => true
+        isValid: isValid
     },
     password: {
         component: MappedPassword,
-        isValid: () => true
+        isValid: isValid
     }
 };
 

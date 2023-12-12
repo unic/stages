@@ -348,6 +348,13 @@ const CommunityForm = () => {
                                         fieldProps={fieldProps}
                                         fields={fieldProps.fields}
                                     />
+                                    <br />
+                                    <Button
+                                        type="button"
+                                        onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                                    >
+                                        Submit
+                                    </Button>
                                 </div>
                             </form>
                             {store.isEditMode ? (
