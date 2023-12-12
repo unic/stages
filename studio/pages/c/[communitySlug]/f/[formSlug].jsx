@@ -411,7 +411,7 @@ const CommunityForm = () => {
                                     store.setActiveContextMenuInput(".");
                                 }
                             }} onClick={() => store.setSelectedElement("")}>
-                                <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto" }}>
+                                <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto", paddingBottom: "64px" }}>
                                     <FieldRenderer
                                         handleEditCollection={handleEditCollection}
                                         handleEditGroup={handleEditGroup}
