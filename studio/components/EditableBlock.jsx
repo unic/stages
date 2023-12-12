@@ -16,7 +16,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
         <motion.div
             className={inGroup ? "flex-1" : undefined}
             style={{
-                minWidth: "230px",
+                minWidth: !isFieldConfigEditor ? "230px" : "auto",
                 position: "relative",
                 padding: "8px",
                 borderRadius: "5px",

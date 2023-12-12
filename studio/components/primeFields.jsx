@@ -51,12 +51,12 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
             <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>
                 <div style={{ flexGrow: 1 }}><label htmlFor={id}>{label}{isRequired ? " *" : ""}</label></div>
                 <div>&nbsp;</div>
-                <div style={{ minWidth: "202px", maxWidth: "202px" }}>{children}</div>
+                <div style={!isInInspector ? { minWidth: "202px", maxWidth: "202px" } : {}}>{children}</div>
             </div>
         );
     }
     return (
-        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: "200px", marginBottom: 0 } : { minWidth: "200px", marginBottom: 0 }}>
+        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px"} : { minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px" }}>
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{label}{isRequired ? " *" : ""}</label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
             <div className="w-full">{children}</div>
