@@ -30,6 +30,10 @@ const CommunityForm = () => {
 
     if (!store) return <div>Something went wrong, store not found!</div>;
 
+    const rootContextMenuItems = [
+        { label: 'Clear', icon: 'pi pi-fw pi-trash', command: () => handleClearConfig() }
+    ];
+
     const fieldContextMenuItems = [
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
@@ -46,6 +50,16 @@ const CommunityForm = () => {
         { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
+
+    const handleClearConfig = () => {
+        console.log("--> handleClearConfig <--");
+        store.updateCurrentConfig([{
+            id: "field1",
+            type: "text",
+            label: "Field 1",
+        }]);
+        store.setSelectedElement("");
+    };
 
     const handleCutField = (path) => {
         console.log("--> handleCutField <--");
@@ -371,7 +385,13 @@ const CommunityForm = () => {
                     </span>
                 </h2>
             </div>
-            {store.isEditMode ? <ContextMenu model={store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems} ref={contextMenuRef} breakpoint="767px" /> : null}
+            {store.isEditMode ? (
+                <ContextMenu
+                    model={store.activeContextMenuInput === "." ? rootContextMenuItems : store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems}
+                    ref={contextMenuRef}
+                    breakpoint="767px"
+                />
+            ) : null}
             {!store.isEditMode ? <div><br /></div> : null}
             <Form
                 id="myForm"
@@ -385,7 +405,12 @@ const CommunityForm = () => {
                 render={({ actionProps, fieldProps }) => {
                     return (
                         <>
-                            <form>
+                            <form onContextMenu={(e) => {
+                                if (contextMenuRef && contextMenuRef.current) {
+                                    contextMenuRef.current.show(e);
+                                    store.setActiveContextMenuInput(".");
+                                }
+                            }}>
                                 <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto" }}>
                                     <FieldRenderer
                                         handleEditCollection={handleEditCollection}
