@@ -2,6 +2,7 @@
 import { isValidElement } from 'react';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Dropdown } from 'primereact/dropdown';
+import get from "lodash.get";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
@@ -9,6 +10,7 @@ import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import InspectorSpacer from './InspectorSpacer';
+import { getConfigPathFromDataPath } from './helpers';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -57,6 +59,9 @@ export const FieldRenderer = ({
 
         fieldProps.onCollectionAction(key, "move", result.source.index, result.destination.index)
     };
+
+    const realPath = selectedElement ?getConfigPathFromDataPath(selectedElement, store.currentConfig) : "";
+    const selectedElementConfig = realPath ? get(store.currentConfig, realPath) : {};
 
     return (
         <>
@@ -186,7 +191,7 @@ export const FieldRenderer = ({
                 }
             })}
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
-            {isFieldConfigEditor && !parent ? (
+            {isFieldConfigEditor && selectedElementConfig.type === "text" && !parent ? (
                 <div style={{ marginLeft: "8px" }}>
                     <br />
                     <Dropdown options={[
