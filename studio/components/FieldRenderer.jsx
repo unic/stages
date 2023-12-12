@@ -152,6 +152,7 @@ export const FieldRenderer = ({
                                     isEditMode={isEditMode}
                                     path={groupPath}
                                     label={groupConfig?.label}
+                                    secondaryText={groupConfig?.secondaryText}
                                     key={groupPath}
                                 >
                                     <FieldRenderer

@@ -173,9 +173,13 @@ const globalFieldProps = {
 const fieldProps = {
     group: [
         globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.secondaryText,
     ],
     collection: [
         globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.secondaryText,
         {
             id: "init",
             type: "checkbox",
