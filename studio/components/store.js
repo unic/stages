@@ -12,7 +12,7 @@ const initialGeneralConfig = {
     }
 };
 
-const useStagesStore = create((set) => ({
+const useStagesStore = create((set, get) => ({
     data: {},
     isEditMode: false,
     editorTabIndex: 0,
@@ -31,6 +31,7 @@ const useStagesStore = create((set) => ({
     setUndoData: (undoData) => set(() => ({ undoData })),
     setActiveUndoIndex: (activeUndoIndex) => set(() => ({ activeUndoIndex })),
     undo: () => set((state) => {
+        console.log("undo", { state });
         if (state.activeUndoIndex > 0) {
             const newIndex = state.activeUndoIndex - 1;
             const oldConfig = JSON.parse(state.undoData[newIndex]);
@@ -40,19 +41,22 @@ const useStagesStore = create((set) => ({
         }
     }),
     redo: () => set((state) => {
+        console.log("redo", { state });
         if (state.activeUndoIndex < state.undoData.length - 1) {
             const newIndex = state.activeUndoIndex + 1;
             const oldConfig = JSON.parse(state.undoData[newIndex]);
-
             return { activeUndoIndex: state.activeUndoIndex, currentConfig: oldConfig };
         } else {
             return { activeUndoIndex: state.activeUndoIndex };
         }
     }),
     updateCurrentConfig: (currentConfig) => set((state) => {
+        console.log("updateCurrentConfig");
         const newUndoData = [...state.undoData];
         newUndoData.push(JSON.stringify(currentConfig));
-        return { currentConfig, undoData: newUndoData, activeUndoIndex: newUndoData.length - 1 };
+        get().setActiveUndoIndex(newUndoData.length - 1);
+        get().setUndoData(newUndoData);
+        return { currentConfig };
     }),
     setSelectedElement: (selectedElement, isShiftKey) => set((state) => {
         if (isShiftKey && state.selectedElement) {
