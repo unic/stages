@@ -1,4 +1,5 @@
 // @ts-nocheck
+import React, { useEffect } from 'react';
 import { isValidElement } from 'react';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Dropdown } from 'primereact/dropdown';
@@ -31,6 +32,11 @@ export const FieldRenderer = ({
     isFieldConfigEditor
 }) => {
     const store = useStagesStore();
+
+    useEffect(() => {
+        useStagesStore.persist.rehydrate();
+    }, []);
+
     if (typeof fields !== "object" || !typeof window) return null;
     if (!type) type = "field";
 

@@ -1,9 +1,14 @@
+import { useEffect } from "react";
 import { useState } from 'react';
 import useStagesStore from './store';
 
 const InsertBlock = ({ path, direction, contextMenuRef, grow, isFieldConfigEditor }) => {
     const store = useStagesStore();
     const [isHover, setIsHover] = useState(false);
+
+    useEffect(() => {
+        useStagesStore.persist.rehydrate();
+    }, []);
 
     const handleMouseEnter = () => {
         setIsHover(true);

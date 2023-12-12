@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Form } from "react-stages";
 import Sugar from "sugar";
@@ -19,6 +19,7 @@ import { GitFork } from 'lucide-react';
 import { Button } from 'primereact/button';
 import { Undo } from 'lucide-react';
 import { Redo } from 'lucide-react';
+import initialConfig from '../../../../components/initialConfig';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
@@ -30,10 +31,19 @@ const CommunityForm = () => {
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
 
+    useEffect(() => {
+        useStagesStore.persist.rehydrate();
+    }, []);
+
     if (!store) return <div>Something went wrong, store not found!</div>;
 
     const rootContextMenuItems = [
-        { label: 'Clear', icon: 'pi pi-fw pi-trash', command: () => handleClearConfig() }
+        { label: 'Clear', icon: 'pi pi-fw pi-trash', command: () => handleInitConfig([{
+            id: "field1",
+            type: "text",
+            label: "Field 1",
+        }]) },
+        { label: 'Init with Demo Form', icon: 'pi pi-fw pi-trash', command: () => handleInitConfig(initialConfig) },
     ];
 
     const fieldContextMenuItems = [
@@ -53,13 +63,9 @@ const CommunityForm = () => {
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
 
-    const handleClearConfig = () => {
+    const handleInitConfig = (config) => {
         console.log("--> handleClearConfig <--");
-        store.updateCurrentConfig([{
-            id: "field1",
-            type: "text",
-            label: "Field 1",
-        }]);
+        store.updateCurrentConfig(config);
         store.setSelectedElement("");
     };
 

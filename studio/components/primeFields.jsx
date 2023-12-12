@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
@@ -46,6 +46,11 @@ const removeStagesProps = (props) => {
 
 const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, isInInspector, error, isValidating, errorRenderer }) => {
     const store = useStagesStore();
+
+    useEffect(() => {
+        useStagesStore.persist.rehydrate();
+    }, []);
+
     if (isInInspector) {
         return (
             <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>

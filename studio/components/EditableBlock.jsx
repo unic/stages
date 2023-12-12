@@ -9,6 +9,10 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
     const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement));
 
     useEffect(() => {
+        useStagesStore.persist.rehydrate();
+    }, []);
+
+    useEffect(() => {
         if (!pathIsSelected(path, selectedElement)) setIsInEditMode(false);
     }, [path, selectedElement]);
 

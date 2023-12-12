@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware'
 import initialConfig from './initialConfig';
 
 const initialGeneralConfig = {
@@ -12,7 +13,7 @@ const initialGeneralConfig = {
     }
 };
 
-const useStagesStore = create((set, get) => ({
+const useStagesStore = create(persist((set, get) => ({
     data: {},
     isEditMode: false,
     editorTabIndex: 0,
@@ -89,6 +90,12 @@ const useStagesStore = create((set, get) => ({
         }
         return { selectedElement: state.selectedElement };
     })
-}));
+}),
+{
+    name: 'stages-staudio-storage',
+    storage: createJSONStorage(() => localStorage),
+    skipHydration: true,
+}
+));
 
 export default useStagesStore;

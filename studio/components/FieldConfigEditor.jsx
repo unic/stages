@@ -59,8 +59,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
         return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
     }
-
-    const store = useStagesStore();
+    
     const actualConfig = Array.isArray(config) ? getSameProperties(config) : parseConfig(fieldProps[config.type]);
     const [data, setData] = useState(Array.isArray(config) ? getSameData(config) : config);
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Form } from "react-stages";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
@@ -5,6 +6,10 @@ import useStagesStore from './store';
 
 const GeneralConfig = () => {
     const store = useStagesStore();
+
+    useEffect(() => {
+        useStagesStore.persist.rehydrate();
+    }, []);
 
     return (
         <>
