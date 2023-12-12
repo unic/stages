@@ -93,6 +93,11 @@ const globalFieldProps = {
         type: "checkbox",
         label: "Required?"
     },
+    isDisabled: {
+        id: "isDisabled",
+        type: "checkbox",
+        label: "Disabled?"
+    },
     tooltip: {
         id: "tooltip",
         type: "text",
@@ -310,6 +315,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.tooltip,
         globalFieldProps.textValidation
     ],
@@ -319,6 +325,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.tooltip,
         globalFieldProps.autoResize,
         globalFieldProps.textValidation
@@ -329,6 +336,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.options,
         globalFieldProps.placeholder,
         globalFieldProps.tooltip
@@ -339,6 +347,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.tooltip,
         {
             id: "numberOfMonths",
@@ -390,28 +399,32 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     switch: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     number: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     rating: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     buttons: [
         globalFieldProps.id,
@@ -419,6 +432,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.options
     ],
     slider: [
@@ -426,14 +440,16 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     toggle: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     editor: [
         globalFieldProps.id,
@@ -441,6 +457,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.textValidation
     ],
     chips: [
@@ -455,7 +472,8 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
     ],
     mask: [
         globalFieldProps.id,
@@ -463,6 +481,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.textValidation
     ],
     password: [
@@ -471,6 +490,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
         globalFieldProps.textValidation
     ],
 };
