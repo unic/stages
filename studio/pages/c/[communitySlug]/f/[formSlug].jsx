@@ -413,7 +413,7 @@ const CommunityForm = () => {
                 fields={primeFields}
                 config={{
                     fields: () => {
-                        return parseJSONConfig(store.currentConfig);
+                        return parseJSONConfig(store.currentConfig, store.data);
                     }
                 }}
                 render={({ actionProps, fieldProps }) => {

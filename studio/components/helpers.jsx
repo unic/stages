@@ -3,14 +3,14 @@ import get from "lodash.get";
 import findIndex from "lodash.findindex";
 import safeEval from "safe-eval";
 
-export const parseJSONConfig = (config) => {
+export const parseJSONConfig = (config, data) => {
     const parsedConfig = [...config];
     parsedConfig.forEach((item) => {
         if (item.type === "group" || item.type === "collection") {
             item.fields = parseJSONConfig(item.fields);
         }
         if (item.computedValue) {
-            item.computedValue = safeEval(item.computedValue);
+            item.computedValue = safeEval(item.computedValue, data);
         }
     });
     return parsedConfig;
