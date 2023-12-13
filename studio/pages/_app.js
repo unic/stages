@@ -6,9 +6,7 @@ import "primeflex/primeflex.css";
 import "primeflex/themes/primeone-light.css";
 
 const MyApp = ({ Component, pageProps }) => {
-    const value = {
-        appendTo: 'self',
-    };
+    const value = {};
 
     return (
         <PrimeReactProvider value={value}>
