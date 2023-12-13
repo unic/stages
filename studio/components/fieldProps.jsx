@@ -19,7 +19,8 @@ const globalFieldProps = {
     computedValue: {
         id: "computedValue",
         type: "textarea",
-        label: "Computed Value"
+        label: "Computed Value",
+        placeholder: "data => data.field1 + data.field2",
     },
     type: {
         id: "type",
@@ -334,6 +335,7 @@ const fieldProps = {
         globalFieldProps.isDisabled,
         globalFieldProps.tooltip,
         globalFieldProps.autoResize,
+        globalFieldProps.computedValue,
         globalFieldProps.textValidation
     ],
     select: [
@@ -423,6 +425,7 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.computedValue,
     ],
     rating: [
         globalFieldProps.id,

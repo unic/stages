@@ -12,16 +12,6 @@ const initialConfig = [
         isRequired: true
     },
     {
-        id: "divider1",
-        type: "divider"
-    },
-    {
-        id: "email",
-        label: "Email",
-        type: "email",
-        isRequired: true
-    },
-    {
         id: "passwords",
         type: "group",
         label: "Passwords",
@@ -76,6 +66,37 @@ const initialConfig = [
         label: "Comments",
         type: "textarea",
         isRequired: false
+    },
+    {
+        id: "divider4",
+        type: "divider"
+    },
+    {
+        id: "summed",
+        type: "group",
+        label: "Computed Data Example",
+        secondaryText: "Summing the first two inputs.",
+        fields: [  
+            {
+                id: "num1",
+                label: "Number 1",
+                type: "number",
+                isRequired: true
+            },
+            {
+                id: "num2",
+                label: "Number 2",
+                type: "number",
+                isRequired: true
+            },
+            {
+                id: "sum",
+                label: "Sum",
+                type: "number",
+                isDisabled: true,
+                computedValue: "(data) => data.num1 + data.num2"
+            },
+        ]
     },
 ];
 

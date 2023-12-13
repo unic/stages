@@ -21,7 +21,7 @@ import { Undo } from 'lucide-react';
 import { Redo } from 'lucide-react';
 import initialConfig from '../../../../components/initialConfig';
 
-import { getConfigPathFromDataPath, createNewFieldID, downloadFile } from '../../../../components/helpers';
+import { getConfigPathFromDataPath, createNewFieldID, downloadFile, parseJSONConfig } from '../../../../components/helpers';
 import { FieldRenderer } from '../../../../components/FieldRenderer';
 
 const CommunityForm = () => {
@@ -413,7 +413,7 @@ const CommunityForm = () => {
                 fields={primeFields}
                 config={{
                     fields: () => {
-                        return store.currentConfig;
+                        return parseJSONConfig(store.currentConfig);
                     }
                 }}
                 render={({ actionProps, fieldProps }) => {

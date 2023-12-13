@@ -1,6 +1,20 @@
 // @ts-nocheck
 import get from "lodash.get";
 import findIndex from "lodash.findindex";
+import safeEval from "safe-eval";
+
+export const parseJSONConfig = (config) => {
+    const parsedConfig = [...config];
+    parsedConfig.forEach((item) => {
+        if (item.type === "group" || item.type === "collection") {
+            item.fields = parseJSONConfig(item.fields);
+        }
+        if (item.computedValue) {
+            item.computedValue = safeEval(item.computedValue);
+        }
+    });
+    return parsedConfig;
+};
 
 export const getConfigPathFromDataPath = (path, config) => {
     const pathSplit = path.split(".");
