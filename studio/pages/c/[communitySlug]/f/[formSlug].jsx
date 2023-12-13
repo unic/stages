@@ -19,6 +19,9 @@ import { GitFork } from 'lucide-react';
 import { Button } from 'primereact/button';
 import { Undo } from 'lucide-react';
 import { Redo } from 'lucide-react';
+import { Monitor } from 'lucide-react';
+import { Tablet } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 import initialConfig from '../../../../components/initialConfig';
 
 import { getConfigPathFromDataPath, createNewFieldID, downloadFile, parseJSONConfig } from '../../../../components/helpers';
@@ -389,6 +392,11 @@ const CommunityForm = () => {
                     <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.redo()}><Redo color="#999" size={16} /></button>
                 </div>
             ) : null}
+            <div style={{ position: "absolute", top: "24px", right: "126px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
+                <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("mobile")}><Smartphone color={store.previewSize === "mobile" ? "#000" : "#999"} size={16} /></button>
+                <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("tablet")}><Tablet color={store.previewSize === "tablet" ? "#000" : "#999"} size={16} /></button>
+                <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("desktop")}><Monitor color={store.previewSize === "desktop" ? "#000" : "#999"} size={16} /></button>
+            </div>
             <div style={{ marginLeft: "8px", marginTop: "-11px" }}>
                 <h2>
                     {store.generalConfig.title}
@@ -425,7 +433,7 @@ const CommunityForm = () => {
                                     store.setActiveContextMenuInput(".");
                                 }
                             }} onClick={() => store.setSelectedElement("")}>
-                                <div style={{ position: "relative", maxWidth: "940px", margin: "0 auto", paddingBottom: "64px" }}>
+                                <div style={{ position: "relative", maxWidth: store.previewSize === "mobile" ? "480px" : store.previewSize === "tablet" ? "640px" : "960px", margin: "0 auto", paddingBottom: "64px" }}>
                                     <FieldRenderer
                                         handleEditCollection={handleEditCollection}
                                         handleEditGroup={handleEditGroup}

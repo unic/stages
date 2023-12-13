@@ -24,6 +24,7 @@ const useStagesStore = create(persist((set, get) => ({
     generalConfig: initialGeneralConfig,
     undoData: [JSON.stringify(initialConfig)],
     activeUndoIndex: 1,
+    previewSize: "desktop",
     updateGeneralConfig: (generalConfig) => set(() => ({ generalConfig })),
     setEditMode: () => set(() => ({ isEditMode: true })),
     setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),
@@ -31,6 +32,7 @@ const useStagesStore = create(persist((set, get) => ({
     setData: (data) => set(() => ({ data })),
     setUndoData: (undoData) => set(() => ({ undoData })),
     setActiveUndoIndex: (activeUndoIndex) => set(() => ({ activeUndoIndex })),
+    switchPreviewSize: (size) => set(() => ({ previewSize: size })),
     undo: () => set((state) => {
         console.log("undo", { state });
         if (state.activeUndoIndex > 0) {
