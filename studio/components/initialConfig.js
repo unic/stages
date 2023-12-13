@@ -94,7 +94,7 @@ const initialConfig = [
                 label: "Sum",
                 type: "number",
                 isDisabled: true,
-                computedValue: "(data) => data.num1 + data.num2"
+                computedValue: "(data) => data.summed ? data.summed.num1 + data.summed.num2 : 0"
             },
         ]
     },

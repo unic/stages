@@ -11,6 +11,7 @@ export const parseJSONConfig = (config, data) => {
         }
         if (item.computedValue) {
             item.computedValue = safeEval(item.computedValue, data);
+            console.log("--> computedValue <--", item.computedValue);
         }
     });
     return parsedConfig;
