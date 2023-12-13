@@ -17,6 +17,16 @@ const globalFieldProps = {
         type: "text",
         label: "Secondary Text"
     },
+    prefix: {
+        id: "prefix",
+        type: "text",
+        label: "Prefix"
+    },
+    suffix: {
+        id: "suffix",
+        type: "text",
+        label: "Suffix"
+    },
     computedValue: {
         id: "computedValue",
         type: "textarea",
@@ -320,6 +330,8 @@ const fieldProps = {
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
+        globalFieldProps.prefix,
+        globalFieldProps.suffix,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
@@ -423,6 +435,8 @@ const fieldProps = {
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
+        globalFieldProps.prefix,
+        globalFieldProps.suffix,
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,

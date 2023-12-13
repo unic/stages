@@ -44,7 +44,7 @@ const removeStagesProps = (props) => {
     return cleanedProps;
 };
 
-const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, isInInspector, error, isValidating, errorRenderer }) => {
+const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, prefix, suffix, isInInspector, error, isValidating, errorRenderer }) => {
     const store = useStagesStore();
 
     useEffect(() => {
@@ -64,7 +64,11 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
         <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px"} : { minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px" }}>
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{label}{isRequired ? " *" : ""}</label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
-            <div className="w-full">{children}</div>
+            <div className="p-inputgroup w-full">
+                {prefix && <span className="p-inputgroup-addon">{prefix}</span>}
+                {children}
+                {suffix && <span className="p-inputgroup-addon">{suffix}</span>}
+            </div>
             {error && !isValidating ? errorRenderer ? errorRenderer(error) : (
                 <div style={{ color: "red", fontSize: "14px", marginTop: "4px" }}>Please fill out this field!</div>
             ) : null}

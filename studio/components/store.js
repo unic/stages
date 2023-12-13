@@ -91,11 +91,11 @@ const useStagesStore = create(persist((set, get) => ({
         return { selectedElement: state.selectedElement };
     })
 }),
-{
-    name: 'stages-staudio-storage',
-    storage: createJSONStorage(() => localStorage),
-    skipHydration: true,
-}
+    {
+        name: 'stages-studio-storage',
+        storage: createJSONStorage(() => localStorage),
+        skipHydration: true,
+    }
 ));
 
 export default useStagesStore;
