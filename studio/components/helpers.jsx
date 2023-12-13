@@ -4,15 +4,23 @@ import findIndex from "lodash.findindex";
 import safeEval from "safe-eval";
 
 export const parseJSONConfig = (config, data) => {
-    const parsedConfig = [...config];
-    parsedConfig.forEach((item) => {
+    const parsedConfig = config.map((item) => {
         if (item.type === "group" || item.type === "collection") {
-            item.fields = parseJSONConfig(item.fields);
+            item.fields = parseJSONConfig(item.fields, data);
         }
         if (item.computedValue) {
-            item.computedValue = safeEval(item.computedValue, data);
-            console.log("--> computedValue <--", item.computedValue);
+            /*
+            try {
+                safeEval(item.computedValue, data);
+            } catch (error) {
+                console.log("!!!!!!!! Eval not safe!!!!!!!!!");
+                //item.computedValue = undefined;
+            }
+            */
+           // eslint-disable-next-line no-new-func
+           item.computedValue = new Function("data", `return ${item.computedValue};`)
         }
+        return item;
     });
     return parsedConfig;
 };

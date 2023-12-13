@@ -3,7 +3,8 @@ const globalFieldProps = {
         id: "id",
         type: "blurtext",
         label: "ID",
-        isRequired: true
+        isRequired: true,
+        filter: value => value.replace(/[^a-zA-Z0-9-]/g, '')
     },
     label: {
         id: "label",
