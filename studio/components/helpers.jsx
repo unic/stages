@@ -1,26 +1,24 @@
 // @ts-nocheck
 import get from "lodash.get";
 import findIndex from "lodash.findindex";
-import safeEval from "safe-eval";
 
 export const parseJSONConfig = (config, data) => {
     const parsedConfig = config.map((item) => {
-        if (item.type === "group" || item.type === "collection") {
-            item.fields = parseJSONConfig(item.fields, data);
+        const newItem = { ...item };
+        if (newItem.type === "group" || newItem.type === "collection") {
+            newItem.fields = parseJSONConfig(newItem.fields, data);
         }
-        if (item.computedValue) {
-            /*
+        if (newItem.computedValue && typeof newItem.computedValue === "string") {
+            let computedValueFunction;
             try {
-                safeEval(item.computedValue, data);
+                computedValueFunction = new Function("data", `return ${newItem.computedValue};`);
             } catch (error) {
-                console.log("!!!!!!!! Eval not safe!!!!!!!!!");
-                //item.computedValue = undefined;
+                console.error("computed value error", error);
             }
-            */
            // eslint-disable-next-line no-new-func
-           item.computedValue = new Function("data", `return ${item.computedValue};`)
+           if (typeof computedValueFunction === "function") newItem.computedValue = computedValueFunction;
         }
-        return item;
+        return newItem;
     });
     return parsedConfig;
 };
