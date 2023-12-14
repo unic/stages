@@ -1,5 +1,6 @@
 import { PrimeReactProvider } from 'primereact/api';
 import App from '../components/App';
+import '../styles.css';
 
 import "primereact/resources/themes/bootstrap4-light-blue/theme.css";
 import "primeflex/primeflex.css";
