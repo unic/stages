@@ -11,11 +11,13 @@ const globalFieldProps = {
         type: "text",
         label: "Label",
         isRequired: true,
+        tooltip: "Create dynamic labels with template literals, like: My ${ field1 } is ${ field2 }",
     },
     secondaryText: {
         id: "secondaryText",
         type: "text",
-        label: "Secondary Text"
+        label: "Secondary Text",
+        tooltip: "Create dynamic text with template literals, like: My ${ field1 } is ${ field2 }",
     },
     prefix: {
         id: "prefix",

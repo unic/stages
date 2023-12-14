@@ -17,6 +17,7 @@ import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
 import { Divider } from 'primereact/divider';
 import useStagesStore from './store';
+import { parseTemplateLiterals } from './helpers';
 
 const isValid = (value, config) => {
     if (config.isRequired && (value === "" || typeof value === "undefined")) return false;
@@ -55,7 +56,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     if (isInInspector) {
         return (
             <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>
-                <div style={{ flexGrow: 1 }}><label htmlFor={id}>{label}{isRequired ? " *" : ""}</label></div>
+                <div style={{ flexGrow: 1 }}><label htmlFor={id}>{parseTemplateLiterals(label, store.data)}{isRequired ? " *" : ""}</label></div>
                 <div>&nbsp;</div>
                 <div style={{ minWidth: "204px", maxWidth: "204px" }}>{children}</div>
             </div>
@@ -63,8 +64,8 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     }
     return (
         <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px"} : { minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px" }}>
-            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{label}{isRequired ? " *" : ""}</label>
-            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{secondaryText}</div> : null}
+            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{parseTemplateLiterals(label, store.data)}{isRequired ? " *" : ""}</label>
+            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{parseTemplateLiterals(secondaryText, store.data)}</div> : null}
             <div className="p-inputgroup w-full">
                 {prefix && <span className="p-inputgroup-addon">{prefix}</span>}
                 {children}
@@ -94,7 +95,7 @@ const MappedInputText = (props) => {
             isDisabled={props.isDisabled}
             isInInspector={props.isInInspector}
         >
-            <InputText {...mappedProps} className={props.error ? "p-invalid" : ""} />
+            <InputText {...mappedProps} className={props.error ? "p-invalid" : ""} tooltipOptions={{ position: props.isInInspector ? 'left' : 'right', showDelay: 500 }} />
         </InputWrapper>
     );
 };
@@ -112,7 +113,7 @@ const MappedInputTextBlur = (props) => {
         props.onBlur();
     };
     mappedProps.value = currentValue;
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isDisabled={props.isDisabled} isInInspector={props.isInInspector}><InputText {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isDisabled={props.isDisabled} isInInspector={props.isInInspector} tooltipOptions={{ position: props.isInInspector ? 'left' : 'right', showDelay: 500 }}><InputText {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
 };
 
 const MappedInputMask = (props) => {
@@ -131,7 +132,7 @@ const MappedInputTextarea = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><InputTextarea {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><InputTextarea {...mappedProps} className={props.error ? "p-invalid" : ""} tooltipOptions={{ position: props.isInInspector ? 'left' : 'right', showDelay: 500 }} /></InputWrapper>;
 };
 
 const MappedEditor = (props) => {

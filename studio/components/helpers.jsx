@@ -96,3 +96,13 @@ export const getAllPaths = (config, path = "") => {
 export const pathIsSelected = (path, selectedElement) => {
     return selectedElement === path || (Array.isArray(selectedElement) && selectedElement.includes(path));
 }
+
+export const parseTemplateLiterals = (text, data) => {
+    let parsedText = text;
+    try {
+        parsedText = _.template(text)(data);
+    } catch (error) {
+        console.warn("template literal error", error);
+    }
+    return parsedText;
+};
