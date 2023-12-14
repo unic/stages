@@ -10,7 +10,8 @@ export const parseJSONConfig = (config, data) => {
         if (newItem.computedValue && typeof newItem.computedValue === "string") {
             let computedValueFunction;
             try {
-                computedValueFunction = new Function("data", `return ${newItem.computedValue};`);
+                computedValueFunction = new Function("data", `try { return ${newItem.computedValue}; } catch (e) { console.warn("error in computed function"); }`);
+                const testResult = computedValueFunction(data);
             } catch (error) {
                 console.error("computed value error", error);
             }
@@ -20,7 +21,8 @@ export const parseJSONConfig = (config, data) => {
         if (newItem.isRendered && typeof newItem.isRendered === "string") {
             let isRenderedFunction;
             try {
-                isRenderedFunction = new Function("data", `return ${newItem.isRendered};`);
+                isRenderedFunction = new Function("data", `try { return ${newItem.isRendered}; } catch (e) { console.warn("error in isRendered function"); }`);
+                const testResult = isRenderedFunction(data);
             } catch (error) {
                 console.error("is rendered error", error);
             }
