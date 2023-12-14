@@ -21,7 +21,7 @@ const CommunityForm = () => {
 
     if (store.isEditMode) {
         return (
-            <Splitter gutterSize={2} stateStorage="local" stateKey="stages-splitter" style={{ height: '100vh', minHeight: "100vh", maxHeight: "100vh", width: "100vw", border: "none", borderRadius: 0, marginTop: "-8px", marginLeft: "-8px", background: "red" }}>
+            <Splitter gutterSize={5} stateStorage="local" stateKey="stages-splitter" style={{ height: '100vh', minHeight: "100vh", maxHeight: "100vh", width: "100vw", border: "none", borderRadius: 0, marginTop: "-8px", marginLeft: "-8px", background: "red" }}>
                 <SplitterPanel size={78} className="flex align-items-center justify-content-center">
                     <Workspace />
                 </SplitterPanel>
