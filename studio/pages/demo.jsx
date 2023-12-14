@@ -22,10 +22,10 @@ const CommunityForm = () => {
     if (store.isEditMode) {
         return (
             <Splitter gutterSize={5} stateStorage="local" stateKey="stages-splitter" style={{ height: '100vh', minHeight: "100vh", maxHeight: "100vh", width: "100vw", border: "none", borderRadius: 0, background: "red" }}>
-                <SplitterPanel size={78} className="flex align-items-center justify-content-center">
+                <SplitterPanel size={100} className="flex align-items-center justify-content-center">
                     <Workspace />
                 </SplitterPanel>
-                <SplitterPanel minSize={22} className="flex align-items-center justify-content-center">
+                <SplitterPanel size={typeof window !== "undefined" ? Math.round(350 / window.innerWidth * 100) : 22} className="flex align-items-center justify-content-center">
                     <SidePanel />
                 </SplitterPanel>
             </Splitter>
