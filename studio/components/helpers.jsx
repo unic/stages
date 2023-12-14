@@ -1,6 +1,5 @@
 // @ts-nocheck
-import get from "lodash.get";
-import findIndex from "lodash.findindex";
+import _ from "lodash";
 
 export const parseJSONConfig = (config, data) => {
     const parsedConfig = config.map((item) => {
@@ -27,9 +26,9 @@ export const getConfigPathFromDataPath = (path, config) => {
     const pathSplit = path.split(".");
     let realPath = '';
     pathSplit.forEach((key) => {
-        const index = findIndex(realPath ? get(config, realPath) : config, { id: key.replace(/\[(\d+)\]/, "") });
+        const index = _.findIndex(realPath ? _.get(config, realPath) : config, { id: key.replace(/\[(\d+)\]/, "") });
         realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
-        const thisConfig = get(config, realPath);
+        const thisConfig = _.get(config, realPath);
         if (thisConfig && thisConfig.fields) realPath += ".fields";
     });
     return realPath;
@@ -37,7 +36,7 @@ export const getConfigPathFromDataPath = (path, config) => {
 
 export const doesPathExist = (path, store) => {
     const configPath = getConfigPathFromDataPath(path, store.currentConfig);
-    const config = get(store.currentConfig, configPath);
+    const config = _.get(store.currentConfig, configPath);
     return configPath !== '' && config;
 };
 

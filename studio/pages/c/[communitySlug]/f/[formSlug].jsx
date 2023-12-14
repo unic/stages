@@ -5,9 +5,7 @@ import Sugar from "sugar";
 import { TabMenu } from 'primereact/tabmenu';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import primeFields from '../../../../components/primeFields';
-import set from "lodash.set";
-import get from "lodash.get";
-import unset from "lodash.unset";
+import _ from "lodash";
 import { ContextMenu } from 'primereact/contextmenu';
 import FieldConfigEditor from '../../../../components/FieldConfigEditor';
 import useStagesStore from '../../../../components/store';
@@ -76,8 +74,8 @@ const CommunityForm = () => {
         console.log("--> handleCutField <--");
         const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
-        store.setClipboard(get(newConfig, realPath));
-        unset(newConfig, realPath);
+        store.setClipboard(_.get(newConfig, realPath));
+        _.unset(newConfig, realPath);
         store.updateCurrentConfig(Array.isArray(newConfig) ? newConfig.filter(item => item) : newConfig);
         // If field is selected, unselect it
         store.removePathFromSelectedElements(path);
@@ -87,13 +85,13 @@ const CommunityForm = () => {
         console.log("--> handleGroupField <--");
         const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
-        const oldFieldConfig = get(newConfig, realPath);
+        const oldFieldConfig = _.get(newConfig, realPath);
         const newFieldConfig = {
             id: createNewFieldID(path, "group", store),
             type: "group",
             fields: [oldFieldConfig]
         }
-        set(newConfig, realPath, newFieldConfig);
+        _.set(newConfig, realPath, newFieldConfig);
         store.updateCurrentConfig(newConfig);
     };
 
@@ -101,7 +99,7 @@ const CommunityForm = () => {
         console.log("--> handleCollectionField <--");
         const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
-        const oldFieldConfig = get(newConfig, realPath);
+        const oldFieldConfig = _.get(newConfig, realPath);
         const newTempId = createNewFieldID(path, "collection", store);
         const newFieldConfig = {
             id: newTempId,
@@ -110,7 +108,7 @@ const CommunityForm = () => {
             min: 1,
             fields: [oldFieldConfig]
         }
-        set(newConfig, realPath, newFieldConfig);
+        _.set(newConfig, realPath, newFieldConfig);
         store.updateCurrentConfig(newConfig);
 
         // Update data (for collections, a new empty array has to be addeed):
@@ -122,7 +120,7 @@ const CommunityForm = () => {
     const handleCopyField = (path) => {
         console.log("--> handleCopyField <--");
         const realPath = getConfigPathFromDataPath(path, store.currentConfig);
-        store.setClipboard(get(store.currentConfig, realPath));
+        store.setClipboard(_.get(store.currentConfig, realPath));
     };
 
     const handlePasteField = (path) => {
@@ -130,7 +128,7 @@ const CommunityForm = () => {
         if (store.clipboard) {
             const newConfig = [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
-            set(newConfig, realPath, store.clipboard);
+            _.set(newConfig, realPath, store.clipboard);
             store.updateCurrentConfig(newConfig);
         }
     };
@@ -146,7 +144,7 @@ const CommunityForm = () => {
         const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
-            arrayToInsertInto = get(newConfig, parentOfRealPath);
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
         } else {
             arrayToInsertInto = newConfig;
         }
@@ -155,7 +153,7 @@ const CommunityForm = () => {
             type: "text",
             label: "Field",
         });
-        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
     };
@@ -171,7 +169,7 @@ const CommunityForm = () => {
         const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
-            arrayToInsertInto = get(newConfig, parentOfRealPath);
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
         } else {
             arrayToInsertInto = newConfig;
         }
@@ -193,7 +191,7 @@ const CommunityForm = () => {
                 }
             ]
         });
-        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
     };
@@ -209,7 +207,7 @@ const CommunityForm = () => {
         const newTempId = createNewFieldID(path, "collection", store);
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
-            arrayToInsertInto = get(newConfig, parentOfRealPath);
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
         } else {
             arrayToInsertInto = newConfig;
         }
@@ -235,7 +233,7 @@ const CommunityForm = () => {
         });
 
         // Update config:
-        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
 
         // Update data (for collections, a new empty array has to be addeed):
@@ -257,7 +255,7 @@ const CommunityForm = () => {
         const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
-            arrayToInsertInto = get(newConfig, parentOfRealPath);
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
         } else {
             arrayToInsertInto = newConfig;
         }
@@ -265,7 +263,7 @@ const CommunityForm = () => {
             id: createNewFieldID(path, "divider", store),
             type: "divider"
         });
-        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
     };
@@ -281,7 +279,7 @@ const CommunityForm = () => {
         const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
-            arrayToInsertInto = get(newConfig, parentOfRealPath);
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
         } else {
             arrayToInsertInto = newConfig;
         }
@@ -290,7 +288,7 @@ const CommunityForm = () => {
             type: "heading",
             title: "Heading",
         });
-        set(newConfig, parentOfRealPath, arrayToInsertInto);
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
     };
@@ -307,13 +305,13 @@ const CommunityForm = () => {
             const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
             let arrayToInsertInto;
             if (parentOfRealPath !== "") {
-                arrayToInsertInto = get(newConfig, parentOfRealPath);
+                arrayToInsertInto = _.get(newConfig, parentOfRealPath);
             } else {
                 arrayToInsertInto = newConfig;
             }
             arrayToInsertInto.splice(index, 0, {...store.clipboard, id: createNewFieldID(path, store.clipboard.type, store)});
             if (parentOfRealPath) {
-                set(newConfig, parentOfRealPath, arrayToInsertInto);
+                _.set(newConfig, parentOfRealPath, arrayToInsertInto);
             } else {
                 newConfig = arrayToInsertInto;
             }
@@ -330,11 +328,11 @@ const CommunityForm = () => {
                 // p = path, config = diff 
                 const realPath = getConfigPathFromDataPath(p, newConfig);
                 if (realPath && config.length > 0) {
-                    const editedConfig = get(store.currentConfig, realPath);
+                    const editedConfig = _.get(store.currentConfig, realPath);
                     config.forEach(c => {
                         editedConfig[c[0]] = c[1];
                     });
-                    set(newConfig, realPath, editedConfig);
+                    _.set(newConfig, realPath, editedConfig);
                 }
             });
             store.updateCurrentConfig(newConfig);
@@ -343,11 +341,11 @@ const CommunityForm = () => {
             const newConfig = [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
             if (realPath && Object.keys(config).length > 0) {
-                const oldConfig = get(store.currentConfig, realPath);
+                const oldConfig = _.get(store.currentConfig, realPath);
                 if (config.type === "group" || config.type === "collection") {
-                    set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
+                    _.set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
                 } else {
-                    set(newConfig, realPath, config);
+                    _.set(newConfig, realPath, config);
                 }
                 if (oldConfig.id !== config.id && config.id && oldConfig.id) store.setSelectedElement(config.id);
             }
@@ -380,7 +378,7 @@ const CommunityForm = () => {
     const fromDate = store?.generalConfig?.date?.from ? new Sugar.Date(store.generalConfig.date.from) : "";
     const toDate = store?.generalConfig?.date?.to ? new Sugar.Date(store.generalConfig.date.to) : "";
     const now = new Date();
-
+console.log({ store });
     return (
         <div style={{ minHeight: "100vh", marginTop: "-16px", paddingTop: "16px", marginLeft: "-16px", paddingLeft: "16px", marginRight: store.isEditMode ? "350px" : 0, position: "relative", background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
             <div style={{ position: "absolute", top: "18px", right: "16px", cursor: "pointer" }}>
@@ -440,7 +438,6 @@ const CommunityForm = () => {
                                         parent=""
                                         setActiveContextMenuInput={store.setActiveContextMenuInput}
                                         contextMenuRef={contextMenuRef}
-                                        setSelectedElement={store.setSelectedElement}
                                         isEditMode={store.isEditMode}
                                         selectedElement={store.selectedElement}
                                         fieldProps={fieldProps}
@@ -471,7 +468,7 @@ const CommunityForm = () => {
                                                 <FieldConfigEditor
                                                     key={store.selectedElement}
                                                     path={store.selectedElement}
-                                                    config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => fieldProps.getConfig(item)).filter(item => item) : fieldProps.getConfig(store.selectedElement)}
+                                                    config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => _.get(store.currentConfig, getConfigPathFromDataPath(item, store.currentConfig))).filter(item => item) : _.get(store.currentConfig, getConfigPathFromDataPath(store.selectedElement, store.currentConfig))}
                                                     handleEditFieldConfig={handleEditFieldConfig}
                                                 />
                                             ) : null}
