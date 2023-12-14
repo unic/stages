@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect } from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { isValidElement } from 'react';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Dropdown } from 'primereact/dropdown';
@@ -78,24 +78,24 @@ export const FieldRenderer = ({
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
-                            <>
+                            <Fragment key={createKey(parent, key)}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="column" />}
                                 <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={createKey(parent, key)} contextMenuRef={contextMenuRef} inGroup field={field} path={field.key} selectedElement={selectedElement} />
-                            </>
+                            </Fragment>
                         );
                     }
                     return (
-                        <>
+                        <Fragment key={createKey(parent, key)}>
                             {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
                             <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={createKey(parent, key)} contextMenuRef={contextMenuRef} field={field} path={field.key} selectedElement={selectedElement} />
-                        </>
+                        </Fragment>
                     );
                 } else if (typeof field === "object") {
                     if (Array.isArray(field)) {
                         // collection array
                         const collectionConfig = fieldProps.getConfig(key);
                         return (
-                            <>
+                            <Fragment key={createKey(parent, key)}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
                                 {isFieldConfigEditor && key === "validation" ? <InspectorSpacer /> : null}
                                 <CollectionContainer
@@ -159,13 +159,13 @@ export const FieldRenderer = ({
                                     </DragDropContext>
                                     <button type="button" style={{margin: isFieldConfigEditor ? "8px 0 8px 8px" : "-4px 0 8px 8px"}} onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
                                 </CollectionContainer>
-                            </>
+                            </Fragment>
                         );
                     } else {
                         const groupPath = createKey(parent, key);
                         const groupConfig = fieldProps.getConfig(groupPath);
                         return (
-                            <>
+                            <Fragment key={createKey(parent, key)}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
                                 <GroupContainer
                                     isFieldConfigEditor={isFieldConfigEditor}
@@ -191,7 +191,7 @@ export const FieldRenderer = ({
                                         type="group"
                                     />
                                 </GroupContainer>
-                            </>
+                            </Fragment>
                         );
                     }
                 }

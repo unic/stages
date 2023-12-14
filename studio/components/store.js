@@ -34,7 +34,6 @@ const useStagesStore = create(persist((set, get) => ({
     setActiveUndoIndex: (activeUndoIndex) => set(() => ({ activeUndoIndex })),
     switchPreviewSize: (size) => set(() => ({ previewSize: size })),
     undo: () => set((state) => {
-        console.log("undo", { state });
         if (state.activeUndoIndex > 0) {
             const newIndex = state.activeUndoIndex - 1;
             const oldConfig = JSON.parse(state.undoData[newIndex]);
@@ -44,7 +43,6 @@ const useStagesStore = create(persist((set, get) => ({
         }
     }),
     redo: () => set((state) => {
-        console.log("redo", { state });
         if (state.activeUndoIndex < state.undoData.length - 1) {
             const newIndex = state.activeUndoIndex + 1;
             const oldConfig = JSON.parse(state.undoData[newIndex]);
@@ -54,7 +52,6 @@ const useStagesStore = create(persist((set, get) => ({
         }
     }),
     updateCurrentConfig: (currentConfig) => set((state) => {
-        console.log("updateCurrentConfig");
         const newUndoData = [...state.undoData];
         newUndoData.push(JSON.stringify(currentConfig));
         get().setActiveUndoIndex(newUndoData.length - 1);
