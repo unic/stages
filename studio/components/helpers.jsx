@@ -17,6 +17,16 @@ export const parseJSONConfig = (config, data) => {
            // eslint-disable-next-line no-new-func
            if (typeof computedValueFunction === "function") newItem.computedValue = computedValueFunction;
         }
+        if (newItem.isRendered && typeof newItem.isRendered === "string") {
+            let isRenderedFunction;
+            try {
+                isRenderedFunction = new Function("data", `return ${newItem.isRendered};`);
+            } catch (error) {
+                console.error("is rendered error", error);
+            }
+           // eslint-disable-next-line no-new-func
+           if (typeof isRenderedFunction === "function") newItem.isRendered = isRenderedFunction;
+        }
         return newItem;
     });
     return parsedConfig;

@@ -220,7 +220,7 @@ const MappedRating = (props) => {
 
 const MappedInputNumber = (props) => {
     const mappedProps = removeStagesProps(props);
-    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    if (typeof mappedProps.value === 'undefined' || isNaN(mappedProps.value)) mappedProps.value = '';
     mappedProps.type = 'text';
     mappedProps.onChange = (e) => {
         props.onChange(e.value);

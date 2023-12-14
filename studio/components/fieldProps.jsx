@@ -115,6 +115,17 @@ const globalFieldProps = {
         type: "checkbox",
         label: "Disabled?"
     },
+    isInterfaceState: {
+        id: "isInterfaceState",
+        type: "checkbox",
+        label: "Interface State?"
+    },
+    isRendered: {
+        id: "isRendered",
+        type: "textarea",
+        label: "Is Rendered?",
+        placeholder: "!!data.myCheckbox",
+    },
     tooltip: {
         id: "tooltip",
         type: "text",
@@ -335,8 +346,10 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
         globalFieldProps.tooltip,
         globalFieldProps.computedValue,
+        globalFieldProps.isRendered,
         globalFieldProps.textValidation
     ],
     textarea: [
@@ -346,9 +359,11 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
         globalFieldProps.tooltip,
         globalFieldProps.autoResize,
         globalFieldProps.computedValue,
+        globalFieldProps.isRendered,
         globalFieldProps.textValidation
     ],
     select: [
@@ -358,9 +373,11 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
         globalFieldProps.options,
         globalFieldProps.placeholder,
-        globalFieldProps.tooltip
+        globalFieldProps.tooltip,
+        globalFieldProps.isRendered,
     ],
     calendar: [
         globalFieldProps.id,
@@ -369,6 +386,7 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
         globalFieldProps.tooltip,
         {
             id: "numberOfMonths",
@@ -414,6 +432,7 @@ const fieldProps = {
             type: "checkbox",
             label: "Show time?"
         },
+        globalFieldProps.isRendered,
     ],
     checkbox: [
         globalFieldProps.id,
@@ -422,6 +441,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     switch: [
         globalFieldProps.id,
@@ -430,6 +451,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     number: [
         globalFieldProps.id,
@@ -440,7 +463,9 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
         globalFieldProps.computedValue,
+        globalFieldProps.isRendered,
     ],
     rating: [
         globalFieldProps.id,
@@ -449,6 +474,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     buttons: [
         globalFieldProps.id,
@@ -457,7 +484,9 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
-        globalFieldProps.options
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.options,
+        globalFieldProps.isRendered,
     ],
     slider: [
         globalFieldProps.id,
@@ -466,6 +495,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     toggle: [
         globalFieldProps.id,
@@ -474,6 +505,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     editor: [
         globalFieldProps.id,
@@ -482,14 +515,19 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
-        globalFieldProps.textValidation
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.textValidation,
+        globalFieldProps.isRendered,
     ],
     chips: [
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
-        globalFieldProps.isRequired
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     color: [
         globalFieldProps.id,
@@ -498,6 +536,8 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     mask: [
         globalFieldProps.id,
@@ -506,7 +546,9 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
-        globalFieldProps.textValidation
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.textValidation,
+        globalFieldProps.isRendered,
     ],
     password: [
         globalFieldProps.id,
@@ -515,7 +557,9 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
-        globalFieldProps.textValidation
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.textValidation,
+        globalFieldProps.isRendered,
     ],
 };
 
