@@ -104,5 +104,5 @@ export const parseTemplateLiterals = (text, data) => {
     } catch (error) {
         console.warn("template literal error", error);
     }
-    return parsedText;
+    return parsedText.replace(/\[object HTMLInputElement\]/g, "");
 };
