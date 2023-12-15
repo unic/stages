@@ -9,6 +9,7 @@ import { Redo } from 'lucide-react';
 import { Monitor } from 'lucide-react';
 import { Tablet } from 'lucide-react';
 import { Smartphone } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { Form } from "react-stages";
 import StagesIcon from './StagesIcon';
 import primeFields from './primeFields';
@@ -328,14 +329,19 @@ const Workspace = () => {
                 </div>
                 {store.isEditMode ? (
                     <div style={{ position: "absolute", top: "24px", right: "68px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
-                        <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.undo()}><Undo color="#999" size={16} /></button>
-                        <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.redo()}><Redo color="#999" size={16} /></button>
+                        <button title="undo" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.undo()}><Undo color="#999" size={16} /></button>
+                        <button title="redo" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.redo()}><Redo color="#999" size={16} /></button>
                     </div>
                 ) : null}
-                <div style={{ position: "absolute", top: "24px", right: "134px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
-                    <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("mobile")}><Smartphone color={store.previewSize === "mobile" ? "#000" : "#999"} size={16} /></button>
-                    <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("tablet")}><Tablet color={store.previewSize === "tablet" ? "#000" : "#999"} size={16} /></button>
-                    <button type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("desktop")}><Monitor color={store.previewSize === "desktop" ? "#000" : "#999"} size={16} /></button>
+                {store.isEditMode ? (
+                    <div style={{ position: "absolute", top: "24px", right: "134px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
+                        <button title="add snapshot" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.addSnapshot()}><Camera color="#999" size={16} /></button>
+                    </div>
+                ) : null}
+                <div style={{ position: "absolute", top: "24px", right: "172px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
+                    <button title="mobile" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("mobile")}><Smartphone color={store.previewSize === "mobile" ? "#000" : "#999"} size={16} /></button>
+                    <button title="tablet" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("tablet")}><Tablet color={store.previewSize === "tablet" ? "#000" : "#999"} size={16} /></button>
+                    <button title="desktop" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("desktop")}><Monitor color={store.previewSize === "desktop" ? "#000" : "#999"} size={16} /></button>
                 </div>
                 <div style={{ marginLeft: "8px", marginTop: "-11px" }}>
                     <h2>

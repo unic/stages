@@ -15,6 +15,7 @@ const initialGeneralConfig = {
 
 const useStagesStore = create(persist((set, get) => ({
     data: {},
+    snapshots: [],
     isEditMode: false,
     editorTabIndex: 0,
     selectedElement: '',
@@ -30,6 +31,9 @@ const useStagesStore = create(persist((set, get) => ({
     setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),
     setPreviewMode: () => set(() => ({ isEditMode: false })),
     setData: (data) => set(() => ({ data })),
+    addSnapshot: () => set(() => ({ snapshots: [...get().snapshots, get().data], editorTabIndex: 2 })),
+    removeSnapshot: (index) => set(() => ({ snapshots: get().snapshots.filter((_, i) => i !== index) })),
+    useSnapshot: (index) => set(() => ({ data: get().snapshots[index] })),
     setUndoData: (undoData) => set(() => ({ undoData })),
     setActiveUndoIndex: (activeUndoIndex) => set(() => ({ activeUndoIndex })),
     switchPreviewSize: (size) => set(() => ({ previewSize: size })),
