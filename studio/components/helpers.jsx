@@ -84,9 +84,11 @@ export const getAllPaths = (config, path = "") => {
     let paths = [];
     if (Array.isArray(config)) {
         config.forEach((item) => {
-            paths.push(path ? `${path}.${item.id}` : item.id);
-            if (item.type === "group" || item.type === "collection") {
-                paths = paths.concat(getAllPaths(item.fields, path ? `${path}.${item.id}` : item.id));
+            if (item) {
+                paths.push(path ? `${path}.${item.id}` : item.id);
+                if (item.type === "group" || item.type === "collection") {
+                    paths = paths.concat(getAllPaths(item.fields, path ? `${path}.${item.id}` : item.id));
+                }
             }
         });
     }
