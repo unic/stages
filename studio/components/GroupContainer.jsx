@@ -15,6 +15,7 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
             style={{
                 position: "relative",
                 flexWrap: "wrap",
+                flexDirection: isFieldConfigEditor ? "column" : "row",
                 border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 borderRadius: "5px",
                 padding: "8px 2px",

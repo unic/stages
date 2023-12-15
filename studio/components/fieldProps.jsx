@@ -436,6 +436,11 @@ const fieldProps = {
             type: "checkbox",
             label: "Show time?"
         },
+        {
+            id: "hideOnDateTimeSelect",
+            type: "checkbox",
+            label: "Hide on Select?"
+        },
         globalFieldProps.isRendered,
     ],
     checkbox: [

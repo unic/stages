@@ -23,6 +23,7 @@ const useStagesStore = create(persist((set, get) => ({
     clipboard: null,
     currentConfig: initialConfig,
     generalConfig: initialGeneralConfig,
+    activeStep: 0,
     undoData: [JSON.stringify(initialConfig)],
     activeUndoIndex: 1,
     previewSize: "desktop",

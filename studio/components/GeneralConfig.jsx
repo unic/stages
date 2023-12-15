@@ -98,13 +98,15 @@ const GeneralConfig = () => {
                                         id: "from",
                                         type: "calendar",
                                         label: "From",
-                                        showTime: true
+                                        showTime: true,
+                                        hideOnDateTimeSelect: true
                                     },
                                     {
                                         id: "to",
-                                        type: "date",
+                                        type: "calendar",
                                         label: "To",
-                                        showTime: true
+                                        showTime: true,
+                                        hideOnDateTimeSelect: true
                                     }
                                 ]
                             }

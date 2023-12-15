@@ -169,9 +169,10 @@ const MappedCalendar = (props) => {
     if (typeof mappedProps.value === 'undefined') {
         mappedProps.value = '';
     } else {
-        mappedProps.value = typeof mappedProps.value === 'string' ? mappedProps.value : String(mappedProps.value);
+        mappedProps.value = typeof mappedProps.value === 'string' ? new Date(mappedProps.value) : mappedProps.value;
     }
     mappedProps.onChange = (e) => {
+        console.log({e});
         props.onChange(e.target.value);
     };
     mappedProps.showIcon = true;
