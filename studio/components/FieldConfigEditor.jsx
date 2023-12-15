@@ -4,7 +4,6 @@ import { Message } from 'primereact/message';
 import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
-import useStagesStore from './store';
 import InspectorSpacer from './InspectorSpacer';
 import FormattedPath from './FormattedPath';
 import _ from "lodash";
@@ -59,7 +58,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
         return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
     }
-    
+
     const actualConfig = Array.isArray(config) ? getSameProperties(config) : parseConfig(fieldProps[config.type]);
     const [data, setData] = useState(Array.isArray(config) ? getSameData(config) : config);
 

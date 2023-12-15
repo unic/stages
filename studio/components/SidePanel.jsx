@@ -73,7 +73,7 @@ const SidePanel = () => {
                             <FieldConfigEditor
                                 key={store.selectedElement}
                                 path={store.selectedElement}
-                                config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => _.get(store.currentConfig, getConfigPathFromDataPath(item, store.currentConfig))).filter(item => item) : _.get(store.currentConfig, getConfigPathFromDataPath(store.selectedElement, store.currentConfig))}
+                                config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => _.get(store.currentConfig, getConfigPathFromDataPath(item, store.currentConfig))).filter(item => item) : _.get(store.currentConfig, getConfigPathFromDataPath(store.selectedElement, store.currentConfig)).filter(item => item)}
                                 handleEditFieldConfig={handleEditFieldConfig}
                             />
                         ) : null}
