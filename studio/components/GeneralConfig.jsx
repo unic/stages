@@ -35,6 +35,22 @@ const GeneralConfig = () => {
                                 isDisabled: true
                             },
                             {
+                                id: "type",
+                                type: "buttons",
+                                label: "Type",
+                                defaultValue: "form",
+                                options: [
+                                    {
+                                        value: "form",
+                                        text: "Form"
+                                    },
+                                    {
+                                        value: "wizard",
+                                        text: "Wizard"
+                                    }
+                                ]
+                            },
+                            {
                                 id: "locales",
                                 type: "select",
                                 label: "Locales",
@@ -57,6 +73,7 @@ const GeneralConfig = () => {
                                 id: "status",
                                 type: "buttons",
                                 label: "Status",
+                                defaultValue: "draft",
                                 options: [
                                     {
                                         value: "draft",
