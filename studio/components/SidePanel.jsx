@@ -56,6 +56,16 @@ const SidePanel = () => {
         })
     }
 
+    const getSelectedConfig = (config, selectedElement) => {
+        if (Array.isArray(selectedElement)) {
+            return selectedElement.map(item => _.get(config, getConfigPathFromDataPath(item, config))).filter(item => item);
+        } else {
+            let tempConfig = _.get(config, getConfigPathFromDataPath(selectedElement, config));
+            if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
+            return tempConfig;
+        }
+    };
+
     return (
         <div style={{ width: "100%", minWidth: "393px", height: '100vh', backgroundColor: "#FCFCFC", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", flexDirection: "column", height: "100%" }}>
@@ -73,7 +83,7 @@ const SidePanel = () => {
                             <FieldConfigEditor
                                 key={store.selectedElement}
                                 path={store.selectedElement}
-                                config={Array.isArray(store.selectedElement) ? store.selectedElement.map(item => _.get(store.currentConfig, getConfigPathFromDataPath(item, store.currentConfig))).filter(item => item) : _.get(store.currentConfig, getConfigPathFromDataPath(store.selectedElement, store.currentConfig)).filter(item => item)}
+                                config={getSelectedConfig(store.currentConfig, store.selectedElement)}
                                 handleEditFieldConfig={handleEditFieldConfig}
                             />
                         ) : null}

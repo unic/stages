@@ -66,7 +66,7 @@ export const FieldRenderer = ({
         fieldProps.onCollectionAction(key, "move", result.source.index, result.destination.index)
     };
 
-    const realPath = selectedElement ?getConfigPathFromDataPath(selectedElement, store.currentConfig) : "";
+    const realPath = selectedElement ? getConfigPathFromDataPath(selectedElement, store.currentConfig) : "";
     const selectedElementConfig = realPath ? get(store.currentConfig, realPath) : {};
 
     return (

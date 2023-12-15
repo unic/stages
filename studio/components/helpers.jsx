@@ -35,6 +35,7 @@ export const parseJSONConfig = (config, data) => {
 };
 
 export const getConfigPathFromDataPath = (path, config) => {
+    if (typeof path !== "string") return '';
     const pathSplit = path.split(".");
     let realPath = '';
     pathSplit.forEach((key) => {
@@ -47,6 +48,7 @@ export const getConfigPathFromDataPath = (path, config) => {
 };
 
 export const doesPathExist = (path, store) => {
+    if (!path) return false;
     const configPath = getConfigPathFromDataPath(path, store.currentConfig);
     const config = _.get(store.currentConfig, configPath);
     return configPath !== '' && config;
