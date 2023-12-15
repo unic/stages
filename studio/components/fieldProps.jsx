@@ -32,6 +32,7 @@ const globalFieldProps = {
     computedValue: {
         id: "computedValue",
         type: "textarea",
+        autoResize: true,
         label: "Computed Value",
         placeholder: "data => data.field1 + data.field2",
     },
@@ -125,6 +126,7 @@ const globalFieldProps = {
     isRendered: {
         id: "isRendered",
         type: "textarea",
+        autoResize: true,
         label: "Is Rendered?",
         placeholder: "!!data.myCheckbox",
     },
