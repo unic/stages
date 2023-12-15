@@ -56,9 +56,9 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     if (isInInspector) {
         return (
             <div className="flex" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", padding: 0 } : { padding: 0 }}>
-                <div style={{ flexGrow: 1 }}><label htmlFor={id}>{parseTemplateLiterals(label, store.data)}{isRequired ? " *" : ""}</label></div>
+                <div style={{ flexGrow: 1, minWidth: "140px", maxWidth: "140px" }}><label htmlFor={id}>{parseTemplateLiterals(label, store.data)}{isRequired ? " *" : ""}</label></div>
                 <div>&nbsp;</div>
-                <div style={{ minWidth: "204px", maxWidth: "204px" }}>{children}</div>
+                <div style={{ minWidth: "204px", flexGrow: 1 }}><div className="p-inputgroup w-full">{children}</div></div>
             </div>
         );
     }
