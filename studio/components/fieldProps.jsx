@@ -29,6 +29,21 @@ const globalFieldProps = {
         type: "text",
         label: "Suffix"
     },
+    defaultValueText: {
+        id: "defaultValue",
+        type: "text",
+        label: "Default Value"
+    },
+    defaultValueBoolean: {
+        id: "defaultValue",
+        type: "checkbox",
+        label: "Default Value"
+    },
+    defaultValueNumber: {
+        id: "defaultValue",
+        type: "number",
+        label: "Default Value"
+    },
     computedValue: {
         id: "computedValue",
         type: "textarea",
@@ -356,6 +371,7 @@ const fieldProps = {
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.tooltip,
+        globalFieldProps.defaultValueText,
         globalFieldProps.computedValue,
         globalFieldProps.isRendered,
         globalFieldProps.textValidation
@@ -370,6 +386,7 @@ const fieldProps = {
         globalFieldProps.isInterfaceState,
         globalFieldProps.tooltip,
         globalFieldProps.autoResize,
+        globalFieldProps.defaultValueText,
         globalFieldProps.computedValue,
         globalFieldProps.isRendered,
         globalFieldProps.textValidation
@@ -384,6 +401,7 @@ const fieldProps = {
         globalFieldProps.isInterfaceState,
         globalFieldProps.options,
         globalFieldProps.placeholder,
+        globalFieldProps.defaultValueText,
         globalFieldProps.tooltip,
         globalFieldProps.isRendered,
     ],
@@ -505,6 +523,7 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
+        globalFieldProps.defaultValueBoolean,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
@@ -515,6 +534,7 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
+        globalFieldProps.defaultValueBoolean,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
@@ -530,6 +550,7 @@ const fieldProps = {
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
+        globalFieldProps.defaultValueNumber,
         globalFieldProps.computedValue,
         globalFieldProps.isRendered,
     ],
@@ -569,6 +590,7 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
         globalFieldProps.type,
+        globalFieldProps.defaultValueBoolean,
         globalFieldProps.isRequired,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
