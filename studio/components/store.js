@@ -5,7 +5,7 @@ import initialConfig from './initialConfig';
 const initialGeneralConfig = {
     title: "Demo Form",
     slug: "demo-form", // http://stages.studio/c/stages/f/demo-form
-    locales: ["en"],
+    locales: ["EN"],
     status: "draft",
     date: {
         from: "2024-01-01 00:00:00",

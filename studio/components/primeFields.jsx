@@ -16,6 +16,7 @@ import { ColorPicker } from 'primereact/colorpicker';
 import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
 import { Divider } from 'primereact/divider';
+import { MultiSelect } from 'primereact/multiselect';
 import useStagesStore from './store';
 import { parseTemplateLiterals } from './helpers';
 
@@ -152,6 +153,16 @@ const MappedDropdown = (props) => {
     };
     mappedProps.optionLabel = 'text';
     return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><Dropdown {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+};
+
+const MappedMultiSelect = (props) => {
+    const mappedProps = removeStagesProps(props);
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = [];
+    mappedProps.onChange = (e) => {
+        props.onChange(e.target.value);
+    };
+    mappedProps.optionLabel = 'text';
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><MultiSelect {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
 };
 
 const MappedSelectButton = (props) => {
@@ -360,6 +371,10 @@ const primeFields = {
     heading: {
         component: MappedHeading,
         isValid: () => true
+    },
+    multiselect: {
+        component: MappedMultiSelect,
+        isValid: isValid
     }
 };
 

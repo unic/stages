@@ -343,6 +343,15 @@ const Workspace = () => {
                     <button title="tablet" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("tablet")}><Tablet color={store.previewSize === "tablet" ? "#000" : "#999"} size={16} /></button>
                     <button title="desktop" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("desktop")}><Monitor color={store.previewSize === "desktop" ? "#000" : "#999"} size={16} /></button>
                 </div>
+                {store.generalConfig.locales.length > 1 ? (
+                    <div style={{ position: "absolute", top: "28px", right: "276px", fontSize: "14px" }}>
+                        <ul style={{ display: "flex",margin: 0, padding: 0, listStyleType: "none" }}>
+                            {store.generalConfig.locales.map((locale, index) => (
+                                <li key={locale} style={{ margin: 0, marginRight: "8px", padding: 0, color: index === 0 ? "#000" : "#999", cursor: "pointer" }}>{locale}</li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : null}
                 <div style={{ marginLeft: "8px", marginTop: "-11px" }}>
                     <h2>
                         {store.generalConfig.title}

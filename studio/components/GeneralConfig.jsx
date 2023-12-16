@@ -52,7 +52,7 @@ const GeneralConfig = () => {
                             },
                             {
                                 id: "locales",
-                                type: "select",
+                                type: "multiselect",
                                 label: "Locales",
                                 options: [
                                     {

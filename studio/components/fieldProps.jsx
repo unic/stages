@@ -55,6 +55,10 @@ const globalFieldProps = {
                 text: "Select"
             },
             {
+                value: "select",
+                text: "Multi Select"
+            },
+            {
                 value: "calendar",
                 text: "Calendar"
             },
@@ -382,6 +386,59 @@ const fieldProps = {
         globalFieldProps.placeholder,
         globalFieldProps.tooltip,
         globalFieldProps.isRendered,
+    ],
+    multiselect: [
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.secondaryText,
+        globalFieldProps.type,
+        globalFieldProps.isRequired,
+        globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.options,
+        globalFieldProps.placeholder,
+        globalFieldProps.tooltip,
+        globalFieldProps.isRendered,
+        {
+            id: "display",
+            type: "select",
+            label: "Display Type",
+            options: [
+                {
+                    value: "comma",
+                    text: "Comma"
+                },
+                {
+                    value: "chips",
+                    text: "Chips"
+                }
+            ]
+        },
+        {
+            id: "filter",
+            type: "checkbox",
+            label: "Filter?"
+        },
+        {
+            id: "inline",
+            type: "checkbox",
+            label: "Inline?"
+        },
+        {
+            id: "showClear",
+            type: "checkbox",
+            label: "Show Clear Icon?"
+        },
+        {
+            id: "showSelectAll",
+            type: "checkbox",
+            label: "Show Select All?"
+        },
+        {
+            id: "selectionLimit",
+            type: "number",
+            label: "Selection Limit"
+        },
     ],
     calendar: [
         globalFieldProps.id,
