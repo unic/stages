@@ -281,7 +281,9 @@ const MappedPassword = (props) => {
 };
 
 const MappedDivider = (props) => {
-    return <Divider type={props.borderType || "dashed"} layout={props.layout || "horizontal"} align={props.align}>{props.text}</Divider>;
+    return <Divider pt={props.isInInspector ? { root: { style: { margin: "8px 0" } }, content: { style: { backgroundColor: "#fcfcfc" } } } : {}} type={props.borderType || props.isInInspector ? "solid" : "dashed"} layout={props.layout || "horizontal"} align={props.align || "center"}>
+        {props.text && <span style={{ color: "#999", fontSize: "12px" }}>{props.text}</span>}
+    </Divider>;
 };
 
 const MappedHeading = (props) => {

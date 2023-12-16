@@ -4,7 +4,6 @@ import { Message } from 'primereact/message';
 import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
-import InspectorSpacer from './InspectorSpacer';
 import FormattedPath from './FormattedPath';
 import _ from "lodash";
 
@@ -73,7 +72,6 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
                     {Array.isArray(path) ? path.map((p, i) => <FormattedPath key={i} path={p} />) : <FormattedPath path={path} />}
                 </div>
             </div>
-            <InspectorSpacer />
             {Array.isArray(actualConfig) ? (
                 <Form
                     key={`configForm-${typeof config === "object" ? config.type : "multiselect"}`}
