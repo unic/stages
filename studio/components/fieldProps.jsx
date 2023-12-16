@@ -415,7 +415,7 @@ const fieldProps = {
             ]
         },
         {
-            id: "filter",
+            id: "showFilter",
             type: "checkbox",
             label: "Filter?"
         },

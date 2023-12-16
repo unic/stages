@@ -162,7 +162,8 @@ const MappedMultiSelect = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.optionLabel = 'text';
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><MultiSelect {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+    console.log({props, mappedProps});
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><MultiSelect filter={props.showFilter || false} {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
 };
 
 const MappedSelectButton = (props) => {

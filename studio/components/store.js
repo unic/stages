@@ -7,6 +7,7 @@ const initialGeneralConfig = {
     slug: "demo-form", // http://stages.studio/c/stages/f/demo-form
     locales: ["EN"],
     status: "draft",
+    components: "prime",
     date: {
         from: "2024-01-01 00:00:00",
         to: ""

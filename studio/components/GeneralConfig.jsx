@@ -3,6 +3,8 @@ import { Form } from "react-stages";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
 import useStagesStore from './store';
+import isoLangs from './isoLangs';
+import { truncateString } from './helpers';
 
 const GeneralConfig = () => {
     const store = useStagesStore();
@@ -54,20 +56,10 @@ const GeneralConfig = () => {
                                 id: "locales",
                                 type: "multiselect",
                                 label: "Locales",
-                                options: [
-                                    {
-                                        value: "EN",
-                                        text: "English"
-                                    },
-                                    {
-                                        value: "DE",
-                                        text: "Deutsch"
-                                    },
-                                    {
-                                        value: "FR",
-                                        text: "French"
-                                    }
-                                ]
+                                showFilter: true,
+                                showSelectAll: false,
+                                display: "chip",
+                                options: Object.keys(isoLangs).map(lang => ({ value: lang.toUpperCase(), text: `${lang.toUpperCase()}: ${truncateString(isoLangs[lang].name, 32)}` })),
                             },
                             {
                                 id: "status",
@@ -90,6 +82,26 @@ const GeneralConfig = () => {
                                 ]
                             },
                             {
+                                id: "components",
+                                type: "select",
+                                label: "Field Components",
+                                defaultValue: "plain",
+                                options: [
+                                    {
+                                        value: "plain",
+                                        text: "Stages Plain Fields"
+                                    },
+                                    {
+                                        value: "prime",
+                                        text: "Prime React"
+                                    },
+                                    {
+                                        value: "radix",
+                                        text: "Radix UI"
+                                    }
+                                ]
+                            },
+                            {
                                 id: "date",
                                 type: "group",
                                 label: "Date",
@@ -97,14 +109,14 @@ const GeneralConfig = () => {
                                     {
                                         id: "from",
                                         type: "calendar",
-                                        label: "From",
+                                        label: "Enabled From",
                                         showTime: true,
                                         hideOnDateTimeSelect: true
                                     },
                                     {
                                         id: "to",
                                         type: "calendar",
-                                        label: "To",
+                                        label: "Enabled To",
                                         showTime: true,
                                         hideOnDateTimeSelect: true
                                     }

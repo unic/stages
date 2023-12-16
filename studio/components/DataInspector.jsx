@@ -1,14 +1,7 @@
 import { Message } from 'primereact/message';
 import InspectorSpacer from './InspectorSpacer';
 import useStagesStore from './store';
-
-function truncateString(str, num) {
-    if (str.length > num) {
-      return str.slice(0, num) + "...";
-    } else {
-      return str;
-    }
-  }
+import { truncateString } from './helpers';
 
 const DataInspector = () => {
     const store = useStagesStore();
