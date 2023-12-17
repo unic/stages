@@ -142,7 +142,9 @@ const MappedEditor = (props) => {
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><Editor {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}>
+        <div style={{ overflow: "hidden" }}><Editor {...mappedProps} className={props.error ? "p-invalid" : ""} /></div>
+    </InputWrapper>;
 };
 
 const MappedDropdown = (props) => {

@@ -97,7 +97,6 @@ export const FieldRenderer = ({
                         return (
                             <Fragment key={createKey(parent, key)}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
-                                {isFieldConfigEditor && key === "validation" ? <InspectorSpacer /> : null}
                                 <CollectionContainer
                                     key={key}
                                     isFieldConfigEditor={isFieldConfigEditor}
@@ -197,8 +196,8 @@ export const FieldRenderer = ({
                 }
             })}
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
-            {isFieldConfigEditor && selectedElementConfig.type === "text" && !parent ? (
-                <div style={{ marginLeft: "8px" }}>
+            {isFieldConfigEditor && !parent ? (
+                <div style={{ marginLeft: "8px", marginBottom: "32px" }}>
                     <br />
                     <Dropdown options={[
                         { label: "Email", value: "email" },

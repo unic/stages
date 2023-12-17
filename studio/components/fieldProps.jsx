@@ -90,7 +90,7 @@ const globalFieldProps = {
                 text: "Select"
             },
             {
-                value: "select",
+                value: "multiselect",
                 text: "Multi Select"
             },
             {
@@ -208,7 +208,6 @@ const globalFieldProps = {
     textValidation: {
         id: "validation",
         type: "collection",
-        label: "Validations",
         fields: {
             email: [
                 {
@@ -845,6 +844,16 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "onLabel",
+            type: "text",
+            label: "On Label"
+        },
+        {
+            id: "offLabel",
+            type: "text",
+            label: "Off Label"
+        },
         globalFieldProps.tooltip,
         globalFieldProps.advancedDivider,
         globalFieldProps.defaultValueBoolean,
@@ -861,6 +870,11 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "showHeader",
+            type: "checkbox",
+            label: "Show Header?"
+        }, 
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
@@ -876,6 +890,22 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "allowDuplicate",
+            type: "checkbox",
+            label: "Allow Duplicate?"
+        }, 
+        {
+            id: "max",
+            type: "number",
+            label: "Max Entries"
+        }, 
+        {
+            id: "removable",
+            type: "checkbox",
+            label: "Removable Items"
+        }, 
+        globalFieldProps.tooltip,
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
@@ -890,6 +920,32 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "format",
+            type: "select",
+            label: "Format",
+            defaultValue: "hex",
+            options: [
+                {
+                    value: "rgb",
+                    text: "RGB"
+                },
+                {
+                    value: "hex",
+                    text: "Hex"
+                },
+                {
+                    value: "hsb",
+                    text: "HSB"
+                }
+            ]
+        },
+        {
+            id: "inline",
+            type: "checkbox",
+            label: "Inline?"
+        },
+        globalFieldProps.tooltip,
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
@@ -904,6 +960,18 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "autoClear",
+            type: "checkbox",
+            label: "Auto Clear?"
+        },
+        {
+            id: "mask",
+            type: "text",
+            label: "Mask Pattern",
+            tooltip: "For example: 99-999999"
+        },
+        globalFieldProps.tooltip,
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
@@ -919,6 +987,17 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "feedback",
+            type: "checkbox",
+            label: "Show Feedback?"
+        },
+        {
+            id: "toggleMask",
+            type: "checkbox",
+            label: "Toggle Mask?"
+        },
+        globalFieldProps.tooltip,
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
