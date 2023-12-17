@@ -152,7 +152,7 @@ const MappedDropdown = (props) => {
         props.onChange(e.target.value);
     };
     mappedProps.optionLabel = 'text';
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><Dropdown {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><Dropdown {...mappedProps} filter={props.showFilter || false} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
 };
 
 const MappedMultiSelect = (props) => {
@@ -163,7 +163,7 @@ const MappedMultiSelect = (props) => {
     };
     mappedProps.optionLabel = 'text';
     console.log({props, mappedProps});
-    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><MultiSelect filter={props.showFilter || false} {...mappedProps} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
+    return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}><MultiSelect {...mappedProps} filter={props.showFilter || false} className={props.error ? "p-invalid" : ""} /></InputWrapper>;
 };
 
 const MappedSelectButton = (props) => {

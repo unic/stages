@@ -433,10 +433,30 @@ const fieldProps = {
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
         globalFieldProps.options,
+        {
+            id: "editable",
+            type: "checkbox",
+            label: "Editable?"
+        },
+        {
+            id: "showFilter",
+            type: "checkbox",
+            label: "Filter?"
+        },
+        {
+            id: "showFilterClear",
+            type: "checkbox",
+            label: "Show Filter Clear?"
+        },
+        {
+            id: "showClear",
+            type: "checkbox",
+            label: "Show Clear Icon?"
+        },
+        globalFieldProps.placeholder,
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
-        globalFieldProps.placeholder,
         globalFieldProps.defaultValueText,
         globalFieldProps.tooltip,
         globalFieldProps.isRendered,
@@ -450,12 +470,6 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.options,
-        globalFieldProps.placeholder,
-        globalFieldProps.tooltip,
-        globalFieldProps.isRendered,
         {
             id: "display",
             type: "select",
@@ -496,6 +510,14 @@ const fieldProps = {
             type: "number",
             label: "Selection Limit"
         },
+        globalFieldProps.placeholder,
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
+        globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.options,
+        globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     calendar: [
         globalFieldProps.basicsDivider,
@@ -505,9 +527,6 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.tooltip,
         {
             id: "numberOfMonths",
             type: "number",
@@ -557,7 +576,12 @@ const fieldProps = {
             type: "checkbox",
             label: "Hide on Select?"
         },
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
+        globalFieldProps.isDisabled,
+        globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     checkbox: [
         globalFieldProps.basicsDivider,
@@ -567,10 +591,23 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "falseValue",
+            type: "text",
+            label: "False Value"
+        },
+        {
+            id: "trueValue",
+            type: "text",
+            label: "True Value"
+        },
         globalFieldProps.defaultValueBoolean,
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     switch: [
         globalFieldProps.basicsDivider,
@@ -580,10 +617,22 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "falseValue",
+            type: "text",
+            label: "False Value"
+        },
+        {
+            id: "trueValue",
+            type: "text",
+            label: "True Value"
+        },
         globalFieldProps.defaultValueBoolean,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     number: [
         globalFieldProps.basicsDivider,
@@ -595,11 +644,110 @@ const fieldProps = {
         globalFieldProps.specificsDivider,
         globalFieldProps.prefix,
         globalFieldProps.suffix,
+        {
+            id: "buttonLayout",
+            type: "select",
+            label: "Button Layout",
+            options: [
+                {
+                    value: "horizontal",
+                    text: "Horizontal"
+                },
+                {
+                    value: "vertical",
+                    text: "Vertical"
+                },
+                {
+                    value: "stacked",
+                    text: "Stacked"
+                }
+            ]
+        },
+        {
+            id: "mode",
+            type: "select",
+            label: "Mode",
+            options: [
+                {
+                    value: "decimal",
+                    text: "Decimal"
+                },
+                {
+                    value: "currency",
+                    text: "Currency"
+                }
+            ]
+        },
+        {
+            id: "currency",
+            type: "text",
+            label: "Currency (USD etc.)"
+        },
+        {
+            id: "currencyDisplay",
+            type: "select",
+            label: "Currency Display",
+            options: [
+                {
+                    value: "symbol",
+                    text: "Symbol"
+                },
+                {
+                    value: "code",
+                    text: "Code"
+                },
+                {
+                    value: "name",
+                    text: "Name"
+                }
+            ]
+        },
+        {
+            id: "format",
+            type: "checkbox",
+            defaultValue: true,
+            label: "Format?"
+        },
+        {
+            id: "useGrouping",
+            type: "checkbox",
+            defaultValue: true,
+            label: "Use Grouping?"
+        },
+        {
+            id: "max",
+            type: "number",
+            label: "Max Value"
+        },
+        {
+            id: "min",
+            type: "number",
+            label: "Min Value"
+        },
+        {
+            id: "maxFractionDigits",
+            type: "number",
+            label: "Max Fraction Digits"
+        },
+        {
+            id: "minFractionDigits",
+            type: "number",
+            label: "Min Fraction Digits"
+        },
+        {
+            id: "step",
+            type: "number",
+            label: "Step Increment"
+        },
+        globalFieldProps.placeholder,
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.defaultValueNumber,
         globalFieldProps.computedValue,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     rating: [
         globalFieldProps.basicsDivider,
@@ -609,9 +757,24 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "cancel",
+            type: "checkbox",
+            defaultValue: true,
+            label: "Show Cancel Icon?"
+        },
+        {
+            id: "stars",
+            type: "number",
+            defaultValue: 5,
+            label: "Star Count"
+        },
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     buttons: [
         globalFieldProps.basicsDivider,
@@ -621,10 +784,20 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.options,
+        {
+            id: "multiple",
+            type: "checkbox",
+            defaultValue: false,
+            label: "Multiple?"
+        },
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.options,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     slider: [
         globalFieldProps.basicsDivider,
@@ -634,9 +807,35 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        {
+            id: "max",
+            type: "number",
+            defaultValue: 100,
+            label: "Max Value"
+        },
+        {
+            id: "min",
+            type: "number",
+            defaultValue: 0,
+            label: "Min Value"
+        },
+        {
+            id: "range",
+            type: "checkbox",
+            defaultValue: false,
+            label: "Range?"
+        },
+        {
+            id: "step",
+            type: "number",
+            defaultValue: 1,
+            label: "Step Increment"
+        },
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     toggle: [
         globalFieldProps.basicsDivider,
@@ -646,10 +845,13 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.tooltip,
+        globalFieldProps.advancedDivider,
         globalFieldProps.defaultValueBoolean,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     editor: [
         globalFieldProps.basicsDivider,
@@ -659,10 +861,12 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.textValidation,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     chips: [
         globalFieldProps.basicsDivider,
@@ -672,9 +876,11 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     color: [
         globalFieldProps.basicsDivider,
@@ -684,9 +890,11 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     mask: [
         globalFieldProps.basicsDivider,
@@ -696,10 +904,12 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.textValidation,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
     password: [
         globalFieldProps.basicsDivider,
@@ -709,10 +919,12 @@ const fieldProps = {
         globalFieldProps.type,
         globalFieldProps.isRequired,
         globalFieldProps.specificsDivider,
+        globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
         globalFieldProps.textValidation,
         globalFieldProps.isRendered,
+        globalFieldProps.validationsDivider,
     ],
 };
 
