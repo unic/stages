@@ -20,6 +20,9 @@ const DataInspector = () => {
                         </span>
                     </li>
                 ))}
+                {store.snapshots.length === 0 && (
+                    <Message severity="info" text="Click camera icon to take a data snapshot." />
+                )}
             </ul>
             <InspectorSpacer />
             <h3>User Data</h3>

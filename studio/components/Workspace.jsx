@@ -42,7 +42,25 @@ const Workspace = () => {
 
     const insertContextMenuItems = [
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", "")), items: [
+            { label: 'Insert Text Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "text") },
+            { label: 'Insert Textarea Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "textarea") },
+            { label: 'Insert Select', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "select") },
+            { label: 'Insert Multi Select', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "multiselect") },
+            { label: 'Insert Calendar', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "calendar") },
+            { label: 'Insert Checkbox', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "checkbox") },
+            { label: 'Insert Switch', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "switch") },
+            { label: 'Insert Number Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "number") },
+            { label: 'Insert Rating Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "rating") },
+            { label: 'Insert Buttons', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "buttons") },
+            { label: 'Insert Slider', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "slider") },
+            { label: 'Insert Toggle', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "toggle") },
+            { label: 'Insert Editor', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "editor") },
+            { label: 'Insert Chips Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "chips") },
+            { label: 'Insert Color Picker', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "color") },
+            { label: 'Insert Mask Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "mask") },
+            { label: 'Insert Password Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "password") },
+        ] },
         { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
@@ -118,7 +136,7 @@ const Workspace = () => {
         }
     };
 
-    const handleInsertFieldBetweenFields = (path) => {
+    const handleInsertFieldBetweenFields = (path, fieldType) => {
         console.log("--> handleInsertFieldBetweenFields <--");
         // Add new group between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
@@ -135,7 +153,7 @@ const Workspace = () => {
         }
         arrayToInsertInto.splice(index, 0, {
             id: createNewFieldID(path, "text", store),
-            type: "text",
+            type: fieldType || "text",
             label: "Field",
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
