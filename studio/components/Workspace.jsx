@@ -5,6 +5,7 @@ import Sugar from "sugar";
 import { ContextMenu } from 'primereact/contextmenu';
 import { Button } from 'primereact/button';
 import { ScrollPanel } from 'primereact/scrollpanel';
+import { Toast } from 'primereact/toast';
 import { Undo } from 'lucide-react';
 import { Redo } from 'lucide-react';
 import { Monitor } from 'lucide-react';
@@ -23,6 +24,7 @@ import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig } from './
 import { FieldRenderer } from './FieldRenderer';
 
 const Workspace = () => {
+    const toast = useRef(null);
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
 console.log({store});
@@ -340,6 +342,7 @@ console.log({store});
 
     return (
         <ScrollPanel style={{ width: "100%",height: '100vh', background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
+            <Toast position="center" ref={toast} />
             <div style={{ padding: "16px", position: "relative", }}>
                 <div style={{ position: "absolute", top: "18px", right: "24px", cursor: "pointer" }}>
                     <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
@@ -352,7 +355,15 @@ console.log({store});
                 ) : null}
                 {store.isEditMode ? (
                     <div style={{ position: "absolute", top: "24px", right: "134px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
-                        <button title="add snapshot" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.addSnapshot()}><Camera color="#999" size={16} /></button>
+                        <button
+                            title="add snapshot"
+                            type="button"
+                            style={{ border: "none", background: "transparent", cursor: "pointer" }}
+                            onClick={() => {
+                                store.addSnapshot();
+                                toast.current.show({severity:'success', summary: 'Success!', detail:'New data snapshot created.', life: 2000});
+                            }}
+                        ><Camera color="#999" size={16} /></button>
                     </div>
                 ) : null}
                 {store.isEditMode ? (
