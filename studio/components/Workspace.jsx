@@ -17,6 +17,7 @@ import StagesIcon from './StagesIcon';
 import primeFields from './primeFields';
 import initialConfig from './initialConfig';
 import useStagesStore from './store';
+import { initNewCollections } from "./helpers";
 
 import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig } from './helpers';
 import { FieldRenderer } from './FieldRenderer';
@@ -117,9 +118,7 @@ console.log({store});
         store.updateCurrentConfig(newConfig);
 
         // Update data (for collections, a new empty array has to be addeed):
-        const newData = {...store.data};
-        newData[newTempId] = [{}];
-        store.setData(newData);
+        store.setData(initNewCollections(newConfig, store.data));
     };
 
     const handleCopyField = (path) => {
@@ -242,9 +241,7 @@ console.log({store});
         store.updateCurrentConfig(newConfig);
 
         // Update data (for collections, a new empty array has to be addeed):
-        const newData = {...store.data};
-        newData[newTempId] = [{}];
-        store.setData(newData);
+        store.setData(initNewCollections(newConfig, store.data));
 
         store.setSelectedElement('');
     };

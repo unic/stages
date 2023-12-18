@@ -119,3 +119,18 @@ export const truncateString = (str, num) => {
         return str;
     }
 };
+
+export const initNewCollections = (config, data) => {
+    // Stages isn't automatically initializimng collections when copied by Stages Studio, so do it manually:
+    const newData = {...data};
+    config.forEach((item) => {
+        if (item.type === "collection" && item.init) {
+            if (Array.isArray(newData[item.id]) && newData[item.id].length === 0) {
+                newData[item.id].push({});
+            } else if (!Array.isArray(newData[item.id])) {
+                newData[item.id] = [{}];
+            }
+        }
+    });
+    return newData;
+};
