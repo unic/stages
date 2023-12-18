@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected } from './helpers';
 
-const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor }) => {
+const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef }) => {
+    const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement));
 
     useEffect(() => {
@@ -21,6 +23,12 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
                 padding: "8px 2px",
                 background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
+            }}
+            onContextMenu={(e) => {
+                if (contextMenuRef && contextMenuRef.current) {
+                    contextMenuRef.current.show(e);
+                    store.setActiveContextMenuInput(path);
+                }
             }}
             onClick={(e) => {
                 e.stopPropagation();

@@ -24,7 +24,7 @@ import { FieldRenderer } from './FieldRenderer';
 const Workspace = () => {
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
-
+console.log({store});
     const rootContextMenuItems = [
         { label: 'Clear', icon: 'pi pi-fw pi-trash', command: () => handleInitConfig([{
             id: "field1",

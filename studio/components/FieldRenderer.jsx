@@ -103,6 +103,7 @@ export const FieldRenderer = ({
                                     selectedElement={selectedElement}
                                     handleEditCollection={handleEditCollection}
                                     isEditMode={isEditMode}
+                                    contextMenuRef={contextMenuRef}
                                     path={createKey(parent, key)}
                                     label={collectionConfig?.label}
                                     secondaryText={collectionConfig?.secondaryText}
@@ -174,6 +175,7 @@ export const FieldRenderer = ({
                                     path={groupPath}
                                     label={groupConfig?.label}
                                     secondaryText={groupConfig?.secondaryText}
+                                    contextMenuRef={contextMenuRef}
                                     key={groupPath}
                                 >
                                     <FieldRenderer

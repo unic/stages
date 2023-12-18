@@ -2,6 +2,7 @@
 import _ from "lodash";
 
 export const parseJSONConfig = (config, data) => {
+    if (!config) return [];
     const parsedConfig = config.map((item) => {
         const newItem = { ...item };
         if (newItem.type === "group" || newItem.type === "collection") {
@@ -44,7 +45,7 @@ export const getConfigPathFromDataPath = (path, config) => {
         const thisConfig = _.get(config, realPath);
         if (thisConfig && thisConfig.fields) realPath += ".fields";
     });
-    return realPath;
+    return realPath.endsWith(".fields") ? realPath.substring(0, realPath.length - 7) : realPath;
 };
 
 export const doesPathExist = (path, store) => {
