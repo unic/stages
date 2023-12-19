@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, KeyboardEvent } from 'react';
 import { motion } from "framer-motion";
 import _ from "lodash";
 import Sugar from "sugar";
@@ -27,7 +27,25 @@ const Workspace = () => {
     const toast = useRef(null);
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
-console.log({store});
+
+    console.log({store});
+
+    const onKeyPress = (e) => {
+        if (e.key === "c" && (e.ctrlKey || e.metaKey) && store.selectedElement) {
+            handleCopyField(store.selectedElement);
+        }
+        if (e.key === "v" && (e.ctrlKey || e.metaKey) && store.selectedElement) {
+            handlePasteField(store.selectedElement);
+        }
+        if (e.key === "x" && (e.ctrlKey || e.metaKey) && store.selectedElement) {
+            handleCutField(store.selectedElement);
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener('keydown', onKeyPress);
+    }, []);
+
     const rootContextMenuItems = [
         { label: 'Clear', icon: 'pi pi-fw pi-trash', command: () => handleInitConfig([{
             id: "field1",
@@ -427,15 +445,17 @@ console.log({store});
                     render={({ actionProps, fieldProps }) => {
                         return (
                             <>
-                                <form onContextMenu={(e) => {
-                                    if (contextMenuRef && contextMenuRef.current) {
-                                        contextMenuRef.current.show(e);
-                                        store.setActiveContextMenuInput(".");
-                                    }
-                                }} onClick={() => {
-                                    store.setSelectedElement("");
-                                    store.setEditorTabIndex(0);
-                                }}>
+                                <form
+                                    onContextMenu={(e) => {
+                                        if (contextMenuRef && contextMenuRef.current) {
+                                            contextMenuRef.current.show(e);
+                                            store.setActiveContextMenuInput(".");
+                                        }
+                                    }} onClick={() => {
+                                        store.setSelectedElement("");
+                                        store.setEditorTabIndex(0);
+                                    }}
+                                >
                                     <div style={{ position: "relative", maxWidth: store.previewSize === "mobile" ? "480px" : store.previewSize === "tablet" ? "640px" : "960px", margin: "0 auto", paddingBottom: "64px" }}>
                                         <FieldRenderer
                                             handleEditCollection={handleEditCollection}
