@@ -1671,6 +1671,7 @@ const Form = ({
                     fieldProps: {
                         fields: get(fieldsetFields, fieldPath.path),
                         onCollectionAction,
+                        onWizardAction,
                         modifyConfig,
                         data,
                         interfaceState,
@@ -1824,6 +1825,10 @@ const Form = ({
         limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey);
     };
 
+    const onWizardAction = (fieldKey, action) => {
+        console.log("onWizardAction", fieldKey, action);
+    }
+
     /**
      * This adds a specific config to the field configuration at a certain path
      * 
@@ -1954,6 +1959,7 @@ const Form = ({
         fieldProps: {
             fields: createRenderedFields(),
             onCollectionAction,
+            onWizardAction,
             modifyConfig,
             data,
             interfaceState,

@@ -30,8 +30,20 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
-const WizardNavigation = ({ config }) => {
-    return <div>Wizard Nav</div>;
+const WizardNavigation = ({ config, fieldKey, onAction }) => {
+    console.log("WizardNavigation", { config, fieldKey, onAction });
+    return (
+        <div>
+            {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
+            <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
+                {Array.isArray(config.stages) && config.stages.map((stage) => (
+                    <li style={{ padding: 0, margin: "0 8px 0 0" }}>
+                        <a href={`#${fieldKey}.${stage.id}`} onClick={() => onAction(`${fieldKey}.${stage.id}`)}>{stage.label}</a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 };
 
 function App() {
@@ -179,7 +191,11 @@ function App() {
                             <br />
                             {fieldProps.fields.wizard1 ? (
                                 <div>
-                                    <WizardNavigation config={fieldProps.fields.wizard1} />
+                                    <WizardNavigation
+                                        fieldKey="wizard1"
+                                        config={fieldProps.getConfig("wizard1")}
+                                        onAction={fieldProps.onWizardAction}
+                                    />
                                     {fieldProps.fields.wizard1.step1 && (
                                         <div>
                                             {fieldProps.fields.wizard1.step1.field1}
