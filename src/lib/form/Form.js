@@ -1835,10 +1835,7 @@ const Form = ({
         setActiveStages(newActiveStages);
     };
 
-    const getWizardNavHash = (fieldKey) => {
-        const pathSplit = fieldKey.split(".");
-        const path = pathSplit.slice(0, -1).join(".");
-        const stage = pathSplit[pathSplit.length - 1];
+    const getWizardNavHash = (path, stage) => {
         const hashes = [];
 
         Object.keys(activeStages).forEach(key => {

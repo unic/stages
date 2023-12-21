@@ -37,7 +37,7 @@ const WizardNavigation = ({ config, fieldKey, onAction, getHash }) => {
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
                 {Array.isArray(config.stages) && config.stages.map((stage) => (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
-                        <a href={getHash(`${fieldKey}.${stage.id}`)} onClick={() => onAction(`${fieldKey}.${stage.id}`)}>{stage.label}</a>
+                        <a href={getHash(fieldKey, stage.id)} onClick={() => onAction(`${fieldKey}.${stage.id}`)}>{stage.label}</a>
                     </li>
                 ))}
             </ul>
