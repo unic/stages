@@ -1826,10 +1826,7 @@ const Form = ({
         limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey);
     };
 
-    const onWizardAction = (fieldKey) => {
-        const pathSplit = fieldKey.split(".");
-        const path = pathSplit.slice(0, -1).join(".");
-        const stage = pathSplit[pathSplit.length - 1];
+    const onWizardAction = (path, stage) => {
         const newActiveStages = {...activeStages};
         newActiveStages[path] = stage;
         setActiveStages(newActiveStages);
