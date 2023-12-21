@@ -1672,6 +1672,7 @@ const Form = ({
                         fields: get(fieldsetFields, fieldPath.path),
                         onCollectionAction,
                         onWizardAction,
+                        getWizardNavHash,
                         modifyConfig,
                         data,
                         interfaceState,
@@ -1832,7 +1833,24 @@ const Form = ({
         const newActiveStages = {...activeStages};
         newActiveStages[path] = stage;
         setActiveStages(newActiveStages);
-    }
+    };
+
+    const getWizardNavHash = (fieldKey) => {
+        const pathSplit = fieldKey.split(".");
+        const path = pathSplit.slice(0, -1).join(".");
+        const stage = pathSplit[pathSplit.length - 1];
+        const hashes = [];
+
+        Object.keys(activeStages).forEach(key => {
+            if (key.startsWith(path)) {
+                hashes.push(`${key}.${stage}`);
+            } else {
+                hashes.push(`${key}.${activeStages[key]}`);
+            }
+        });
+
+        return `#!${hashes.join(":")}`;
+    };
 
     /**
      * This adds a specific config to the field configuration at a certain path
@@ -1965,6 +1983,7 @@ const Form = ({
             fields: createRenderedFields(),
             onCollectionAction,
             onWizardAction,
+            getWizardNavHash,
             modifyConfig,
             data,
             interfaceState,

@@ -30,15 +30,14 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
-const WizardNavigation = ({ config, fieldKey, onAction }) => {
-    console.log("WizardNavigation", { config, fieldKey, onAction });
+const WizardNavigation = ({ config, fieldKey, onAction, getHash }) => {
     return (
         <div>
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
                 {Array.isArray(config.stages) && config.stages.map((stage) => (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
-                        <a href={`#${fieldKey}.${stage.id}`} onClick={() => onAction(`${fieldKey}.${stage.id}`)}>{stage.label}</a>
+                        <a href={getHash(`${fieldKey}.${stage.id}`)} onClick={() => onAction(`${fieldKey}.${stage.id}`)}>{stage.label}</a>
                     </li>
                 ))}
             </ul>
@@ -225,7 +224,6 @@ function App() {
                     ];
                 } }}
                 render={({ fieldProps, actionProps }) => {
-                    console.log({ fieldProps });
                     return (
                         <div>
                             {fieldProps.fields.field1}
@@ -239,6 +237,7 @@ function App() {
                                             fieldKey="myGroup.wizardInsideGroup"
                                             config={fieldProps.getConfig("myGroup.wizardInsideGroup")}
                                             onAction={fieldProps.onWizardAction}
+                                            getHash={fieldProps.getWizardNavHash}
                                         />
                                         {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
                                             <div>
@@ -262,6 +261,7 @@ function App() {
                                         fieldKey="wizard1"
                                         config={fieldProps.getConfig("wizard1")}
                                         onAction={fieldProps.onWizardAction}
+                                        getHash={fieldProps.getWizardNavHash}
                                     />
                                     {fieldProps.fields.wizard1.step1 && (
                                         <div>
