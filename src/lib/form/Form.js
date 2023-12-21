@@ -276,16 +276,25 @@ const Form = ({
     const [focusedField, setFocusedField] = useState("");
     const [lastFocusedField, setLastFocusedField] = useState("");
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
+    const [activeStages, setActiveStages] = useState({});
 
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
     const fieldPaths = getFieldPaths(parsedFieldConfig, alldata);
 
-    console.log({ parsedFieldConfig, fieldPaths });
+    console.log({ parsedFieldConfig, fieldPaths, activeStages });
 
     // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
     useEffect(() => {
         mounted.current = true;
+
+        // Set active wizard stages:
+        const newActiveStages = {};
+        fieldPaths.forEach(fieldPath => {
+           if (fieldPath.config.type === "wizard") newActiveStages[fieldPath.path] = fieldPath.config.stages[0].id;
+        });
+        setActiveStages(newActiveStages);
+
         return () => {
             mounted.current = false;
         };
