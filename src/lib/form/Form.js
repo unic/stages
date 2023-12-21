@@ -1828,8 +1828,42 @@ const Form = ({
 
     const onWizardNav = (navType, path, stage) => {
         const newActiveStages = {...activeStages};
+        const currentStage = newActiveStages[path];
+        const fieldConfig = getConfigForField(path);
+        console.log({ fieldConfig });
 
         if (navType === "step") newActiveStages[path] = stage;
+
+        if (navType === "next") {
+            // Find the next step and set it active:
+            const nextIndex = findIndex(fieldConfig.stages, { id: currentStage }) + 1;
+            if (fieldConfig.stages[nextIndex]) {
+                newActiveStages[path] = fieldConfig.stages[nextIndex].id;
+            }
+        }
+
+        if (navType === "prev") {
+            // Find the previous step and set it active:
+            const prevIndex = findIndex(fieldConfig.stages, { id: currentStage }) - 1;
+            if (fieldConfig.stages[prevIndex]) {
+                newActiveStages[path] = fieldConfig.stages[prevIndex].id;
+            }
+        }
+
+        if (navType === "first") {
+            // Find the first step and set it active:
+            newActiveStages[path] = fieldConfig.stages[0].id;
+        }
+
+        if (navType === "last") {
+            // Find the last step and set it active:
+            newActiveStages[path] = fieldConfig.stages[fieldConfig.stages.length - 1].id;
+        }
+
+        if (navType === "lastValid") {
+            // Find the last valid step and set it active:
+            
+        }
         
         setActiveStages(newActiveStages);
     };

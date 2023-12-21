@@ -35,11 +35,17 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash }) => {
         <div>
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
+                <li style={{ padding: 0, margin: "0 8px 0 0" }}>
+                    <button onClick={() => onNav("prev", fieldKey)}>Prev</button>
+                </li>
                 {Array.isArray(config.stages) && config.stages.map((stage) => (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
                         <a href={getHash(fieldKey, stage.id)} onClick={() => onNav("step", fieldKey, stage.id)}>{stage.label}</a>
                     </li>
                 ))}
+                <li style={{ padding: 0, margin: "0 8px 0 0" }}>
+                    <button onClick={() => onNav("next", fieldKey)}>Next</button>
+                </li>
             </ul>
         </div>
     );
