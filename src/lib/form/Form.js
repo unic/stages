@@ -260,7 +260,8 @@ const Form = ({
     autoSave,
     typeValidations,
     fieldsets,
-    initialInterfaceState
+    initialInterfaceState,
+    hashSeparator,
 }) => {
     const mounted = useRef(false);
 
@@ -292,16 +293,24 @@ const Form = ({
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
     const fieldPaths = getFieldPaths(parsedFieldConfig, alldata, activeStages);
 
-    console.log({ parsedFieldConfig, fieldPaths, activeStages });
-
     // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
     useEffect(() => {
         mounted.current = true;
 
         // Set active wizard stages:
+        const hash = typeof window !== "undefined" ? window.location.hash.substring(2) : "";
+        const hashParts = hash.split(hashSeparator || ":");
         const newActiveStages = {};
+        hashParts.forEach(hashPart => {
+            const partSplit = hashPart.split(".");
+            const partPath = partSplit.slice(0, -1).join(".");
+            const partStage = partSplit[partSplit.length - 1];
+            newActiveStages[partPath] = partStage;
+        });
         fieldPaths.forEach(fieldPath => {
-           if (fieldPath.config.type === "wizard") newActiveStages[fieldPath.path] = fieldPath.config.stages[0].id;
+            if (fieldPath.config.type === "wizard" && !newActiveStages[fieldPath.path]) {
+                newActiveStages[fieldPath.path] = fieldPath.config.stages[0].id;
+            }
         });
         setActiveStages(newActiveStages);
 
@@ -1879,7 +1888,7 @@ const Form = ({
             }
         });
 
-        return `#!${hashes.join(":")}`;
+        return `#!${hashes.join(hashSeparator || ":")}`;
     };
 
     /**
