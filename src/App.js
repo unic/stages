@@ -180,14 +180,18 @@ function App() {
                             {fieldProps.fields.wizard1 ? (
                                 <div>
                                     <WizardNavigation config={fieldProps.fields.wizard1} />
-                                    <div>
-                                        {fieldProps.fields.wizard1.step1.field1}
-                                        {fieldProps.fields.wizard1.step1.field2}
-                                    </div>
-                                    <div>
-                                        {fieldProps.fields.wizard1.step2.field1}
-                                        {fieldProps.fields.wizard1.step2.field2}
-                                    </div>
+                                    {fieldProps.fields.wizard1.step1 && (
+                                        <div>
+                                            {fieldProps.fields.wizard1.step1.field1}
+                                            {fieldProps.fields.wizard1.step1.field2}
+                                        </div>
+                                    )}
+                                    {fieldProps.fields.wizard1.step2 && (
+                                        <div>
+                                            {fieldProps.fields.wizard1.step2.field1}
+                                            {fieldProps.fields.wizard1.step2.field2}
+                                        </div>
+                                    )}
                                 </div>
                             ) : null}
                             <br />

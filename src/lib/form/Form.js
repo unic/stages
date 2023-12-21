@@ -71,11 +71,19 @@ const getCombosFromTwoArrays = (arr1 = [], arr2 = []) => {
  * @param {Object} data the current data
  * @returns {Array<Object>} an array of all paths
  */
-const getFieldPaths = (fieldConfig, data) => {
+const getFieldPaths = (fieldConfig, data, activeStages) => {
     /**
      * @type {Array<PathConfig>}
      */
     const paths = [];
+
+    const isActiveStage = (activeStages, renderPath) => {
+        let isActive = false;
+        Object.keys(activeStages).forEach(key => {
+            if (`${key}.${activeStages[key]}` === renderPath) isActive = true;
+        });
+        return isActive;
+    }
 
     /**
      * Recursively get all the paths with their configs and data objects
@@ -84,13 +92,15 @@ const getFieldPaths = (fieldConfig, data) => {
      * @param {string} [renderPath] - the render path
      * @return {void}
      */
-    const getPathsForPath = (path = "", renderPath) => {
+    const getPathsForPath = (path = "", renderPath = "", pathType = "") => {
         let thisConfigs = [path ? get(fieldConfig, path) : fieldConfig];
         let thisKeys = [];
         if (!Array.isArray(thisConfigs[0])) {
             thisKeys = Object.keys(thisConfigs[0]);
             thisConfigs = Object.values(thisConfigs[0]);
         }
+        if (pathType === "stage" && !isActiveStage(activeStages, renderPath)) return;
+
         thisConfigs.forEach((thisConfig, unionIndex) => {
             const unionKey = typeof thisKeys[unionIndex] !== "undefined" ? thisKeys[unionIndex] : undefined;
             if (Array.isArray(thisConfig)) {
@@ -117,9 +127,9 @@ const getFieldPaths = (fieldConfig, data) => {
                             });
                         }
                     } else if (item.type === "group" || item.type === "fieldset" || item.type === "stage") {
-                        getPathsForPath(`${path}[${index}].fields`, itemRenderPath);
+                        getPathsForPath(`${path}[${index}].fields`, itemRenderPath, item.type);
                     } else if (item.type === "wizard") {
-                        getPathsForPath(`${path}[${index}].stages`, itemRenderPath);
+                        getPathsForPath(`${path}[${index}].stages`, itemRenderPath, "wizard");
                     }
                 });
             }
@@ -280,7 +290,7 @@ const Form = ({
 
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
-    const fieldPaths = getFieldPaths(parsedFieldConfig, alldata);
+    const fieldPaths = getFieldPaths(parsedFieldConfig, alldata, activeStages);
 
     console.log({ parsedFieldConfig, fieldPaths, activeStages });
 
