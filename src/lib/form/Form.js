@@ -1671,7 +1671,7 @@ const Form = ({
                     fieldProps: {
                         fields: get(fieldsetFields, fieldPath.path),
                         onCollectionAction,
-                        onWizardAction,
+                        onWizardNav,
                         getWizardNavHash,
                         modifyConfig,
                         data,
@@ -1826,9 +1826,11 @@ const Form = ({
         limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey);
     };
 
-    const onWizardAction = (path, stage) => {
+    const onWizardNav = (navType, path, stage) => {
         const newActiveStages = {...activeStages};
-        newActiveStages[path] = stage;
+
+        if (navType === "step") newActiveStages[path] = stage;
+        
         setActiveStages(newActiveStages);
     };
 
@@ -1976,7 +1978,7 @@ const Form = ({
         fieldProps: {
             fields: createRenderedFields(),
             onCollectionAction,
-            onWizardAction,
+            onWizardNav,
             getWizardNavHash,
             modifyConfig,
             data,
