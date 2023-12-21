@@ -37,7 +37,7 @@ const WizardNavigation = ({ config, fieldKey, onAction }) => {
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
                 {Array.isArray(config.stages) && config.stages.map((stage) => (
-                    <li style={{ padding: 0, margin: "0 8px 0 0" }}>
+                    <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
                         <a href={`#${fieldKey}.${stage.id}`} onClick={() => onAction(`${fieldKey}.${stage.id}`)}>{stage.label}</a>
                     </li>
                 ))}
@@ -131,6 +131,50 @@ function App() {
                                     id: "field2",
                                     type: "text",
                                     label: "Field 2"
+                                },
+                                {
+                                    id: "wizardInsideGroup",
+                                    type: "wizard",
+                                    label: "Wizard inside Group",
+                                    options: {},
+                                    stages: [
+                                        {
+                                            id: "step1",
+                                            type: "stage",
+                                            label: "Step 1",
+                                            fields: [
+                                                {
+                                                    id: "field1",
+                                                    type: "text",
+                                                    label: "Field 1 (Step 1)",
+                                                    isRequired: true
+                                                },
+                                                {
+                                                    id: "field2",
+                                                    type: "text",
+                                                    label: "Field 2 (Step 1)"
+                                                },
+                                            ]
+                                        },
+                                        {
+                                            id: "step2",
+                                            type: "stage",
+                                            label: "Step 2",
+                                            fields: [
+                                                {
+                                                    id: "field1",
+                                                    type: "text",
+                                                    label: "Field 1 (Step 2)",
+                                                    isRequired: true
+                                                },
+                                                {
+                                                    id: "field2",
+                                                    type: "text",
+                                                    label: "Field 2 (Step 2)"
+                                                },
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -186,8 +230,31 @@ function App() {
                         <div>
                             {fieldProps.fields.field1}
                             <br />
-                            {fieldProps.fields.myGroup.field1}
-                            {fieldProps.fields.myGroup.field2}
+                            <div style={{ border: "1px #999 solid", padding: "8px" }}>
+                                {fieldProps.fields.myGroup.field1}
+                                {fieldProps.fields.myGroup.field2}
+                                {fieldProps.fields.myGroup.wizardInsideGroup ? (
+                                    <div>
+                                        <WizardNavigation
+                                            fieldKey="myGroup.wizardInsideGroup"
+                                            config={fieldProps.getConfig("myGroup.wizardInsideGroup")}
+                                            onAction={fieldProps.onWizardAction}
+                                        />
+                                        {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
+                                            <div>
+                                                {fieldProps.fields.myGroup.wizardInsideGroup.step1.field1}
+                                                {fieldProps.fields.myGroup.wizardInsideGroup.step1.field2}
+                                            </div>
+                                        )}
+                                        {fieldProps.fields.myGroup.wizardInsideGroup.step2 && (
+                                            <div>
+                                                {fieldProps.fields.myGroup.wizardInsideGroup.step2.field1}
+                                                {fieldProps.fields.myGroup.wizardInsideGroup.step2.field2}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
+                            </div>
                             <br />
                             {fieldProps.fields.wizard1 ? (
                                 <div>
