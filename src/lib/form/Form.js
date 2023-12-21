@@ -116,8 +116,10 @@ const getFieldPaths = (fieldConfig, data) => {
                                 );
                             });
                         }
-                    } else if (item.type === "group" || item.type === "fieldset") {
+                    } else if (item.type === "group" || item.type === "fieldset" || item.type === "stage") {
                         getPathsForPath(`${path}[${index}].fields`, itemRenderPath);
+                    } else if (item.type === "wizard") {
+                        getPathsForPath(`${path}[${index}].stages`, itemRenderPath);
                     }
                 });
             }
@@ -187,6 +189,9 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
     parsedConfig = parsedConfig.map(configItem => {
         if (typeof configItem === "object" && (configItem.type === "group" || configItem.type === "collection" || configItem.type === "fieldset") && Array.isArray(configItem.fields)) {
             configItem.fields = configItem.fields.map(field => parseConfigItem(field));
+        }
+        if (typeof configItem === "object" && configItem.type === "wizard" && Array.isArray(configItem.stages)) {
+            configItem.stages = configItem.stages.map(stage => parseConfigItem(stage));
         }
         return parseConfigItem(configItem);
     });
@@ -275,6 +280,8 @@ const Form = ({
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
     const fieldPaths = getFieldPaths(parsedFieldConfig, alldata);
+
+    console.log({ parsedFieldConfig, fieldPaths });
 
     // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
     useEffect(() => {
@@ -379,7 +386,7 @@ const Form = ({
      * @param {string} type string of the elemnts type
      * @returns {boolean} true if the type is a reserved type
      */
-    const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "fieldset" || type === "config";
+    const isReservedType = type => type === "collection" || type === "subform" || type === "group" || type === "fieldset" || type === "config" || type === "wizard" || type === "stage";
 
     /**
      * Is a specific field valid based on current data?

@@ -30,6 +30,10 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
+const WizardNavigation = ({ config }) => {
+    return <div>Wizard Nav</div>;
+};
+
 function App() {
     const [data, setData] = useState({
         mycollection: [
@@ -84,6 +88,120 @@ function App() {
     return (
         <>
             <Debugger />
+            <Form
+                id="wizard"
+                data={data}
+                onChange={(payload, errors, id, fieldKey, interfaceState, allErrors) => {
+                    setData(payload);
+                    setErrors(errors);
+                    console.log({allErrors});
+                }}
+                fields={fields}
+                config={{ fields: () => {
+                    return [
+                        {
+                            id: "field1",
+                            type: "text",
+                            label: "Field 1",
+                            isRequired: true
+                        },
+                        {
+                            id: "myGroup",
+                            type: "group",
+                            label: "Group",
+                            fields: [
+                                {
+                                    id: "field1",
+                                    type: "text",
+                                    label: "Field 1"
+                                },
+                                {
+                                    id: "field2",
+                                    type: "text",
+                                    label: "Field 2"
+                                }
+                            ]
+                        },
+                        {
+                            id: "wizard1",
+                            type: "wizard",
+                            label: "Wizard 1",
+                            options: {},
+                            stages: [
+                                {
+                                    id: "step1",
+                                    type: "stage",
+                                    label: "Step 1",
+                                    fields: [
+                                        {
+                                            id: "field1",
+                                            type: "text",
+                                            label: "Field 1 (Step 1)",
+                                            isRequired: true
+                                        },
+                                        {
+                                            id: "field2",
+                                            type: "text",
+                                            label: "Field 2 (Step 1)"
+                                        },
+                                    ]
+                                },
+                                {
+                                    id: "step2",
+                                    type: "stage",
+                                    label: "Step 2",
+                                    fields: [
+                                        {
+                                            id: "field1",
+                                            type: "text",
+                                            label: "Field 1 (Step 2)",
+                                            isRequired: true
+                                        },
+                                        {
+                                            id: "field2",
+                                            type: "text",
+                                            label: "Field 2 (Step 2)"
+                                        },
+                                    ]
+                                }
+                            ]
+                        }
+                    ];
+                } }}
+                render={({ fieldProps, actionProps }) => {
+                    console.log({ fieldProps });
+                    return (
+                        <div>
+                            {fieldProps.fields.field1}
+                            <br />
+                            {fieldProps.fields.myGroup.field1}
+                            {fieldProps.fields.myGroup.field2}
+                            <br />
+                            {fieldProps.fields.wizard1 ? (
+                                <div>
+                                    <WizardNavigation config={fieldProps.fields.wizard1} />
+                                    <div>
+                                        {fieldProps.fields.wizard1.step1.field1}
+                                        {fieldProps.fields.wizard1.step1.field2}
+                                    </div>
+                                    <div>
+                                        {fieldProps.fields.wizard1.step2.field1}
+                                        {fieldProps.fields.wizard1.step2.field2}
+                                    </div>
+                                </div>
+                            ) : null}
+                            <br />
+                            <button
+                                type="button"
+                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    );
+                }}
+            />
+            {/*
             <Form
                 data={data}
                 onChange={(payload, errors, id, fieldKey, interfaceState, allErrors) => {
@@ -241,6 +359,7 @@ function App() {
                     );
                 }}      
             />
+            */}
             {/*
             <br /><br />
             <Form
