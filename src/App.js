@@ -30,35 +30,40 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
-const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive }) => {
+const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive, isStepDisabled }) => {
     const prevHash = getHash(fieldKey, "", "prev");
     const nextHash = getHash(fieldKey, "", "next");
+    const firstHash = getHash(fieldKey, "", "first")
+    const lastHash = getHash(fieldKey, "", "last")
     return (
         <div>
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
                 <li style={{ padding: 0, margin: "0 8px 0 0" }}>
-                    <a href={getHash(fieldKey, "", "first")} onClick={() => onNav("first", fieldKey)}>First</a>
+                    <a href={firstHash} onClick={() => onNav("first", fieldKey)} style={isStepDisabled(fieldKey, firstHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>First</a>
                 </li>
                 {prevHash && (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }}>
-                        <a href={getHash(fieldKey, "", "prev")} onClick={() => onNav("prev", fieldKey)}>Prev</a>
+                        <a href={prevHash} onClick={() => onNav("prev", fieldKey)} style={isStepDisabled(fieldKey, prevHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>Prev</a>
                     </li>
                 )}
-                {Array.isArray(config.stages) && config.stages.map((stage) => (
-                    <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
-                        <a href={getHash(fieldKey, stage.id)} onClick={() => onNav("step", fieldKey, stage.id)}>
-                            {isStepActive(fieldKey, stage.id) ? <strong>{stage.label}</strong> : stage.label}
-                        </a>
-                    </li>
-                ))}
+                {Array.isArray(config.stages) && config.stages.map((stage) => {
+                    const stepHash = getHash(fieldKey, stage.id);
+                    return (
+                        <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
+                            <a href={stepHash} onClick={() => onNav("step", fieldKey, stage.id)}  style={isStepDisabled(fieldKey, stepHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>
+                                {isStepActive(fieldKey, stage.id) ? <strong>{stage.label}</strong> : stage.label}
+                            </a>
+                        </li>
+                    );
+                })}
                 {nextHash && (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }}>
-                        <a href={getHash(fieldKey, "", "next")} onClick={() => onNav("next", fieldKey)}>Next</a>
+                        <a href={nextHash} onClick={() => onNav("next", fieldKey)} style={isStepDisabled(fieldKey, nextHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>Next</a>
                     </li>
                 )}
                 <li style={{ padding: 0, margin: "0 8px 0 0" }}>
-                    <a href={getHash(fieldKey, "", "last")} onClick={() => onNav("last", fieldKey)}>Last</a>
+                    <a href={lastHash} onClick={() => onNav("last", fieldKey)} style={isStepDisabled(fieldKey, lastHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>Last</a>
                 </li>
             </ul>
         </div>
@@ -192,6 +197,24 @@ function App() {
                                                     label: "Field 2 (Step 2)"
                                                 },
                                             ]
+                                        },
+                                        {
+                                            id: "step3",
+                                            type: "stage",
+                                            label: "Step 3",
+                                            fields: [
+                                                {
+                                                    id: "field1",
+                                                    type: "text",
+                                                    label: "Field 1 (Step 3)",
+                                                    isRequired: true
+                                                },
+                                                {
+                                                    id: "field2",
+                                                    type: "text",
+                                                    label: "Field 2 (Step 3)"
+                                                },
+                                            ]
                                         }
                                     ]
                                 }
@@ -238,6 +261,24 @@ function App() {
                                             label: "Field 2 (Step 2)"
                                         },
                                     ]
+                                },
+                                {
+                                    id: "step3",
+                                    type: "stage",
+                                    label: "Step 3",
+                                    fields: [
+                                        {
+                                            id: "field1",
+                                            type: "text",
+                                            label: "Field 1 (Step 3)",
+                                            isRequired: true
+                                        },
+                                        {
+                                            id: "field2",
+                                            type: "text",
+                                            label: "Field 2 (Step 3)"
+                                        },
+                                    ]
                                 }
                             ]
                         }
@@ -259,6 +300,7 @@ function App() {
                                             onNav={fieldProps.onWizardNav}
                                             getHash={fieldProps.getWizardNavHash}
                                             isStepActive={fieldProps.isWizardStepActive}
+                                            isStepDisabled={fieldProps.isWizardStepDisabled}
                                         />
                                         {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
                                             <div>
@@ -284,6 +326,7 @@ function App() {
                                         onNav={fieldProps.onWizardNav}
                                         getHash={fieldProps.getWizardNavHash}
                                         isStepActive={fieldProps.isWizardStepActive}
+                                        isStepDisabled={fieldProps.isWizardStepDisabled}
                                     />
                                     {fieldProps.fields.wizard1.step1 && (
                                         <div>

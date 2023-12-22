@@ -811,17 +811,19 @@ const Form = ({
      * @param {Object} [validationData] the current data being validated
      * @returns {object} an object containing the errors
      */
-    const validationErrors = (isUserAction, validationData) => {
+    const validationErrors = (isUserAction, validationData, rootPath = "") => {
         let errors = {};
         let firstErrorField;
 
         if (!validationData) validationData = alldata;
 
         fieldPaths.forEach(fieldPath => {
-            if (!fields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
-            const result = validateField(fieldPath.path, "action", validationData, errors, firstErrorField);
-            errors = result.errors;
-            firstErrorField = result.firstErrorField;
+            if (rootPath === "" || fieldPath.path.startsWith(rootPath)) {
+                if (!fields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
+                const result = validateField(fieldPath.path, "action", validationData, errors, firstErrorField);
+                errors = result.errors;
+                firstErrorField = result.firstErrorField;
+            }
         });
 
         // Jump to the first field which has an error:
@@ -1684,6 +1686,8 @@ const Form = ({
                         onWizardNav,
                         getWizardNavHash,
                         isWizardStepActive,
+                        isWizardStepDisabled,
+                        isWizardStepValid,
                         modifyConfig,
                         data,
                         interfaceState,
@@ -1929,6 +1933,38 @@ const Form = ({
         return activeStages[path] === stage;
     };
 
+    const isWizardStepValid = (path, stage) => {
+        // Is a certain wizard step valid?
+        return true;
+    };
+
+    const isWizardStepDisabled = (path, hash) => {
+        // Depending on validation rules, a step can be disabled
+        const hashesSplit = hash.substring(2).split(hashSeparator || ":");
+        let stage = "";
+        hashesSplit.forEach(hash => {
+            if (hash.startsWith(`${path}.`)) stage = hash.substring(path.length + 1);
+        });
+        if (stage) {
+            const fieldConfig = getConfigForField(path);
+            const thisIndex = findIndex(fieldConfig.stages, { id: stage });
+            const activeIndex = findIndex(fieldConfig.stages, { id: activeStages[path] });
+            console.log({ fieldConfig, thisIndex, activeIndex });
+
+            // Only advance one step at a time:
+            if (thisIndex > activeIndex + 1) return true;
+
+            // Only advance if all previous steps are valid:
+            for (let i = 0; i < thisIndex; i++) {
+                const thisErrors = validationErrors(false, data, `${path}.${fieldConfig.stages[i].id}`);
+                if (Object.keys(thisErrors).length > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
     /**
      * This adds a specific config to the field configuration at a certain path
      * 
@@ -2062,6 +2098,8 @@ const Form = ({
             onWizardNav,
             getWizardNavHash,
             isWizardStepActive,
+            isWizardStepDisabled,
+            isWizardStepValid,
             modifyConfig,
             data,
             interfaceState,
