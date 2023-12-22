@@ -37,6 +37,7 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive, isSt
     const lastHash = getHash(fieldKey, "", "last")
     return (
         <div>
+            
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
                 <li style={{ padding: 0, margin: "0 8px 0 0" }}>
@@ -314,6 +315,12 @@ function App() {
                                                 {fieldProps.fields.myGroup.wizardInsideGroup.step2.field2}
                                             </div>
                                         )}
+                                        {fieldProps.fields.myGroup.wizardInsideGroup.step3 && (
+                                            <div>
+                                                {fieldProps.fields.myGroup.wizardInsideGroup.step3.field1}
+                                                {fieldProps.fields.myGroup.wizardInsideGroup.step3.field2}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : null}
                             </div>
@@ -338,6 +345,12 @@ function App() {
                                         <div>
                                             {fieldProps.fields.wizard1.step2.field1}
                                             {fieldProps.fields.wizard1.step2.field2}
+                                        </div>
+                                    )}
+                                    {fieldProps.fields.wizard1.step3 && (
+                                        <div>
+                                            {fieldProps.fields.wizard1.step3.field1}
+                                            {fieldProps.fields.wizard1.step3.field2}
                                         </div>
                                     )}
                                 </div>

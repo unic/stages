@@ -515,7 +515,7 @@ const Form = ({
     const validateField = (fieldKey, triggeringEvent, validationData, errors, firstErrorField) => {
         const field = find(fieldPaths, { path: fieldKey }).config;
         // @ts-ignore
-        if (isDebugging()) window.stagesLogging(`Validate field "${fieldKey}"`, uniqId);
+        if (isDebugging() && triggeringEvent !== "render") window.stagesLogging(`Validate field "${fieldKey}"`, uniqId);
 
         // Is the data entered valid, check with default field function and optionally with custom validation:
         const fieldIsValid = isFieldValid(fieldKey, field, validationData, triggeringEvent);
@@ -820,7 +820,7 @@ const Form = ({
         fieldPaths.forEach(fieldPath => {
             if (rootPath === "" || fieldPath.path.startsWith(rootPath)) {
                 if (!fields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
-                const result = validateField(fieldPath.path, "action", validationData, errors, firstErrorField);
+                const result = validateField(fieldPath.path, rootPath !== "" ? "render" : "action", validationData, errors, firstErrorField);
                 errors = result.errors;
                 firstErrorField = result.firstErrorField;
             }
