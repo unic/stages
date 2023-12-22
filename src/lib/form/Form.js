@@ -1683,6 +1683,7 @@ const Form = ({
                         onCollectionAction,
                         onWizardNav,
                         getWizardNavHash,
+                        isWizardStepActive,
                         modifyConfig,
                         data,
                         interfaceState,
@@ -1929,6 +1930,10 @@ const Form = ({
         return false;
     };
 
+    const isWizardStepActive = (path, stage) => {
+        return activeStages[path] === stage;
+    };
+
     /**
      * This adds a specific config to the field configuration at a certain path
      * 
@@ -2061,6 +2066,7 @@ const Form = ({
             onCollectionAction,
             onWizardNav,
             getWizardNavHash,
+            isWizardStepActive,
             modifyConfig,
             data,
             interfaceState,

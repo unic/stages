@@ -30,7 +30,7 @@ const FormLayout = ({ loading, fields, actions }) => <div>
     )}
 </div>;
 
-const WizardNavigation = ({ config, fieldKey, onNav, getHash }) => {
+const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive }) => {
     const prevHash = getHash(fieldKey, "", "prev");
     const nextHash = getHash(fieldKey, "", "next");
     return (
@@ -47,7 +47,9 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash }) => {
                 )}
                 {Array.isArray(config.stages) && config.stages.map((stage) => (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }} key={`#${fieldKey}.${stage.id}`}>
-                        <a href={getHash(fieldKey, stage.id)} onClick={() => onNav("step", fieldKey, stage.id)}>{stage.label}</a>
+                        <a href={getHash(fieldKey, stage.id)} onClick={() => onNav("step", fieldKey, stage.id)}>
+                            {isStepActive(fieldKey, stage.id) ? <strong>{stage.label}</strong> : stage.label}
+                        </a>
                     </li>
                 ))}
                 {nextHash && (
@@ -256,6 +258,7 @@ function App() {
                                             config={fieldProps.getConfig("myGroup.wizardInsideGroup")}
                                             onNav={fieldProps.onWizardNav}
                                             getHash={fieldProps.getWizardNavHash}
+                                            isStepActive={fieldProps.isWizardStepActive}
                                         />
                                         {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
                                             <div>
@@ -280,6 +283,7 @@ function App() {
                                         config={fieldProps.getConfig("wizard1")}
                                         onNav={fieldProps.onWizardNav}
                                         getHash={fieldProps.getWizardNavHash}
+                                        isStepActive={fieldProps.isWizardStepActive}
                                     />
                                     {fieldProps.fields.wizard1.step1 && (
                                         <div>
