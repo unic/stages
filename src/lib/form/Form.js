@@ -305,13 +305,14 @@ const Form = ({
             const partSplit = hashPart.split(".");
             const partPath = partSplit.slice(0, -1).join(".");
             const partStage = partSplit[partSplit.length - 1];
-            newActiveStages[partPath] = partStage;
+            if (partPath && partStage) newActiveStages[partPath] = partStage;
         });
         fieldPaths.forEach(fieldPath => {
             if (fieldPath.config.type === "wizard" && !newActiveStages[fieldPath.path]) {
                 newActiveStages[fieldPath.path] = fieldPath.config.stages[0].id;
             }
         });
+
         setActiveStages(newActiveStages);
 
         return () => {
@@ -1873,22 +1874,57 @@ const Form = ({
             // Find the last valid step and set it active:
             
         }
-        
+
         setActiveStages(newActiveStages);
     };
 
-    const getWizardNavHash = (path, stage) => {
+    const getWizardNavHash = (path, stage, action = "step") => {
+        const currentStage = activeStages[path];
+        const fieldConfig = getConfigForField(path);
         const hashes = [];
 
-        Object.keys(activeStages).forEach(key => {
-            if (key.startsWith(path)) {
-                hashes.push(`${key}.${stage}`);
-            } else {
-                hashes.push(`${key}.${activeStages[key]}`);
-            }
-        });
+        if (action === "step") {
+            Object.keys(activeStages).forEach(key => {
+                if (key.startsWith(path)) {
+                    hashes.push(`${key}.${stage}`);
+                } else {
+                    hashes.push(`${key}.${activeStages[key]}`);
+                }
+            });
+            return `#!${hashes.join(hashSeparator || ":")}`;
+        }
 
-        return `#!${hashes.join(hashSeparator || ":")}`;
+        if (action === "prev") {
+            const prevIndex = findIndex(fieldConfig.stages, { id: currentStage }) - 1;
+            if (fieldConfig.stages[prevIndex]) {
+                Object.keys(activeStages).forEach(key => {
+                    if (key.startsWith(path)) {
+                        hashes.push(`${key}.${fieldConfig.stages[prevIndex].id}`);
+                    } else {
+                        hashes.push(`${key}.${activeStages[key]}`);
+                    }
+                });
+                return `#!${hashes.join(hashSeparator || ":")}`;
+            }
+            return false;
+        }
+
+        if (action === "next") {
+            const nextIndex = findIndex(fieldConfig.stages, { id: currentStage }) + 1;
+            if (fieldConfig.stages[nextIndex]) {
+                Object.keys(activeStages).forEach(key => {
+                    if (key.startsWith(path)) {
+                        hashes.push(`${key}.${fieldConfig.stages[nextIndex].id}`);
+                    } else {
+                        hashes.push(`${key}.${activeStages[key]}`);
+                    }
+                });
+                return `#!${hashes.join(hashSeparator || ":")}`;
+            }
+            return false;
+        }
+
+        return false;
     };
 
     /**
