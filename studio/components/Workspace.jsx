@@ -86,6 +86,7 @@ const Workspace = () => {
         ] },
         { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Wizard', icon: 'pi pi-fw pi-trash', command: () => handleInsertWizardBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
@@ -263,6 +264,87 @@ const Workspace = () => {
         // Update data (for collections, a new empty array has to be addeed):
         store.setData(initNewCollections(newConfig, store.data));
 
+        store.setSelectedElement('');
+    };
+
+    const handleInsertWizardBetweenFields = (path) => {
+        console.log("--> handleInsertGroupBetweenFields <--");
+        // Add new group between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: createNewFieldID(path, "wizard", store),
+            type: "wizard",
+            label: "Wizard",
+            stages: [
+                {
+                    id: "step1",
+                    type: "stage",
+                    label: "Step 1",
+                    fields: [
+                        {
+                            id: "field1",
+                            type: "text",
+                            label: "Field 1 (Step 1)",
+                            isRequired: true
+                        },
+                        {
+                            id: "field2",
+                            type: "text",
+                            label: "Field 2 (Step 1)"
+                        },
+                    ]
+                },
+                {
+                    id: "step2",
+                    type: "stage",
+                    label: "Step 2",
+                    fields: [
+                        {
+                            id: "field1",
+                            type: "text",
+                            label: "Field 1 (Step 2)",
+                            isRequired: true
+                        },
+                        {
+                            id: "field2",
+                            type: "text",
+                            label: "Field 2 (Step 2)"
+                        },
+                    ]
+                },
+                {
+                    id: "step3",
+                    type: "stage",
+                    label: "Step 3",
+                    fields: [
+                        {
+                            id: "field1",
+                            type: "text",
+                            label: "Field 1 (Step 3)",
+                            isRequired: true
+                        },
+                        {
+                            id: "field2",
+                            type: "text",
+                            label: "Field 2 (Step 3)"
+                        },
+                    ]
+                }
+            ]
+        });
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
+        store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
     };
 
