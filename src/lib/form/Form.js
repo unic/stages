@@ -796,7 +796,6 @@ const Form = ({
                 });
             });
         }
-
         return {
             errors,
             firstErrorField
@@ -1844,7 +1843,6 @@ const Form = ({
         const newActiveStages = {...activeStages};
         const currentStage = newActiveStages[path];
         const fieldConfig = getConfigForField(path);
-        console.log({ fieldConfig });
 
         if (navType === "step") newActiveStages[path] = stage;
 
@@ -1943,7 +1941,6 @@ const Form = ({
             const fieldConfig = getConfigForField(path);
             const thisIndex = findIndex(fieldConfig.stages, { id: stage });
             const activeIndex = findIndex(fieldConfig.stages, { id: activeStages[path] });
-            console.log({ fieldConfig, thisIndex, activeIndex });
 
             // Only advance one step at a time:
             if (thisIndex > activeIndex + 1) return true;
