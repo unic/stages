@@ -40,7 +40,7 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive, isSt
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
                 <li style={{ padding: 0, margin: "0 8px 0 0" }}>
-                    <a href={firstHash} onClick={() => onNav("first", fieldKey)} style={isStepDisabled(fieldKey, firstHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>First</a>
+                    <a href={firstHash} onClick={() => onNav("first", fieldKey)} style={isStepDisabled(fieldKey, firstHash, true) ? { color: "#bbb", pointerEvents: "none" } : {}}>First</a>
                 </li>
                 {prevHash && (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }}>
@@ -63,7 +63,7 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive, isSt
                     </li>
                 )}
                 <li style={{ padding: 0, margin: "0 8px 0 0" }}>
-                    <a href={lastHash} onClick={() => onNav("last", fieldKey)} style={isStepDisabled(fieldKey, lastHash) ? { color: "#bbb", pointerEvents: "none" } : {}}>Last</a>
+                    <a href={lastHash} onClick={() => onNav("last", fieldKey)} style={isStepDisabled(fieldKey, lastHash, true) ? { color: "#bbb", pointerEvents: "none" } : {}}>Last</a>
                 </li>
             </ul>
         </div>

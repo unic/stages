@@ -1687,7 +1687,6 @@ const Form = ({
                         getWizardNavHash,
                         isWizardStepActive,
                         isWizardStepDisabled,
-                        isWizardStepValid,
                         modifyConfig,
                         data,
                         interfaceState,
@@ -1933,12 +1932,7 @@ const Form = ({
         return activeStages[path] === stage;
     };
 
-    const isWizardStepValid = (path, stage) => {
-        // Is a certain wizard step valid?
-        return true;
-    };
-
-    const isWizardStepDisabled = (path, hash) => {
+    const isWizardStepDisabled = (path, hash, disableIfActive = false) => {
         // Depending on validation rules, a step can be disabled
         const hashesSplit = hash.substring(2).split(hashSeparator || ":");
         let stage = "";
@@ -1953,6 +1947,9 @@ const Form = ({
 
             // Only advance one step at a time:
             if (thisIndex > activeIndex + 1) return true;
+
+            // if "disableIfActive" is "true", disable the step if it's active:
+            if (disableIfActive && isWizardStepActive(path, stage)) return true;
 
             // Only advance if all previous steps are valid:
             for (let i = 0; i < thisIndex; i++) {
@@ -2099,7 +2096,6 @@ const Form = ({
             getWizardNavHash,
             isWizardStepActive,
             isWizardStepDisabled,
-            isWizardStepValid,
             modifyConfig,
             data,
             interfaceState,
