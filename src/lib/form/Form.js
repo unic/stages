@@ -1871,11 +1871,6 @@ const Form = ({
             newActiveStages[path] = fieldConfig.stages[fieldConfig.stages.length - 1].id;
         }
 
-        if (navType === "lastValid") {
-            // Find the last valid step and set it active:
-            
-        }
-
         setActiveStages(newActiveStages);
     };
 
