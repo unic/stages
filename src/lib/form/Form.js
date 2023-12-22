@@ -1883,10 +1883,12 @@ const Form = ({
         const fieldConfig = getConfigForField(path);
         const hashes = [];
 
-        if (action === "step") {
+        if (action === "step" || action === "first" || action === "last") {
             Object.keys(activeStages).forEach(key => {
                 if (key.startsWith(path)) {
-                    hashes.push(`${key}.${stage}`);
+                    if (action === "step") hashes.push(`${key}.${stage}`);
+                    if (action === "first") hashes.push(`${key}.${fieldConfig.stages[0].id}`);
+                    if (action === "last") hashes.push(`${key}.${fieldConfig.stages[fieldConfig.stages.length - 1].id}`);
                 } else {
                     hashes.push(`${key}.${activeStages[key]}`);
                 }

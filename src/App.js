@@ -37,6 +37,9 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash }) => {
         <div>
             {config.label && <h3 style={{ marginBottom: "4px" }}>{config.label}</h3>}
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>
+                <li style={{ padding: 0, margin: "0 8px 0 0" }}>
+                    <a href={getHash(fieldKey, "", "first")} onClick={() => onNav("first", fieldKey)}>First</a>
+                </li>
                 {prevHash && (
                     <li style={{ padding: 0, margin: "0 8px 0 0" }}>
                         <a href={getHash(fieldKey, "", "prev")} onClick={() => onNav("prev", fieldKey)}>Prev</a>
@@ -52,6 +55,9 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash }) => {
                         <a href={getHash(fieldKey, "", "next")} onClick={() => onNav("next", fieldKey)}>Next</a>
                     </li>
                 )}
+                <li style={{ padding: 0, margin: "0 8px 0 0" }}>
+                    <a href={getHash(fieldKey, "", "last")} onClick={() => onNav("last", fieldKey)}>Last</a>
+                </li>
             </ul>
         </div>
     );
