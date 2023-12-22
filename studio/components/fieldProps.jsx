@@ -362,6 +362,12 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
     ],
+    wizard: [
+        globalFieldProps.basicsDivider,
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.secondaryText,
+    ],
     collection: [
         globalFieldProps.basicsDivider,
         globalFieldProps.id,
