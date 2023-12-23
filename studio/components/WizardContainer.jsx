@@ -40,15 +40,17 @@ const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, pa
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="group" /> : null}
             {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "0 0 8px 8px" }}>{label}</label> : null}
             {secondaryText ? <div style={{ margin: "-4px 0 12px 8px", color: "#999", flex: "0 0 100%" }}>{secondaryText}</div> : null}
-            <WizardNavigation
-                fieldKey={path}
-                config={fieldProps.getConfig(path)}
-                onNav={fieldProps.onWizardNav}
-                getHash={fieldProps.getWizardNavHash}
-                isStepActive={fieldProps.isWizardStepActive}
-                isStepDisabled={fieldProps.isWizardStepDisabled}
-            />
-            {children}
+            <div style={{ padding: "0 8px" }}>
+                <WizardNavigation
+                    fieldKey={path}
+                    config={fieldProps.getConfig(path)}
+                    onNav={fieldProps.onWizardNav}
+                    getHash={fieldProps.getWizardNavHash}
+                    isStepActive={fieldProps.isWizardStepActive}
+                    isStepDisabled={fieldProps.isWizardStepDisabled}
+                />
+                {children}
+            </div>
         </div>
     );
 };

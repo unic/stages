@@ -165,8 +165,7 @@ export const FieldRenderer = ({
                     } else {
                         const groupPath = createKey(parent, key);
                         const groupConfig = fieldProps.getConfig(groupPath);
-                        console.log({ groupConfig });
-                        if (groupConfig.type === "wizard") {
+                        if (groupConfig && groupConfig.type === "wizard") {
                             return (
                                 <Fragment key={createKey(parent, key)}>
                                     {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
