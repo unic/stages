@@ -7,6 +7,7 @@ import get from "lodash.get";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
+import WizardContainer from './WizardContainer';
 import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
@@ -164,6 +165,40 @@ export const FieldRenderer = ({
                     } else {
                         const groupPath = createKey(parent, key);
                         const groupConfig = fieldProps.getConfig(groupPath);
+                        console.log({ groupConfig });
+                        if (groupConfig.type === "wizard") {
+                            return (
+                                <Fragment key={createKey(parent, key)}>
+                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
+                                    <WizardContainer
+                                        isFieldConfigEditor={isFieldConfigEditor}
+                                        selectedElement={selectedElement}
+                                        handleEditGroup={handleEditGroup}
+                                        isEditMode={isEditMode}
+                                        path={groupPath}
+                                        label={groupConfig?.label}
+                                        secondaryText={groupConfig?.secondaryText}
+                                        contextMenuRef={contextMenuRef}
+                                        fieldProps={fieldProps}
+                                        key={groupPath}
+                                    >
+                                        <FieldRenderer
+                                            isFieldConfigEditor={isFieldConfigEditor}
+                                            handleEditCollection={handleEditCollection}
+                                            handleEditGroup={handleEditGroup}
+                                            parent={groupPath}
+                                            setActiveContextMenuInput={setActiveContextMenuInput}
+                                            contextMenuRef={contextMenuRef}
+                                            isEditMode={isEditMode && !isFieldConfigEditor}
+                                            selectedElement={selectedElement}
+                                            fieldProps={fieldProps}
+                                            fields={field}
+                                            type="group"
+                                        />
+                                    </WizardContainer>
+                                </Fragment>
+                            );
+                        }
                         return (
                             <Fragment key={createKey(parent, key)}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
