@@ -314,7 +314,7 @@ const Form = ({
             if (partPath && partStage) newActiveStages[partPath] = partStage;
         });
         fieldPaths.forEach(fieldPath => {
-            if (fieldPath.config.type === "wizard" && !newActiveStages[fieldPath.path]) {
+            if (fieldPath.config.type === "wizard" && (!newActiveStages[fieldPath.path] || (newActiveStages[fieldPath.path] && !find(fieldPath.config.stages, { id: newActiveStages[fieldPath.path] })))) {
                 newActiveStages[fieldPath.path] = fieldPath.config.stages[0].id;
             }
         });
