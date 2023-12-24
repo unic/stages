@@ -306,7 +306,7 @@ const Form = ({
         // Set active wizard stages:
         const hash = typeof window !== "undefined" ? window.location.hash.substring(2) : "";
         const hashParts = hash.split(hashSeparator || ":");
-        const newActiveStages = {};
+        const newActiveStages = {...activeStages};
         hashParts.forEach(hashPart => {
             const partSplit = hashPart.split(".");
             const partPath = partSplit.slice(0, -1).join(".");

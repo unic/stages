@@ -1,5 +1,6 @@
 const WinzardNavButton = ({ fieldKey, hash, onClick, isStepDisabled, disableIfActive, children }) => {
     const mainStyles = {
+        display: "inline-block",
         border: "1px solid #ddd",
         borderRadius: "3px",
         padding: "1px 8px",
@@ -7,6 +8,8 @@ const WinzardNavButton = ({ fieldKey, hash, onClick, isStepDisabled, disableIfAc
         textDecoration: "none",
         color: "#000",
         background: "#f8f8f8",
+        minWidth: "64px",
+        textAlign: "center"
     };
     return (
         <a
