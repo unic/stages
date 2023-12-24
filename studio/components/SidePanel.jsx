@@ -35,7 +35,7 @@ const SidePanel = () => {
             const realPath = getConfigPathFromDataPath(path, newConfig);
             if (realPath && Object.keys(config).length > 0) {
                 const oldConfig = _.get(store.currentConfig, realPath);
-                if (config.type === "group" || config.type === "collection") {
+                if (config.type === "group" || config.type === "collection" || config.type === "wizard") {
                     _.set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
                 } else {
                     _.set(newConfig, realPath, config);

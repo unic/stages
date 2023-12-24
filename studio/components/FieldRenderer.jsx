@@ -7,11 +7,11 @@ import get from "lodash.get";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
+import StageContainer from './StageContainer';
 import WizardContainer from './WizardContainer';
 import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
-import InspectorSpacer from './InspectorSpacer';
 import { getConfigPathFromDataPath } from './helpers';
 
 const createKey = (parent, key) => {
@@ -33,7 +33,7 @@ export const FieldRenderer = ({
     isFieldConfigEditor
 }) => {
     const store = useStagesStore();
-
+    console.log({ parent, type });
     useEffect(() => {
         useStagesStore.persist.rehydrate();
     }, []);
@@ -72,7 +72,7 @@ export const FieldRenderer = ({
 
     return (
         <>
-            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 const fieldConfig = fieldProps.getConfig(createKey(parent, key));
@@ -192,9 +192,41 @@ export const FieldRenderer = ({
                                             selectedElement={selectedElement}
                                             fieldProps={fieldProps}
                                             fields={field}
-                                            type="group"
+                                            type="wizard"
                                         />
                                     </WizardContainer>
+                                </Fragment>
+                            );
+                        }
+                        if (type === "wizard") {
+                            return (
+                                <Fragment key={createKey(parent, key)}>
+                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} isStage path={createKey(parent, key)} direction="row" />}
+                                    <StageContainer
+                                        isFieldConfigEditor={isFieldConfigEditor}
+                                        selectedElement={selectedElement}
+                                        handleEditGroup={handleEditGroup}
+                                        isEditMode={isEditMode}
+                                        path={groupPath}
+                                        label={groupConfig?.label}
+                                        secondaryText={groupConfig?.secondaryText}
+                                        contextMenuRef={contextMenuRef}
+                                        key={groupPath}
+                                    >
+                                        <FieldRenderer
+                                            isFieldConfigEditor={isFieldConfigEditor}
+                                            handleEditCollection={handleEditCollection}
+                                            handleEditGroup={handleEditGroup}
+                                            parent={groupPath}
+                                            setActiveContextMenuInput={setActiveContextMenuInput}
+                                            contextMenuRef={contextMenuRef}
+                                            isEditMode={isEditMode && !isFieldConfigEditor}
+                                            selectedElement={selectedElement}
+                                            fieldProps={fieldProps}
+                                            fields={field}
+                                            type="stage"
+                                        />
+                                    </StageContainer>
                                 </Fragment>
                             );
                         }
@@ -231,7 +263,7 @@ export const FieldRenderer = ({
                     }
                 }
             })}
-            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} direction={type === "group" ? "column" : "row"} />
+            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {isFieldConfigEditor && !parent ? (
                 <div style={{ marginLeft: "8px", marginBottom: "32px" }}>
                     <br />

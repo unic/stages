@@ -92,6 +92,10 @@ const Workspace = () => {
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
     ];
 
+    const stageContextMenuItems = [
+        { label: 'Insert Stage', icon: 'pi pi-fw pi-trash', command: () => handleInsertStage(store.activeContextMenuInput.replace("stage > ", "")) }
+    ];
+
     const handleInitConfig = (config) => {
         console.log("--> handleClearConfig <--");
         store.updateCurrentConfig(config);
@@ -353,6 +357,40 @@ const Workspace = () => {
         store.setSelectedElement('');
     };
 
+    const handleInsertStage = (path) => {
+        console.log("--> handleInsertDividerBetweenFields <--");
+        // Add new group between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
+        console.log({ path, realPath, lastArrayIndex, parentOfRealPath, index });
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: createNewFieldID(path, "stage", store),
+            type: "stage",
+            label: "Stage",
+            fields: [
+                {
+                    id: "field1",
+                    type: "text",
+                    label: "Field 1",
+                    isRequired: true
+                }
+            ]
+        });
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
+        store.updateCurrentConfig(newConfig);
+        store.setSelectedElement('');
+    };
+
     const handleInsertDividerBetweenFields = (path) => {
         console.log("--> handleInsertDividerBetweenFields <--");
         // Add new group between fields:
@@ -514,7 +552,12 @@ const Workspace = () => {
                 </div>
                 {store.isEditMode ? (
                     <ContextMenu
-                        model={store.activeContextMenuInput === "." ? rootContextMenuItems : store.activeContextMenuInput.startsWith("insert > ") ? insertContextMenuItems : fieldContextMenuItems}
+                        model={
+                            store.activeContextMenuInput === "." ? 
+                            rootContextMenuItems : store.activeContextMenuInput.startsWith("insert > ") ? 
+                            insertContextMenuItems : store.activeContextMenuInput.startsWith("stage > ") ? 
+                            stageContextMenuItems : fieldContextMenuItems
+                        }
                         ref={contextMenuRef}
                         breakpoint="767px"
                     />

@@ -5,7 +5,7 @@ export const parseJSONConfig = (config, data) => {
     if (!config) return [];
     const parsedConfig = config.map((item) => {
         const newItem = { ...item };
-        if (newItem.type === "group" || newItem.type === "collection") {
+        if (newItem.type === "group" || newItem.type === "collection" || newItem.type === "wizard") {
             newItem.fields = parseJSONConfig(newItem.fields, data);
         }
         if (newItem.computedValue && typeof newItem.computedValue === "string") {
@@ -90,7 +90,7 @@ export const getAllPaths = (config, path = "") => {
         config.forEach((item) => {
             if (item) {
                 paths.push(path ? `${path}.${item.id}` : item.id);
-                if (item.type === "group" || item.type === "collection") {
+                if (item.type === "group" || item.type === "collection" || item.type === "wizard") {
                     paths = paths.concat(getAllPaths(item.fields, path ? `${path}.${item.id}` : item.id));
                 }
             }
