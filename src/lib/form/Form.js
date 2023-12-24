@@ -319,7 +319,7 @@ const Form = ({
             }
         });
 
-        setActiveStages(newActiveStages);
+        if (JSON.stringify(activeStages) !== JSON.stringify(newActiveStages)) setActiveStages(newActiveStages);
     }, [config]);
 
     // Checks if the component is mounted, to prevent memory leaks for all callbacks from outside
