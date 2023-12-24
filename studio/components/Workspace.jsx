@@ -59,6 +59,7 @@ const Workspace = () => {
         { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(store.activeContextMenuInput) },
+        { label: 'Copy Path', icon: 'pi pi-fw pi-trash', command: () => handleCopyFieldPath(store.activeContextMenuInput) },
         { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
         { label: 'Add to collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) }
     ];
@@ -95,6 +96,10 @@ const Workspace = () => {
         console.log("--> handleClearConfig <--");
         store.updateCurrentConfig(config);
         store.setSelectedElement("");
+    };
+
+    const handleCopyFieldPath = (path) => {
+        if (typeof navigator !== "undefined") navigator.clipboard.writeText(path);
     };
 
     const handleCutField = (path) => {
