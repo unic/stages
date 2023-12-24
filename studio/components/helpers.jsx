@@ -44,8 +44,9 @@ export const getConfigPathFromDataPath = (path, config) => {
         realPath = realPath === "" ? `[${index}]` : `${realPath}[${index}]`;
         const thisConfig = _.get(config, realPath);
         if (thisConfig && thisConfig.fields) realPath += ".fields";
+        if (thisConfig && thisConfig.stages) realPath += ".stages";
     });
-    return realPath.endsWith(".fields") ? realPath.substring(0, realPath.length - 7) : realPath;
+    return realPath.endsWith(".fields") || realPath.endsWith(".stages") ? realPath.substring(0, realPath.length - 7) : realPath;
 };
 
 export const doesPathExist = (path, store) => {

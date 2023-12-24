@@ -24,7 +24,6 @@ const WizardNavigation = ({ config, fieldKey, onNav, getHash, isStepActive, isSt
     const nextHash = getHash(fieldKey, "", "next");
     const firstHash = getHash(fieldKey, "", "first");
     const lastHash = getHash(fieldKey, "", "last");
-    console.log({ config, fieldKey, prevHash, nextHash, firstHash, lastHash });
     return (
         <div>
             <ul style={{ margin: "0 0 16px 0", padding: 0, listStyleType: "none", display: "flex" }}>

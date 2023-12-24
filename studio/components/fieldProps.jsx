@@ -368,6 +368,12 @@ const fieldProps = {
         globalFieldProps.label,
         globalFieldProps.secondaryText,
     ],
+    stage: [
+        globalFieldProps.basicsDivider,
+        globalFieldProps.id,
+        globalFieldProps.label,
+        globalFieldProps.secondaryText,
+    ],
     collection: [
         globalFieldProps.basicsDivider,
         globalFieldProps.id,
