@@ -296,7 +296,13 @@ const Form = ({
     // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
     useEffect(() => {
         mounted.current = true;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
 
+    // Set active stages on init and whenever the config changes (and stage isn't set yet):
+    useEffect(() => {
         // Set active wizard stages:
         const hash = typeof window !== "undefined" ? window.location.hash.substring(2) : "";
         const hashParts = hash.split(hashSeparator || ":");
@@ -314,11 +320,7 @@ const Form = ({
         });
 
         setActiveStages(newActiveStages);
-
-        return () => {
-            mounted.current = false;
-        };
-    }, []);
+    }, [config]);
 
     // Checks if the component is mounted, to prevent memory leaks for all callbacks from outside
     const isMounted = () => (mounted && mounted.current === true);
