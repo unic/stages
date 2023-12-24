@@ -18,7 +18,7 @@ import StagesIcon from './StagesIcon';
 import primeFields from './primeFields';
 import initialConfig from './initialConfig';
 import useStagesStore from './store';
-import { initNewCollections } from "./helpers";
+import { initNewCollections, removeEmptyElements } from "./helpers";
 
 import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig } from './helpers';
 import { FieldRenderer } from './FieldRenderer';
@@ -112,7 +112,7 @@ const Workspace = () => {
         const realPath = getConfigPathFromDataPath(path, newConfig);
         store.setClipboard(_.get(newConfig, realPath));
         _.unset(newConfig, realPath);
-        store.updateCurrentConfig(Array.isArray(newConfig) ? newConfig.filter(item => item) : newConfig);
+        store.updateCurrentConfig(removeEmptyElements(newConfig));
         // If field is selected, unselect it
         store.removePathFromSelectedElements(path);
     };
