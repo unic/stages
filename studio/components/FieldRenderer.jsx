@@ -37,7 +37,7 @@ export const FieldRenderer = ({
     useEffect(() => {
         useStagesStore.persist.rehydrate();
     }, []);
-
+console.log({ fieldProps, parent });
     if (typeof fields !== "object" || !typeof window) return null;
     if (!type) type = "field";
 

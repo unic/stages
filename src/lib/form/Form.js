@@ -1697,7 +1697,8 @@ const Form = ({
                         focusedField,
                         lastFocusedField,
                         dirtyFields,
-                        get
+                        get,
+                        getConfig
                     },
                     actionProps: {
                         handleActionClick,

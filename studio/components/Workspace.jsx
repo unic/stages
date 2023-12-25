@@ -90,6 +90,9 @@ const Workspace = () => {
         { label: 'Insert Wizard', icon: 'pi pi-fw pi-trash', command: () => handleInsertWizardBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Fieldset', icon: 'pi pi-fw pi-trash', items: [
+            { label: 'Passwords', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "passwords", "Passwords", "passwords") },
+        ] },
     ];
 
     const stageContextMenuItems = [
@@ -186,6 +189,31 @@ const Workspace = () => {
             id: createNewFieldID(path, "text", store),
             type: fieldType || "text",
             label: "Field",
+        });
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
+        store.updateCurrentConfig(newConfig);
+        store.setSelectedElement('');
+    };
+
+    const handleInsertFieldsetBetweenFields = (path, fieldsetType, label, id) => {
+        console.log("--> handleInsertFieldsetBetweenFields <--");
+        // Add new fieldset between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: createNewFieldID(path, id, store),
+            type: fieldsetType,
+            label: label,
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
@@ -611,6 +639,50 @@ const Workspace = () => {
                         );
                     }}
                     onChange={payload => store.setData(payload)}
+                    fieldsets={{
+                        passwords: {
+                            params: {},
+                            config: () => {
+                                return [
+                                    {
+                                        id: "passwords",
+                                        type: "group",
+                                        label: "Passwords",
+                                        secondaryText: "Must be at least 8 characters.",
+                                        fields: [  
+                                            {
+                                                id: "password1",
+                                                label: "Password",
+                                                type: "password",
+                                                isRequired: true
+                                            },
+                                            {
+                                                id: "password2",
+                                                label: "Repeat Password",
+                                                type: "password",
+                                                isRequired: true
+                                            },
+                                        ]
+                                    },
+                                ];
+                            },
+                            render: ({ fieldProps }) => {
+                                return (
+                                    <FieldRenderer
+                                        handleEditCollection={handleEditCollection}
+                                        handleEditGroup={handleEditGroup}
+                                        parent=""
+                                        setActiveContextMenuInput={store.setActiveContextMenuInput}
+                                        contextMenuRef={contextMenuRef}
+                                        isEditMode={store.isEditMode}
+                                        selectedElement={store.selectedElement}
+                                        fieldProps={fieldProps}
+                                        fields={fieldProps.fields}
+                                    />
+                                );
+                            }
+                        }
+                    }}
                 />
             </div>
         </ScrollPanel>
