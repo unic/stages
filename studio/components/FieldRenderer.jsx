@@ -3,7 +3,6 @@ import React, { Fragment, useEffect } from 'react';
 import { isValidElement } from 'react';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Dropdown } from 'primereact/dropdown';
-import get from "lodash.get";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
@@ -12,7 +11,6 @@ import WizardContainer from './WizardContainer';
 import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
-import { getConfigPathFromDataPath } from './helpers';
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -32,7 +30,6 @@ export const FieldRenderer = ({
     type,
     isFieldConfigEditor
 }) => {
-    const store = useStagesStore();
     useEffect(() => {
         useStagesStore.persist.rehydrate();
     }, []);
@@ -65,9 +62,6 @@ export const FieldRenderer = ({
 
         fieldProps.onCollectionAction(key, "move", result.source.index, result.destination.index)
     };
-
-    const realPath = selectedElement ? getConfigPathFromDataPath(selectedElement, store.currentConfig) : "";
-    const selectedElementConfig = realPath ? get(store.currentConfig, realPath) : {};
 
     return (
         <>
@@ -254,7 +248,7 @@ export const FieldRenderer = ({
                                         selectedElement={selectedElement}
                                         fieldProps={fieldProps}
                                         fields={field}
-                                        type="group"
+                                        type={fieldConfig.type === "fieldset" ? "fieldset" : "group"}
                                     />
                                 </GroupContainer>
                             </Fragment>
@@ -263,7 +257,7 @@ export const FieldRenderer = ({
                 }
             })}
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
-            {isFieldConfigEditor && !parent ? (
+            {isFieldConfigEditor && !parent && type !== "fieldset" ? (
                 <div style={{ marginLeft: "8px", marginBottom: "32px" }}>
                     <br />
                     <Dropdown options={[
