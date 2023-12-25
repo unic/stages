@@ -5,6 +5,7 @@ import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
 import FormattedPath from './FormattedPath';
+import useStagesStore from './store';
 import _ from "lodash";
 
 const parseConfig = config => {
@@ -54,16 +55,33 @@ const getSameData = configs => {
 };
 
 const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
-    if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
-        return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
-    }
-
-    const actualConfig = Array.isArray(config) ? getSameProperties(config) : parseConfig(fieldProps[config.type]);
+    const store = useStagesStore();
     const [data, setData] = useState(Array.isArray(config) ? getSameData(config) : config);
 
     useEffect(() => {
         setData(Array.isArray(config) ? getSameData(config) : config);
     }, [config, path]);
+    
+    if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
+        return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
+    }
+
+    const extendedFieldProps = {...fieldProps}; // Contains additionallly all fieldsets
+    store.fieldsets.forEach(fieldset => {
+        if (!extendedFieldProps[fieldset.id]) {
+            extendedFieldProps[fieldset.id] = [
+                {
+                    id: "id",
+                    type: "blurtext",
+                    label: "ID",
+                    isRequired: true,
+                    filter: value => value.replace(/[^a-zA-Z0-9-]/g, '')
+                }
+            ];
+        }
+    });
+
+    const actualConfig = Array.isArray(config) ? getSameProperties(config) : parseConfig(extendedFieldProps[config.type]);
 
     return (
         <>

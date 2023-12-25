@@ -14,7 +14,7 @@ const BlockPathLabel = ({ path, inCollection, isHovered, type }) => {
             whiteSpace: "nowrap",
             maxWidth: "100%",
             overflow: "hidden"
-        }}>{type === "group" ? "[••] " : null}{type === "collection" ? "[=] " : null}{type === "wizard" ? "[ : ] " : null}{type === "stage" ? "[ . ] " : null}{type === "field" ? "[ ] " : null}{path}</span>
+        }}>{type === "fieldset" ? "[{}] " : null}{type === "group" ? "[••] " : null}{type === "collection" ? "[=] " : null}{type === "wizard" ? "[ : ] " : null}{type === "stage" ? "[ . ] " : null}{type === "field" ? "[ ] " : null}{path}</span>
     );  
 };
 

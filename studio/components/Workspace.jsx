@@ -394,7 +394,6 @@ const Workspace = () => {
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
         const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
-        console.log({ path, realPath, lastArrayIndex, parentOfRealPath, index });
         let arrayToInsertInto;
         if (parentOfRealPath !== "") {
             arrayToInsertInto = _.get(newConfig, parentOfRealPath);

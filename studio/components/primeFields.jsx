@@ -185,7 +185,6 @@ const MappedCalendar = (props) => {
         mappedProps.value = typeof mappedProps.value === 'string' ? new Date(mappedProps.value) : mappedProps.value;
     }
     mappedProps.onChange = (e) => {
-        console.log({e});
         props.onChange(e.target.value);
     };
     mappedProps.showIcon = true;

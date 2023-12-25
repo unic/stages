@@ -4,7 +4,7 @@ import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected } from './helpers';
 
-const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, isFieldConfigEditor }) => {
+const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, contextMenuRef, isFieldConfigEditor }) => {
     const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement));
 
@@ -47,7 +47,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, contextMenuRef, 
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
         >
-            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="field" /> : null}
+            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
             {field}
         </motion.div>
     );
