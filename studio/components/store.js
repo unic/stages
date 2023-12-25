@@ -28,6 +28,34 @@ const useStagesStore = create(persist((set, get) => ({
     undoData: [JSON.stringify(initialConfig)],
     activeUndoIndex: 1,
     previewSize: "desktop",
+    fieldsets: [
+        {
+            id: "passwords",
+            label: "Passwords",
+            config: [
+                {
+                    id: "passwords",
+                    type: "group",
+                    label: "Passwords",
+                    secondaryText: "Must be at least 8 characters.",
+                    fields: [  
+                        {
+                            id: "password1",
+                            label: "Password",
+                            type: "password",
+                            isRequired: true
+                        },
+                        {
+                            id: "password2",
+                            label: "Repeat Password",
+                            type: "password",
+                            isRequired: true
+                        },
+                    ]
+                },
+            ]
+        }
+    ],
     updateGeneralConfig: (generalConfig) => set(() => ({ generalConfig })),
     setEditMode: () => set(() => ({ isEditMode: true })),
     setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),

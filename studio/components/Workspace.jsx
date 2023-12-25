@@ -90,9 +90,9 @@ const Workspace = () => {
         { label: 'Insert Wizard', icon: 'pi pi-fw pi-trash', command: () => handleInsertWizardBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Fieldset', icon: 'pi pi-fw pi-trash', items: [
-            { label: 'Passwords', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "passwords", "Passwords", "passwords") },
-        ] },
+        { label: 'Insert Fieldset', icon: 'pi pi-fw pi-trash', items: store.fieldsets.map(fieldset => {
+            return { label: fieldset.label, icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
+        })},
     ];
 
     const stageContextMenuItems = [
@@ -195,7 +195,7 @@ const Workspace = () => {
         store.setSelectedElement('');
     };
 
-    const handleInsertFieldsetBetweenFields = (path, fieldsetType, label, id) => {
+    const handleInsertFieldsetBetweenFields = (path, fieldsetType, label) => {
         console.log("--> handleInsertFieldsetBetweenFields <--");
         // Add new fieldset between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
@@ -211,7 +211,7 @@ const Workspace = () => {
             arrayToInsertInto = newConfig;
         }
         arrayToInsertInto.splice(index, 0, {
-            id: createNewFieldID(path, id, store),
+            id: createNewFieldID(path, fieldsetType, store),
             type: fieldsetType,
             label: label,
         });
@@ -507,6 +507,34 @@ const Workspace = () => {
         store.setEditorTabIndex(1);
     };
 
+    const createFieldsets = () => {
+        const fieldSets = {};
+        store.fieldsets.forEach(fieldset => {
+            fieldSets[fieldset.id] = {
+                params: {},
+                config: () => {
+                    return fieldset.config;
+                },
+                render: ({ fieldProps }) => {
+                    return (
+                        <FieldRenderer
+                            handleEditCollection={handleEditCollection}
+                            handleEditGroup={handleEditGroup}
+                            parent=""
+                            setActiveContextMenuInput={store.setActiveContextMenuInput}
+                            contextMenuRef={contextMenuRef}
+                            isEditMode={store.isEditMode}
+                            selectedElement={store.selectedElement}
+                            fieldProps={fieldProps}
+                            fields={fieldProps.fields}
+                        />
+                    );
+                }
+            }
+        });
+        return fieldSets;
+    };
+
     const fromDate = store?.generalConfig?.date?.from ? new Sugar.Date(store.generalConfig.date.from) : "";
     const toDate = store?.generalConfig?.date?.to ? new Sugar.Date(store.generalConfig.date.to) : "";
     const now = new Date();
@@ -639,50 +667,7 @@ const Workspace = () => {
                         );
                     }}
                     onChange={payload => store.setData(payload)}
-                    fieldsets={{
-                        passwords: {
-                            params: {},
-                            config: () => {
-                                return [
-                                    {
-                                        id: "passwords",
-                                        type: "group",
-                                        label: "Passwords",
-                                        secondaryText: "Must be at least 8 characters.",
-                                        fields: [  
-                                            {
-                                                id: "password1",
-                                                label: "Password",
-                                                type: "password",
-                                                isRequired: true
-                                            },
-                                            {
-                                                id: "password2",
-                                                label: "Repeat Password",
-                                                type: "password",
-                                                isRequired: true
-                                            },
-                                        ]
-                                    },
-                                ];
-                            },
-                            render: ({ fieldProps }) => {
-                                return (
-                                    <FieldRenderer
-                                        handleEditCollection={handleEditCollection}
-                                        handleEditGroup={handleEditGroup}
-                                        parent=""
-                                        setActiveContextMenuInput={store.setActiveContextMenuInput}
-                                        contextMenuRef={contextMenuRef}
-                                        isEditMode={store.isEditMode}
-                                        selectedElement={store.selectedElement}
-                                        fieldProps={fieldProps}
-                                        fields={fieldProps.fields}
-                                    />
-                                );
-                            }
-                        }
-                    }}
+                    fieldsets={createFieldsets()}
                 />
             </div>
         </ScrollPanel>
