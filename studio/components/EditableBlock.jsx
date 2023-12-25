@@ -24,7 +24,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, cont
                 position: "relative",
                 padding: "8px",
                 borderRadius: "5px",
-                border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && store.isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
+                border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? isFieldset ? "1px dashed #c10b99" : "1px dashed #0A94F8" : !isFieldConfigEditor && store.isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 maxWidth: inGroup ? "33%" : "100%",
                 background: store.isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: store.isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"

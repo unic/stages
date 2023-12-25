@@ -282,6 +282,39 @@ const fieldProps = {
             isRequired: false,
         },
     ],
+    message: [
+        globalFieldProps.id,
+        {
+            id: "text",
+            type: "text",
+            label: "Text",
+            isRequired: true,
+        },
+        {
+            id: "severity",
+            type: "select",
+            label: "Severity",
+            defaultValue: "info",
+            options: [
+                {
+                    value: "info",
+                    text: "Info"
+                },
+                {
+                    value: "success",
+                    text: "Success"
+                },
+                {
+                    value: "warn",
+                    text: "Warn"
+                },
+                {
+                    value: "error",
+                    text: "Error"
+                }
+            ]
+        }
+    ],
     divider: [
         globalFieldProps.specificsDivider,
         globalFieldProps.id,

@@ -17,6 +17,7 @@ import { InputMask } from 'primereact/inputmask';
 import { Password } from 'primereact/password';
 import { Divider } from 'primereact/divider';
 import { MultiSelect } from 'primereact/multiselect';
+import { Message } from 'primereact/message';
 import useStagesStore from './store';
 import { parseTemplateLiterals } from './helpers';
 
@@ -297,6 +298,12 @@ const MappedHeading = (props) => {
     );
 };
 
+const MappedMessage = (props) => {
+    return (
+        <Message {...props} />
+    );
+};
+
 
 const primeFields = {
     text: {
@@ -377,6 +384,10 @@ const primeFields = {
     },
     multiselect: {
         component: MappedMultiSelect,
+        isValid: isValid
+    },
+    message: {
+        component: MappedMessage,
         isValid: isValid
     }
 };

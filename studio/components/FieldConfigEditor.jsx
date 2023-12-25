@@ -71,12 +71,37 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
         if (!extendedFieldProps[fieldset.id]) {
             extendedFieldProps[fieldset.id] = [
                 {
+                    id: "warningsDivider",
+                    type: "divider",
+                    text: "Info",
+                    isInterfaceState: true
+                },
+                {
+                    id: "message",
+                    type: "message",
+                    severity: "warn",
+                    text: "This is a Fieldset. If you edit it's fields, you change all other instances where this fieldset is in use.",
+                    isInterfaceState: true
+                },
+                {
+                    id: "specificsDivider",
+                    type: "divider",
+                    text: "Field Specifics"
+                },
+                {
                     id: "id",
                     type: "blurtext",
                     label: "ID",
                     isRequired: true,
                     filter: value => value.replace(/[^a-zA-Z0-9-]/g, '')
-                }
+                },
+                {
+                    id: "isRendered",
+                    type: "textarea",
+                    autoResize: true,
+                    label: "Is Rendered?",
+                    placeholder: "!!data.myCheckbox",
+                },
             ];
         }
     });
