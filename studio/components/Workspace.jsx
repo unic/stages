@@ -90,6 +90,7 @@ const Workspace = () => {
         { label: 'Insert Wizard', icon: 'pi pi-fw pi-trash', command: () => handleInsertWizardBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Message', icon: 'pi pi-fw pi-trash', command: () => handleInsertMessageBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Fieldset', icon: 'pi pi-fw pi-trash', items: store.fieldsets.map(fieldset => {
             return { label: fieldset.label, icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
         })},
@@ -461,6 +462,31 @@ const Workspace = () => {
             id: createNewFieldID(path, "heading", store),
             type: "heading",
             title: "Heading",
+        });
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
+        store.updateCurrentConfig(newConfig);
+        store.setSelectedElement('');
+    };
+
+    const handleInsertMessageBetweenFields = (path) => {
+        console.log("--> handleInsertDividerBetweenFields <--");
+        // Add new group between fields:
+        const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        const index = parseInt(realPath.substring(lastArrayIndex + 1)) + addIndexOffset;
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        arrayToInsertInto.splice(index, 0, {
+            id: createNewFieldID(path, "message", store),
+            type: "message",
+            text: "Your message ...",
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
