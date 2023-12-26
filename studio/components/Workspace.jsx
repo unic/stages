@@ -67,6 +67,7 @@ const Workspace = () => {
         { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
         { label: 'Ungroup (Group or Collection)', icon: 'pi pi-fw pi-trash', command: () => handleUngroupField(store.activeContextMenuInput) },
         { label: 'Add to Collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) },
+        { label: 'Create Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleCreateFieldset(store.activeContextMenuInput) },
         { label: 'Disconnect from Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleDisconnectFieldset(store.activeContextMenuInput) },
     ];
 
@@ -138,6 +139,21 @@ const Workspace = () => {
             fields: [oldFieldConfig]
         }
         _.set(newConfig, realPath, newFieldConfig);
+        store.updateCurrentConfig(newConfig);
+    };
+
+    const handleCreateFieldset = (path) => {
+        console.log("--> handleCreateFieldset <--");
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const oldFieldConfig = _.get(newConfig, realPath);
+        const newFieldConfig = {
+            id: oldFieldConfig.id,
+            type: oldFieldConfig.id,
+            fields: [oldFieldConfig]
+        }
+        _.set(newConfig, realPath, newFieldConfig);
+        store.addFieldset(oldFieldConfig.id, oldFieldConfig.label || oldFieldConfig.id, Array.isArray(oldFieldConfig) ? oldFieldConfig : [oldFieldConfig]);
         store.updateCurrentConfig(newConfig);
     };
 

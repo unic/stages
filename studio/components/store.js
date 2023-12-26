@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware'
 import initialConfig from './initialConfig';
+import _ from 'lodash';
 
 const initialGeneralConfig = {
     title: "Demo Form",
@@ -122,7 +123,15 @@ const useStagesStore = create(persist((set, get) => ({
             return { selectedElement: '' };
         }
         return { selectedElement: state.selectedElement };
-    })
+    }),
+    addFieldset: (id, label, config) => set((state) => {
+        const fieldsetIndex = _.findIndex(state.fieldsets, { id: id });
+        const newFieldset = { id, label, config };
+        if (fieldsetIndex === -1) {
+            return { fieldsets: [...state.fieldsets, newFieldset] };
+        }
+        return { fieldsets: state.fieldsets };
+    }),
 }),
     {
         name: 'stages-studio-storage',
