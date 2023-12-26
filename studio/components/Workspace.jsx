@@ -61,8 +61,9 @@ const Workspace = () => {
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(store.activeContextMenuInput) },
         { label: 'Copy Path', icon: 'pi pi-fw pi-trash', command: () => handleCopyFieldPath(store.activeContextMenuInput) },
         { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
+        { label: 'Ungroup Group', icon: 'pi pi-fw pi-trash', command: () => handleUngroupField(store.activeContextMenuInput) },
         { label: 'Add to Collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) },
-        { label: 'Disconnect from Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleDisconnectFieldset(store.activeContextMenuInput) }
+        { label: 'Disconnect from Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleDisconnectFieldset(store.activeContextMenuInput) },
     ];
 
     const insertContextMenuItems = [
@@ -136,8 +137,35 @@ const Workspace = () => {
         store.updateCurrentConfig(newConfig);
     };
 
+    const handleUngroupField = (path) => {
+        console.log("--> handleUngroupField <--");
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const oldFieldConfig = _.get(newConfig, realPath);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        let index = parseInt(realPath.substring(lastArrayIndex + 1));
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        console.log({ oldFieldConfig, realPath, lastArrayIndex, parentOfRealPath, index });
+        if (oldFieldConfig.type === "group" && oldFieldConfig.fields) {
+            _.unset(newConfig, realPath);
+            oldFieldConfig.fields.forEach(field => {
+                arrayToInsertInto.splice(index, 0, {...field, id: createNewFieldID(path, field.id, store)});
+                index++;
+            });
+            _.set(newConfig, parentOfRealPath, arrayToInsertInto);
+            store.updateCurrentConfig(removeEmptyElements(newConfig));
+            store.setSelectedElement('');
+        }
+    };
+
     const handleDisconnectFieldset = (path) => {
-        console.log("--> handleGroupField <--");
+        console.log("--> handleDisconnectFieldset <--");
         const newConfig = [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);

@@ -58,10 +58,14 @@ export const doesPathExist = (path, store) => {
 
 export const createNewFieldID = (path, type, store) => {
     const parentPath = path.substring(0, path.lastIndexOf("."));
-    let counter = 1;
+    let counter = "";
     let newFieldID = `${type}${counter}`;
     while (doesPathExist(parentPath ? `${parentPath}.${newFieldID}` : newFieldID, store)) {
-        counter++;
+        if (counter) {
+            counter++;
+        } else {
+            counter = 2;
+        }
         newFieldID = `${type}${counter}`;
     }
     return newFieldID;
