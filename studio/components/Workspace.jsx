@@ -61,7 +61,8 @@ const Workspace = () => {
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(store.activeContextMenuInput) },
         { label: 'Copy Path', icon: 'pi pi-fw pi-trash', command: () => handleCopyFieldPath(store.activeContextMenuInput) },
         { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
-        { label: 'Add to collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) }
+        { label: 'Add to Collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) },
+        { label: 'Disconnect from Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleDisconnectFieldset(store.activeContextMenuInput) }
     ];
 
     const insertContextMenuItems = [
@@ -133,6 +134,23 @@ const Workspace = () => {
         }
         _.set(newConfig, realPath, newFieldConfig);
         store.updateCurrentConfig(newConfig);
+    };
+
+    const handleDisconnectFieldset = (path) => {
+        console.log("--> handleGroupField <--");
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const oldFieldConfig = _.get(newConfig, realPath);
+        const fieldset = _.find(store.fieldsets, { id: oldFieldConfig.type });
+        if (fieldset) {
+            _.unset(newConfig, realPath);
+            _.set(newConfig, realPath, {
+                id: oldFieldConfig.id,
+                type: "group",
+                fields: fieldset.config
+            });
+            store.updateCurrentConfig(newConfig);
+        }
     };
 
     const handleCollectionField = (path) => {

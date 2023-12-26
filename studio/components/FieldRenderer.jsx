@@ -81,7 +81,7 @@ export const FieldRenderer = ({
                     return (
                         <Fragment key={createKey(parent, key)}>
                             {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
-                            <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={createKey(parent, key)} isFieldset={fieldConfig.type === "fieldset"} contextMenuRef={contextMenuRef} field={field} path={createKey(parent, key)} selectedElement={selectedElement} />
+                            <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={createKey(parent, key)} isFieldset={fieldConfig?.type === "fieldset"} contextMenuRef={contextMenuRef} field={field} path={createKey(parent, key)} selectedElement={selectedElement} />
                         </Fragment>
                     );
                 } else if (typeof field === "object") {
@@ -248,7 +248,7 @@ export const FieldRenderer = ({
                                         selectedElement={selectedElement}
                                         fieldProps={fieldProps}
                                         fields={field}
-                                        type={fieldConfig.type === "fieldset" ? "fieldset" : "group"}
+                                        type={fieldConfig?.type === "fieldset" ? "fieldset" : "group"}
                                     />
                                 </GroupContainer>
                             </Fragment>
