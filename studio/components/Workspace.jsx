@@ -20,7 +20,7 @@ import initialConfig from './initialConfig';
 import useStagesStore from './store';
 import { initNewCollections, removeEmptyElements } from "./helpers";
 
-import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig } from './helpers';
+import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig, arrayMove } from './helpers';
 import { FieldRenderer } from './FieldRenderer';
 
 const Workspace = () => {
@@ -60,8 +60,12 @@ const Workspace = () => {
         { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
         { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(store.activeContextMenuInput) },
         { label: 'Copy Path', icon: 'pi pi-fw pi-trash', command: () => handleCopyFieldPath(store.activeContextMenuInput) },
+        { label: 'Move Up', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "up") },
+        { label: 'Move Down', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "down") },
+        { label: 'Move Top', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "top") },
+        { label: 'Move Bottom', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "bottom") },
         { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
-        { label: 'Ungroup Group', icon: 'pi pi-fw pi-trash', command: () => handleUngroupField(store.activeContextMenuInput) },
+        { label: 'Ungroup (Group or Collection)', icon: 'pi pi-fw pi-trash', command: () => handleUngroupField(store.activeContextMenuInput) },
         { label: 'Add to Collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) },
         { label: 'Disconnect from Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleDisconnectFieldset(store.activeContextMenuInput) },
     ];
@@ -151,8 +155,7 @@ const Workspace = () => {
         } else {
             arrayToInsertInto = newConfig;
         }
-        console.log({ oldFieldConfig, realPath, lastArrayIndex, parentOfRealPath, index });
-        if (oldFieldConfig.type === "group" && oldFieldConfig.fields) {
+        if ((oldFieldConfig.type === "group" || oldFieldConfig.type === "collection") && oldFieldConfig.fields) {
             _.unset(newConfig, realPath);
             oldFieldConfig.fields.forEach(field => {
                 arrayToInsertInto.splice(index, 0, {...field, id: createNewFieldID(path, field.id, store)});
@@ -162,6 +165,27 @@ const Workspace = () => {
             store.updateCurrentConfig(removeEmptyElements(newConfig));
             store.setSelectedElement('');
         }
+    };
+
+    const handleMoveField = (path, to) => {
+        console.log("--> handleUngroupField <--");
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const lastArrayIndex = realPath.lastIndexOf("[");
+        const parentOfRealPath = realPath.substring(0, lastArrayIndex);
+        let index = parseInt(realPath.substring(lastArrayIndex + 1));
+        let arrayToInsertInto;
+        if (parentOfRealPath !== "") {
+            arrayToInsertInto = _.get(newConfig, parentOfRealPath);
+        } else {
+            arrayToInsertInto = newConfig;
+        }
+        if (to === "up" && index > 0) arrayMove(arrayToInsertInto, index, index - 1);
+        if (to === "down" && index < arrayToInsertInto.length - 1) arrayMove(arrayToInsertInto, index, index + 1);
+        if (to === "top") arrayMove(arrayToInsertInto, index, 0);
+        if (to === "bottom") arrayMove(arrayToInsertInto, index, arrayToInsertInto.length - 1);
+        _.set(newConfig, parentOfRealPath, arrayToInsertInto);
+        store.updateCurrentConfig(removeEmptyElements(newConfig));
     };
 
     const handleDisconnectFieldset = (path) => {
