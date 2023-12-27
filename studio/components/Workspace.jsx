@@ -6,13 +6,28 @@ import { ContextMenu } from 'primereact/contextmenu';
 import { Button } from 'primereact/button';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import { Toast } from 'primereact/toast';
-import { Undo } from 'lucide-react';
-import { Redo } from 'lucide-react';
-import { Monitor } from 'lucide-react';
-import { Tablet } from 'lucide-react';
-import { Smartphone } from 'lucide-react';
-import { Camera } from 'lucide-react';
-import { ChevronRight } from 'lucide-react';
+import {
+    Undo,
+    Redo,
+    Monitor,
+    Tablet,
+    Smartphone,
+    Camera,
+    ChevronRight,
+    Scissors,
+    Copy,
+    ClipboardPaste,
+    Link2,
+    ArrowUpToLine,
+    ArrowDownToLine,
+    MoveUp,
+    MoveDown,
+    Group,
+    Ungroup,
+    Brackets,
+    Braces,
+    Unplug
+} from 'lucide-react';
 import { Form } from "react-stages";
 import StagesIcon from './StagesIcon';
 import primeFields from './primeFields';
@@ -47,64 +62,70 @@ const Workspace = () => {
     }, []);
 
     const rootContextMenuItems = [
-        { label: 'Clear', icon: 'pi pi-fw pi-trash', command: () => handleInitConfig([{
+        { label: 'Clear', command: () => handleInitConfig([{
             id: "field1",
             type: "text",
             label: "Field 1",
         }]) },
-        { label: 'Init with Demo Form', icon: 'pi pi-fw pi-trash', command: () => handleInitConfig(initialConfig) },
+        { label: 'Init with Demo Form', command: () => handleInitConfig(initialConfig) },
     ];
 
     const fieldContextMenuItems = [
-        { label: 'Cut', icon: 'pi pi-fw pi-trash', command: () => handleCutField(store.activeContextMenuInput) },
-        { label: 'Copy', icon: 'pi pi-fw pi-trash', command: () => handleCopyField(store.activeContextMenuInput) },
-        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteField(store.activeContextMenuInput) },
-        { label: 'Copy Path', icon: 'pi pi-fw pi-trash', command: () => handleCopyFieldPath(store.activeContextMenuInput) },
-        { label: 'Move Up', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "up") },
-        { label: 'Move Down', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "down") },
-        { label: 'Move Top', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "top") },
-        { label: 'Move Bottom', icon: 'pi pi-fw pi-trash', command: () => handleMoveField(store.activeContextMenuInput, "bottom") },
-        { label: 'Group', icon: 'pi pi-fw pi-trash', command: () => handleGroupField(store.activeContextMenuInput) },
-        { label: 'Ungroup (Group or Collection)', icon: 'pi pi-fw pi-trash', command: () => handleUngroupField(store.activeContextMenuInput) },
-        { label: 'Add to Collection', icon: 'pi pi-fw pi-trash', command: () => handleCollectionField(store.activeContextMenuInput) },
-        { label: 'Create Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleCreateFieldset(store.activeContextMenuInput) },
-        { label: 'Disconnect from Fieldset', icon: 'pi pi-fw pi-trash', command: () => handleDisconnectFieldset(store.activeContextMenuInput) },
+        { label: 'Cut', icon: <Scissors size={16} style={{ marginRight: "8px" }} />, command: () => handleCutField(store.activeContextMenuInput) },
+        { label: 'Copy', icon: <Copy size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyField(store.activeContextMenuInput) },
+        { label: 'Paste', icon: <ClipboardPaste size={16} style={{ marginRight: "8px" }} />, command: () => handlePasteField(store.activeContextMenuInput) },
+        { label: 'Copy Path', icon: <Link2 size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyFieldPath(store.activeContextMenuInput) },
+        { separator: true },
+        { label: 'Move Up', icon: <MoveUp size={16} style={{ marginRight: "8px" }} />, command: () => handleMoveField(store.activeContextMenuInput, "up") },
+        { label: 'Move Down', icon: <MoveDown size={16} style={{ marginRight: "8px" }} />, command: () => handleMoveField(store.activeContextMenuInput, "down") },
+        { label: 'Move Top', icon: <ArrowUpToLine size={16} style={{ marginRight: "8px" }} />, command: () => handleMoveField(store.activeContextMenuInput, "top") },
+        { label: 'Move Bottom', icon: <ArrowDownToLine size={16} style={{ marginRight: "8px" }} />, command: () => handleMoveField(store.activeContextMenuInput, "bottom") },
+        { separator: true },
+        { label: 'Group', icon: <Group size={16} style={{ marginRight: "8px" }} />, command: () => handleGroupField(store.activeContextMenuInput) },
+        { label: 'Ungroup', icon: <Ungroup size={16} style={{ marginRight: "8px" }} />, command: () => handleUngroupField(store.activeContextMenuInput) },
+        { label: 'Create Collection', icon: <Brackets size={16} style={{ marginRight: "8px" }} />, command: () => handleCollectionField(store.activeContextMenuInput) },
+        { separator: true },
+        { label: 'Create Fieldset', icon: <Braces size={16} style={{ marginRight: "8px" }} />, command: () => handleCreateFieldset(store.activeContextMenuInput) },
+        { label: 'Disconnect Fieldset', icon: <Unplug size={16} style={{ marginRight: "8px" }} />, command: () => handleDisconnectFieldset(store.activeContextMenuInput) },
     ];
 
     const insertContextMenuItems = [
-        { label: 'Paste', icon: 'pi pi-fw pi-trash', command: () => handlePasteBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", "")), items: [
-            { label: 'Insert Text Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "text") },
-            { label: 'Insert Textarea Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "textarea") },
-            { label: 'Insert Select', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "select") },
-            { label: 'Insert Multi Select', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "multiselect") },
-            { label: 'Insert Calendar', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "calendar") },
-            { label: 'Insert Checkbox', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "checkbox") },
-            { label: 'Insert Switch', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "switch") },
-            { label: 'Insert Number Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "number") },
-            { label: 'Insert Rating Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "rating") },
-            { label: 'Insert Buttons', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "buttons") },
-            { label: 'Insert Slider', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "slider") },
-            { label: 'Insert Toggle', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "toggle") },
-            { label: 'Insert Editor', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "editor") },
-            { label: 'Insert Chips Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "chips") },
-            { label: 'Insert Color Picker', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "color") },
-            { label: 'Insert Mask Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "mask") },
-            { label: 'Insert Password Field', icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "password") },
+        { label: 'Paste', icon: <ClipboardPaste size={16} style={{ marginRight: "8px" }} />, command: () => handlePasteBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { separator: true },
+        { label: 'Insert Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", "")), items: [
+            { label: 'Insert Text Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "text") },
+            { label: 'Insert Textarea Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "textarea") },
+            { label: 'Insert Select', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "select") },
+            { label: 'Insert Multi Select', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "multiselect") },
+            { label: 'Insert Calendar', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "calendar") },
+            { label: 'Insert Checkbox', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "checkbox") },
+            { label: 'Insert Switch', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "switch") },
+            { label: 'Insert Number Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "number") },
+            { label: 'Insert Rating Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "rating") },
+            { label: 'Insert Buttons', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "buttons") },
+            { label: 'Insert Slider', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "slider") },
+            { label: 'Insert Toggle', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "toggle") },
+            { label: 'Insert Editor', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "editor") },
+            { label: 'Insert Chips Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "chips") },
+            { label: 'Insert Color Picker', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "color") },
+            { label: 'Insert Mask Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "mask") },
+            { label: 'Insert Password Field', command: () => handleInsertFieldBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), "password") },
         ] },
-        { label: 'Insert Group', icon: 'pi pi-fw pi-trash', command: () => handleInsertGroupBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Collection', icon: 'pi pi-fw pi-trash', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Wizard', icon: 'pi pi-fw pi-trash', command: () => handleInsertWizardBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Divider', icon: 'pi pi-fw pi-trash', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Heading', icon: 'pi pi-fw pi-trash', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Message', icon: 'pi pi-fw pi-trash', command: () => handleInsertMessageBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
-        { label: 'Insert Fieldset', icon: 'pi pi-fw pi-trash', items: store.fieldsets.map(fieldset => {
-            return { label: fieldset.label, icon: 'pi pi-fw pi-trash', command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
+        { label: 'Insert Group', command: () => handleInsertGroupBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Collection', command: () => handleInsertCollectionBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Wizard', command: () => handleInsertWizardBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { separator: true },
+        { label: 'Insert Divider', command: () => handleInsertDividerBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Heading', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { label: 'Insert Message', command: () => handleInsertMessageBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
+        { separator: true },
+        { label: 'Insert Fieldset', items: store.fieldsets.map(fieldset => {
+            return { label: fieldset.label, command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
         })},
     ];
 
     const stageContextMenuItems = [
-        { label: 'Insert Stage', icon: 'pi pi-fw pi-trash', command: () => handleInsertStage(store.activeContextMenuInput.replace("stage > ", "")) }
+        { label: 'Insert Stage', command: () => handleInsertStage(store.activeContextMenuInput.replace("stage > ", "")) }
     ];
 
     const handleInitConfig = (config) => {
