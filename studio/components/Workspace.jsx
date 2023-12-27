@@ -638,6 +638,7 @@ const Workspace = () => {
                             selectedElement={store.selectedElement}
                             fieldProps={fieldProps}
                             fields={fieldProps.fields}
+                            fieldsetId={fieldset.id}
                         />
                     );
                 }

@@ -28,7 +28,8 @@ export const FieldRenderer = ({
     fieldProps,
     fields,
     type,
-    isFieldConfigEditor
+    isFieldConfigEditor,
+    fieldsetId
 }) => {
     useEffect(() => {
         useStagesStore.persist.rehydrate();
@@ -68,20 +69,23 @@ export const FieldRenderer = ({
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
-                const fieldConfig = fieldProps.getConfig(createKey(parent, key));
+                const thisPath = createKey(parent, key);
+                const fieldConfig = fieldProps.getConfig(thisPath);
+                const isFieldset = fieldConfig?.type === "fieldset";
+                const thisFieldsetId = isFieldset ? fieldConfig?.fieldset : fieldsetId;
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
-                            <Fragment key={createKey(parent, key)}>
-                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="column" />}
-                                <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={createKey(parent, key)} contextMenuRef={contextMenuRef} inGroup field={field} path={createKey(parent, key)} selectedElement={selectedElement} />
+                            <Fragment key={thisPath}>
+                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />}
+                                <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
                             </Fragment>
                         );
                     }
                     return (
-                        <Fragment key={createKey(parent, key)}>
-                            {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
-                            <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={createKey(parent, key)} isFieldset={fieldConfig?.type === "fieldset"} contextMenuRef={contextMenuRef} field={field} path={createKey(parent, key)} selectedElement={selectedElement} />
+                        <Fragment key={thisPath}>
+                            {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
+                            <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
                         </Fragment>
                     );
                 } else if (typeof field === "object") {
@@ -89,8 +93,8 @@ export const FieldRenderer = ({
                         // collection array
                         const collectionConfig = fieldProps.getConfig(key);
                         return (
-                            <Fragment key={createKey(parent, key)}>
-                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
+                            <Fragment key={thisPath}>
+                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                 <CollectionContainer
                                     key={key}
                                     isFieldConfigEditor={isFieldConfigEditor}
@@ -98,7 +102,7 @@ export const FieldRenderer = ({
                                     handleEditCollection={handleEditCollection}
                                     isEditMode={isEditMode}
                                     contextMenuRef={contextMenuRef}
-                                    path={createKey(parent, key)}
+                                    path={thisPath}
                                     label={collectionConfig?.label}
                                     secondaryText={collectionConfig?.secondaryText}
                                 >
@@ -124,12 +128,12 @@ export const FieldRenderer = ({
                                                                     )}
                                                                 >
                                                                     <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: isFieldConfigEditor ? "8px 0" : "8px 2px" }}>
-                                                                        {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${createKey(parent, key)}[${index}]`} inCollection /> : null}
+                                                                        {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${thisPath}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
                                                                             handleEditCollection={handleEditCollection}
                                                                             handleEditGroup={handleEditGroup}
-                                                                            parent={createKey(parent, key)}
+                                                                            parent={thisPath}
                                                                             setActiveContextMenuInput={setActiveContextMenuInput}
                                                                             contextMenuRef={contextMenuRef}
                                                                             isEditMode={isEditMode && !isFieldConfigEditor}
@@ -137,6 +141,7 @@ export const FieldRenderer = ({
                                                                             fieldProps={fieldProps}
                                                                             fields={entry}
                                                                             type="group"
+                                                                            fieldsetId={thisFieldsetId}
                                                                         />
                                                                         <div style={{ position: "absolute", right: "8px", top: isFieldConfigEditor ? "calc(50% + 2px)" : "calc(50% - 12px)" }}>
                                                                             <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
@@ -156,29 +161,28 @@ export const FieldRenderer = ({
                             </Fragment>
                         );
                     } else {
-                        const groupPath = createKey(parent, key);
-                        const groupConfig = fieldProps.getConfig(groupPath);
+                        const groupConfig = fieldProps.getConfig(thisPath);
                         if (groupConfig && groupConfig.type === "wizard") {
                             return (
-                                <Fragment key={createKey(parent, key)}>
-                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
+                                <Fragment key={thisPath}>
+                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                     <WizardContainer
                                         isFieldConfigEditor={isFieldConfigEditor}
                                         selectedElement={selectedElement}
                                         handleEditGroup={handleEditGroup}
                                         isEditMode={isEditMode}
-                                        path={groupPath}
+                                        path={thisPath}
                                         label={groupConfig?.label}
                                         secondaryText={groupConfig?.secondaryText}
                                         contextMenuRef={contextMenuRef}
                                         fieldProps={fieldProps}
-                                        key={groupPath}
+                                        key={thisPath}
                                     >
                                         <FieldRenderer
                                             isFieldConfigEditor={isFieldConfigEditor}
                                             handleEditCollection={handleEditCollection}
                                             handleEditGroup={handleEditGroup}
-                                            parent={groupPath}
+                                            parent={thisPath}
                                             setActiveContextMenuInput={setActiveContextMenuInput}
                                             contextMenuRef={contextMenuRef}
                                             isEditMode={isEditMode && !isFieldConfigEditor}
@@ -186,6 +190,7 @@ export const FieldRenderer = ({
                                             fieldProps={fieldProps}
                                             fields={field}
                                             type="wizard"
+                                            fieldsetId={thisFieldsetId}
                                         />
                                     </WizardContainer>
                                 </Fragment>
@@ -193,24 +198,24 @@ export const FieldRenderer = ({
                         }
                         if (type === "wizard") {
                             return (
-                                <Fragment key={createKey(parent, key)}>
-                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} isStage path={createKey(parent, key)} direction="row" />}
+                                <Fragment key={thisPath}>
+                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} isStage path={thisPath} direction="row" />}
                                     <StageContainer
                                         isFieldConfigEditor={isFieldConfigEditor}
                                         selectedElement={selectedElement}
                                         handleEditGroup={handleEditGroup}
                                         isEditMode={isEditMode}
-                                        path={groupPath}
+                                        path={thisPath}
                                         label={groupConfig?.label}
                                         secondaryText={groupConfig?.secondaryText}
                                         contextMenuRef={contextMenuRef}
-                                        key={groupPath}
+                                        key={thisPath}
                                     >
                                         <FieldRenderer
                                             isFieldConfigEditor={isFieldConfigEditor}
                                             handleEditCollection={handleEditCollection}
                                             handleEditGroup={handleEditGroup}
-                                            parent={groupPath}
+                                            parent={thisPath}
                                             setActiveContextMenuInput={setActiveContextMenuInput}
                                             contextMenuRef={contextMenuRef}
                                             isEditMode={isEditMode && !isFieldConfigEditor}
@@ -218,37 +223,39 @@ export const FieldRenderer = ({
                                             fieldProps={fieldProps}
                                             fields={field}
                                             type="stage"
+                                            fieldsetId={thisFieldsetId}
                                         />
                                     </StageContainer>
                                 </Fragment>
                             );
                         }
                         return (
-                            <Fragment key={createKey(parent, key)}>
-                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, key)} direction="row" />}
+                            <Fragment key={thisPath}>
+                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                 <GroupContainer
                                     isFieldConfigEditor={isFieldConfigEditor}
                                     selectedElement={selectedElement}
                                     handleEditGroup={handleEditGroup}
                                     isEditMode={isEditMode}
-                                    path={groupPath}
+                                    path={thisPath}
                                     label={groupConfig?.label}
                                     secondaryText={groupConfig?.secondaryText}
                                     contextMenuRef={contextMenuRef}
-                                    key={groupPath}
+                                    key={thisPath}
                                 >
                                     <FieldRenderer
                                         isFieldConfigEditor={isFieldConfigEditor}
                                         handleEditCollection={handleEditCollection}
                                         handleEditGroup={handleEditGroup}
-                                        parent={groupPath}
+                                        parent={thisPath}
                                         setActiveContextMenuInput={setActiveContextMenuInput}
                                         contextMenuRef={contextMenuRef}
                                         isEditMode={isEditMode && !isFieldConfigEditor}
                                         selectedElement={selectedElement}
                                         fieldProps={fieldProps}
                                         fields={field}
-                                        type={fieldConfig?.type === "fieldset" ? "fieldset" : "group"}
+                                        type={isFieldset ? "fieldset" : "group"}
+                                        fieldsetId={thisFieldsetId}
                                     />
                                 </GroupContainer>
                             </Fragment>
