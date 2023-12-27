@@ -4,7 +4,7 @@ import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected } from './helpers';
 
-const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, contextMenuRef, isFieldConfigEditor }) => {
+const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, contextMenuRef, isFieldConfigEditor, fieldsetId }) => {
     const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement));
 

@@ -78,14 +78,14 @@ export const FieldRenderer = ({
                         return (
                             <Fragment key={thisPath}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />}
-                                <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
+                                <EditableBlock fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
                             </Fragment>
                         );
                     }
                     return (
                         <Fragment key={thisPath}>
                             {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
-                            <EditableBlock isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
+                            <EditableBlock fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
                         </Fragment>
                     );
                 } else if (typeof field === "object") {
