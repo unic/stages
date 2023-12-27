@@ -124,9 +124,9 @@ const useStagesStore = create(persist((set, get) => ({
         }
         return { selectedElement: state.selectedElement };
     }),
-    addFieldset: (id, label, config) => set((state) => {
+    addFieldset: (id, label, config, path) => set((state) => {
         const fieldsetIndex = _.findIndex(state.fieldsets, { id: id });
-        const newFieldset = { id, label, config };
+        const newFieldset = { id, label, config, path };
         if (fieldsetIndex === -1) {
             return { fieldsets: [...state.fieldsets, newFieldset] };
         }

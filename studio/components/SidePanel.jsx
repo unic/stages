@@ -65,7 +65,7 @@ const SidePanel = () => {
                 const pathSplit = store.selectedElement.substring(1).split("}");
                 const fieldSetConfig = _.find(store.fieldsets, { id: pathSplit[0] });
                 if (fieldSetConfig) {
-                    let tempConfig = _.get(fieldSetConfig.config, getConfigPathFromDataPath(pathSplit[1].substring(1), fieldSetConfig.config));
+                    let tempConfig = _.get(fieldSetConfig.config, getConfigPathFromDataPath(pathSplit[0], fieldSetConfig.config));
                     if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
                     return tempConfig;
                 }

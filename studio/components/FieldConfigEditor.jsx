@@ -7,7 +7,7 @@ import { FieldRenderer } from './FieldRenderer';
 import FormattedPath from './FormattedPath';
 import useStagesStore from './store';
 import InspectorSpacer from './InspectorSpacer';
-import _ from "lodash";
+import _, { indexOf } from "lodash";
 
 const parseConfig = config => {
     if (Array.isArray(config)) {
@@ -58,6 +58,7 @@ const getSameData = configs => {
 const FieldConfigEditor = ({ path, config, handleEditFieldConfig, isFieldsetItem }) => {
     const store = useStagesStore();
     const [data, setData] = useState(Array.isArray(config) ? getSameData(config) : config);
+    const fieldsetConfig = _.find(store.fieldsets, { id: path.slice(path.indexOf("{") + 1, path.indexOf("}")) });
 
     useEffect(() => {
         setData(Array.isArray(config) ? getSameData(config) : config);
@@ -109,6 +110,22 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, isFieldsetItem
     });
 
     const actualConfig = Array.isArray(config) ? getSameProperties(config) : parseConfig(extendedFieldProps[config.type]);
+
+    if (isFieldsetItem && !fieldsetConfig.path) {
+        return (
+            <>
+                <>
+                    <Message severity="warn" text="This is a global fieldset, you can't edit it. If you want to edit its fields, first diconnect the fieldset." />
+                    <InspectorSpacer />
+                </>
+                <div className="flex">
+                    <div className="flex-grow-1" style={{ paddingTop: "6px" }}>
+                        {Array.isArray(path) ? path.map((p, i) => <FormattedPath key={i} path={p} />) : <FormattedPath path={path} />}
+                    </div>
+                </div>
+            </>
+        );
+    }
 
     return (
         <>
