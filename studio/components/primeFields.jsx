@@ -300,7 +300,7 @@ const MappedHeading = (props) => {
 
 const MappedMessage = (props) => {
     return (
-        <Message {...props} />
+        <Message text={props.text} severity={props.severity} />
     );
 };
 
