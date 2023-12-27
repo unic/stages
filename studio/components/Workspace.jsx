@@ -71,9 +71,9 @@ const Workspace = () => {
     ];
 
     const fieldContextMenuItems = [
-        { label: 'Cut', icon: <Scissors size={16} style={{ marginRight: "8px" }} />, command: () => handleCutField(store.activeContextMenuInput) },
-        { label: 'Copy', icon: <Copy size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyField(store.activeContextMenuInput) },
-        { label: 'Paste', icon: <ClipboardPaste size={16} style={{ marginRight: "8px" }} />, command: () => handlePasteField(store.activeContextMenuInput) },
+        { label: <div style={{width: "198px"}}><span>Cut</span><span style={{float: "right", color: "#999"}}>⌘ X</span></div>, icon: <Scissors size={16} style={{ marginRight: "8px" }} />, command: () => handleCutField(store.activeContextMenuInput) },
+        { label: <div style={{width: "198px"}}><span>Copy</span><span style={{float: "right", color: "#999"}}>⌘ C</span></div>, icon: <Copy size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyField(store.activeContextMenuInput) },
+        { label: <div style={{width: "198px"}}><span>Copy</span><span style={{float: "right", color: "#999"}}>⌘ V</span></div>, icon: <ClipboardPaste size={16} style={{ marginRight: "8px" }} />, command: () => handlePasteField(store.activeContextMenuInput) },
         { label: 'Copy Path', icon: <Link2 size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyFieldPath(store.activeContextMenuInput) },
         { separator: true },
         { label: 'Move Up', icon: <MoveUp size={16} style={{ marginRight: "8px" }} />, command: () => handleMoveField(store.activeContextMenuInput, "up") },
