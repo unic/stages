@@ -1,4 +1,4 @@
-const BlockPathLabel = ({ path, inCollection, isHovered, type }) => {
+const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId }) => {
     return (
         <span style={{
             display: "inline-block",
@@ -14,7 +14,7 @@ const BlockPathLabel = ({ path, inCollection, isHovered, type }) => {
             whiteSpace: "nowrap",
             maxWidth: "100%",
             overflow: "hidden"
-        }}>{type === "fieldset" ? "[{}] " : null}{type === "group" ? "[••] " : null}{type === "collection" ? "[=] " : null}{type === "wizard" ? "[ : ] " : null}{type === "stage" ? "[ . ] " : null}{type === "field" ? "[ ] " : null}{path}</span>
+        }}>{type === "fieldset" ? `{${fieldsetId}} ` : null}{type === "group" ? "[••] " : null}{type === "collection" ? "[=] " : null}{type === "wizard" ? "[ : ] " : null}{type === "stage" ? "[ . ] " : null}{type === "field" ? "[ ] " : null}{path}</span>
     );  
 };
 

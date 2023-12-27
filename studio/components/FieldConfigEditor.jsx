@@ -6,6 +6,7 @@ import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
 import FormattedPath from './FormattedPath';
 import useStagesStore from './store';
+import InspectorSpacer from './InspectorSpacer';
 import _ from "lodash";
 
 const parseConfig = config => {
@@ -54,7 +55,7 @@ const getSameData = configs => {
     return finalData;
 };
 
-const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
+const FieldConfigEditor = ({ path, config, handleEditFieldConfig, isFieldsetItem }) => {
     const store = useStagesStore();
     const [data, setData] = useState(Array.isArray(config) ? getSameData(config) : config);
 
@@ -63,6 +64,7 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
     }, [config, path]);
 
     if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
+        if (isFieldsetItem) return <Message severity="info" text="You've selected a field from a Fieldset. If you edit it, you edit all instances of the fieldset." />;
         return <Message severity="info" text="Select field, group or collection to edit its configuration." />;
     }
 
@@ -110,6 +112,12 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig }) => {
 
     return (
         <>
+            {isFieldsetItem && (
+                <>
+                    <Message severity="warn" text="You've selected a field from a Fieldset. If you edit it, you edit all instances of the fieldset." />
+                    <InspectorSpacer />
+                </>
+            )}
             <div className="flex">
                 <div className="flex-grow-1" style={{ paddingTop: "6px" }}>
                     {Array.isArray(path) ? path.map((p, i) => <FormattedPath key={i} path={p} />) : <FormattedPath path={path} />}

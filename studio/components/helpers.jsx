@@ -103,8 +103,9 @@ export const getAllPaths = (config, path = "") => {
     return paths;
 };
 
-export const pathIsSelected = (path, selectedElement) => {
-    return selectedElement === path || (Array.isArray(selectedElement) && selectedElement.includes(path));
+export const pathIsSelected = (path, selectedElement, fieldsetId) => {
+    const actualPath = fieldsetId ? `{${fieldsetId}}.${path}` : path;
+    return selectedElement === actualPath || (Array.isArray(selectedElement) && selectedElement.includes(actualPath));
 }
 
 export const parseTemplateLiterals = (text, data) => {

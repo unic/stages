@@ -60,10 +60,22 @@ const SidePanel = () => {
         if (Array.isArray(selectedElement)) {
             return selectedElement.map(item => _.get(config, getConfigPathFromDataPath(item, config))).filter(item => item);
         } else {
-            let tempConfig = _.get(config, getConfigPathFromDataPath(selectedElement, config));
-            if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
-            return tempConfig;
+            // If selected element starts with curly braces, it's a fieldset: {passwords}.fieldid
+            if (typeof store.selectedElement === "string" && store.selectedElement.startsWith("{")) {
+                const pathSplit = store.selectedElement.substring(1).split("}");
+                const fieldSetConfig = _.find(store.fieldsets, { id: pathSplit[0] });
+                if (fieldSetConfig) {
+                    let tempConfig = _.get(fieldSetConfig.config, getConfigPathFromDataPath(pathSplit[1].substring(1), fieldSetConfig.config));
+                    if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
+                    return tempConfig;
+                }
+            } else {
+                let tempConfig = _.get(config, getConfigPathFromDataPath(selectedElement, config));
+                if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
+                return tempConfig;
+            }
         }
+        return null;
     };
 
     return (
@@ -83,6 +95,7 @@ const SidePanel = () => {
                             <FieldConfigEditor
                                 key={store.selectedElement}
                                 path={store.selectedElement}
+                                isFieldsetItem={typeof store.selectedElement === "string" && store.selectedElement.startsWith("{")}
                                 config={getSelectedConfig(store.currentConfig, store.selectedElement)}
                                 handleEditFieldConfig={handleEditFieldConfig}
                             />

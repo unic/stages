@@ -3,12 +3,12 @@ import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected } from './helpers';
 
-const CollectionContainer = ({ children, handleEditCollection, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef }) => {
+const CollectionContainer = ({ children, handleEditCollection, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId }) => {
     const store = useStagesStore();
-    const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement));
+    const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
 
     useEffect(() => {
-        if (!pathIsSelected(path, selectedElement)) setIsInEditMode(false);
+        if (!pathIsSelected(path, selectedElement, fieldsetId)) setIsInEditMode(false);
     }, [path, selectedElement]);
 
     return (
@@ -31,9 +31,9 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
             }}
             onClick={(e) => {
                 e.stopPropagation();
-                if (isEditMode) handleEditCollection(path, e.shiftKey);
+                if (isEditMode) handleEditCollection(fieldsetId ? `{${fieldsetId}}.${path}` : path, e.shiftKey);
             }}
-            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement) ? true : false)}
+            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
         >
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="collection" /> : null}
             {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "6px 0 8px 8px" }}>{label}</label> : null}

@@ -6,14 +6,14 @@ import { pathIsSelected } from './helpers';
 
 const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, contextMenuRef, isFieldConfigEditor, fieldsetId }) => {
     const store = useStagesStore();
-    const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement));
+    const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
 
     useEffect(() => {
         useStagesStore.persist.rehydrate();
     }, []);
 
     useEffect(() => {
-        if (!pathIsSelected(path, selectedElement)) setIsInEditMode(false);
+        if (!pathIsSelected(path, selectedElement, fieldsetId)) setIsInEditMode(false);
     }, [path, selectedElement]);
 
     return (
@@ -35,11 +35,11 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, cont
                     store.setActiveContextMenuInput(path);
                 }
             }}
-            onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement) ? true : false)}
+            onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
             onClick={(e) => {
                 e.stopPropagation();
                 if (isInEditMode && store.isEditMode && !isFieldConfigEditor) {
-                    store.setSelectedElement(path, e.shiftKey);
+                    store.setSelectedElement(fieldsetId ? `{${fieldsetId}}.${path}` : path, e.shiftKey);
                     store.setEditorTabIndex(1);
                 }
             }}
@@ -47,7 +47,7 @@ const EditableBlock = ({ field, path, selectedElement, inGroup, isFieldset, cont
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
         >
-            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
+            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} fieldsetId={fieldsetId} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
             {field}
         </motion.div>
     );

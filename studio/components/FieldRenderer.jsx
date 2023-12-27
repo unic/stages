@@ -105,6 +105,7 @@ export const FieldRenderer = ({
                                     path={thisPath}
                                     label={collectionConfig?.label}
                                     secondaryText={collectionConfig?.secondaryText}
+                                    fieldsetId={thisFieldsetId}
                                 >
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
                                         <Droppable droppableId="droppable">
@@ -167,6 +168,7 @@ export const FieldRenderer = ({
                                 <Fragment key={thisPath}>
                                     {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                     <WizardContainer
+                                        fieldsetId={thisFieldsetId}
                                         isFieldConfigEditor={isFieldConfigEditor}
                                         selectedElement={selectedElement}
                                         handleEditGroup={handleEditGroup}
@@ -201,6 +203,7 @@ export const FieldRenderer = ({
                                 <Fragment key={thisPath}>
                                     {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} isStage path={thisPath} direction="row" />}
                                     <StageContainer
+                                        fieldsetId={thisFieldsetId}
                                         isFieldConfigEditor={isFieldConfigEditor}
                                         selectedElement={selectedElement}
                                         handleEditGroup={handleEditGroup}
@@ -233,6 +236,7 @@ export const FieldRenderer = ({
                             <Fragment key={thisPath}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                 <GroupContainer
+                                    fieldsetId={thisFieldsetId}
                                     isFieldConfigEditor={isFieldConfigEditor}
                                     selectedElement={selectedElement}
                                     handleEditGroup={handleEditGroup}

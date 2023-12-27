@@ -4,12 +4,12 @@ import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected } from './helpers';
 import WizardNavigation from './WizardNavigation';
 
-const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef }) => {
+const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId }) => {
     const store = useStagesStore();
-    const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement));
+    const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
 
     useEffect(() => {
-        if (!pathIsSelected(path, selectedElement)) setIsInEditMode(false);
+        if (!pathIsSelected(path, selectedElement, fieldsetId)) setIsInEditMode(false);
     }, [path, selectedElement]);
 
     return (
@@ -33,9 +33,9 @@ const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, pa
             }}
             onClick={(e) => {
                 e.stopPropagation();
-                if (isEditMode) handleEditGroup(path, e.shiftKey);
+                if (isEditMode) handleEditGroup(fieldsetId ? `{${fieldsetId}}.${path}` : path, e.shiftKey);
             }}
-            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement) ? true : false)}
+            onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
         >
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={path} isHovered={isInEditMode} type="wizard" /> : null}
             {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "0 0 8px 8px" }}>{label}</label> : null}
