@@ -73,19 +73,25 @@ export const FieldRenderer = ({
                 const fieldConfig = fieldProps.getConfig(thisPath);
                 const isFieldset = fieldConfig?.type === "fieldset";
                 const thisFieldsetId = isFieldset ? fieldConfig?.fieldset : fieldsetId;
+                console.log({ field, thisPath, fieldConfig });
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
                             <Fragment key={thisPath}>
-                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />}
-                                <EditableBlock fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
+                                {index > 0 && (
+                                    <>
+                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
+                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
+                                    </>
+                                )}
+                                <EditableBlock width={fieldConfig?.blockWidth || "large"} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
                             </Fragment>
                         );
                     }
                     return (
                         <Fragment key={thisPath}>
                             {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
-                            <EditableBlock fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
+                            <EditableBlock width={fieldConfig?.blockWidth || "large"} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
                         </Fragment>
                     );
                 } else if (typeof field === "object") {
@@ -134,7 +140,7 @@ export const FieldRenderer = ({
                                                                             isFieldConfigEditor={isFieldConfigEditor}
                                                                             handleEditCollection={handleEditCollection}
                                                                             handleEditGroup={handleEditGroup}
-                                                                            parent={thisPath}
+                                                                            parent={`${thisPath}[${index}]`}
                                                                             setActiveContextMenuInput={setActiveContextMenuInput}
                                                                             contextMenuRef={contextMenuRef}
                                                                             isEditMode={isEditMode && !isFieldConfigEditor}
@@ -267,7 +273,7 @@ export const FieldRenderer = ({
                     }
                 }
             })}
-            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} grow contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
+            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {isFieldConfigEditor && !parent && type !== "fieldset" ? (
                 <div style={{ marginLeft: "8px", marginBottom: "32px" }}>
                     <br />

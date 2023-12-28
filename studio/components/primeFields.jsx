@@ -65,7 +65,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
         );
     }
     return (
-        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px"} : { minWidth: !isInInspector ? "200px" : "auto", marginBottom: !isInInspector ? 0 : "16px" }}>
+        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: "auto", marginBottom: 0} : { minWidth: "auto", marginBottom: 0 }}>
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{parseTemplateLiterals(label, store.data)}{isRequired ? " *" : ""}</label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{parseTemplateLiterals(secondaryText, store.data)}</div> : null}
             <div className="p-inputgroup w-full">

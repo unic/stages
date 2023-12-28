@@ -351,13 +351,15 @@ const Workspace = () => {
                     id: "field1",
                     label: "Field 1",
                     type: "text",
-                    isRequired: true
+                    isRequired: true,
+                    blockWidth: "medium"
                 },
                 {
                     id: "field2",
                     label: "Field 2",
                     type: "text",
-                    isRequired: true
+                    isRequired: true,
+                    blockWidth: "medium"
                 }
             ]
         });
@@ -391,13 +393,15 @@ const Workspace = () => {
                     id: "field1",
                     label: "Field 1",
                     type: "text",
-                    isRequired: true
+                    isRequired: true,
+                    blockWidth: "medium"
                 },
                 {
                     id: "field2",
                     label: "Field 2",
                     type: "text",
-                    isRequired: true
+                    isRequired: true,
+                    blockWidth: "medium"
                 }
             ]
         });

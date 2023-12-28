@@ -21,13 +21,15 @@ const initialConfig = [
                 id: "password1",
                 label: "Password",
                 type: "password",
-                isRequired: true
+                isRequired: true,
+                blockWidth: "medium"
             },
             {
                 id: "password2",
                 label: "Repeat Password",
                 type: "password",
-                isRequired: true
+                isRequired: true,
+                blockWidth: "medium"
             },
         ]
     },
@@ -47,13 +49,15 @@ const initialConfig = [
                 id: "name",
                 label: "Name",
                 type: "text",
-                isRequired: true
+                isRequired: true,
+                blockWidth: "medium"
             },
             {
                 id: "rating",
                 label: "Rating",
                 type: "rating",
-                isRequired: false
+                isRequired: false,
+                blockWidth: "medium"
             },
         ]
     },
@@ -81,20 +85,23 @@ const initialConfig = [
                 id: "num1",
                 label: "Number 1",
                 type: "number",
-                isRequired: true
+                isRequired: true,
+                blockWidth: "small"
             },
             {
                 id: "num2",
                 label: "Number 2",
                 type: "number",
-                isRequired: true
+                isRequired: true,
+                blockWidth: "small"
             },
             {
                 id: "sum",
                 label: "Sum",
                 type: "number",
                 isDisabled: true,
-                computedValue: "data.summed ? data.summed.num1 + data.summed.num2 : 0"
+                computedValue: "data.summed ? data.summed.num1 + data.summed.num2 : 0",
+                blockWidth: "medium"
             },
         ]
     },

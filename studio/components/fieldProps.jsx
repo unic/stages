@@ -11,6 +11,11 @@ const globalFieldProps = {
         type: "divider",
         text: "Basics"
     },
+    stylesDivider: {
+        id: "stylesDivider",
+        type: "divider",
+        text: "Styles"
+    },
     specificsDivider: {
         id: "specificsDivider",
         type: "divider",
@@ -242,13 +247,36 @@ const globalFieldProps = {
                 }
             ],
         }
-    }
+    },
+    blockWidth: {
+        id: "blockWidth",
+        type: "select",
+        label: "Block Width",
+        defaultValue: "large",
+        options: [
+            {
+                value: "small",
+                text: "Small"
+            },
+            {
+                value: "medium",
+                text: "Medium"
+            },
+            {
+                value: "large",
+                text: "Large"
+            }
+        ]
+    },
 }
 
 const fieldProps = {
     heading: [
-        globalFieldProps.specificsDivider,
+        globalFieldProps.basicsDivider,
         globalFieldProps.id,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
+        globalFieldProps.specificsDivider,
         {
             id: "title",
             type: "text",
@@ -283,7 +311,11 @@ const fieldProps = {
         },
     ],
     message: [
+        globalFieldProps.basicsDivider,
         globalFieldProps.id,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
+        globalFieldProps.specificsDivider,
         {
             id: "text",
             type: "text",
@@ -316,8 +348,11 @@ const fieldProps = {
         }
     ],
     divider: [
-        globalFieldProps.specificsDivider,
+        globalFieldProps.basicsDivider,
         globalFieldProps.id,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
+        globalFieldProps.specificsDivider,
         {
             id: "text",
             type: "text",
@@ -436,6 +471,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         globalFieldProps.prefix,
         globalFieldProps.suffix,
@@ -456,6 +493,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         globalFieldProps.autoResize,
         globalFieldProps.advancedDivider,
@@ -475,6 +514,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         globalFieldProps.options,
         {
@@ -513,6 +554,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "display",
@@ -570,6 +613,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "numberOfMonths",
@@ -634,6 +679,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "falseValue",
@@ -660,6 +707,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "falseValue",
@@ -685,6 +734,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         globalFieldProps.prefix,
         globalFieldProps.suffix,
@@ -800,6 +851,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "cancel",
@@ -827,6 +880,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         globalFieldProps.options,
         {
@@ -850,6 +905,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "max",
@@ -888,6 +945,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "onLabel",
@@ -914,6 +973,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "showHeader",
@@ -934,6 +995,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "allowDuplicate",
@@ -964,6 +1027,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "format",
@@ -1004,6 +1069,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "autoClear",
@@ -1031,6 +1098,8 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.type,
         globalFieldProps.isRequired,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "feedback",

@@ -18,9 +18,10 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
                 position: "relative",
                 flexWrap: "wrap",
                 flexDirection: isFieldConfigEditor ? "column" : "row",
+                rowGap: "16px",
                 border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 borderRadius: "5px",
-                padding: "8px 2px",
+                padding: "16px 2px",
                 background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
             }}
