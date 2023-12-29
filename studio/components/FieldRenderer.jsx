@@ -84,7 +84,7 @@ export const FieldRenderer = ({
                                         <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
                                     </>
                                 )}
-                                <EditableBlock width={fieldConfig?.blockWidth || "large"} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
+                                <EditableBlock fieldConfig={fieldConfig} width={fieldConfig?.blockWidth || "large"} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
                             </Fragment>
                         );
                     }

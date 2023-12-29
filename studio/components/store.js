@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware'
 import initialConfig from './initialConfig';
 import _ from 'lodash';
+import { getConfigPathFromDataPath } from './helpers';
 
 const initialGeneralConfig = {
     title: "Demo Form",
@@ -132,6 +133,12 @@ const useStagesStore = create(persist((set, get) => ({
         }
         return { fieldsets: state.fieldsets };
     }),
+    onChangeBlockWidth: (path, width) => set((state) => {
+        const newConfig = [...state.currentConfig];
+        _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.blockWidth`, width === "S" ? "small" : width === "M" ? "medium" : "large");
+        console.log({ path, width, newConfig });
+        return { currentConfig: newConfig };
+    })
 }),
     {
         name: 'stages-studio-storage',
