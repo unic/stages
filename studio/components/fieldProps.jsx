@@ -250,7 +250,7 @@ const globalFieldProps = {
     },
     blockWidth: {
         id: "blockWidth",
-        type: "select",
+        type: "buttons",
         label: "Block Width",
         defaultValue: "large",
         options: [
@@ -429,12 +429,16 @@ const fieldProps = {
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
     ],
     wizard: [
         globalFieldProps.basicsDivider,
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
     ],
     stage: [
         globalFieldProps.basicsDivider,
@@ -447,6 +451,8 @@ const fieldProps = {
         globalFieldProps.id,
         globalFieldProps.label,
         globalFieldProps.secondaryText,
+        globalFieldProps.stylesDivider,
+        globalFieldProps.blockWidth,
         globalFieldProps.specificsDivider,
         {
             id: "init",

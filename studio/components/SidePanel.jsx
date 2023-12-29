@@ -14,7 +14,7 @@ const SidePanel = () => {
     const store = useStagesStore();
 
     const handleEditFieldConfig = (path, config) => {
-        console.log("--> handleEditFieldConfig <--");
+        console.log("--> handleEditFieldConfig <--", {path, config});
         if (Array.isArray(path)) {
             const newConfig = [...store.currentConfig];
             path.forEach(p => {
@@ -36,12 +36,13 @@ const SidePanel = () => {
             if (realPath && Object.keys(config).length > 0) {
                 const oldConfig = _.get(store.currentConfig, realPath);
                 if (config.type === "group" || config.type === "collection" || config.type === "wizard") {
-                    _.set(newConfig, realPath.substring(0, realPath.length - 7), {...config, fields: config.fields});
+                    _.set(newConfig, realPath, {...config, fields: config.fields});
                 } else {
                     _.set(newConfig, realPath, config);
                 }
                 if (oldConfig.id !== config.id && config.id && oldConfig.id) store.setSelectedElement(config.id);
             }
+            console.log({realPath, newConfig});
             store.updateCurrentConfig(newConfig);
             store.setEditorTabIndex(1);
         }

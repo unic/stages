@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
-import { pathIsSelected } from './helpers';
+import { pathIsSelected, getWidth } from './helpers';
 
-const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId }) => {
+const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, inGroup }) => {
     const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
 
@@ -23,7 +23,9 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
                 borderRadius: "5px",
                 padding: "16px 2px",
                 background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
-                boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
+                boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
+                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.previewSize, store.isEditMode, width) : "auto",
+                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.previewSize, store.isEditMode, width)
             }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {

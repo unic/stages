@@ -73,7 +73,7 @@ export const FieldRenderer = ({
                 const fieldConfig = fieldProps.getConfig(thisPath);
                 const isFieldset = fieldConfig?.type === "fieldset";
                 const thisFieldsetId = isFieldset ? fieldConfig?.fieldset : fieldsetId;
-                console.log({ field, thisPath, fieldConfig });
+
                 if (isValidElement(field)) {
                     if (type === "group") {
                         return (
@@ -112,6 +112,8 @@ export const FieldRenderer = ({
                                     label={collectionConfig?.label}
                                     secondaryText={collectionConfig?.secondaryText}
                                     fieldsetId={thisFieldsetId}
+                                    inGroup={type === "group"}
+                                    width={fieldConfig?.blockWidth || "large"}
                                 >
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
                                         <Droppable droppableId="droppable">
@@ -184,6 +186,8 @@ export const FieldRenderer = ({
                                         secondaryText={groupConfig?.secondaryText}
                                         contextMenuRef={contextMenuRef}
                                         fieldProps={fieldProps}
+                                        inGroup={type === "group"}
+                                        width={fieldConfig?.blockWidth || "large"}
                                         key={thisPath}
                                     >
                                         <FieldRenderer
@@ -251,6 +255,8 @@ export const FieldRenderer = ({
                                     label={groupConfig?.label}
                                     secondaryText={groupConfig?.secondaryText}
                                     contextMenuRef={contextMenuRef}
+                                    inGroup={type === "group"}
+                                    width={fieldConfig?.blockWidth || "large"}
                                     key={thisPath}
                                 >
                                     <FieldRenderer
