@@ -12,7 +12,10 @@ const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
         padding: "0 1px",
         width: "14px",
         textAlign: "center"
-    }} onClick={() => onChangeBlockWidth ? onChangeBlockWidth(size) : null}>{size}</button>;
+    }} onClick={(e) => {
+        e.preventDefault();
+        if (onChangeBlockWidth) onChangeBlockWidth(size);
+    }}>{size}</button>;
 };
 
 const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId, blockWidth, onChangeBlockWidth }) => {

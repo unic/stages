@@ -31,6 +31,7 @@ export const FieldRenderer = ({
     isFieldConfigEditor,
     fieldsetId
 }) => {
+    const store = useStagesStore();
     useEffect(() => {
         useStagesStore.persist.rehydrate();
     }, []);
@@ -137,7 +138,7 @@ export const FieldRenderer = ({
                                                                     )}
                                                                 >
                                                                     <div className="flex" style={{ position: "relative", flexWrap: "wrap", padding: isFieldConfigEditor ? "8px 0" : "8px 2px" }}>
-                                                                        {isEditMode && !isFieldConfigEditor ? <BlockPathLabel path={`${thisPath}[${index}]`} inCollection /> : null}
+                                                                        {isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(`${thisPath}[${index}]`, width)} path={`${thisPath}[${index}]`} inCollection /> : null}
                                                                         <FieldRenderer
                                                                             isFieldConfigEditor={isFieldConfigEditor}
                                                                             handleEditCollection={handleEditCollection}
@@ -262,6 +263,7 @@ export const FieldRenderer = ({
                                     contextMenuRef={contextMenuRef}
                                     inGroup={type === "group"}
                                     width={fieldConfig?.blockWidth || "large"}
+                                    border={!!fieldConfig?.blockBorder}
                                     key={thisPath}
                                 >
                                     <FieldRenderer

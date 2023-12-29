@@ -268,6 +268,11 @@ const globalFieldProps = {
             }
         ]
     },
+    blockBorder: {
+        id: "blockBorder",
+        type: "switch",
+        label: "Block Border"
+    },
 }
 
 const fieldProps = {
@@ -431,6 +436,7 @@ const fieldProps = {
         globalFieldProps.secondaryText,
         globalFieldProps.stylesDivider,
         globalFieldProps.blockWidth,
+        globalFieldProps.blockBorder,
     ],
     wizard: [
         globalFieldProps.basicsDivider,
