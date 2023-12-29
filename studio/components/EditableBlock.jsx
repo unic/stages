@@ -47,7 +47,7 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
         >
-            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={fieldConfig?.blockWidth || "large"} path={path} fieldsetId={fieldsetId} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
+            {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={width || "large"} path={path} fieldsetId={fieldsetId} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
             {field}
         </motion.div>
     );

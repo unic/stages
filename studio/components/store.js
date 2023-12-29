@@ -104,9 +104,6 @@ const useStagesStore = create(persist((set, get) => ({
             }
             return { selectedElement: [selectedElement, state.selectedElement] };
         } else {
-            if (state.selectedElement === selectedElement) {
-                return { selectedElement: '' };
-            }
             return { selectedElement };
         }
     }),
