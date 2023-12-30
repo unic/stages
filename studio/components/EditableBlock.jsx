@@ -20,12 +20,12 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
         <motion.div
             className={inGroup ? "flex-1" : undefined}
             style={{
-                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.previewSize, store.isEditMode, width) : "auto",
+                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
                 position: "relative",
                 padding: "8px",
                 borderRadius: "5px",
                 border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? isFieldset ? "1px dashed #c10b99" : "1px dashed #0A94F8" : !isFieldConfigEditor && store.isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
-                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.previewSize, store.isEditMode, width),
+                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width),
                 background: store.isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: store.isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
             }}

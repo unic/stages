@@ -23,8 +23,8 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
                 rowGap: "16px",
                 background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
-                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.previewSize, store.isEditMode, width) : "auto",
-                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.previewSize, store.isEditMode, width)
+                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
+                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width)
             }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {

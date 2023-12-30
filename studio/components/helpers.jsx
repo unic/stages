@@ -162,36 +162,16 @@ export const arrayMove = (arr, old_index, new_index) => {
     return arr;
 };
 
-export const getWidth = (inGroup, isFieldConfigEditor, previewSize, isEditMode, width) => {
+export const getWidth = (inGroup, isFieldConfigEditor, isEditMode, width) => {
     if (isFieldConfigEditor) return "auto";
-    if (previewSize === "desktop") {
-        if (isEditMode) {
-            if (width === "small") return inGroup ? "calc(25% - 56px)" : "25%";
-            if (width === "medium") return inGroup ? "calc(50% - 58px)" : "50%";
-            if (width === "large") return inGroup ? "calc(100% - 60px)" : "100%";
-        } else {
-            if (width === "small") return "25%";
-            if (width === "medium") return "50%";
-            if (width === "large") return "100%";
-        }
-    }
-    if (previewSize === "tablet") {
-        if (isEditMode) {
-            if (width === "small" || width === "medium") return inGroup ? "calc(50% - 58px)" : "50%";
-            if (width === "large") return inGroup ? "calc(100% - 60px)" : "100%";
-        } else {
-            if (width === "small" || width === "medium") return "50%";
-            if (width === "large") return "100%";
-        }
-    }
-    if (previewSize === "mobile") {
-        if (isEditMode) {
-            if (width === "small") return inGroup ? "calc(50% - 58px)" : "50%";
-            if (width === "medium" || width === "large") return inGroup ? "calc(100% - 60px)" : "100%";
-        } else {
-            if (width === "small") return "50%";
-            if (width === "medium" || width === "large") return "100%";
-        }
+    if (isEditMode) {
+        if (width === "small") return inGroup ? "calc(25% - 56px)" : "25%";
+        if (width === "medium") return inGroup ? "calc(50% - 58px)" : "50%";
+        if (width === "large") return inGroup ? "calc(100% - 60px)" : "100%";
+    } else {
+        if (width === "small") return "25%";
+        if (width === "medium") return "50%";
+        if (width === "large") return "100%";
     }
     return "auto";
 };

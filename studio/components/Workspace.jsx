@@ -352,14 +352,14 @@ const Workspace = () => {
                     label: "Field 1",
                     type: "text",
                     isRequired: true,
-                    blockWidth: "medium"
+                    blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
                 },
                 {
                     id: "field2",
                     label: "Field 2",
                     type: "text",
                     isRequired: true,
-                    blockWidth: "medium"
+                    blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
                 }
             ]
         });
@@ -394,14 +394,14 @@ const Workspace = () => {
                     label: "Field 1",
                     type: "text",
                     isRequired: true,
-                    blockWidth: "medium"
+                    blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
                 },
                 {
                     id: "field2",
                     label: "Field 2",
                     type: "text",
                     isRequired: true,
-                    blockWidth: "medium"
+                    blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
                 }
             ]
         });

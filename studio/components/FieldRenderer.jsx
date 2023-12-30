@@ -74,6 +74,7 @@ export const FieldRenderer = ({
                 const fieldConfig = fieldProps.getConfig(thisPath);
                 const isFieldset = fieldConfig?.type === "fieldset";
                 const thisFieldsetId = isFieldset ? fieldConfig?.fieldset : fieldsetId;
+                const width = fieldConfig?.blockWidth ? fieldConfig?.blockWidth[store.previewSize] || "large" : "large";
 
                 if (isValidElement(field)) {
                     if (type === "group") {
@@ -85,14 +86,14 @@ export const FieldRenderer = ({
                                         <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
                                     </>
                                 )}
-                                <EditableBlock fieldConfig={fieldConfig} width={fieldConfig?.blockWidth || "large"} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
+                                <EditableBlock fieldConfig={fieldConfig} width={width} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
                             </Fragment>
                         );
                     }
                     return (
                         <Fragment key={thisPath}>
                             {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
-                            <EditableBlock width={fieldConfig?.blockWidth || "large"} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
+                            <EditableBlock width={width} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
                         </Fragment>
                     );
                 } else if (typeof field === "object") {
@@ -114,7 +115,7 @@ export const FieldRenderer = ({
                                     secondaryText={collectionConfig?.secondaryText}
                                     fieldsetId={thisFieldsetId}
                                     inGroup={type === "group"}
-                                    width={fieldConfig?.blockWidth || "large"}
+                                    width={width}
                                 >
                                     <DragDropContext onDragEnd={(result) => onDragEnd(key, result)}>
                                         <Droppable droppableId="droppable">
@@ -188,7 +189,7 @@ export const FieldRenderer = ({
                                         contextMenuRef={contextMenuRef}
                                         fieldProps={fieldProps}
                                         inGroup={type === "group"}
-                                        width={fieldConfig?.blockWidth || "large"}
+                                        width={width}
                                         key={thisPath}
                                     >
                                         <FieldRenderer
@@ -262,7 +263,7 @@ export const FieldRenderer = ({
                                     secondaryText={groupConfig?.secondaryText}
                                     contextMenuRef={contextMenuRef}
                                     inGroup={type === "group"}
-                                    width={fieldConfig?.blockWidth || "large"}
+                                    width={width}
                                     border={!!fieldConfig?.blockBorder}
                                     key={thisPath}
                                 >

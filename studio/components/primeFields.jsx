@@ -170,7 +170,7 @@ const MappedMultiSelect = (props) => {
 
 const MappedSelectButton = (props) => {
     const mappedProps = removeStagesProps(props);
-    if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
+    if (typeof mappedProps.value === 'undefined') mappedProps.value = mappedProps.defaultValue || '';
     mappedProps.onChange = (e) => {
         props.onChange(e.target.value);
     };

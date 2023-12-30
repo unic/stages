@@ -132,8 +132,8 @@ const useStagesStore = create(persist((set, get) => ({
     }),
     onChangeBlockWidth: (path, width) => set((state) => {
         const newConfig = [...state.currentConfig];
-        _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.blockWidth`, width === "S" ? "small" : width === "M" ? "medium" : "large");
-        console.log({ path, width, newConfig });
+        const previewSize = get().previewSize;
+        _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.blockWidth.${previewSize}`, width === "S" ? "small" : width === "M" ? "medium" : "large");
         return { currentConfig: newConfig };
     })
 }),

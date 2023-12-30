@@ -250,23 +250,70 @@ const globalFieldProps = {
     },
     blockWidth: {
         id: "blockWidth",
-        type: "buttons",
-        label: "Block Width",
-        defaultValue: "large",
-        options: [
+        type: "group",
+        fields: [
             {
-                value: "small",
-                text: "Small"
+                id: "mobile",
+                type: "buttons",
+                label: "Block Width Mobile",
+                defaultValue: "large",
+                width: "100%",
+                options: [
+                    {
+                        value: "small",
+                        text: "Small (1/4)"
+                    },
+                    {
+                        value: "medium",
+                        text: "Medium (1/2)"
+                    },
+                    {
+                        value: "large",
+                        text: "Large (100%)"
+                    }
+                ]
             },
             {
-                value: "medium",
-                text: "Medium"
+                id: "tablet",
+                type: "buttons",
+                label: "Block Width Tablet",
+                defaultValue: "large",
+                options: [
+                    {
+                        value: "small",
+                        text: "Small (1/4)"
+                    },
+                    {
+                        value: "medium",
+                        text: "Medium (1/2)"
+                    },
+                    {
+                        value: "large",
+                        text: "Large (100%)"
+                    }
+                ]
             },
             {
-                value: "large",
-                text: "Large"
+                id: "desktop",
+                type: "buttons",
+                label: "Block Width Desktop",
+                defaultValue: "large",
+                options: [
+                    {
+                        value: "small",
+                        text: "Small (1/4)"
+                    },
+                    {
+                        value: "medium",
+                        text: "Medium (1/2)"
+                    },
+                    {
+                        value: "large",
+                        text: "Large (100%)"
+                    }
+                ]
             }
-        ]
+        ],
     },
     blockBorder: {
         id: "blockBorder",

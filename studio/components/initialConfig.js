@@ -22,14 +22,14 @@ const initialConfig = [
                 label: "Password",
                 type: "password",
                 isRequired: true,
-                blockWidth: "medium"
+                blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
             },
             {
                 id: "password2",
                 label: "Repeat Password",
                 type: "password",
                 isRequired: true,
-                blockWidth: "medium"
+                blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
             },
         ]
     },
@@ -50,14 +50,14 @@ const initialConfig = [
                 label: "Name",
                 type: "text",
                 isRequired: true,
-                blockWidth: "medium"
+                blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
             },
             {
                 id: "rating",
                 label: "Rating",
                 type: "rating",
                 isRequired: false,
-                blockWidth: "medium"
+                blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
             },
         ]
     },
@@ -86,14 +86,14 @@ const initialConfig = [
                 label: "Number 1",
                 type: "number",
                 isRequired: true,
-                blockWidth: "small"
+                blockWidth: { desktop: "small", tablet: "small", mobile: "large" }
             },
             {
                 id: "num2",
                 label: "Number 2",
                 type: "number",
                 isRequired: true,
-                blockWidth: "small"
+                blockWidth: { desktop: "small", tablet: "small", mobile: "large" }
             },
             {
                 id: "sum",
@@ -101,7 +101,7 @@ const initialConfig = [
                 type: "number",
                 isDisabled: true,
                 computedValue: "data.summed ? data.summed.num1 + data.summed.num2 : 0",
-                blockWidth: "medium"
+                blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }
             },
         ]
     },

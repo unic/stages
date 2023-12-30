@@ -168,17 +168,15 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, isFieldsetItem
                         );
                     }}
                     onChange={payload => {
-                        if (JSON.stringify(payload) !== JSON.stringify(data)) {
-                            if (!Array.isArray(config)) {
-                                setData(payload);
-                                handleEditFieldConfig(path, payload);
-                            } else {
-                                // Multiple fields are selected, so change all fields if there is an actualy data change
-                                // Find out what has changed and than apply that to all paths
-                                const diff = _.differenceWith(_.toPairs(payload), _.toPairs(data), _.isEqual);
-                                setData(payload);
-                                handleEditFieldConfig(path, diff);
-                            }
+                        if (!Array.isArray(config)) {
+                            setData(payload);
+                            handleEditFieldConfig(path, payload);
+                        } else {
+                            // Multiple fields are selected, so change all fields if there is an actualy data change
+                            // Find out what has changed and than apply that to all paths
+                            const diff = _.differenceWith(_.toPairs(payload), _.toPairs(data), _.isEqual);
+                            setData(payload);
+                            handleEditFieldConfig(path, diff);
                         }
                     }}
                 />
