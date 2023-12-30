@@ -14,7 +14,7 @@ const SidePanel = () => {
     const store = useStagesStore();
 
     const handleEditFieldConfig = (path, config) => {
-        console.log("--> handleEditFieldConfig <--", {path, config});
+        console.log("--> handleEditFieldConfig <--");
         if (Array.isArray(path)) {
             const newConfig = [...store.currentConfig];
             path.forEach(p => {

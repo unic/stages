@@ -261,15 +261,15 @@ const globalFieldProps = {
                 options: [
                     {
                         value: "small",
-                        text: "Small (1/4)"
+                        text: "Small 25%"
                     },
                     {
                         value: "medium",
-                        text: "Medium (1/2)"
+                        text: "Medium 50%"
                     },
                     {
                         value: "large",
-                        text: "Large (100%)"
+                        text: "Large 100%"
                     }
                 ]
             },
@@ -281,15 +281,15 @@ const globalFieldProps = {
                 options: [
                     {
                         value: "small",
-                        text: "Small (1/4)"
+                        text: "Small 25%"
                     },
                     {
                         value: "medium",
-                        text: "Medium (1/2)"
+                        text: "Medium 50%"
                     },
                     {
                         value: "large",
-                        text: "Large (100%)"
+                        text: "Large 100%"
                     }
                 ]
             },
@@ -301,15 +301,15 @@ const globalFieldProps = {
                 options: [
                     {
                         value: "small",
-                        text: "Small (1/4)"
+                        text: "Small 25%"
                     },
                     {
                         value: "medium",
-                        text: "Medium (1/2)"
+                        text: "Medium 50%"
                     },
                     {
                         value: "large",
-                        text: "Large (100%)"
+                        text: "Large 100%"
                     }
                 ]
             }

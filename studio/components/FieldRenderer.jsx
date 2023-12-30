@@ -155,7 +155,7 @@ export const FieldRenderer = ({
                                                                             fieldsetId={thisFieldsetId}
                                                                         />
                                                                         <div style={{ position: "absolute", right: "8px", top: isFieldConfigEditor ? "calc(50% + 2px)" : "calc(50% - 12px)" }}>
-                                                                            <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>remove</button>
+                                                                            <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>-</button>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -167,7 +167,7 @@ export const FieldRenderer = ({
                                         )}
                                         </Droppable>
                                     </DragDropContext>
-                                    <button type="button" style={{margin: isFieldConfigEditor ? "8px 0 8px 8px" : "-4px 0 8px 8px"}} onClick={() => fieldProps.onCollectionAction(key, "add")}>add</button>
+                                    <button type="button" style={{margin: isFieldConfigEditor ? "8px 0 8px 8px" : "-4px 0 8px 8px"}} onClick={() => fieldProps.onCollectionAction(key, "add")}>add row</button>
                                 </CollectionContainer>
                             </Fragment>
                         );
