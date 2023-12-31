@@ -3,6 +3,7 @@ import React, { Fragment, useEffect } from 'react';
 import { isValidElement } from 'react';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Dropdown } from 'primereact/dropdown';
+import _ from "lodash";
 import EditableBlock from './EditableBlock';
 import InsertBlock from './InsertBlock';
 import GroupContainer from './GroupContainer';
@@ -11,6 +12,7 @@ import WizardContainer from './WizardContainer';
 import CollectionContainer from './CollectionContainer';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
+import { getConfigPathFromDataPath } from "./helpers";
 
 const createKey = (parent, key) => {
     if (!parent) return key;
@@ -65,13 +67,22 @@ export const FieldRenderer = ({
         fieldProps.onCollectionAction(key, "move", result.source.index, result.destination.index)
     };
 
+    const getConfigFromFieldset = (thisPath, fieldsetId) => {
+        const fieldset = _.find(store.fieldsets, { id: fieldsetId });
+        if (fieldset) {
+            const realPath = getConfigPathFromDataPath(thisPath, fieldset.config);
+            return _.get(fieldset.config, realPath);
+        }
+        return {};
+    };
+
     return (
         <>
             <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 const thisPath = createKey(parent, key);
-                const fieldConfig = fieldProps.getConfig(thisPath);
+                const fieldConfig = fieldsetId ? getConfigFromFieldset(thisPath, fieldsetId) : fieldProps.getConfig(thisPath);
                 const isFieldset = fieldConfig?.type === "fieldset";
                 const thisFieldsetId = isFieldset ? fieldConfig?.fieldset : fieldsetId;
                 const width = fieldConfig?.blockWidth ? fieldConfig?.blockWidth[store.previewSize] || "large" : "large";
@@ -99,7 +110,7 @@ export const FieldRenderer = ({
                 } else if (typeof field === "object") {
                     if (Array.isArray(field)) {
                         // collection array
-                        const collectionConfig = fieldProps.getConfig(key);
+                        const collectionConfig = fieldsetId ? getConfigFromFieldset(key, fieldsetId) : fieldProps.getConfig(key);
                         return (
                             <Fragment key={thisPath}>
                                 {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
@@ -172,7 +183,7 @@ export const FieldRenderer = ({
                             </Fragment>
                         );
                     } else {
-                        const groupConfig = fieldProps.getConfig(thisPath);
+                        const groupConfig = fieldsetId ? getConfigFromFieldset(thisPath, fieldsetId) : fieldProps.getConfig(thisPath);
                         if (groupConfig && groupConfig.type === "wizard") {
                             return (
                                 <Fragment key={thisPath}>

@@ -170,8 +170,7 @@ const Workspace = () => {
         const oldFieldConfig = _.get(newConfig, realPath);
         const newFieldConfig = {
             id: oldFieldConfig.id,
-            type: oldFieldConfig.id,
-            fields: [oldFieldConfig]
+            type: oldFieldConfig.id
         };
         _.set(newConfig, realPath, newFieldConfig);
         store.addFieldset(oldFieldConfig.id, oldFieldConfig.label || oldFieldConfig.id, Array.isArray(oldFieldConfig) ? oldFieldConfig : [oldFieldConfig], path);

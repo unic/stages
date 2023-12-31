@@ -13,28 +13,33 @@ import { getConfigPathFromDataPath, downloadFile } from './helpers';
 const SidePanel = () => {
     const store = useStagesStore();
 
-    const handleEditFieldConfig = (path, config) => {
+    const handleEditFieldConfig = (path, config, isFieldsetItem) => {
         console.log("--> handleEditFieldConfig <--");
         if (Array.isArray(path)) {
-            const newConfig = [...store.currentConfig];
+            const newConfig = isFieldsetItem ? [...config] : [...store.currentConfig];
             path.forEach(p => {
                 // p = path, config = diff 
                 const realPath = getConfigPathFromDataPath(p, newConfig);
                 if (realPath && config.length > 0) {
-                    const editedConfig = _.get(store.currentConfig, realPath);
+                    const editedConfig = _.get(isFieldsetItem ? config : store.currentConfig, realPath);
                     config.forEach(c => {
                         editedConfig[c[0]] = c[1];
                     });
                     _.set(newConfig, realPath, editedConfig);
                 }
             });
-            store.updateCurrentConfig(newConfig);
+            if (isFieldsetItem) {
+                store.updateFieldsetConfig(newConfig, config.id);
+            } else {
+                store.updateCurrentConfig(newConfig);
+            }
         } else {
             if (!config.id) return;
-            const newConfig = [...store.currentConfig];
+            const fieldset = _.find(store.fieldsets, { id: config.id });
+            const newConfig = isFieldsetItem ? [...fieldset.config] : [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
             if (realPath && Object.keys(config).length > 0) {
-                const oldConfig = _.get(store.currentConfig, realPath);
+                const oldConfig = _.get(isFieldsetItem ? fieldset.config : store.currentConfig, realPath);
                 if (config.type === "group" || config.type === "collection" || config.type === "wizard") {
                     _.set(newConfig, realPath, {...config, fields: config.fields});
                 } else {
@@ -42,8 +47,11 @@ const SidePanel = () => {
                 }
                 if (oldConfig.id !== config.id && config.id && oldConfig.id) store.setSelectedElement(config.id);
             }
-            console.log({realPath, newConfig});
-            store.updateCurrentConfig(newConfig);
+            if (isFieldsetItem) {
+                store.updateFieldsetConfig(newConfig, config.id);
+            } else {
+                store.updateCurrentConfig(newConfig);
+            }
             store.setEditorTabIndex(1);
         }
     };

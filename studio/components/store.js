@@ -94,6 +94,14 @@ const useStagesStore = create(persist((set, get) => ({
         get().setUndoData(newUndoData);
         return { currentConfig };
     }),
+    updateFieldsetConfig: (newFieldsetConfig, fieldsetId) => set((state) => {
+        const newFieldsets = [...state.fieldsets];
+        const index = _.findIndex(newFieldsets, { id: fieldsetId });
+        if (index > -1) {
+            newFieldsets[index].config = newFieldsetConfig;
+        }
+        return { feildsets: newFieldsets };
+    }),
     setSelectedElement: (selectedElement, isShiftKey) => set((state) => {
         if (isShiftKey && state.selectedElement) {
             if (Array.isArray(state.selectedElement)) {

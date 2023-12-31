@@ -37,7 +37,7 @@ export const parseJSONConfig = (config, data) => {
 
 export const getConfigPathFromDataPath = (path, config) => {
     if (typeof path !== "string") return '';
-    const pathSplit = path.split(".");
+    const pathSplit = path.startsWith("{") ? path.substring(path.indexOf("}") + 2).split(".") : path.split(".");
     let realPath = '';
     pathSplit.forEach((key) => {
         const index = _.findIndex(realPath ? _.get(config, realPath) : config, { id: key.replace(/\[(\d+)\]/, "") });
