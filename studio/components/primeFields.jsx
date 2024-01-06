@@ -144,7 +144,7 @@ const MappedEditor = (props) => {
         props.onChange(e.target.value);
     };
     return <InputWrapper {...mappedProps} isRequired={props.isRequired} isInInspector={props.isInInspector}>
-        <div style={{ overflow: "hidden" }}><Editor {...mappedProps} className={props.error ? "p-invalid" : ""} /></div>
+        <div style={{ overflow: "hidden", width: "100%" }}><Editor {...mappedProps} className={props.error ? "p-invalid" : ""} /></div>
     </InputWrapper>;
 };
 

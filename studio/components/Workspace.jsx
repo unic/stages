@@ -62,11 +62,8 @@ const Workspace = () => {
     }, []);
 
     const rootContextMenuItems = [
-        { label: 'Clear', command: () => handleInitConfig([{
-            id: "field1",
-            type: "text",
-            label: "Field 1",
-        }]) },
+        { label: 'Clear', command: () => handleInitConfig([]) },
+        { label: 'Init with Layout Example', command: () => handleInitConfig([{"id":"text","type":"text","label":"Field"},{"id":"group","type":"group","fields":[{"id":"heading","type":"heading","title":"Heading","blockWidth":{"desktop":"medium"},"level":3,"text":"This is an example to demonstrate how to layout a form by using groups and block widths."},{"id":"group","type":"group","fields":[{"id":"field2","label":"Field 2","type":"text","isRequired":true,"blockWidth":{"desktop":"large","tablet":"large","mobile":"large"}},{"id":"text","type":"text","label":"Field"}],"blockWidth":{"desktop":"medium"}}]}]) },
         { label: 'Init with Demo Form', command: () => handleInitConfig(initialConfig) },
     ];
 
@@ -678,7 +675,12 @@ const Workspace = () => {
     return (
         <ScrollPanel style={{ width: "100%",height: '100vh', background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
             <Toast position="center" ref={toast} />
-            <div style={{ padding: "16px", position: "relative", }}>
+            <div style={{ padding: "16px", position: "relative", minHeight: "100vh" }} onContextMenu={(e) => {
+                    if (contextMenuRef && contextMenuRef.current) {
+                        contextMenuRef.current.show(e);
+                        store.setActiveContextMenuInput(".");
+                    }
+                }}>
                 <div style={{ position: "absolute", top: "18px", right: "24px", cursor: "pointer" }}>
                     <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
                 </div>
@@ -767,17 +769,7 @@ const Workspace = () => {
                     render={({ actionProps, fieldProps }) => {
                         return (
                             <>
-                                <form
-                                    onContextMenu={(e) => {
-                                        if (contextMenuRef && contextMenuRef.current) {
-                                            contextMenuRef.current.show(e);
-                                            store.setActiveContextMenuInput(".");
-                                        }
-                                    }} onClick={() => {
-                                        store.setSelectedElement("");
-                                        store.setEditorTabIndex(0);
-                                    }}
-                                >
+                                <form>
                                     <div style={{ position: "relative", maxWidth: store.previewSize === "mobile" ? "480px" : store.previewSize === "tablet" ? "640px" : "960px", margin: "0 auto", paddingBottom: "64px" }}>
                                         <FieldRenderer
                                             handleEditCollection={handleEditCollection}

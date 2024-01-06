@@ -91,7 +91,7 @@ const SidePanel = () => {
         <div style={{ width: "100%", minWidth: "393px", height: '100vh', backgroundColor: "#FCFCFC", boxShadow: "0px 0px 32px 0px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", flexDirection: "column", height: "100%" }}>
                 <InspectorHeader />
-                <div style={{ backgroundColor: "#fff", padding: "0 12px 0 12px" }}>
+                <div style={{ backgroundColor: "#fff", padding: "0" }}>
                     <TabMenu model={[
                         {label: 'General Config'},
                         {label: 'Inspector'},

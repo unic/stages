@@ -37,31 +37,6 @@ const GeneralConfig = () => {
                                 isDisabled: true
                             },
                             {
-                                id: "type",
-                                type: "buttons",
-                                label: "Type",
-                                defaultValue: "form",
-                                options: [
-                                    {
-                                        value: "form",
-                                        text: "Form"
-                                    },
-                                    {
-                                        value: "wizard",
-                                        text: "Wizard"
-                                    }
-                                ]
-                            },
-                            {
-                                id: "locales",
-                                type: "multiselect",
-                                label: "Locales",
-                                showFilter: true,
-                                showSelectAll: false,
-                                display: "chip",
-                                options: Object.keys(isoLangs).map(lang => ({ value: lang.toUpperCase(), text: `${lang.toUpperCase()}: ${truncateString(isoLangs[lang].name, 32)}` })),
-                            },
-                            {
                                 id: "status",
                                 type: "buttons",
                                 label: "Status",
@@ -80,6 +55,19 @@ const GeneralConfig = () => {
                                         text: "Archived"
                                     }
                                 ]
+                            },
+                            {
+                                id: "divider1",
+                                type: "divider"
+                            },
+                            {
+                                id: "locales",
+                                type: "multiselect",
+                                label: "Locales",
+                                showFilter: true,
+                                showSelectAll: false,
+                                display: "chip",
+                                options: Object.keys(isoLangs).map(lang => ({ value: lang.toUpperCase(), text: `${lang.toUpperCase()}: ${truncateString(isoLangs[lang].name, 32)}` })),
                             },
                             {
                                 id: "components",
