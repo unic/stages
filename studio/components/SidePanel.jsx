@@ -35,7 +35,7 @@ const SidePanel = () => {
             }
         } else {
             if (!config.id) return;
-            const fieldset = _.find(store.fieldsets, { id: config.id });
+            const fieldset = isFieldsetItem ? _.find(store.fieldsets, { id: path.slice(path.indexOf("{") + 1, path.indexOf("}")) }) : {};
             const newConfig = isFieldsetItem ? [...fieldset.config] : [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
             if (realPath && Object.keys(config).length > 0) {
@@ -62,7 +62,7 @@ const SidePanel = () => {
             data: JSON.stringify(store.currentConfig),
             fileName: 'stages-config.json',
             fileType: 'text/json',
-        })
+        });
     }
 
     const getSelectedConfig = (config, selectedElement) => {
@@ -74,7 +74,8 @@ const SidePanel = () => {
                 const pathSplit = store.selectedElement.substring(1).split("}");
                 const fieldSetConfig = _.find(store.fieldsets, { id: pathSplit[0] });
                 if (fieldSetConfig) {
-                    let tempConfig = _.get(fieldSetConfig.config, getConfigPathFromDataPath(pathSplit[0], fieldSetConfig.config));
+                    const pathInFieldset = pathSplit[1].substring(1);
+                    let tempConfig = _.get(fieldSetConfig.config, getConfigPathFromDataPath(pathInFieldset, fieldSetConfig.config));
                     if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
                     return tempConfig;
                 }
