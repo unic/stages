@@ -122,9 +122,15 @@ const Workspace = () => {
         { label: 'Insert Heading', command: () => handleInsertHeadingBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { label: 'Insert Message', command: () => handleInsertMessageBetweenFields(store.activeContextMenuInput.replace("insert > ", "")) },
         { separator: true },
-        { label: 'Insert Fieldset', items: store.fieldsets.map(fieldset => {
-            return { label: fieldset.label, command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
-        })},
+        { label: 'Insert Fieldset', items: [
+            ...store.fieldsets.filter(fieldset => !fieldset.path).map(fieldset => {
+                return { label: fieldset.label, command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
+            }),
+            { separator: true },
+            ...store.fieldsets.filter(fieldset => fieldset.path).map(fieldset => {
+                return { label: fieldset.label, command: () => handleInsertFieldsetBetweenFields(store.activeContextMenuInput.replace("insert > ", ""), fieldset.id, fieldset.label) };
+            })
+        ]},
     ];
 
     const stageContextMenuItems = [
