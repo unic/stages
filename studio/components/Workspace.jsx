@@ -46,14 +46,20 @@ const Workspace = () => {
     console.log({store});
 
     const onKeyPress = (e) => {
-        if (e.key === "c" && (e.ctrlKey || e.metaKey) && store.selectedElement) {
-            handleCopyField(store.selectedElement);
+        if (e.key === "c" && (e.ctrlKey || e.metaKey)) {
+            if (store.selectedElement && typeof store.selectedElement === "string") handleCopyField(store.selectedElement);
         }
-        if (e.key === "v" && (e.ctrlKey || e.metaKey) && store.selectedElement) {
+        if (e.key === "v" && (e.ctrlKey || e.metaKey)) {
             handlePasteField(store.selectedElement);
         }
-        if (e.key === "x" && (e.ctrlKey || e.metaKey) && store.selectedElement) {
-            handleCutField(store.selectedElement);
+        if (e.key === "x" && (e.ctrlKey || e.metaKey)) {
+            if (store.selectedElement && typeof store.selectedElement === "string") handleCutField(store.selectedElement);
+        }
+        if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
+            store.undo();
+        }
+        if (e.key === "z" && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+            store.redo();
         }
     };
 
@@ -70,7 +76,7 @@ const Workspace = () => {
     const fieldContextMenuItems = [
         { label: <div style={{width: "198px"}}><span>Cut</span><span style={{float: "right", color: "#999"}}>⌘ X</span></div>, icon: <Scissors size={16} style={{ marginRight: "8px" }} />, command: () => handleCutField(store.activeContextMenuInput) },
         { label: <div style={{width: "198px"}}><span>Copy</span><span style={{float: "right", color: "#999"}}>⌘ C</span></div>, icon: <Copy size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyField(store.activeContextMenuInput) },
-        { label: <div style={{width: "198px"}}><span>Copy</span><span style={{float: "right", color: "#999"}}>⌘ V</span></div>, icon: <ClipboardPaste size={16} style={{ marginRight: "8px" }} />, command: () => handlePasteField(store.activeContextMenuInput) },
+        { label: <div style={{width: "198px"}}><span>Paste</span><span style={{float: "right", color: "#999"}}>⌘ V</span></div>, icon: <ClipboardPaste size={16} style={{ marginRight: "8px" }} />, command: () => handlePasteField(store.activeContextMenuInput) },
         { label: 'Copy Path', icon: <Link2 size={16} style={{ marginRight: "8px" }} />, command: () => handleCopyFieldPath(store.activeContextMenuInput) },
         { separator: true },
         { label: 'Move Up', icon: <MoveUp size={16} style={{ marginRight: "8px" }} />, command: () => handleMoveField(store.activeContextMenuInput, "up") },
@@ -269,7 +275,9 @@ const Workspace = () => {
         if (store.clipboard) {
             const newConfig = [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
-            _.set(newConfig, realPath, store.clipboard);
+            const configToInsert = {...store.clipboard, id: createNewFieldID(path, store.clipboard.id, store)};
+            console.log({ realPath, configToInsert });
+            _.set(newConfig, realPath, configToInsert);
             store.updateCurrentConfig(newConfig);
         }
     };

@@ -259,8 +259,8 @@ export const FieldRenderer = ({
                             <Fragment key={thisPath}>
                                 {index > 0 && (
                                     <>
-                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
-                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
+                                        {parent !== "" && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />}
+                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction={parent !== "" ? "column" : "row"} />
                                     </>
                                 )}
                                 <GroupContainer
