@@ -100,7 +100,7 @@ const useStagesStore = create(persist((set, get) => ({
         if (index > -1) {
             newFieldsets[index].config = newFieldsetConfig;
         }
-        return { feildsets: newFieldsets };
+        return { fieldsets: newFieldsets };
     }),
     setSelectedElement: (selectedElement, isShiftKey) => set((state) => {
         if (isShiftKey && state.selectedElement) {
