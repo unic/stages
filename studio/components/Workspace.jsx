@@ -141,26 +141,47 @@ const Workspace = () => {
         console.log("--> handleClearConfig <--");
         store.updateCurrentConfig(config);
         store.setSelectedElement("");
+        contextMenuRef.current.hide();
     };
 
     const handleCopyFieldPath = (path) => {
         if (typeof navigator !== "undefined") navigator.clipboard.writeText(path);
+        contextMenuRef.current.hide();
     };
 
     const handleCutField = (path) => {
         console.log("--> handleCutField <--");
-        const newConfig = [...store.currentConfig];
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         store.setClipboard(_.get(newConfig, realPath));
         _.unset(newConfig, realPath);
-        store.updateCurrentConfig(removeEmptyElements(newConfig));
+        if (fieldset) {
+            store.updateFieldsetConfig(removeEmptyElements(newConfig), fieldsetId);
+        } else {
+            store.updateCurrentConfig(removeEmptyElements(newConfig));
+        }
         // If field is selected, unselect it
         store.removePathFromSelectedElements(path);
+        contextMenuRef.current.hide();
     };
 
     const handleGroupField = (path) => {
         console.log("--> handleGroupField <--");
-        const newConfig = [...store.currentConfig];
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const newFieldConfig = {
@@ -169,7 +190,12 @@ const Workspace = () => {
             fields: [oldFieldConfig]
         }
         _.set(newConfig, realPath, newFieldConfig);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
+        contextMenuRef.current.hide();
     };
 
     const handleCreateFieldset = (path) => {
@@ -184,11 +210,19 @@ const Workspace = () => {
         _.set(newConfig, realPath, newFieldConfig);
         store.addFieldset(oldFieldConfig.id, oldFieldConfig.label || oldFieldConfig.id, Array.isArray(oldFieldConfig) ? oldFieldConfig : [oldFieldConfig], path);
         store.updateCurrentConfig(newConfig);
+        contextMenuRef.current.hide();
     };
 
     const handleUngroupField = (path) => {
         console.log("--> handleUngroupField <--");
-        const newConfig = [...store.currentConfig];
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const lastArrayIndex = realPath.lastIndexOf("[");
@@ -207,14 +241,26 @@ const Workspace = () => {
                 index++;
             });
             _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-            store.updateCurrentConfig(removeEmptyElements(newConfig));
+            if (fieldset) {
+                store.updateFieldsetConfig(removeEmptyElements(newConfig), fieldsetId);
+            } else {
+                store.updateCurrentConfig(removeEmptyElements(newConfig));
+            }
             store.setSelectedElement('');
         }
+        contextMenuRef.current.hide();
     };
 
     const handleMoveField = (path, to) => {
         console.log("--> handleUngroupField <--");
-        const newConfig = [...store.currentConfig];
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -230,7 +276,12 @@ const Workspace = () => {
         if (to === "top") arrayMove(arrayToInsertInto, index, 0);
         if (to === "bottom") arrayMove(arrayToInsertInto, index, arrayToInsertInto.length - 1);
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(removeEmptyElements(newConfig));
+        if (fieldset) {
+            store.updateFieldsetConfig(removeEmptyElements(newConfig), fieldsetId);
+        } else {
+            store.updateCurrentConfig(removeEmptyElements(newConfig));
+        }
+        contextMenuRef.current.hide();
     };
 
     const handleDisconnectFieldset = (path) => {
@@ -248,11 +299,19 @@ const Workspace = () => {
             });
             store.updateCurrentConfig(newConfig);
         }
+        contextMenuRef.current.hide();
     };
 
     const handleCollectionField = (path) => {
         console.log("--> handleCollectionField <--");
-        const newConfig = [...store.currentConfig];
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const newTempId = createNewFieldID(path, "collection", store);
@@ -264,35 +323,60 @@ const Workspace = () => {
             fields: [oldFieldConfig]
         }
         _.set(newConfig, realPath, newFieldConfig);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
 
         // Update data (for collections, a new empty array has to be addeed):
         store.setData(initNewCollections(newConfig, store.data));
+        contextMenuRef.current.hide();
     };
 
     const handleCopyField = (path) => {
         console.log("--> handleCopyField <--");
         const realPath = getConfigPathFromDataPath(path, store.currentConfig);
         store.setClipboard(_.get(store.currentConfig, realPath));
+        contextMenuRef.current.hide();
     };
 
     const handlePasteField = (path) => {
         console.log("--> handlePasteField <--");
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         if (store.clipboard) {
-            const newConfig = [...store.currentConfig];
+            const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path, newConfig);
             const configToInsert = {...store.clipboard, id: createNewFieldID(path, store.clipboard.id, store)};
             console.log({ realPath, configToInsert });
             _.set(newConfig, realPath, configToInsert);
-            store.updateCurrentConfig(newConfig);
+            if (fieldset) {
+                store.updateFieldsetConfig(newConfig, fieldsetId);
+            } else {
+                store.updateCurrentConfig(newConfig);
+            }
         }
+        contextMenuRef.current.hide();
     };
 
     const handleInsertFieldBetweenFields = (path, fieldType) => {
         console.log("--> handleInsertFieldBetweenFields <--");
-        // Add new group between fields:
+        // Add new field between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -309,8 +393,13 @@ const Workspace = () => {
             label: "Field",
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertFieldsetBetweenFields = (path, fieldsetType, label) => {
@@ -336,13 +425,21 @@ const Workspace = () => {
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertGroupBetweenFields = (path) => {
         console.log("--> handleInsertGroupBetweenFields <--");
         // Add new group between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -374,14 +471,26 @@ const Workspace = () => {
             ]
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertCollectionBetweenFields = (path) => {
         console.log("--> handleInsertCollectionBetweenFields <--");
         // Add new group between fields:
-        const newConfig = [...store.currentConfig];
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -418,19 +527,31 @@ const Workspace = () => {
 
         // Update config:
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
 
         // Update data (for collections, a new empty array has to be addeed):
         store.setData(initNewCollections(newConfig, store.data));
 
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertWizardBetweenFields = (path) => {
         console.log("--> handleInsertGroupBetweenFields <--");
         // Add new group between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -503,15 +624,27 @@ const Workspace = () => {
             ]
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertStage = (path) => {
         console.log("--> handleInsertDividerBetweenFields <--");
         // Add new group between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -536,15 +669,27 @@ const Workspace = () => {
             ]
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertDividerBetweenFields = (path) => {
         console.log("--> handleInsertDividerBetweenFields <--");
         // Add new group between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -560,15 +705,27 @@ const Workspace = () => {
             type: "divider"
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertHeadingBetweenFields = (path) => {
         console.log("--> handleInsertDividerBetweenFields <--");
         // Add new group between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -585,15 +742,27 @@ const Workspace = () => {
             title: "Heading",
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleInsertMessageBetweenFields = (path) => {
         console.log("--> handleInsertDividerBetweenFields <--");
         // Add new group between fields:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -610,16 +779,28 @@ const Workspace = () => {
             text: "Your message ...",
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
-        store.updateCurrentConfig(newConfig);
+        if (fieldset) {
+            store.updateFieldsetConfig(newConfig, fieldsetId);
+        } else {
+            store.updateCurrentConfig(newConfig);
+        }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handlePasteBetweenFields = (path) => {
         console.log("--> handlePasteBetweenFields <--");
         // Add clipboard content after path:
+        let fieldsetId = '';
+        let fieldset;
+        if (path[0] === "{") {
+            fieldsetId = path.slice(path.indexOf("{") + 1, path.indexOf("}"));
+            fieldset = _.find(store.fieldsets, { id: fieldsetId });
+            path = path.slice(path.indexOf("}") + 2);
+        }
         if (store.clipboard) {
             const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-            let newConfig = [...store.currentConfig];
+            let newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
             const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
             const lastArrayIndex = realPath.lastIndexOf("[");
             const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -636,21 +817,28 @@ const Workspace = () => {
             } else {
                 newConfig = arrayToInsertInto;
             }
-            store.updateCurrentConfig(newConfig);
+            if (fieldset) {
+                store.updateFieldsetConfig(newConfig, fieldsetId);
+            } else {
+                store.updateCurrentConfig(newConfig);
+            }
         }
         store.setSelectedElement('');
+        contextMenuRef.current.hide();
     };
 
     const handleEditCollection = (path, isShiftKey) => {
         console.log("--> handleEditCollection <--");
         store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
+        contextMenuRef.current.hide();
     };
     
     const handleEditGroup = (path, isShiftKey) => {
         console.log("--> handleEditGroup <--");
         store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
+        contextMenuRef.current.hide();
     };
 
     const createFieldsets = () => {

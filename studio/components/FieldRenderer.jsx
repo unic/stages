@@ -78,7 +78,7 @@ export const FieldRenderer = ({
 
     return (
         <>
-            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
+            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={fieldsetId} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[0])} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {Object.keys(fields).map((key, index) => {
                 const field = fields[key];
                 const thisPath = createKey(parent, key);
@@ -93,8 +93,8 @@ export const FieldRenderer = ({
                             <Fragment key={thisPath}>
                                 {index > 0 && (
                                     <>
-                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
-                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
+                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
+                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />
                                     </>
                                 )}
                                 <EditableBlock fieldConfig={fieldConfig} width={width} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} contextMenuRef={contextMenuRef} inGroup field={field} path={thisPath} selectedElement={selectedElement} />
@@ -103,7 +103,7 @@ export const FieldRenderer = ({
                     }
                     return (
                         <Fragment key={thisPath}>
-                            {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
+                            {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={parent ? thisFieldsetId : undefined} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                             <EditableBlock width={width} fieldsetId={thisFieldsetId} isFieldConfigEditor={isFieldConfigEditor} key={thisPath} isFieldset={isFieldset} contextMenuRef={contextMenuRef} field={field} path={thisPath} selectedElement={selectedElement} />
                         </Fragment>
                     );
@@ -113,7 +113,7 @@ export const FieldRenderer = ({
                         const collectionConfig = fieldsetId ? getConfigFromFieldset(key, fieldsetId) : fieldProps.getConfig(key);
                         return (
                             <Fragment key={thisPath}>
-                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
+                                {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                 <CollectionContainer
                                     key={key}
                                     isFieldConfigEditor={isFieldConfigEditor}
@@ -187,7 +187,7 @@ export const FieldRenderer = ({
                         if (groupConfig && groupConfig.type === "wizard") {
                             return (
                                 <Fragment key={thisPath}>
-                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
+                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} path={thisPath} direction="row" />}
                                     <WizardContainer
                                         fieldsetId={thisFieldsetId}
                                         isFieldConfigEditor={isFieldConfigEditor}
@@ -224,7 +224,7 @@ export const FieldRenderer = ({
                         if (type === "wizard") {
                             return (
                                 <Fragment key={thisPath}>
-                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} isStage path={thisPath} direction="row" />}
+                                    {index > 0 && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} isStage path={thisPath} direction="row" />}
                                     <StageContainer
                                         fieldsetId={thisFieldsetId}
                                         isFieldConfigEditor={isFieldConfigEditor}
@@ -259,8 +259,8 @@ export const FieldRenderer = ({
                             <Fragment key={thisPath}>
                                 {index > 0 && (
                                     <>
-                                        {parent !== "" && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />}
-                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={thisPath} direction={parent !== "" ? "column" : "row"} />
+                                        {parent !== "" && <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} path={thisPath} direction="column" />}
+                                        <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={thisFieldsetId} contextMenuRef={contextMenuRef} path={thisPath} direction={parent !== "" ? "column" : "row"} />
                                     </>
                                 )}
                                 <GroupContainer
@@ -298,7 +298,7 @@ export const FieldRenderer = ({
                     }
                 }
             })}
-            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
+            <InsertBlock isFieldConfigEditor={isFieldConfigEditor} fieldsetId={fieldsetId} contextMenuRef={contextMenuRef} path={createKey(parent, Object.keys(fields)[Object.keys(fields).length - 1]) + "+"} isStage={type === "wizard"} direction={type === "group" || type === "stage" ? "column" : "row"} />
             {isFieldConfigEditor && !parent && type !== "fieldset" ? (
                 <div style={{ marginLeft: "8px", marginBottom: "32px" }}>
                     <br />

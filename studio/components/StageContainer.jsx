@@ -27,7 +27,7 @@ const StageContainer = ({ children, handleEditGroup, isEditMode, path, label, se
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
                     contextMenuRef.current.show(e);
-                    store.setActiveContextMenuInput(path);
+                    store.setActiveContextMenuInput(fieldsetId ? `{${fieldsetId}}.${path}` : path);
                 }
             }}
             onClick={(e) => {

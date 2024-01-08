@@ -32,7 +32,7 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
                     contextMenuRef.current.show(e);
-                    store.setActiveContextMenuInput(path);
+                    store.setActiveContextMenuInput(fieldsetId ? `{${fieldsetId}}.${path}` : path);
                 }
             }}
             onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}

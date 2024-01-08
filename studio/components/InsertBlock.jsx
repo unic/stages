@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useState } from 'react';
 import useStagesStore from './store';
 
-const InsertBlock = ({ path, direction, contextMenuRef, grow, isFieldConfigEditor, isStage }) => {
+const InsertBlock = ({ path, direction, contextMenuRef, grow, isFieldConfigEditor, isStage, fieldsetId }) => {
     const store = useStagesStore();
     const [isHover, setIsHover] = useState(false);
 
@@ -38,7 +38,7 @@ const InsertBlock = ({ path, direction, contextMenuRef, grow, isFieldConfigEdito
         }} onContextMenu={(e) => {
             if (contextMenuRef && contextMenuRef.current) {
                 contextMenuRef.current.show(e);
-                store.setActiveContextMenuInput(isStage ? `stage > ${path}` : `insert > ${path}`, true);
+                store.setActiveContextMenuInput(isStage ? `stage > ${fieldsetId ? `{${fieldsetId}}.${path}` : path}` : `insert > ${fieldsetId ? `{${fieldsetId}}.${path}` : path}`, true);
             }
         }}><div>+</div></div>
     )
