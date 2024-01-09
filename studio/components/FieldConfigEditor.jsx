@@ -7,6 +7,7 @@ import { FieldRenderer } from './FieldRenderer';
 import FormattedPath from './FormattedPath';
 import useStagesStore from './store';
 import InspectorSpacer from './InspectorSpacer';
+import { getConfigPathFromDataPath } from './helpers'; 
 import _, { indexOf } from "lodash";
 
 const parseConfig = config => {
@@ -55,14 +56,36 @@ const getSameData = configs => {
     return finalData;
 };
 
-const FieldConfigEditor = ({ path, config, handleEditFieldConfig, isFieldsetItem }) => {
+const getSelectedConfig = (config, selectedElement, store) => {
+    if (Array.isArray(selectedElement)) {
+        return selectedElement.map(item => _.get(config, getConfigPathFromDataPath(item, config))).filter(item => item);
+    } else {
+        // If selected element starts with curly braces, it's a fieldset: {passwords}.fieldid
+        if (typeof store.selectedElement === "string" && store.selectedElement.startsWith("{")) {
+            const pathSplit = store.selectedElement.substring(1).split("}");
+            const fieldSetConfig = _.find(store.fieldsets, { id: pathSplit[0] });
+            if (fieldSetConfig) {
+                const pathInFieldset = pathSplit[1].substring(1);
+                let tempConfig = _.get(fieldSetConfig.config, getConfigPathFromDataPath(pathInFieldset, fieldSetConfig.config));
+                if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
+                return tempConfig;
+            }
+        } else {
+            let tempConfig = _.get(config, getConfigPathFromDataPath(selectedElement, config));
+            if (Array.isArray(tempConfig)) tempConfig = tempConfig.filter(item => item);
+            return tempConfig;
+        }
+    }
+    return null;
+};
+
+const FieldConfigEditor = ({ handleEditFieldConfig }) => {
     const store = useStagesStore();
+    const path = store.selectedElement;
+    const isFieldsetItem = typeof store.selectedElement === "string" && store.selectedElement.startsWith("{");
+    const config= getSelectedConfig(store.currentConfig, store.selectedElement, store);
     const [data, setData] = useState(Array.isArray(config) ? getSameData(config) : config);
     const fieldsetConfig = _.find(store.fieldsets, { id: path.slice(path.indexOf("{") + 1, path.indexOf("}")) });
-
-    useEffect(() => {
-        setData(Array.isArray(config) ? getSameData(config) : config);
-    }, [config, path]);
 
     if (!config || (typeof config !== "object" && !Array.isArray(config)) || !path) {
         if (isFieldsetItem) return <Message severity="info" text="You've selected a field from a Fieldset. If you edit it, you edit all instances of the fieldset." />;
@@ -168,17 +191,15 @@ const FieldConfigEditor = ({ path, config, handleEditFieldConfig, isFieldsetItem
                         );
                     }}
                     onChange={payload => {
-                        if (JSON.stringify(payload) !== JSON.stringify(data)) {
-                            if (!Array.isArray(config)) {
-                                setData(payload);
-                                handleEditFieldConfig(path, payload, isFieldsetItem);
-                            } else {
-                                // Multiple fields are selected, so change all fields if there is an actualy data change
-                                // Find out what has changed and than apply that to all paths
-                                const diff = _.differenceWith(_.toPairs(payload), _.toPairs(data), _.isEqual);
-                                setData(payload);
-                                handleEditFieldConfig(path, diff, isFieldsetItem);
-                            }
+                        if (!Array.isArray(config)) {
+                            setData(payload);
+                            handleEditFieldConfig(path, payload, isFieldsetItem);
+                        } else {
+                            // Multiple fields are selected, so change all fields if there is an actualy data change
+                            // Find out what has changed and than apply that to all paths
+                            const diff = _.differenceWith(_.toPairs(payload), _.toPairs(data), _.isEqual);
+                            setData(payload);
+                            handleEditFieldConfig(path, diff, isFieldsetItem);
                         }
                     }}
                 />
