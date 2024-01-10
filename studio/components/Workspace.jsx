@@ -158,6 +158,7 @@ const Workspace = () => {
             fieldset = _.find(store.fieldsets, { id: fieldsetId });
             path = path.slice(path.indexOf("}") + 2);
         }
+        if (path === fieldsetId) fieldset = undefined;
         const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
         const realPath = getConfigPathFromDataPath(path, newConfig);
         store.setClipboard(_.get(newConfig, realPath));
