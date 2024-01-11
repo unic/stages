@@ -141,12 +141,12 @@ const Workspace = () => {
         console.log("--> handleClearConfig <--");
         store.updateCurrentConfig(config);
         store.setSelectedElement("");
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleCopyFieldPath = (path) => {
         if (typeof navigator !== "undefined") navigator.clipboard.writeText(path);
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleCutField = (path) => {
@@ -170,7 +170,7 @@ const Workspace = () => {
         }
         // If field is selected, unselect it
         store.removePathFromSelectedElements(path);
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleGroupField = (path) => {
@@ -196,7 +196,7 @@ const Workspace = () => {
         } else {
             store.updateCurrentConfig(newConfig);
         }
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleCreateFieldset = (path) => {
@@ -212,7 +212,7 @@ const Workspace = () => {
         store.addFieldset(oldFieldConfig.id, oldFieldConfig.label || oldFieldConfig.id, Array.isArray(oldFieldConfig) ? oldFieldConfig : [oldFieldConfig], path);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement("");
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleUngroupField = (path) => {
@@ -250,7 +250,7 @@ const Workspace = () => {
             }
             store.setSelectedElement('');
         }
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleMoveField = (path, to) => {
@@ -283,7 +283,7 @@ const Workspace = () => {
         } else {
             store.updateCurrentConfig(removeEmptyElements(newConfig));
         }
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleDisconnectFieldset = (path) => {
@@ -301,7 +301,7 @@ const Workspace = () => {
             });
             store.updateCurrentConfig(newConfig);
         }
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleCollectionField = (path) => {
@@ -333,14 +333,14 @@ const Workspace = () => {
 
         // Update data (for collections, a new empty array has to be addeed):
         store.setData(initNewCollections(newConfig, store.data));
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleCopyField = (path) => {
         console.log("--> handleCopyField <--");
         const realPath = getConfigPathFromDataPath(path, store.currentConfig);
         store.setClipboard(_.get(store.currentConfig, realPath));
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handlePasteField = (path) => {
@@ -364,7 +364,7 @@ const Workspace = () => {
                 store.updateCurrentConfig(newConfig);
             }
         }
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertFieldBetweenFields = (path, fieldType) => {
@@ -401,7 +401,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertFieldsetBetweenFields = (path, fieldsetType, label) => {
@@ -427,7 +427,7 @@ const Workspace = () => {
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         store.updateCurrentConfig(newConfig);
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertGroupBetweenFields = (path) => {
@@ -479,7 +479,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertCollectionBetweenFields = (path) => {
@@ -539,7 +539,7 @@ const Workspace = () => {
         store.setData(initNewCollections(newConfig, store.data));
 
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertWizardBetweenFields = (path) => {
@@ -632,7 +632,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertStage = (path) => {
@@ -677,7 +677,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertDividerBetweenFields = (path) => {
@@ -713,7 +713,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertHeadingBetweenFields = (path) => {
@@ -750,7 +750,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleInsertMessageBetweenFields = (path) => {
@@ -787,7 +787,7 @@ const Workspace = () => {
             store.updateCurrentConfig(newConfig);
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handlePasteBetweenFields = (path) => {
@@ -826,21 +826,21 @@ const Workspace = () => {
             }
         }
         store.setSelectedElement('');
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const handleEditCollection = (path, isShiftKey) => {
         console.log("--> handleEditCollection <--");
         store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
     
     const handleEditGroup = (path, isShiftKey) => {
         console.log("--> handleEditGroup <--");
         store.setSelectedElement(path, isShiftKey);
         store.setEditorTabIndex(1);
-        contextMenuRef.current.hide();
+        contextMenuRef?.current?.hide();
     };
 
     const createFieldsets = () => {

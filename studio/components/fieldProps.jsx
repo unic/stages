@@ -36,13 +36,13 @@ const globalFieldProps = {
         type: "text",
         label: "Label",
         isRequired: true,
-        tooltip: "Create dynamic labels with template literals, like: My ${ field1 } is ${ field2 }",
+        tooltip: "Create dynamic labels with Mustache template literals, like: My {{ myField }} is {{ myGroup.myField }}",
     },
     secondaryText: {
         id: "secondaryText",
         type: "text",
         label: "Secondary Text",
-        tooltip: "Create dynamic text with template literals, like: My ${ field1 } is ${ field2 }",
+        tooltip: "Create dynamic text with Mustache template literals, like: My My {{ myField }} is {{ myGroup.myField }}",
     },
     prefix: {
         id: "prefix",

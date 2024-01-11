@@ -1,5 +1,6 @@
 // @ts-nocheck
 import _ from "lodash";
+import Mustache from 'Mustache';
 
 export const parseJSONConfig = (config, data) => {
     if (!config) return [];
@@ -111,11 +112,11 @@ export const pathIsSelected = (path, selectedElement, fieldsetId) => {
 export const parseTemplateLiterals = (text, data) => {
     let parsedText = text;
     try {
-        parsedText = _.template(text)(data);
+        parsedText = Mustache.render(text, data);
     } catch (error) {
-        console.warn("template literal error", error);
+        console.error("Template literal parsing error:", error);
     }
-    return parsedText.replace(/\[object HTMLInputElement\]/g, "");
+    return parsedText.replace(/\[object HTMLInputElement\]/g, "").replace(/\[object Object\]/g, "");
 };
 
 export const truncateString = (str, num) => {
