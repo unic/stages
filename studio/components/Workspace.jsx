@@ -149,7 +149,7 @@ const Workspace = () => {
                     tablet: "large",
                   },
                   level: 3,
-                  text: `Click submit to register team members {{#members}}{{name}}, {{/members}} to your {{eventName}} event.`,
+                  text: `Click submit to register team members {{#members}}{{name}}, {{/members}}{{^members}}(fill in above){{/members}} to your {{eventName}}{{^eventName}}No Name{{/eventName}} event.`,
                 },
                 {
                   id: "comments",

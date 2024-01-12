@@ -107,12 +107,24 @@ export const getAllPaths = (config, path = "") => {
 export const pathIsSelected = (path, selectedElement, fieldsetId) => {
     const actualPath = fieldsetId ? `{${fieldsetId}}.${path}` : path;
     return selectedElement === actualPath || (Array.isArray(selectedElement) && selectedElement.includes(actualPath));
+};
+
+function removeEmptyArraysFromObject(obj) {
+    const newObj = _.cloneDeep(obj);
+    for (let key in newObj) {
+        if (Array.isArray(newObj[key]) && (newObj[key].length === 0 || _.isEmpty(newObj[key][0]))) {
+            delete newObj[key];
+        } else if (typeof newObj[key] === 'object' && newObj[key] !== null) {
+            removeEmptyArraysFromObject(newObj[key]);
+        }
+    }
+    return newObj;
 }
 
 export const parseTemplateLiterals = (text, data) => {
     let parsedText = text;
     try {
-        parsedText = Mustache.render(text, data);
+        parsedText = Mustache.render(text, removeEmptyArraysFromObject(data));
     } catch (error) {
         console.error("Template literal parsing error:", error);
     }
