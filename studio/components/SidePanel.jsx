@@ -59,7 +59,7 @@ const SidePanel = () => {
     const handleExportToJson = e => {
         e.preventDefault();
         downloadFile({
-            data: JSON.stringify(store.currentConfig),
+            data: JSON.stringify(store.currentConfig, null, 2),
             fileName: 'stages-config.json',
             fileType: 'text/json',
         });
