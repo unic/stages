@@ -288,12 +288,13 @@ const MappedDivider = (props) => {
 };
 
 const MappedHeading = (props) => {
+    const store = useStagesStore();
     return (
         <div>
-            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}>{props.title}</h2>}
-            {props.level === 3 && <h3 style={{ marginTop: 0 }}>{props.title}</h3>}
-            {props.level === 4 && <h4 style={{ marginTop: 0 }}>{props.title}</h4>}
-            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}>{props.text}</p>}
+            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}>{parseTemplateLiterals(props.title, store.data)}</h2>}
+            {props.level === 3 && <h3 style={{ marginTop: 0 }}>{parseTemplateLiterals(props.title, store.data)}</h3>}
+            {props.level === 4 && <h4 style={{ marginTop: 0 }}>{parseTemplateLiterals(props.title, store.data)}</h4>}
+            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}>{parseTemplateLiterals(props.text, store.data)}</p>}
         </div>
     );
 };
