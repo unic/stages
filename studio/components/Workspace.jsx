@@ -1,4 +1,4 @@
-import { useRef, useEffect, KeyboardEvent } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { motion } from "framer-motion";
 import _ from "lodash";
 import Sugar from "sugar";
@@ -42,6 +42,7 @@ const Workspace = () => {
     const toast = useRef(null);
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
+    const [formCounter, setFormCounter] = useState(1);
 
     console.log({store});
 
@@ -298,6 +299,8 @@ const Workspace = () => {
 
     const handleInitConfig = (config) => {
         console.log("--> handleClearConfig <--");
+        store.setData({});
+        setFormCounter(formCounter => formCounter + 1);
         store.updateCurrentConfig(config);
         store.setSelectedElement("");
         contextMenuRef?.current?.hide();
@@ -1121,6 +1124,7 @@ const Workspace = () => {
                 ) : null}
                 {!store.isEditMode ? <div><br /></div> : null}
                 <Form
+                    key={`form${formCounter}`}
                     id="myForm"
                     data={store.data}
                     fields={primeFields}
