@@ -1,6 +1,6 @@
 // @ts-nocheck
 import _ from "lodash";
-import Mustache from 'Mustache';
+import Mustache from 'mustache';
 
 export const parseJSONConfig = (config, data) => {
     if (!config) return [];
