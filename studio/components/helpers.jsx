@@ -12,7 +12,7 @@ export const parseJSONConfig = (config, data) => {
         if (newItem.computedValue && typeof newItem.computedValue === "string") {
             let computedValueFunction;
             try {
-                computedValueFunction = new Function("data", `"use strict"; try { return ${newItem.computedValue}; } catch (e) { console.warn("error in computed function"); }`);
+                computedValueFunction = new Function("data", `"use strict"; let result; try { result = ${newItem.computedValue}; } catch (e) { console.warn("error in computed function"); } return result;`);
                 const testResult = computedValueFunction(data);
             } catch (error) {
                 console.error("computed value error", error);
@@ -23,13 +23,13 @@ export const parseJSONConfig = (config, data) => {
         if (newItem.isRendered && typeof newItem.isRendered === "string") {
             let isRenderedFunction;
             try {
-                isRenderedFunction = new Function("data", `"use strict"; try { return ${newItem.isRendered}; } catch (e) { console.warn("error in isRendered function"); }`);
+                isRenderedFunction = new Function("data", `"use strict"; let result = true; try { result = ${newItem.isRendered}; } catch (e) { console.warn("error in isRendered function"); } return result;`);
                 const testResult = isRenderedFunction(data);
             } catch (error) {
                 console.error("is rendered error", error);
             }
-           // eslint-disable-next-line no-new-func
-           if (typeof isRenderedFunction === "function") newItem.isRendered = isRenderedFunction;
+            // eslint-disable-next-line no-new-func
+            if (typeof isRenderedFunction === "function") newItem.isRendered = isRenderedFunction;
         }
         return newItem;
     });

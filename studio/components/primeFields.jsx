@@ -45,6 +45,7 @@ const removeStagesProps = (props) => {
     delete cleanedProps.hasFocus;
     delete cleanedProps.regexValidation;
     delete cleanedProps.isInInspector;
+    delete cleanedProps.blockWidth;
     return cleanedProps;
 };
 
@@ -195,7 +196,6 @@ const MappedCalendar = (props) => {
 
 const MappedCheckbox = (props) => {
     const mappedProps = removeStagesProps(props);
-    if (typeof mappedProps.value === 'undefined') mappedProps.value = false;
     mappedProps.checked = !!mappedProps.value;
     mappedProps.onChange = (e) => {
         props.onChange(!!e.checked);

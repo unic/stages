@@ -484,6 +484,9 @@ const fieldProps = {
         globalFieldProps.stylesDivider,
         globalFieldProps.blockWidth,
         globalFieldProps.blockBorder,
+        globalFieldProps.advancedDivider,
+        globalFieldProps.isInterfaceState,
+        globalFieldProps.isRendered,
     ],
     wizard: [
         globalFieldProps.basicsDivider,

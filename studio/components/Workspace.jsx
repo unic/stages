@@ -1161,7 +1161,9 @@ const Workspace = () => {
                             </>
                         );
                     }}
-                    onChange={payload => store.setData(payload)}
+                    onChange={payload => {
+                        store.setData(payload);
+                    }}
                     fieldsets={createFieldsets()}
                 />
             </div>
