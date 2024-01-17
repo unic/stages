@@ -40,6 +40,7 @@ const Input = ({
     errorRenderer,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
+    console.log({ id, value });
     return (
         <div>
             {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
@@ -48,7 +49,7 @@ const Input = ({
                 <input
                     id={id}
                     name={id}
-                    value={value || ""}
+                    value={typeof value !== "undefined" ? value : type === "number" ? 0 : ""}
                     placeholder={placeholder}
                     type={type || "text"}
                     disabled={!!isDisabled}

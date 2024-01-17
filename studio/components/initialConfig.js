@@ -85,6 +85,7 @@ const initialConfig = [
                 id: "num1",
                 label: "Number 1",
                 type: "number",
+                defaultValue: 0,
                 isRequired: true,
                 blockWidth: { desktop: "small", tablet: "small", mobile: "large" }
             },
@@ -92,6 +93,7 @@ const initialConfig = [
                 id: "num2",
                 label: "Number 2",
                 type: "number",
+                defaultValue: 0,
                 isRequired: true,
                 blockWidth: { desktop: "small", tablet: "small", mobile: "large" }
             },
@@ -99,6 +101,7 @@ const initialConfig = [
                 id: "sum",
                 label: "Sum",
                 type: "number",
+                defaultValue: 0,
                 isDisabled: true,
                 computedValue: "data.summed ? data.summed.num1 + data.summed.num2 : 0",
                 blockWidth: { desktop: "medium", tablet: "medium", mobile: "large" }

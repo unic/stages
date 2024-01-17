@@ -140,7 +140,14 @@ function App() {
                             id: "field1",
                             type: "text",
                             label: "Field 1",
-                            isRequired: true
+                            isRequired: true,
+                            defaultValue: "Default Value"
+                        },
+                        {
+                            id: "num1",
+                            type: "number",
+                            label: "Number Field 1",
+                            defaultValue: 0
                         },
                         {
                             id: "showAdvanced",
@@ -310,6 +317,8 @@ function App() {
                     return (
                         <div>
                             {fieldProps.fields.field1}
+                            <br />
+                            {fieldProps.fields.num1}
                             <br />
                             {fieldProps.fields.showAdvanced}
                             <br />
