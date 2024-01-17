@@ -1545,12 +1545,20 @@ const Form = ({
      */
     const createRenderedFields = (startPath) => {
         const renderedFields = {};
+        const notRenderedPaths = [];
 
         const createField = (fieldConfig, fieldData, path) => {
-            if (
-                (!fields[fieldConfig.type] && fieldConfig.type !== "subform") || 
-                (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, alldata))
-            ) return null;
+            let isInsideHiddenPath = false;
+            notRenderedPaths.forEach(nrp => {
+                if (path.startsWith(nrp)) isInsideHiddenPath = true;
+            });
+            if (isInsideHiddenPath) return null;
+            if (!fields[fieldConfig.type] && fieldConfig.type !== "subform" && fieldConfig.type !== "group") return null;
+            if (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, alldata, interfaceState)) {
+                if (fieldConfig.type === "group") notRenderedPaths.push(path);
+                return null;
+            }
+            if (fieldConfig.type === "group") return null;
 
             const cleanedField = Object.assign({}, fieldConfig);
             cleanedField.id = path;

@@ -143,6 +143,27 @@ function App() {
                             isRequired: true
                         },
                         {
+                            id: "showAdvanced",
+                            type: "checkbox",
+                            label: "Show Advanced",
+                            isInterfaceState: true
+                        },
+                        {
+                            id: "advanced",
+                            type: "group",
+                            label: "Advanced Options",
+                            isRendered: (path, fieldData, allData, interfaceState) => {
+                                return !!interfaceState.showAdvanced;
+                            },
+                            fields: [
+                                {
+                                    id: "field1",
+                                    type: "text",
+                                    label: "Field 1"
+                                }
+                            ]
+                        },
+                        {
                             id: "myGroup",
                             type: "group",
                             label: "Group",
@@ -290,40 +311,46 @@ function App() {
                         <div>
                             {fieldProps.fields.field1}
                             <br />
-                            <div style={{ border: "1px #999 solid", padding: "8px" }}>
-                                {fieldProps.fields.myGroup.field1}
-                                {fieldProps.fields.myGroup.field2}
-                                {fieldProps.fields.myGroup.wizardInsideGroup ? (
-                                    <div>
-                                        <WizardNavigation
-                                            fieldKey="myGroup.wizardInsideGroup"
-                                            config={fieldProps.getConfig("myGroup.wizardInsideGroup")}
-                                            onNav={fieldProps.onWizardNav}
-                                            getHash={fieldProps.getWizardNavHash}
-                                            isStepActive={fieldProps.isWizardStepActive}
-                                            isStepDisabled={fieldProps.isWizardStepDisabled}
-                                        />
-                                        {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
-                                            <div>
-                                                {fieldProps.fields.myGroup.wizardInsideGroup.step1.field1}
-                                                {fieldProps.fields.myGroup.wizardInsideGroup.step1.field2}
-                                            </div>
-                                        )}
-                                        {fieldProps.fields.myGroup.wizardInsideGroup.step2 && (
-                                            <div>
-                                                {fieldProps.fields.myGroup.wizardInsideGroup.step2.field1}
-                                                {fieldProps.fields.myGroup.wizardInsideGroup.step2.field2}
-                                            </div>
-                                        )}
-                                        {fieldProps.fields.myGroup.wizardInsideGroup.step3 && (
-                                            <div>
-                                                {fieldProps.fields.myGroup.wizardInsideGroup.step3.field1}
-                                                {fieldProps.fields.myGroup.wizardInsideGroup.step3.field2}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-                            </div>
+                            {fieldProps.fields.showAdvanced}
+                            <br />
+                            {fieldProps.fields.advanced ? fieldProps.fields.advanced.field1 : null}
+                            <br />
+                            {fieldProps.fields.myGroup && (
+                                <div style={{ border: "1px #999 solid", padding: "8px" }}>
+                                    {fieldProps.fields.myGroup.field1}
+                                    {fieldProps.fields.myGroup.field2}
+                                    {fieldProps.fields.myGroup.wizardInsideGroup ? (
+                                        <div>
+                                            <WizardNavigation
+                                                fieldKey="myGroup.wizardInsideGroup"
+                                                config={fieldProps.getConfig("myGroup.wizardInsideGroup")}
+                                                onNav={fieldProps.onWizardNav}
+                                                getHash={fieldProps.getWizardNavHash}
+                                                isStepActive={fieldProps.isWizardStepActive}
+                                                isStepDisabled={fieldProps.isWizardStepDisabled}
+                                            />
+                                            {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
+                                                <div>
+                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step1.field1}
+                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step1.field2}
+                                                </div>
+                                            )}
+                                            {fieldProps.fields.myGroup.wizardInsideGroup.step2 && (
+                                                <div>
+                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step2.field1}
+                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step2.field2}
+                                                </div>
+                                            )}
+                                            {fieldProps.fields.myGroup.wizardInsideGroup.step3 && (
+                                                <div>
+                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step3.field1}
+                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step3.field2}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            )}
                             <br />
                             {fieldProps.fields.wizard1 ? (
                                 <div>
