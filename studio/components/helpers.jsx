@@ -23,7 +23,7 @@ export const parseJSONConfig = (config, data) => {
         if (newItem.isRendered && typeof newItem.isRendered === "string") {
             let isRenderedFunction;
             try {
-                isRenderedFunction = new Function("data", `"use strict"; let result = true; try { result = ${newItem.isRendered}; } catch (e) { console.warn("error in isRendered function"); } return result;`);
+                isRenderedFunction = new Function("path, fieldData, data, interfaceState", `"use strict"; let result = true; try { result = ${newItem.isRendered}; } catch (e) { console.warn("error in isRendered function"); } return result;`);
                 const testResult = isRenderedFunction(data);
             } catch (error) {
                 console.error("is rendered error", error);
