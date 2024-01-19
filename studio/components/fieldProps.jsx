@@ -1190,8 +1190,10 @@ const fieldProps = {
             id: "mask",
             type: "text",
             label: "Mask Pattern",
-            tooltip: "For example: 99-999999"
+            tooltip: "For example: 99-999999 (use 9, a, or * for defining the mask, any other chars are for fixed values)"
         },
+        globalFieldProps.prefix,
+        globalFieldProps.suffix,
         globalFieldProps.tooltip,
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
