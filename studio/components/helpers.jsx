@@ -1,6 +1,7 @@
 // @ts-nocheck
 import _ from "lodash";
 import Mustache from 'mustache';
+import fieldProps from "./fieldProps";
 
 export const parseJSONConfig = (config, data) => {
     if (!config) return [];
@@ -187,4 +188,13 @@ export const getWidth = (inGroup, isFieldConfigEditor, isEditMode, width) => {
         if (width === "large") return "100%";
     }
     return "auto";
+};
+
+export const removeNonMatchingProperties = (config, type) => {
+    if (typeof config === "object" && fieldProps[type]) {
+        Object.keys(config).forEach(key => {
+            if (_.findIndex(fieldProps[type], {id: key}) === -1) delete config[key];
+        });
+    }
+    return config;
 };

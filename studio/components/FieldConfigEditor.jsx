@@ -7,7 +7,7 @@ import { FieldRenderer } from './FieldRenderer';
 import FormattedPath from './FormattedPath';
 import useStagesStore from './store';
 import InspectorSpacer from './InspectorSpacer';
-import { getConfigPathFromDataPath } from './helpers'; 
+import { getConfigPathFromDataPath, removeNonMatchingProperties } from './helpers'; 
 import _, { indexOf } from "lodash";
 
 const parseConfig = config => {
@@ -192,6 +192,7 @@ const FieldConfigEditor = ({ handleEditFieldConfig }) => {
                     }}
                     onChange={payload => {
                         if (!Array.isArray(config)) {
+                            if (payload.type !== data.type) payload = removeNonMatchingProperties(payload, payload.type);
                             setData(payload);
                             handleEditFieldConfig(path, payload, isFieldsetItem);
                         } else {
