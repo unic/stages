@@ -538,6 +538,53 @@ const fieldProps = {
         globalFieldProps.specificsDivider,
         globalFieldProps.prefix,
         globalFieldProps.suffix,
+        {
+            id: "keyfilter",
+            type: "select",
+            label: "Key Filter",
+            options: [
+                {
+                    value: "",
+                    text: "No Filter"
+                },
+                {
+                    value: "pint",
+                    text: "Positive Integer"
+                },
+                {
+                    value: "int",
+                    text: "Integer"
+                },
+                {
+                    value: "pnum",
+                    text: "Positive Number"
+                },
+                {
+                    value: "money",
+                    text: "Money"
+                },
+                {
+                    value: "num",
+                    text: "Number"
+                },
+                {
+                    value: "hex",
+                    text: "Hex"
+                },
+                {
+                    value: "email",
+                    text: "Email"
+                },
+                {
+                    value: "alpha",
+                    text: "Alpha"
+                },
+                {
+                    value: "alphanum",
+                    text: "Alphanumeric"
+                }
+            ]
+        },
         globalFieldProps.advancedDivider,
         globalFieldProps.isDisabled,
         globalFieldProps.isInterfaceState,
