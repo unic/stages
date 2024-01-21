@@ -6041,3 +6041,7 @@
 .p-selectbutton.p-invalid>.p-button {
     border-color: #dc3545;
 }
+
+[contenteditable]:focus {
+  outline: 0px solid transparent;
+}

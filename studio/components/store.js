@@ -143,6 +143,11 @@ const useStagesStore = create(persist((set, get) => ({
         const previewSize = get().previewSize;
         _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.blockWidth.${previewSize}`, width === "S" ? "small" : width === "M" ? "medium" : "large");
         return { currentConfig: newConfig };
+    }),
+    onUpdateLabel: (path, label) => set((state) => {
+        const newConfig = [...state.currentConfig];
+        _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.label`, label);
+        return { currentConfig: newConfig };
     })
 }),
     {

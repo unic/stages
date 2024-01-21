@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import sanitizeHtml from "sanitize-html";
+import _ from "lodash";
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Dropdown } from 'primereact/dropdown';
@@ -51,9 +53,24 @@ const removeStagesProps = (props) => {
 
 const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, prefix, suffix, isInInspector, error, isValidating, errorRenderer }) => {
     const store = useStagesStore();
+    const [labelText, setLabelText] = React.useState(parseTemplateLiterals(label, store.data));
 
     useEffect(() => {
         useStagesStore.persist.rehydrate();
+    }, []);
+
+    useEffect(() => {
+        setLabelText(parseTemplateLiterals(label, store.data));
+    }, [label]);
+
+    const handleEditLabel = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newLabel = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setLabelText(newLabel);
+        store.onUpdateLabel(id, newLabel);
     }, []);
 
     if (isInInspector) {
@@ -65,9 +82,12 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
             </div>
         );
     }
+
     return (
-        <div className="field" style={isDisabled ? { opacity: 0.5, pointerEvents: "none", minWidth: "auto", marginBottom: 0} : { minWidth: "auto", marginBottom: 0 }}>
-            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>{parseTemplateLiterals(label, store.data)}{isRequired ? " *" : ""}</label>
+        <div className="field" style={isDisabled ? { opacity: 0.5, minWidth: "auto", marginBottom: 0} : { minWidth: "auto", marginBottom: 0 }}>
+            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>
+                <span contentEditable dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} />{isRequired ? " *" : ""}
+            </label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{parseTemplateLiterals(secondaryText, store.data)}</div> : null}
             <div className="p-inputgroup w-full">
                 {prefix && <span className="p-inputgroup-addon">{prefix}</span>}
