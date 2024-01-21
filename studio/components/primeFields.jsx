@@ -85,7 +85,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
 
     return (
         <div className="field" style={isDisabled ? { opacity: 0.5, minWidth: "auto", marginBottom: 0} : { minWidth: "auto", marginBottom: 0 }}>
-            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto" }}>
+            <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto", cursor: "text" }}>
                 <span contentEditable dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} />{isRequired ? " *" : ""}
             </label>
             {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{parseTemplateLiterals(secondaryText, store.data)}</div> : null}
