@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from "framer-motion";
+import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
 import Sugar from "sugar";
 import { ContextMenu } from 'primereact/contextmenu';
@@ -43,8 +44,19 @@ const Workspace = () => {
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
     const [formCounter, setFormCounter] = useState(1);
+    const [formTitle, setFormTitle] = useState(store.generalConfig.title || "Form");
 
     console.log({store});
+
+    const handleEditFormTitle = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newTitle = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setFormTitle(newTitle);
+        store.onUpdateFormTitle(newTitle);
+    }, []);
 
     const onKeyPress = (e) => {
         if (e.key === "c" && (e.ctrlKey || e.metaKey)) {
@@ -1171,7 +1183,7 @@ const Workspace = () => {
                 ) : null}
                 <div style={{ marginLeft: "8px", marginTop: "-11px" }}>
                     <h2>
-                        {store.generalConfig.title}
+                        <span contentEditable dangerouslySetInnerHTML={{__html: formTitle}} onClick={(e) => e.preventDefault()} onBlur={handleEditFormTitle} />
                         <span style={{ color: "#999", fontSize: "12px", fontWeight: "300", marginLeft: "16px", display: "inline-block" }}>
                             {fromDate ? `From ${fromDate.long()}, in ${fromDate.relativeTo(now)}` : ""}
                             {fromDate && toDate ? " - " : ""}
