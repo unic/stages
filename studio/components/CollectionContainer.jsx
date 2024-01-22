@@ -1,15 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import sanitizeHtml from "sanitize-html";
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
-import { pathIsSelected, getWidth } from './helpers';
+import { pathIsSelected, getWidth, parseTemplateLiterals } from './helpers';
 
 const CollectionContainer = ({ children, handleEditCollection, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, inGroup }) => {
     const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
+    const [labelText, setLabelText] = useState(label ? parseTemplateLiterals(label, store.data) : "");
+    const [secText, setSecText] = useState(secondaryText ? parseTemplateLiterals(secondaryText, store.data) : "");
 
     useEffect(() => {
         if (!pathIsSelected(path, selectedElement, fieldsetId)) setIsInEditMode(false);
     }, [path, selectedElement]);
+
+    useEffect(() => {
+        setLabelText(label ? parseTemplateLiterals(label, store.data) : "");
+    }, [label]);
+
+    useEffect(() => {
+        setSecText(secondaryText ? parseTemplateLiterals(secondaryText, store.data) : "");
+    }, [secondaryText]);
+
+    const handleEditLabel = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newLabel = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setLabelText(newLabel);
+        store.onUpdateLabel(path, newLabel);
+    }, []);
+
+    const handleEditSecondaryText = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newSecondaryText = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setSecText(newSecondaryText);
+        store.onUpdateSecondaryText(path, newSecondaryText);
+    }, []);
 
     return (
         <div
@@ -39,8 +70,8 @@ const CollectionContainer = ({ children, handleEditCollection, isEditMode, path,
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
         >
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} path={path} blockWidth={width} isHovered={isInEditMode} type="collection" /> : null}
-            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "6px 0 8px 8px" }}>{label}</label> : null}
-            {secondaryText ? <div style={{ margin: "-4px 0 0 8px", color: "#999", flex: "0 0 100%" }}>{secondaryText}</div> : null}
+            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "6px 0 8px 8px" }}><span contentEditable dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></label> : null}
+            {secondaryText ? <div style={{ margin: "-22px 0 0 8px", color: "#999", flex: "0 0 100%" }}><span contentEditable dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
             {children}
         </div>
     );
