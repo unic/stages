@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import sanitizeHtml from "sanitize-html";
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
-import { pathIsSelected, getWidth, parseTemplateLiterals } from './helpers';
+import { pathIsSelected, getWidth, parseTemplateLiterals, textHasTemplateLiterals } from './helpers';
 
 const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, border, inGroup }) => {
     const store = useStagesStore();
@@ -16,11 +16,11 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
 
     useEffect(() => {
         setLabelText(label ? parseTemplateLiterals(label, store.data) : "");
-    }, [label]);
+    }, [label, store.data]);
 
     useEffect(() => {
         setSecText(secondaryText ? parseTemplateLiterals(secondaryText, store.data) : "");
-    }, [secondaryText]);
+    }, [secondaryText, store.data]);
 
     const handleEditLabel = useCallback(evt => {
         const sanitizeConf = {
@@ -71,8 +71,8 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
         >
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={width} path={path} isHovered={isInEditMode} type="group" /> : null}
-            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "-6px 0 8px 8px" }}><span contentEditable dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></label> : null}
-            {secondaryText ? <div style={{ margin: "-22px 0 2px 8px", color: "#999", flex: "0 0 100%" }}><span contentEditable dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
+            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "-6px 0 8px 8px" }}><span contentEditable={!textHasTemplateLiterals(label)} dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></label> : null}
+            {secondaryText ? <div style={{ margin: "-22px 0 2px 8px", color: "#999", flex: "0 0 100%" }}><span contentEditable={!textHasTemplateLiterals(secondaryText)} dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
             {children}
         </div>
     );

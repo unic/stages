@@ -198,3 +198,7 @@ export const removeNonMatchingProperties = (config, type) => {
     }
     return config;
 };
+
+export const textHasTemplateLiterals = (text) => {
+    return text.indexOf("{{") !== -1 && text.indexOf("}}") !== -1;
+}

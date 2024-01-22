@@ -21,7 +21,7 @@ import { Divider } from 'primereact/divider';
 import { MultiSelect } from 'primereact/multiselect';
 import { Message } from 'primereact/message';
 import useStagesStore from './store';
-import { parseTemplateLiterals } from './helpers';
+import { parseTemplateLiterals, textHasTemplateLiterals } from './helpers';
 
 const isValid = (value, config) => {
     if (config.isRequired && (value === "" || typeof value === "undefined")) return false;
@@ -62,11 +62,11 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
 
     useEffect(() => {
         setLabelText(label ? parseTemplateLiterals(label, store.data) : "");
-    }, [label]);
+    }, [label, store.data]);
 
     useEffect(() => {
         setSecText(secondaryText ? parseTemplateLiterals(secondaryText, store.data) : "");
-    }, [secondaryText]);
+    }, [secondaryText, store.data]);
 
     const handleEditLabel = useCallback(evt => {
         const sanitizeConf = {
@@ -101,9 +101,9 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     return (
         <div className="field" style={isDisabled ? { opacity: 0.5, minWidth: "auto", marginBottom: 0} : { minWidth: "auto", marginBottom: 0 }}>
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto", cursor: "text" }}>
-                <span contentEditable dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} />{isRequired ? " *" : ""}
+                <span contentEditable={!textHasTemplateLiterals(label)} dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} />{isRequired ? " *" : ""}
             </label>
-            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}><span contentEditable dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
+            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}><span contentEditable={!textHasTemplateLiterals(secondaryText)} dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
             <div className="p-inputgroup w-full">
                 {prefix && <span className="p-inputgroup-addon">{prefix}</span>}
                 {children}
@@ -120,6 +120,14 @@ const MappedHeading = (props) => {
     const store = useStagesStore();
     const [title, setTitle] = React.useState(props.title ? parseTemplateLiterals(props.title, store.data) : "");
     const [text, setText] = React.useState(props.text ? parseTemplateLiterals(props.text, store.data) : "");
+
+    useEffect(() => {
+        setTitle(props.title ? parseTemplateLiterals(props.title, store.data) : "");
+    }, [props.title, store.data]);
+
+    useEffect(() => {
+        setText(props.text ? parseTemplateLiterals(props.text, store.data) : "");
+    }, [props.text, store.data]);
 
     const handleEditTitle = useCallback(evt => {
         const sanitizeConf = {
@@ -143,10 +151,10 @@ const MappedHeading = (props) => {
 
     return (
         <div>
-            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}><span contentEditable dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h2>}
-            {props.level === 3 && <h3 style={{ marginTop: 0 }}><span contentEditable dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h3>}
-            {props.level === 4 && <h4 style={{ marginTop: 0 }}><span contentEditable dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h4>}
-            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}><span contentEditable dangerouslySetInnerHTML={{__html: text}} onClick={(e) => e.preventDefault()} onBlur={handleEditText} /></p>}
+            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}><span contentEditable={!textHasTemplateLiterals(props.title)} dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h2>}
+            {props.level === 3 && <h3 style={{ marginTop: 0 }}><span contentEditable={!textHasTemplateLiterals(props.title)} dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h3>}
+            {props.level === 4 && <h4 style={{ marginTop: 0 }}><span contentEditable={!textHasTemplateLiterals(props.title)} dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h4>}
+            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}><span contentEditable={!textHasTemplateLiterals(props.text)} dangerouslySetInnerHTML={{__html: text}} onClick={(e) => e.preventDefault()} onBlur={handleEditText} /></p>}
         </div>
     );
 };
