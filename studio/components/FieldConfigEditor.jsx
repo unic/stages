@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Form } from "react-stages";
 import { Message } from 'primereact/message';
+import { Waypoints } from 'lucide-react';
 import fieldProps from "./fieldProps";
 import primeFields from './primeFields';
 import { FieldRenderer } from './FieldRenderer';
@@ -160,6 +161,7 @@ const FieldConfigEditor = ({ handleEditFieldConfig }) => {
             )}
             <div className="flex">
                 <div className="flex-grow-1" style={{ paddingTop: "6px" }}>
+                    <Waypoints size={14} />{" "}
                     {Array.isArray(path) ? path.map((p, i) => <FormattedPath key={i} path={p} />) : <FormattedPath path={path} />}
                 </div>
             </div>
