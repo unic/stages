@@ -169,6 +169,11 @@ const useStagesStore = create(persist((set, get) => ({
         newGeneralConfig.title = title;
         return { generalConfig: newGeneralConfig };
     }),
+    onUpdatePath: (nonEditablePath, editablePath, newEditablePath) => set((state) => {
+        const newConfig = [...state.currentConfig];
+        _.set(newConfig, `${getConfigPathFromDataPath(nonEditablePath + editablePath, state.currentConfig)}.id`, newEditablePath);
+        return { currentConfig: newConfig };
+    }),
 }),
     {
         name: 'stages-studio-storage',

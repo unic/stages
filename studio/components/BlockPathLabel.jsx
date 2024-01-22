@@ -1,3 +1,7 @@
+import { useState, useEffect, useCallback } from 'react';
+import sanitizeHtml from "sanitize-html";
+import useStagesStore from './store';
+
 const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
     return <button type="button" style={{
         border: "1px solid #ddd",
@@ -19,6 +23,27 @@ const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
 };
 
 const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId, blockWidth, onChangeBlockWidth }) => {
+    const indexOfLastPathDot = path.lastIndexOf(".");
+    const store = useStagesStore();
+    const [editablePath, setEditablePath] = useState(indexOfLastPathDot === -1 ? path : path.substring(indexOfLastPathDot + 1));
+    const [nonEditablePath, setNonEditablePath] = useState(indexOfLastPathDot === -1 ? "" : path.substring(0, indexOfLastPathDot + 1));
+
+    useEffect(() => {
+        const indexOfLastPathDot = path.lastIndexOf(".");
+        setEditablePath(indexOfLastPathDot === -1 ? path : path.substring(indexOfLastPathDot + 1));
+        setNonEditablePath(indexOfLastPathDot === -1 ? "" : path.substring(0, indexOfLastPathDot + 1));
+    }, [path]);
+
+    const handleEditPath = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newEditablePath = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setEditablePath(newEditablePath);
+        store.onUpdatePath(nonEditablePath, editablePath, newEditablePath);
+    }, []);
+
     return (
         <>
             <span style={{
@@ -41,7 +66,7 @@ const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId, block
                 {type === "wizard" ? "[ : ] " : null}
                 {type === "stage" ? "[ . ] " : null}
                 {type === "field" ? "[ ] " : null}
-                {path}
+                {nonEditablePath}<span contentEditable dangerouslySetInnerHTML={{__html: editablePath}} onClick={(e) => e.preventDefault()} onBlur={handleEditPath} />
             </span>
             {isHovered && (
                 <span style={{
