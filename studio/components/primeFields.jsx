@@ -116,6 +116,47 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
     );
 };
 
+const MappedHeading = (props) => {
+    const store = useStagesStore();
+    const [title, setTitle] = React.useState(props.title ? parseTemplateLiterals(props.title, store.data) : "");
+    const [text, setText] = React.useState(props.text ? parseTemplateLiterals(props.text, store.data) : "");
+
+    const handleEditTitle = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newTitle = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setTitle(newTitle);
+        store.onUpdateTitle(props.id, newTitle);
+    }, []);
+
+    const handleEditText = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newText = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setText(newText);
+        store.onUpdateText(props.id, newText);
+    }, []);
+
+    return (
+        <div>
+            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}><span contentEditable dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h2>}
+            {props.level === 3 && <h3 style={{ marginTop: 0 }}><span contentEditable dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h3>}
+            {props.level === 4 && <h4 style={{ marginTop: 0 }}><span contentEditable dangerouslySetInnerHTML={{__html: title}} onClick={(e) => e.preventDefault()} onBlur={handleEditTitle} /></h4>}
+            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}><span contentEditable dangerouslySetInnerHTML={{__html: text}} onClick={(e) => e.preventDefault()} onBlur={handleEditText} /></p>}
+        </div>
+    );
+};
+
+const MappedMessage = (props) => {
+    return (
+        <Message text={props.text} severity={props.severity} />
+    );
+};
+
 const MappedInputText = (props) => {
     const mappedProps = removeStagesProps(props);
     if (typeof mappedProps.value === 'undefined') mappedProps.value = '';
@@ -320,24 +361,6 @@ const MappedDivider = (props) => {
     return <Divider pt={props.isInInspector ? { root: { style: { margin: "8px 0" } }, content: { style: { backgroundColor: "#fcfcfc" } } } : {}} type={props.borderType || props.isInInspector ? "solid" : "dashed"} layout={props.layout || "horizontal"} align={props.align || "center"}>
         {props.text && <span style={{ color: "#999", fontSize: "12px" }}>{props.text}</span>}
     </Divider>;
-};
-
-const MappedHeading = (props) => {
-    const store = useStagesStore();
-    return (
-        <div>
-            {(!props.level || props.level === 2) && <h2 style={{ marginTop: 0 }}>{parseTemplateLiterals(props.title, store.data)}</h2>}
-            {props.level === 3 && <h3 style={{ marginTop: 0 }}>{parseTemplateLiterals(props.title, store.data)}</h3>}
-            {props.level === 4 && <h4 style={{ marginTop: 0 }}>{parseTemplateLiterals(props.title, store.data)}</h4>}
-            {props.text && <p style={{ color: "#999", marginTop: "-12px", marginBottom: "4px" }}>{parseTemplateLiterals(props.text, store.data)}</p>}
-        </div>
-    );
-};
-
-const MappedMessage = (props) => {
-    return (
-        <Message text={props.text} severity={props.severity} />
-    );
 };
 
 
