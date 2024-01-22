@@ -53,15 +53,20 @@ const removeStagesProps = (props) => {
 
 const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryText, prefix, suffix, isInInspector, error, isValidating, errorRenderer }) => {
     const store = useStagesStore();
-    const [labelText, setLabelText] = React.useState(parseTemplateLiterals(label, store.data));
+    const [labelText, setLabelText] = React.useState(label ? parseTemplateLiterals(label, store.data) : "");
+    const [secText, setSecText] = React.useState(secondaryText ? parseTemplateLiterals(secondaryText, store.data) : "");
 
     useEffect(() => {
         useStagesStore.persist.rehydrate();
     }, []);
 
     useEffect(() => {
-        setLabelText(parseTemplateLiterals(label, store.data));
+        setLabelText(label ? parseTemplateLiterals(label, store.data) : "");
     }, [label]);
+
+    useEffect(() => {
+        setSecText(secondaryText ? parseTemplateLiterals(secondaryText, store.data) : "");
+    }, [secondaryText]);
 
     const handleEditLabel = useCallback(evt => {
         const sanitizeConf = {
@@ -71,6 +76,16 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
         const newLabel = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
         setLabelText(newLabel);
         store.onUpdateLabel(id, newLabel);
+    }, []);
+
+    const handleEditSecondaryText = useCallback(evt => {
+        const sanitizeConf = {
+            allowedTags: [],
+            allowedAttributes: {}
+        };
+        const newSecondaryText = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        setSecText(newSecondaryText);
+        store.onUpdateSecondaryText(id, newSecondaryText);
     }, []);
 
     if (isInInspector) {
@@ -88,7 +103,7 @@ const InputWrapper = ({ children, id, label, isRequired, isDisabled, secondaryTe
             <label htmlFor={id} style={{ userSelect: store.isEditMode ? "none" : "auto", cursor: "text" }}>
                 <span contentEditable dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} />{isRequired ? " *" : ""}
             </label>
-            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}>{parseTemplateLiterals(secondaryText, store.data)}</div> : null}
+            {secondaryText ? <div style={{ margin: "-8px 0 8px 0", color: "#999" }}><span contentEditable dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
             <div className="p-inputgroup w-full">
                 {prefix && <span className="p-inputgroup-addon">{prefix}</span>}
                 {children}

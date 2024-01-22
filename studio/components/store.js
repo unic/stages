@@ -148,7 +148,12 @@ const useStagesStore = create(persist((set, get) => ({
         const newConfig = [...state.currentConfig];
         _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.label`, label);
         return { currentConfig: newConfig };
-    })
+    }),
+    onUpdateSecondaryText: (path, secondaryText) => set((state) => {
+        const newConfig = [...state.currentConfig];
+        _.set(newConfig, `${getConfigPathFromDataPath(path, state.currentConfig)}.secondaryText`, secondaryText);
+        return { currentConfig: newConfig };
+    }),
 }),
     {
         name: 'stages-studio-storage',
