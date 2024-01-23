@@ -525,7 +525,7 @@ const Workspace = () => {
             const realToPath = getConfigPathFromDataPath(to, newConfig);
             const lastArrayIndex = realToPath.lastIndexOf("[");
             let toIndex = parseInt(realToPath.substring(lastArrayIndex + 1));
-            arrayMove(arrayToInsertInto, index, toIndex);
+            arrayMove(arrayToInsertInto, index, toIndex > index ? toIndex - 1 : toIndex);
         }
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         if (fieldset) {
