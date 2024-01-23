@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
+import { useDraggable } from '@dnd-kit/core';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected, getWidth } from './helpers';
@@ -7,6 +8,9 @@ import { pathIsSelected, getWidth } from './helpers';
 const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isFieldset, contextMenuRef, isFieldConfigEditor, fieldsetId, width }) => {
     const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
+    const {attributes, listeners, setNodeRef, transform} = useDraggable({
+        id: `draggable-${path}`,
+      });
 
     useEffect(() => {
         useStagesStore.persist.rehydrate();
@@ -18,6 +22,7 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
 
     return (
         <motion.div
+            ref={setNodeRef}
             className={inGroup ? "flex-1" : undefined}
             style={{
                 minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
@@ -27,7 +32,9 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
                 border: isInEditMode && store.isEditMode && !isFieldConfigEditor ? isFieldset ? "1px dashed #c10b99" : "1px dashed #0A94F8" : !isFieldConfigEditor && store.isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width),
                 background: store.isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
-                boxShadow: store.isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none"
+                boxShadow: store.isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
+                transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+                zIndex: transform ? 1000 : 1
             }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
@@ -46,6 +53,8 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
+            {...listeners}
+            {...attributes}
         >
             {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={width || "large"} path={path} fieldsetId={fieldsetId} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
             {field}

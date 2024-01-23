@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
 import Sugar from "sugar";
+import { DndContext } from '@dnd-kit/core';
 import { ContextMenu } from 'primereact/contextmenu';
 import { Button } from 'primereact/button';
 import { ScrollPanel } from 'primereact/scrollpanel';
@@ -497,7 +498,7 @@ const Workspace = () => {
     };
 
     const handleMoveField = (path, to) => {
-        console.log("--> handleUngroupField <--");
+        console.log("--> handleMoveField <--", { path, to });
         let fieldsetId = '';
         let fieldset;
         if (path[0] === "{") {
@@ -520,6 +521,12 @@ const Workspace = () => {
         if (to === "down" && index < arrayToInsertInto.length - 1) arrayMove(arrayToInsertInto, index, index + 1);
         if (to === "top") arrayMove(arrayToInsertInto, index, 0);
         if (to === "bottom") arrayMove(arrayToInsertInto, index, arrayToInsertInto.length - 1);
+        if (to !== "" && to !== "up" && to !== "down" && to !== "top" && to !== "bottom") {
+            const realToPath = getConfigPathFromDataPath(to, newConfig);
+            const lastArrayIndex = realToPath.lastIndexOf("[");
+            let toIndex = parseInt(realToPath.substring(lastArrayIndex + 1));
+            arrayMove(arrayToInsertInto, index, toIndex);
+        }
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         if (fieldset) {
             store.updateFieldsetConfig(removeEmptyElements(newConfig), fieldsetId);
@@ -1115,6 +1122,13 @@ const Workspace = () => {
         return fieldSets;
     };
 
+    const handleDragEnd = (event) => {
+        console.log("--> handleDragEnd <--", { event });
+        if (event?.active?.id && event?.over?.id) {
+            handleMoveField(event.active.id.substring(10), event.over.id.substring(10));
+        }
+    };
+
     const fromDate = store?.generalConfig?.date?.from ? new Sugar.Date(store.generalConfig.date.from) : "";
     const toDate = store?.generalConfig?.date?.to ? new Sugar.Date(store.generalConfig.date.to) : "";
     const now = new Date();
@@ -1219,17 +1233,19 @@ const Workspace = () => {
                             <>
                                 <form>
                                     <div style={{ position: "relative", maxWidth: store.previewSize === "mobile" ? "480px" : store.previewSize === "tablet" ? "640px" : "960px", margin: "0 auto", paddingBottom: "64px" }}>
-                                        <FieldRenderer
-                                            handleEditCollection={handleEditCollection}
-                                            handleEditGroup={handleEditGroup}
-                                            parent=""
-                                            setActiveContextMenuInput={store.setActiveContextMenuInput}
-                                            contextMenuRef={contextMenuRef}
-                                            isEditMode={store.isEditMode}
-                                            selectedElement={store.selectedElement}
-                                            fieldProps={fieldProps}
-                                            fields={fieldProps.fields}
-                                        />
+                                        <DndContext onDragEnd={handleDragEnd}>
+                                            <FieldRenderer
+                                                handleEditCollection={handleEditCollection}
+                                                handleEditGroup={handleEditGroup}
+                                                parent=""
+                                                setActiveContextMenuInput={store.setActiveContextMenuInput}
+                                                contextMenuRef={contextMenuRef}
+                                                isEditMode={store.isEditMode}
+                                                selectedElement={store.selectedElement}
+                                                fieldProps={fieldProps}
+                                                fields={fieldProps.fields}
+                                            />
+                                        </DndContext>
                                         <br />
                                         <Button
                                             type="button"
