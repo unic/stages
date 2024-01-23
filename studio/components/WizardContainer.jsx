@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import useStagesStore from './store';
+import { useDraggable } from '@dnd-kit/core';
+import { GripHorizontal } from 'lucide-react';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected, getWidth } from './helpers';
 import WizardNavigation from './WizardNavigation';
@@ -7,6 +9,9 @@ import WizardNavigation from './WizardNavigation';
 const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, inGroup }) => {
     const store = useStagesStore();
     const [isInEditMode, setIsInEditMode] = useState(isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
+    const {attributes, listeners, setNodeRef, transform} = useDraggable({
+        id: `draggable-${path}`,
+    });
 
     useEffect(() => {
         if (!pathIsSelected(path, selectedElement, fieldsetId)) setIsInEditMode(false);
@@ -25,7 +30,9 @@ const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, pa
                 background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
                 minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
-                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width)
+                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width),
+                transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+                zIndex: transform ? 1000 : 1
             }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
@@ -39,6 +46,7 @@ const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, pa
             }}
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
         >
+            <div style={{ position: "absolute", top: "6px", right: "8px", cursor: "grab" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={20} color={isInEditMode ? "#0A94F8" : "transparent"} /></div>
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} path={path} blockWidth={width} isHovered={isInEditMode} type="wizard" /> : null}
             {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "0 0 8px 8px" }}>{label}</label> : null}
             {secondaryText ? <div style={{ margin: "-4px 0 12px 8px", color: "#999", flex: "0 0 100%" }}>{secondaryText}</div> : null}

@@ -11,7 +11,7 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
     const [isInEditMode, setIsInEditMode] = useState(store.isEditMode && pathIsSelected(path, selectedElement, fieldsetId));
     const {attributes, listeners, setNodeRef, transform} = useDraggable({
         id: `draggable-${path}`,
-      });
+    });
 
     useEffect(() => {
         useStagesStore.persist.rehydrate();
@@ -54,7 +54,7 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
         >
-            <div style={{ position: "absolute", top: "6px", right: "8px" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={16} color={isInEditMode ? "#999" : "transparent"} /></div>
+            <div style={{ position: "absolute", top: "6px", right: "8px", cursor: "grab" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={20} color={isInEditMode ? "#0A94F8" : "transparent"} /></div>
             {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={width || "large"} path={path} fieldsetId={fieldsetId} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
             {field}
         </motion.div>
