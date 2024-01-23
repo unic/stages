@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { useDraggable } from '@dnd-kit/core';
+import { GripHorizontal } from 'lucide-react';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected, getWidth } from './helpers';
@@ -22,7 +23,6 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
 
     return (
         <motion.div
-            ref={setNodeRef}
             className={inGroup ? "flex-1" : undefined}
             style={{
                 minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
@@ -53,9 +53,8 @@ const EditableBlock = ({ fieldConfig, field, path, selectedElement, inGroup, isF
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
-            {...listeners}
-            {...attributes}
         >
+            <div style={{ position: "absolute", top: "6px", right: "8px" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={16} color={isInEditMode ? "#999" : "transparent"} /></div>
             {store.isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={width || "large"} path={path} fieldsetId={fieldsetId} isHovered={isInEditMode} type={isFieldset ? "fieldset" : "field"} /> : null}
             {field}
         </motion.div>
