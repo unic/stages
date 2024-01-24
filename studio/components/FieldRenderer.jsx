@@ -22,6 +22,7 @@ const createKey = (parent, key) => {
 export const FieldRenderer = ({
     handleEditCollection,
     handleEditGroup,
+    setFormCounter,
     parent,
     setActiveContextMenuInput,
     contextMenuRef,
@@ -119,6 +120,7 @@ export const FieldRenderer = ({
                                     isFieldConfigEditor={isFieldConfigEditor}
                                     selectedElement={selectedElement}
                                     handleEditCollection={handleEditCollection}
+                                    setFormCounter={setFormCounter}
                                     isEditMode={isEditMode}
                                     contextMenuRef={contextMenuRef}
                                     path={thisPath}

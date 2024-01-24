@@ -1237,6 +1237,7 @@ const Workspace = () => {
                                             <FieldRenderer
                                                 handleEditCollection={handleEditCollection}
                                                 handleEditGroup={handleEditGroup}
+                                                setFormCounter={setFormCounter}
                                                 parent=""
                                                 setActiveContextMenuInput={store.setActiveContextMenuInput}
                                                 contextMenuRef={contextMenuRef}

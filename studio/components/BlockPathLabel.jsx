@@ -22,7 +22,7 @@ const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
     }}>{size}</button>;
 };
 
-const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId, blockWidth, onChangeBlockWidth }) => {
+const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId, blockWidth, onChangeBlockWidth, setFormCounter }) => {
     const indexOfLastPathDot = path.lastIndexOf(".");
     const store = useStagesStore();
     const [editablePath, setEditablePath] = useState(indexOfLastPathDot === -1 ? path : path.substring(indexOfLastPathDot + 1));
@@ -39,9 +39,10 @@ const BlockPathLabel = ({ path, inCollection, isHovered, type, fieldsetId, block
             allowedTags: [],
             allowedAttributes: {}
         };
-        const newEditablePath = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
+        const newEditablePath = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf).replace(/\s/g, "X");
         setEditablePath(newEditablePath);
         store.onUpdatePath(nonEditablePath, editablePath, newEditablePath);
+        if (typeof setFormCounter === "function") setFormCounter(formCounter => formCounter + 1);
     }, []);
 
     return (
