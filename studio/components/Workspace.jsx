@@ -330,6 +330,10 @@ const Workspace = () => {
         { label: 'Ungroup', icon: <Ungroup size={16} style={{ marginRight: "8px" }} />, command: () => handleUngroupField(store.activeContextMenuInput) },
         { label: 'Create Collection', icon: <Brackets size={16} style={{ marginRight: "8px" }} />, command: () => handleCollectionField(store.activeContextMenuInput) },
         { separator: true },
+        { label: 'Convert to Group', icon: <Group size={16} style={{ marginRight: "8px" }} />, command: () => handleConvertToGroup(store.activeContextMenuInput) },
+        { label: 'Convert to Collection', icon: <Group size={16} style={{ marginRight: "8px" }} />, command: () => handleConvertToCollection(store.activeContextMenuInput) },
+        { label: 'Convert to Wizard', icon: <Group size={16} style={{ marginRight: "8px" }} />, command: () => handleConvertToWizard(store.activeContextMenuInput) },
+        { separator: true },
         { label: 'Create Fieldset', icon: <Braces size={16} style={{ marginRight: "8px" }} />, command: () => handleCreateFieldset(store.activeContextMenuInput) },
         { label: 'Disconnect Fieldset', icon: <Unplug size={16} style={{ marginRight: "8px" }} />, command: () => handleDisconnectFieldset(store.activeContextMenuInput) },
     ];
@@ -440,6 +444,69 @@ const Workspace = () => {
         } else {
             store.updateCurrentConfig(newConfig);
         }
+        contextMenuRef?.current?.hide();
+    };
+
+    const handleConvertToGroup = (path) => {
+        console.log("--> handleConvertToGroup <--");
+        store.removePathFromSelectedElements(path);
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const newFieldConfig = _.get(newConfig, realPath);
+        if (newFieldConfig.type !== "collection" && newFieldConfig.type !== "wizard") return;
+        if (newFieldConfig.type === "wizard") {
+            newFieldConfig.fields = [...newFieldConfig.stages[0]?.fields] || [];
+            delete newFieldConfig.stages;
+        }
+        if (newFieldConfig.type === "collection") {
+            delete newFieldConfig.init;
+            delete newFieldConfig.min;
+        }
+        newFieldConfig.type = "group";
+        delete newFieldConfig.init;
+        delete newFieldConfig.min;
+        _.set(newConfig, realPath, newFieldConfig);
+        store.updateCurrentConfig(newConfig);
+        contextMenuRef?.current?.hide();
+    };
+
+    const handleConvertToCollection = (path) => {
+        console.log("--> handleConvertToCollection <--");
+        store.removePathFromSelectedElements(path);
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const newFieldConfig = _.get(newConfig, realPath);
+        if (newFieldConfig.type !== "group" && newFieldConfig.type !== "wizard") return;
+        if (newFieldConfig.type === "wizard") {
+            newFieldConfig.fields = [...newFieldConfig.stages[0]?.fields] || [];
+            delete newFieldConfig.stages;
+        }
+        newFieldConfig.type = "collection";
+        newFieldConfig.init = true;
+        newFieldConfig.min = 1;
+        _.set(newConfig, realPath, newFieldConfig);
+        store.updateCurrentConfig(newConfig);
+        contextMenuRef?.current?.hide();
+        setFormCounter(formCounter => formCounter + 1);
+    };
+
+    const handleConvertToWizard = (path) => {
+        console.log("--> handleConvertToWizard <--");
+        store.removePathFromSelectedElements(path);
+        const newConfig = [...store.currentConfig];
+        const realPath = getConfigPathFromDataPath(path, newConfig);
+        const newFieldConfig = _.get(newConfig, realPath);
+        if (newFieldConfig.type !== "group" && newFieldConfig.type !== "collection") return;
+        newFieldConfig.type = "wizard";
+        newFieldConfig.stages = [{
+            id:"step1",
+            label:"Step 1",
+            type: "stage",
+            fields: newFieldConfig?.fields || []
+        }];
+        delete newFieldConfig.fields;
+        _.set(newConfig, realPath, newFieldConfig);
+        store.updateCurrentConfig(newConfig);
         contextMenuRef?.current?.hide();
     };
 
