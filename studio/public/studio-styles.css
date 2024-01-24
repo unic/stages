@@ -6045,3 +6045,9 @@
 [contenteditable]:focus {
   outline: 0px solid transparent;
 }
+
+
+.p-tooltip {
+    max-width: 500px;
+    line-height: 1.5rem;
+}

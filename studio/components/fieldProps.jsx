@@ -74,7 +74,8 @@ const globalFieldProps = {
         type: "textarea",
         autoResize: true,
         label: "Computed Value",
-        placeholder: "data => data.field1 + data.field2",
+        placeholder: "data.field1 + data.field2",
+        tooltip: "You have access to: data.x (form data), itemData.x (for collection item data) and interfaceState.x (for a forms interface state)"
     },
     type: {
         id: "type",
@@ -173,6 +174,7 @@ const globalFieldProps = {
         autoResize: true,
         label: "Is Rendered?",
         placeholder: "!!data.myCheckbox",
+        tooltip: "You have access to: path (full path of field), fieldData (the fields current data), data.x (form data) and interfaceState.x (for a forms interface state)"
     },
     tooltip: {
         id: "tooltip",

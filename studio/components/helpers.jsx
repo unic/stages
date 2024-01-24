@@ -13,7 +13,7 @@ export const parseJSONConfig = (config, data) => {
         if (newItem.computedValue && typeof newItem.computedValue === "string") {
             let computedValueFunction;
             try {
-                computedValueFunction = new Function("data", `"use strict"; let result; try { result = ${newItem.computedValue}; } catch (e) { console.warn("error in computed function"); } return result;`);
+                computedValueFunction = new Function("data, itemData, interfaceState", `"use strict"; let result; try { result = ${newItem.computedValue}; } catch (e) { console.warn("error in computed function"); } return result;`);
                 const testResult = computedValueFunction(data);
             } catch (error) {
                 console.error("computed value error", error);
