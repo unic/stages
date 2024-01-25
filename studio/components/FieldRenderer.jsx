@@ -45,7 +45,7 @@ export const FieldRenderer = ({
     const getListStyle = isDraggingOver => ({
         width: "calc(100% - 32px)",
         maxWidth: "calc(100% - 32px)",
-        padding: "8px"
+        padding: isFieldConfigEditor ? "0px 0 8px 0" : "8px"
     });
     const getItemStyle = (isDragging, draggableStyle, isFieldConfigEditor) => ({
         userSelect: "none",
@@ -167,7 +167,7 @@ export const FieldRenderer = ({
                                                                             type="group"
                                                                             fieldsetId={thisFieldsetId}
                                                                         />
-                                                                        <div style={{ position: "absolute", right: "8px", top: isFieldConfigEditor ? "calc(50% + 2px)" : "calc(50% - 12px)" }}>
+                                                                        <div style={{ position: "absolute", zIndex: 10, right: isFieldConfigEditor ? "2px" : "8px", top: isFieldConfigEditor ? "calc(50% + 2px)" : "calc(50% - 12px)" }}>
                                                                             <button type="button" onClick={() => fieldProps.onCollectionAction(key, "remove", index)}>-</button>
                                                                         </div>
                                                                     </div>

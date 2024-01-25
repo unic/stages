@@ -56,13 +56,14 @@ const CollectionContainer = ({ children, handleEditCollection, setFormCounter, i
                 border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
                 borderRadius: "5px",
                 padding: "2px",
-                rowGap: "16px",
+                rowGap: isFieldConfigEditor ? "4px" : "16px",
                 background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
                 boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
                 minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
                 maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width),
                 transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-                zIndex: transform ? 1000 : 1
+                zIndex: transform ? 1000 : 1,
+                marginBottom: isFieldConfigEditor ? "16px" : 0
             }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
@@ -76,7 +77,7 @@ const CollectionContainer = ({ children, handleEditCollection, setFormCounter, i
             }}
             onMouseOver={() => setIsInEditMode(isEditMode ? true : false)} onMouseOut={() => setIsInEditMode(pathIsSelected(path, selectedElement, fieldsetId) ? true : false)}
         >
-            <div style={{ position: "absolute", top: "6px", right: "8px", cursor: "grab" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={20} color={isInEditMode ? "#0A94F8" : "transparent"} /></div>
+            {isEditMode && !isFieldConfigEditor ? <div style={{ position: "absolute", top: "6px", right: "8px", cursor: "grab" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={20} color={isInEditMode ? "#0A94F8" : "transparent"} /></div> : null}
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel setFormCounter={setFormCounter} onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} path={path} blockWidth={width} isHovered={isInEditMode} type="collection" /> : null}
             {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "6px 0 8px 8px" }}><span contentEditable={!textHasTemplateLiterals(label)} dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></label> : null}
             {secondaryText ? <div style={{ margin: "-22px 0 0 8px", color: "#999", flex: "0 0 100%" }}><span contentEditable={!textHasTemplateLiterals(secondaryText)} dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
