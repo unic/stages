@@ -27,7 +27,7 @@ const useStagesStore = create(persist((set, get) => ({
     currentConfig: initialConfig,
     generalConfig: initialGeneralConfig,
     activeStep: 0,
-    undoData: [JSON.stringify(initialConfig)],
+    undoData: [initialConfig],
     activeUndoIndex: 1,
     previewSize: "desktop",
     fieldsets: [
@@ -72,7 +72,7 @@ const useStagesStore = create(persist((set, get) => ({
     undo: () => set((state) => {
         if (state.activeUndoIndex > 0) {
             const newIndex = state.activeUndoIndex - 1;
-            const oldConfig = JSON.parse(state.undoData[newIndex]);
+            const oldConfig = state.undoData[newIndex];
             return { activeUndoIndex: newIndex, currentConfig: oldConfig };
         } else {
             return { activeUndoIndex: 0 };
@@ -81,7 +81,7 @@ const useStagesStore = create(persist((set, get) => ({
     redo: () => set((state) => {
         if (state.activeUndoIndex < state.undoData.length - 1) {
             const newIndex = state.activeUndoIndex + 1;
-            const oldConfig = JSON.parse(state.undoData[newIndex]);
+            const oldConfig = state.undoData[newIndex];
             return { activeUndoIndex: newIndex, currentConfig: oldConfig };
         } else {
             return { activeUndoIndex: state.activeUndoIndex };
@@ -92,7 +92,8 @@ const useStagesStore = create(persist((set, get) => ({
         if (state.activeUndoIndex < newUndoData.length - 1) {
             newUndoData.splice(state.activeUndoIndex + 1);
         }
-        newUndoData.push(JSON.stringify(currentConfig));
+        newUndoData.push(currentConfig);
+        if (newUndoData.length > 25) newUndoData.shift();
         get().setActiveUndoIndex(newUndoData.length - 1);
         get().setUndoData(newUndoData);
         return { currentConfig };
@@ -179,7 +180,7 @@ const useStagesStore = create(persist((set, get) => ({
     }),
 }),
     {
-        name: 'stages-studio-storage',
+        name: 'stages-studio-storage-0.1',
         storage: createJSONStorage(() => localStorage),
         skipHydration: true,
     }
