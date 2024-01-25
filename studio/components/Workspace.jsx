@@ -715,7 +715,7 @@ const Workspace = () => {
         arrayToInsertInto.splice(index, 0, {
             id: newFieldId,
             type: fieldType || "text",
-            label: "Field",
+            label: _.upperFirst(fieldType),
         });
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         if (fieldset) {
