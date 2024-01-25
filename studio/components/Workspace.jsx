@@ -39,6 +39,7 @@ import { initNewCollections, removeEmptyElements } from "./helpers";
 
 import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig, arrayMove } from './helpers';
 import { FieldRenderer } from './FieldRenderer';
+import kitchensinkConfig from './kitchensinkConfig';
 
 const Workspace = () => {
     const toast = useRef(null);
@@ -308,6 +309,10 @@ const Workspace = () => {
               "isRendered": "!!interfaceState.showAdvanced"
             }
           ]),
+      },
+      {
+        label: "Init with Field Kitchensink",
+        command: () => handleInitConfig(kitchensinkConfig),
       },
       {
         label: "Init with Demo Form",
@@ -706,8 +711,9 @@ const Workspace = () => {
         } else {
             arrayToInsertInto = newConfig;
         }
+        const newFieldId = createNewFieldID(path, fieldType || "text", store);
         arrayToInsertInto.splice(index, 0, {
-            id: createNewFieldID(path, "text", store),
+            id: newFieldId,
             type: fieldType || "text",
             label: "Field",
         });
@@ -717,7 +723,7 @@ const Workspace = () => {
         } else {
             store.updateCurrentConfig(newConfig);
         }
-        store.setSelectedElement('');
+        store.setSelectedElement(parentOfRealPath ? `${parentOfRealPath}.${newFieldId}` : newFieldId);
         contextMenuRef?.current?.hide();
     };
 
