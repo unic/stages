@@ -82,13 +82,16 @@ const useStagesStore = create(persist((set, get) => ({
         if (state.activeUndoIndex < state.undoData.length - 1) {
             const newIndex = state.activeUndoIndex + 1;
             const oldConfig = JSON.parse(state.undoData[newIndex]);
-            return { activeUndoIndex: state.activeUndoIndex, currentConfig: oldConfig };
+            return { activeUndoIndex: newIndex, currentConfig: oldConfig };
         } else {
             return { activeUndoIndex: state.activeUndoIndex };
         }
     }),
     updateCurrentConfig: (currentConfig) => set((state) => {
         const newUndoData = [...state.undoData];
+        if (state.activeUndoIndex < newUndoData.length - 1) {
+            newUndoData.splice(state.activeUndoIndex + 1);
+        }
         newUndoData.push(JSON.stringify(currentConfig));
         get().setActiveUndoIndex(newUndoData.length - 1);
         get().setUndoData(newUndoData);
