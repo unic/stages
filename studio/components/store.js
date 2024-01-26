@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware'
-import initialConfig from './initialConfig';
+import initialConfig from './configTemplates/initialConfig';
 import _ from 'lodash';
 import { getConfigPathFromDataPath } from './helpers';
 

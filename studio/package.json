@@ -31,6 +31,7 @@
     "lodash.unset": "^4.5.2",
     "lucide-react": "^0.294.0",
     "mustache": "^4.2.0",
+    "mutative": "^1.0.3",
     "next": "^13.4.12",
     "primeflex": "^3.3.1",
     "primereact": "^10.1.1",
