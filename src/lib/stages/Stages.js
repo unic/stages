@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import findIndex from "lodash.findindex";
+import findIndex from "lodash/findindex";
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
 import { isDebugging } from "../utils/browser";

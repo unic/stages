@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import find from "lodash.find";
-import sortBy from "lodash.sortby";
-import findIndex from "lodash.findindex";
-import uniqWith from "lodash.uniqwith";
-import isEqual from "lodash.isequal";
-import get from "lodash.get";
-import set from "lodash.set";
-import unset from "lodash.unset";
-import merge from "lodash.merge";
+import find from "lodash/find";
+import sortBy from "lodash/sortby";
+import findIndex from "lodash/findindex";
+import uniqWith from "lodash/uniqwith";
+import isEqual from "lodash/isequal";
+import get from "lodash/get";
+import set from "lodash/set";
+import unset from "lodash/unset";
+import merge from "lodash/merge";
 import stringify from "fast-json-stable-stringify";
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";

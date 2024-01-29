@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from "react";
 import beautify from 'json-beautify';
-import get from "lodash.get";
+import get from "lodash/get";
 
 /**
  * An utiility component to help debug the wizard or individual forms.

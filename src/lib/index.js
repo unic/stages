@@ -1,4 +1,4 @@
-import get from "lodash.get";
+import get from "lodash/get";
 export { get };
 
 export { default as Stages } from "./stages/Stages";

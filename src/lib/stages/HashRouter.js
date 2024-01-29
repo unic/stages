@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import findIndex from "lodash.findindex";
+import findIndex from "lodash/findindex";
 
 import { useMount, useHash } from "../utils/hooks";
 
