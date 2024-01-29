@@ -9,7 +9,7 @@ import FormattedPath from './FormattedPath';
 import useStagesStore from './store';
 import InspectorSpacer from './InspectorSpacer';
 import { getConfigPathFromDataPath, removeNonMatchingProperties } from './helpers'; 
-import _, { indexOf } from "lodash";
+import _ from "lodash";
 
 const parseConfig = config => {
     if (Array.isArray(config)) {
