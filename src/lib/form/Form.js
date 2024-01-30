@@ -418,15 +418,7 @@ const Form = ({
                     }
                 }
 
-                // prepare the params for the validateOnCallback:
-                const validateOnParams = {
-                    data: value,
-                    fieldIsDirty: !!dirtyFields[fieldPath.path],
-                    fieldConfig: fieldPath.config,
-                    fieldHasFocus: !!(focusedField && focusedField === fieldPath.path)
-                };
-
-                const { hasNewErrors, newErrors } = handleValidation("init", fieldPath.path, fieldPath.config, activeCustomEvents, data, errors, validateOnParams);
+                const { hasNewErrors, newErrors } = handleValidation("init", fieldPath.path, fieldPath.config, activeCustomEvents, data, errors);
                 if (hasNewErrors) {
                     setErrors(newErrors);
                 }
@@ -1311,27 +1303,66 @@ const Form = ({
         return newPath;
     };
 
-    const handleValidation = (event, fieldKey, fieldConfig, activeCustomEvents, newData, errors, validateOnParams) => {
+    const handleValidation = (event, fieldKey, fieldConfig, activeCustomEvents, newData, errors) => {
+        const value = get(newData, fieldKey);
         let newErrors = {...errors};
         let hasNewErrors = false;
-        // Only validate if change or throttledChange or a custom event validation is enabled:
-        if (
-            (!fieldConfig.validateOn && Array.isArray(validateOn) && activeCustomEvents.some(r=> validateOn.indexOf(r) > -1)) ||
-            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && activeCustomEvents.some(r=> fieldConfig.validateOn.indexOf(r) > -1))
-        ) {
-            const result = validateField(fieldKey, arrayToStringIfOnlyOneEntry(activeCustomEvents), newData, errors);
-            newErrors = Object.assign({}, errors, result.errors);
-            hasNewErrors = true;
-        } else if (
-            (!fieldConfig.validateOn && Array.isArray(validateOn) && validateOn.indexOf(event) > -1) ||
-            (fieldConfig.validateOn && Array.isArray(fieldConfig.validateOn) && fieldConfig.validateOn.indexOf(event) > -1) ||
-            (!fieldConfig.validateOn && typeof validateOn === "function" && validateOn(validateOnParams).indexOf(event) > -1) ||
-            (fieldConfig.validateOn && typeof fieldConfig.validateOn === "function" && fieldConfig.validateOn(validateOnParams).indexOf(event) > -1)
-        ) {
-            const result = validateField(fieldKey, event, newData, errors);
-            newErrors = Object.assign({}, errors, result.errors);
-            hasNewErrors = true;
+        const isGlobalValidationEvent = validateOn.indexOf(event) > -1 || activeCustomEvents.some(r => validateOn.indexOf(r) > -1);
+
+        if (fieldConfig.validation && typeof fieldConfig.validation === "object") {
+            Object.keys(fieldConfig.validation).forEach(errorCode => {
+                if (errorCode !== "render") {
+                    const validationRule = fieldConfig.validation[errorCode];
+
+                    // Regex validation, only global events:
+                    if (typeof validationRule === "string" && isGlobalValidationEvent) {
+                        const regexRule = new RegExp(validationRule);
+                        if (typeof value === "string" && regexRule.test(value)) {
+                            newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                            hasNewErrors = true;
+                        }
+                    // Function validation, only global events:
+                    } else if (typeof validationRule === "function" && isGlobalValidationEvent) {
+                        const isValid = validationRule({ value, data: newData, event });
+                        if (!isValid) {
+                            newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                            hasNewErrors = true;
+                        }
+                    // Object validation, events defined in object:
+                    } else if (typeof validationRule === "object") {
+                        const isFieldValidationEvent = Array.isArray(validationRule.on) && (validationRule.on.indexOf(event) > -1 || activeCustomEvents.some(r => validationRule.on.indexOf(r) > -1));
+                        const isValidationEvent = (Array.isArray(validationRule.on) && isFieldValidationEvent) || (!Array.isArray(validationRule.on) && isGlobalValidationEvent);
+                        let ruleHasNewErrors = false;
+                        if (isValidationEvent) {
+                            if (typeof validationRule.check === "string") {
+                                const regexRule = new RegExp(validationRule.check);
+                                if (typeof value === "string" && regexRule.test(value)) {
+                                    newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                                    ruleHasNewErrors = true;
+                                }
+                            } else if (typeof validationRule.check === "function") {
+                                const isValid = validationRule.check({ value, data: newData, event });
+                                if (!isValid) {
+                                    newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                                    ruleHasNewErrors = true;
+                                }
+                            }
+                        }
+                        if (ruleHasNewErrors) {
+                            if (Array.isArray(validationRule.then)) {
+                                validationRule.then.forEach(thenField => {
+                                    const result = handleValidation(event, thenField, getConfigForField(thenField), activeCustomEvents, newData, newErrors);
+                                    newErrors = Object.assign({}, newErrors, result.errors);
+                                    hasNewErrors = true;
+                                });
+                            }
+                            hasNewErrors = true;
+                        }
+                    }
+                }
+            });
         }
+        
         return { hasNewErrors, newErrors };
     };
 
@@ -1415,7 +1446,7 @@ const Form = ({
         }
 
         // Only validate if change or throttledChange or a custom event validation is enabled:
-        const { newErrors } = handleValidation(throttleValidation ? "throttledChange" : "change", fieldKey, fieldConfig, activeCustomEvents, newData, errors, validateOnParams);
+        const { newErrors } = handleValidation(throttleValidation ? "throttledChange" : "change", fieldKey, fieldConfig, activeCustomEvents, newData, errors);
 
         // Set the isDirty flag and per field object:
         if (initialData) {
@@ -1515,15 +1546,7 @@ const Form = ({
             }
         }
 
-        // prepare the params for the validateOnCallback:
-        const validateOnParams = {
-            data: value,
-            fieldIsDirty: !!dirtyFields[fieldKey],
-            fieldConfig,
-            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
-        };
-
-        const { hasNewErrors, newErrors } = handleValidation("focus", fieldKey, fieldConfig, activeCustomEvents, newData, errors, validateOnParams);
+        const { hasNewErrors, newErrors } = handleValidation("focus", fieldKey, fieldConfig, activeCustomEvents, newData, errors);
         if (hasNewErrors) {
             setErrors(newErrors);
             limitedOnChange(newData, newErrors, id, fieldKey);
@@ -1568,15 +1591,7 @@ const Form = ({
             }
         }
 
-        // prepare the params for the validateOnCallback:
-        const validateOnParams = {
-            data: value,
-            fieldIsDirty: !!dirtyFields[fieldKey],
-            fieldConfig,
-            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
-        };
-
-        const { hasNewErrors, newErrors } = handleValidation("blur", fieldKey, fieldConfig, activeCustomEvents, newData, errors, validateOnParams);
+        const { hasNewErrors, newErrors } = handleValidation("blur", fieldKey, fieldConfig, activeCustomEvents, newData, errors);
         if (hasNewErrors) {
             setErrors(newErrors);
             limitedOnChange(newData, newErrors, id, fieldKey);
@@ -1933,17 +1948,9 @@ const Form = ({
             } catch (e) {}
         }
 
-        // prepare the params for the validateOnCallback:
-        const validateOnParams = {
-            data: updatedCollection,
-            fieldIsDirty: !!dirtyFields[fieldKey],
-            fieldConfig: field,
-            fieldHasFocus: !!(focusedField && focusedField === fieldKey)
-        };
-
         const activeCustomEvents = getActiveCustomEvents("collectionAction", data);
 
-        const { hasNewErrors, newErrors } = handleValidation("collectionAction", fieldKey, field, activeCustomEvents, data, errors, validateOnParams);
+        const { hasNewErrors, newErrors } = handleValidation("collectionAction", fieldKey, field, activeCustomEvents, data, errors);
         if (hasNewErrors) {
             setErrors(newErrors);
         }
