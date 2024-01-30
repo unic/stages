@@ -196,16 +196,16 @@ function App() {
                         }
                     ];
                 } }}
-                render={({ fieldProps, actionProps }) => {
+                render={({ fields, handleActionClick }) => {
                     return (
                         <div>
-                            {fieldProps.fields.input1}
+                            {fields.input1}
                             <br />
-                            {fieldProps.fields.input2}
+                            {fields.input2}
                             <br />
                             <button
                                 type="button"
-                                onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
+                                onClick={() => handleActionClick(payload => console.log("onSubmit:", payload), true)}
                             >
                                 Submit
                             </button>

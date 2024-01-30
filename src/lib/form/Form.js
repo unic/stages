@@ -1775,7 +1775,7 @@ const Form = ({
                 return (
                     <Form
                         config={fieldConfig.config}
-                        render={({ fieldProps }) => React.createElement(fieldConfig.render, fieldProps)}
+                        render={({ props }) => React.createElement(fieldConfig.render, props)}
                         fields={fields}
                         id={path}
                         onChange={(value, subErrors) => handleChange(path, value)}
@@ -1798,36 +1798,28 @@ const Form = ({
                 const fieldsetFields = createRenderedFields(fieldPath.path);
                 set(renderedFields, fieldPath.path, fieldsets[fieldPath.config.fieldset].render({
                     params: computeFieldsetParams(fieldPath.config.params || {}, fieldsets[fieldPath.config.fieldset].params),
-                    fieldProps: {
-                        fields: get(fieldsetFields, fieldPath.path),
-                        onCollectionAction,
-                        onWizardNav,
-                        getWizardNavHash,
-                        isWizardStepActive,
-                        isWizardStepDisabled,
-                        modifyConfig,
-                        data,
-                        interfaceState,
-                        errors,
-                        asyncData,
-                        isDirty,
-                        focusedField,
-                        lastFocusedField,
-                        dirtyFields,
-                        get,
-                        getConfig
-                    },
-                    actionProps: {
-                        handleActionClick,
-                        handleUndo,
-                        handleRedo,
-                        isDisabled,
-                        isDirty,
-                        focusedField,
-                        lastFocusedField,
-                        dirtyFields,
-                        silentlyGetValidationErrors
-                    },
+                    fields: get(fieldsetFields, fieldPath.path),
+                    onCollectionAction,
+                    onWizardNav,
+                    getWizardNavHash,
+                    isWizardStepActive,
+                    isWizardStepDisabled,
+                    modifyConfig,
+                    data,
+                    interfaceState,
+                    errors,
+                    asyncData,
+                    isDirty,
+                    focusedField,
+                    lastFocusedField,
+                    dirtyFields,
+                    get,
+                    getConfig,
+                    handleActionClick,
+                    handleUndo,
+                    handleRedo,
+                    isDisabled,
+                    silentlyGetValidationErrors
                 }));
             } else {
                 // Regular fields:
@@ -2212,37 +2204,29 @@ const Form = ({
 
     // Render all the render props:
     return render ? render({
-        actionProps: {
-            handleActionClick,
-            handleUndo,
-            handleRedo,
-            isDisabled: pendingAsyncValidations && Object.keys(pendingAsyncValidations).length > 0 ? true : isDisabled,
-            isDirty,
-            focusedField,
-            lastFocusedField,
-            dirtyFields,
-            silentlyGetValidationErrors,
-            updateData
-        },
-        fieldProps: {
-            fields: createRenderedFields(),
-            onCollectionAction,
-            onWizardNav,
-            getWizardNavHash,
-            isWizardStepActive,
-            isWizardStepDisabled,
-            modifyConfig,
-            data,
-            interfaceState,
-            errors,
-            asyncData,
-            isDirty,
-            focusedField,
-            lastFocusedField,
-            dirtyFields,
-            get,
-            getConfig
-        },
+        handleActionClick,
+        handleUndo,
+        handleRedo,
+        isDisabled: pendingAsyncValidations && Object.keys(pendingAsyncValidations).length > 0 ? true : isDisabled,
+        isDirty,
+        focusedField,
+        lastFocusedField,
+        dirtyFields,
+        silentlyGetValidationErrors,
+        updateData,
+        fields: createRenderedFields(),
+        onCollectionAction,
+        onWizardNav,
+        getWizardNavHash,
+        isWizardStepActive,
+        isWizardStepDisabled,
+        modifyConfig,
+        data,
+        interfaceState,
+        errors,
+        asyncData,
+        get,
+        getConfig,
         loading
     }) : renderFields ? renderFields(createRenderedFields()) : null;
 };
