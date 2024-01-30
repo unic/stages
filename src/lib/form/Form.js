@@ -465,7 +465,7 @@ const Form = ({
     const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
         if (!fields[field.type]) return true;
         const thisData = get(fieldData, fieldKey);
-        const isValid = !isReservedType(field.type) && fields[field.type].isValid(thisData, field);
+        const isValid = !isReservedType(field.type) && fields[field.type].validate(thisData, field);
         if (typeValidations[field.type] && typeof typeValidations[field.type].validation === "function" && !field.customValidation) {
             // This field type has a global custom validation and no per field custom validation, 
             // so use the global custom validation!
@@ -1663,17 +1663,6 @@ const Form = ({
                 }
             }
 
-            // Remove special props from field before rendering:
-            delete cleanedField.computedValue;
-            delete cleanedField.computedOptions;
-            delete cleanedField.filter;
-            delete cleanedField.clearFields;
-            delete cleanedField.dynamicOptions;
-            delete cleanedField.isRendered;
-            delete cleanedField.defaultValue;
-            delete cleanedField.cleanUp;
-            delete cleanedField.precision;
-
             // If placeholder is an array, pick one randomly
             if (cleanedField.placeholder && Array.isArray(cleanedField.placeholder) && cleanedField.placeholder.length > 1) {
                 if (typeof chosenPlaceholders[path] === "undefined") {
@@ -1710,6 +1699,13 @@ const Form = ({
 
             if (fieldConfig.type === "fieldset") {
                 return null;
+            }
+
+            // Remove all props which are missing in the field definition:
+            if (fields[cleanedField.type] && Array.isArray(fields[cleanedField.type].props)) {
+                Object.keys(cleanedField).forEach(key => {
+                    if (fields[cleanedField.type].props.indexOf(key) === -1) delete cleanedField[key];
+                });
             }
             
             if (fieldConfig.type !== "subform") {

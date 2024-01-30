@@ -4,50 +4,147 @@ import Select, { isValid as selectIsValid } from "./Select";
 import RadioGroup, { isValid as radioGroupIsValid } from "./RadioGroup";
 import Dummy from "./Dummy";
 
+const inputProps = [
+    "id",
+    "label",
+    "value",
+    "onChange",
+    "onBlur",
+    "onFocus",
+    "error",
+    "placeholder",
+    "isRequired",
+    "isDisabled",
+    "isValidating",
+    "hasFocus",
+    "prefix",
+    "suffix",
+    "secondaryText",
+    "type",
+    "errorRenderer"
+];
+
+const checkboxProps = [
+    "id",
+    "label",
+    "value",
+    "onChange",
+    "onBlur",
+    "onFocus",
+    "error",
+    "placeholder",
+    "isRequired",
+    "isDisabled",
+    "isValidating",
+    "prefix",
+    "suffix",
+    "secondaryText",
+    "type",
+    "errorRenderer"
+];
+
+const selectProps = [
+    "id",
+    "label",
+    "value",
+    "options",
+    "onChange",
+    "onBlur",
+    "onFocus",
+    "error",
+    "placeholder",
+    "isRequired",
+    "isDisabled",
+    "isValidating",
+    "prefix",
+    "suffix",
+    "secondaryText",
+    "errorRenderer"
+];
+
+const radiogroupProps = [
+    "id",
+    "label",
+    "value",
+    "options",
+    "onChange",
+    "onBlur",
+    "onFocus",
+    "error",
+    "isRequired",
+    "isDisabled",
+    "isValidating",
+    "prefix",
+    "suffix",
+    "secondaryText",
+    "errorRenderer"
+];
+
+const dummyProps = [
+    "id",
+    "label",
+    "error",
+    "isRequired",
+    "isValidating",
+    "secondaryText",
+    "errorRenderer"
+];
+
 const fields = {
     text: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     number: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     email: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     password: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     tel: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     time: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     date: {
         component: Input,
-        isValid: inputIsValid
+        validate: inputIsValid,
+        props: inputProps
     },
     checkbox: {
         component: CheckBox,
-        isValid: checkBoxIsValid
+        validate: checkBoxIsValid,
+        props: checkboxProps
     },
     select: {
         component: Select,
-        isValid: selectIsValid
+        validate: selectIsValid,
+        props: selectProps
     },
     radio: {
         component: RadioGroup,
-        isValid: radioGroupIsValid
+        validate: radioGroupIsValid,
+        props: radiogroupProps
     },
     dummy: {
         component: Dummy,
-        isValid: () => true
+        validate: () => true,
+        props: dummyProps
     }
 };
 
