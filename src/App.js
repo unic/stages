@@ -141,7 +141,7 @@ function App() {
                         return false;
                     }
                 }}
-                config={{ fields: () => {
+                config={{ fields: (data, asyncData, interfaceState, validateOn) => {
                     return [
                         {
                             id: "input1",

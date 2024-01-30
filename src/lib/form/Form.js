@@ -184,8 +184,8 @@ const computeFieldsetParams = (fieldConfig, paramConfig) => {
  * @param {Object} fieldsets fieldsets which contain config and render for multiple fields
  * @returns {Array<object>} the parsed config
  */
-const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, fieldsets) => {
-    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState) : 
+const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, fieldsets, validateOn) => {
+    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState, validateOn) : 
         typeof config === "function" ? config(data, asyncData, interfaceState) : 
         Array.isArray(config) ? config : 
         [];
@@ -347,7 +347,7 @@ const Form = ({
     const [parsedFields, setParsedFields] = useState(parseFieldProps(fields));
 
     // Lastly, we craete the actual objects we will work with:
-    const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
+    const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets, validateOn);
     const fieldPaths = getFieldPaths(parsedFieldConfig, alldata, activeStages);
 
     // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
