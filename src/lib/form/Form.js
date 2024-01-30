@@ -271,9 +271,8 @@ const parseFieldProps = fields => {
                     newPropsMapping[Object.keys(prop)[0]] = prop[Object.keys(prop)[0]];
                 }
             });
+            parsedFields[fieldKey].props = newPropsMapping;
         }
-
-        parsedFields[fieldKey].props = newPropsMapping;
     });
 
     return parsedFields;
