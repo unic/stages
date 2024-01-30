@@ -236,6 +236,49 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
     return parsedConfig;
 };
 
+/**
+ * This fuction parses all the possible field props variations into a single variant.
+ * 
+ * @param {Object} fields properties 
+ * @returns {Object}
+ */
+const parseFieldProps = fields => {
+    const parsedFields = {...fields};
+
+    Object.keys(parsedFields).forEach(fieldKey => {
+        const newPropsMapping = {};
+        
+        // "myProp" => "myProp": "myProp"
+        // "myProp:myRenamedProp" => "myProp": "myRenamedProp"
+        // { isRequired: "required" } => "isRequired": "required"
+        // { options: (options) => options } => "options": (options) => options
+
+        if (Array.isArray(parsedFields[fieldKey].props)) {
+            parsedFields[fieldKey].props.forEach(prop => {
+
+                // "myProp:myRenamedProp" => "myProp": "myRenamedProp"
+                if (typeof prop === "string" && prop.indexOf(":") > -1) {
+                    const propSplit = prop.split(":");
+                    newPropsMapping[propSplit[0]] = propSplit[1];
+                
+                // "myProp" => "myProp": "myProp"
+                } else if (typeof prop === "string") {
+                    newPropsMapping[prop] = prop;
+                
+                // { isRequired: "required" } => "isRequired": "required"
+                // { options: (options) => options } => "options": (options) => options
+                } else if (typeof prop === "object") {
+                    newPropsMapping[Object.keys(prop)[0]] = prop[Object.keys(prop)[0]];
+                }
+            });
+        }
+
+        parsedFields[fieldKey].props = newPropsMapping;
+    });
+
+    return parsedFields;
+};
+
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
 let pendingAsyncValidations; // Used to prevent race conditions with async validations
 
@@ -302,6 +345,7 @@ const Form = ({
     const [lastFocusedField, setLastFocusedField] = useState("");
     const [modifiedConfigs, setModifiedConfigs] = useState([]);
     const [activeStages, setActiveStages] = useState({});
+    const [parsedFields, setParsedFields] = useState(parseFieldProps(fields));
 
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
@@ -463,9 +507,9 @@ const Form = ({
      * @returns {boolean} returns true if field value is valid
      */
     const isFieldValid = (fieldKey, field, fieldData, triggeringEvent) => {
-        if (!fields[field.type]) return true;
+        if (!parsedFields[field.type]) return true;
         const thisData = get(fieldData, fieldKey);
-        const isValid = !isReservedType(field.type) && fields[field.type].validate(thisData, field);
+        const isValid = !isReservedType(field.type) && parsedFields[field.type].validate(thisData, field);
         if (typeValidations[field.type] && typeof typeValidations[field.type].validation === "function" && !field.customValidation) {
             // This field type has a global custom validation and no per field custom validation, 
             // so use the global custom validation!
@@ -596,13 +640,13 @@ const Form = ({
                         // Is the data entered valid, check with default field function and optionally with custom validation:
                         const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, triggeringEvent);
 
-                        if (fields[subField.type] && fieldIsValid !== true) {
+                        if (parsedFields[subField.type] && fieldIsValid !== true) {
                             errors[fieldKey] = {
                                 value: fieldValidationData,
                                 subField,
                                 errorCode: fieldIsValid !== false ? fieldIsValid : undefined
                             };
-                        } else if (fields[subField.type] && subField.isUnique) {
+                        } else if (parsedFields[subField.type] && subField.isUnique) {
                             // Check if field is unique in collection:
                             let collectionData = get(validationData, fieldKey, [])
                                 .filter(item => typeof item[subField.id] !== "undefined")
@@ -634,7 +678,7 @@ const Form = ({
                             // Is the data entered valid, check with default field function and optionally with custom validation:
                             const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, triggeringEvent);
 
-                            if (fields[subField.type] && fieldIsValid !== true) {
+                            if (parsedFields[subField.type] && fieldIsValid !== true) {
                                 errors[fieldKey] = {
                                     value: fieldValidationData,
                                     subField,
@@ -854,7 +898,7 @@ const Form = ({
 
         fieldPaths.forEach(fieldPath => {
             if (rootPath === "" || fieldPath.path.startsWith(rootPath)) {
-                if (!fields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
+                if (!parsedFields[fieldPath.config.type] && !isReservedType(fieldPath.config.type)) return;
                 const result = validateField(fieldPath.path, rootPath !== "" ? "render" : "action", validationData, errors, firstErrorField);
                 errors = result.errors;
                 firstErrorField = result.firstErrorField;
@@ -1619,7 +1663,7 @@ const Form = ({
                 if (path.startsWith(nrp)) isInsideHiddenPath = true;
             });
             if (isInsideHiddenPath) return null;
-            if (!fields[fieldConfig.type] && fieldConfig.type !== "subform" && fieldConfig.type !== "group") return null;
+            if (!parsedFields[fieldConfig.type] && fieldConfig.type !== "subform" && fieldConfig.type !== "group") return null;
             if (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, alldata, interfaceState)) {
                 if (fieldConfig.type === "group") notRenderedPaths.push(path);
                 return null;
@@ -1701,16 +1745,26 @@ const Form = ({
                 return null;
             }
 
-            // Remove all props which are missing in the field definition:
-            if (fields[cleanedField.type] && Array.isArray(fields[cleanedField.type].props)) {
+            // Map all field props to their new names or delete them if not set:
+            if (parsedFields[cleanedField.type] && parsedFields[fieldConfig.type].props) {
                 Object.keys(cleanedField).forEach(key => {
-                    if (fields[cleanedField.type].props.indexOf(key) === -1) delete cleanedField[key];
+                    const newKey = parsedFields[fieldConfig.type].props[key];
+                    if (
+                        typeof newKey === "undefined"
+                    ) {
+                        delete cleanedField[key];
+                    } else if (typeof newKey === "string" && key !== newKey) {
+                        cleanedField[newKey] = cleanedField[key];
+                        delete cleanedField[key];
+                    } else if (typeof newKey === "function") {
+                        cleanedField[key] = newKey(cleanedField[key]);
+                    }
                 });
             }
             
             if (fieldConfig.type !== "subform") {
                 return React.createElement(
-                    fields[fieldConfig.type].component,
+                    parsedFields[fieldConfig.type].component,
                     Object.assign({
                         key: path,
                         value: castValue(fieldData),
