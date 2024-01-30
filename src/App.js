@@ -187,6 +187,12 @@ function App() {
                                     }
                                 }
                             ]
+                        },
+                        {
+                            id: "input2",
+                            type: "text",
+                            label: "Input 2",
+                            isRequired: true
                         }
                     ];
                 } }}
@@ -194,6 +200,8 @@ function App() {
                     return (
                         <div>
                             {fieldProps.fields.input1}
+                            <br />
+                            {fieldProps.fields.input2}
                             <br />
                             <button
                                 type="button"
