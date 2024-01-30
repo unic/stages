@@ -126,188 +126,65 @@ function App() {
         <>
             <Debugger />
             <Form
-                id="wizard"
                 data={data}
-                onChange={(payload, errors, id, fieldKey, interfaceState, allErrors) => {
+                onChange={(payload, errors) => {
                     setData(payload);
                     setErrors(errors);
-                    console.log({allErrors});
                 }}
                 fields={fields}
+                id="test"
+                customEvents={{
+                    'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
+                        if (!fieldValue && triggeringEvent === "blur") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length > 5 && triggeringEvent === "change") return true;
+                        if (typeof fieldValue === "string" && fieldValue.length < 5 && triggeringEvent === "blur") return true;
+                        return false;
+                    }
+                }}
                 config={{ fields: () => {
                     return [
                         {
-                            id: "field1",
+                            id: "input1",
+                            label: "Input 1 (default)",
                             type: "text",
-                            label: "Field 1",
                             isRequired: true,
-                            defaultValue: "Default Value"
-                        },
-                        {
-                            id: "num1",
-                            type: "number",
-                            label: "Number Field 1",
-                            defaultValue: 0
-                        },
-                        {
-                            id: "showAdvanced",
-                            type: "checkbox",
-                            label: "Show Advanced",
-                            isInterfaceState: true
-                        },
-                        {
-                            id: "advanced",
-                            type: "group",
-                            label: "Advanced Options",
-                            isRendered: (path, fieldData, allData, interfaceState) => {
-                                return !!interfaceState.showAdvanced;
+                            validation: {
+                                allowedChars: "^[A-Z0-9]*$",
+                                phone: ({ data }) => {
+                                    return true;
+                                },
+                                swissPhone: {
+                                    on: ["change","blur"],
+                                    check: ({ data }) => {
+                                        return true;
+                                    },
+                                    then: ["field2", "group1.input4"]
+                                }
                             },
-                            fields: [
+                            transform: [
                                 {
-                                    id: "field1",
-                                    type: "text",
-                                    label: "Field 1"
-                                }
-                            ]
-                        },
-                        {
-                            id: "myGroup",
-                            type: "group",
-                            label: "Group",
-                            fields: [
-                                {
-                                    id: "field1",
-                                    type: "text",
-                                    label: "Field 1"
+                                    on: "change",
+                                    fn: value => {
+                                        return value.toUpperCase();
+                                    }
                                 },
                                 {
-                                    id: "field2",
-                                    type: "text",
-                                    label: "Field 2"
+                                    on: ["action"],
+                                    fn: value => {
+                                        return value.trim();
+                                    }
                                 },
                                 {
-                                    id: "wizardInsideGroup",
-                                    type: "wizard",
-                                    label: "Wizard inside Group",
-                                    options: {},
-                                    stages: [
-                                        {
-                                            id: "step1",
-                                            type: "stage",
-                                            label: "Step 1",
-                                            fields: [
-                                                {
-                                                    id: "field1",
-                                                    type: "text",
-                                                    label: "Field 1 (Step 1)",
-                                                    isRequired: true
-                                                },
-                                                {
-                                                    id: "field2",
-                                                    type: "text",
-                                                    label: "Field 2 (Step 1)"
-                                                },
-                                            ]
-                                        },
-                                        {
-                                            id: "step2",
-                                            type: "stage",
-                                            label: "Step 2",
-                                            fields: [
-                                                {
-                                                    id: "field1",
-                                                    type: "text",
-                                                    label: "Field 1 (Step 2)",
-                                                    isRequired: true
-                                                },
-                                                {
-                                                    id: "field2",
-                                                    type: "text",
-                                                    label: "Field 2 (Step 2)"
-                                                },
-                                            ]
-                                        },
-                                        {
-                                            id: "step3",
-                                            type: "stage",
-                                            label: "Step 3",
-                                            fields: [
-                                                {
-                                                    id: "field1",
-                                                    type: "text",
-                                                    label: "Field 1 (Step 3)",
-                                                    isRequired: true
-                                                },
-                                                {
-                                                    id: "field2",
-                                                    type: "text",
-                                                    label: "Field 2 (Step 3)"
-                                                },
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            id: "wizard1",
-                            type: "wizard",
-                            label: "Wizard 1",
-                            options: {},
-                            stages: [
-                                {
-                                    id: "step1",
-                                    type: "stage",
-                                    label: "Step 1",
-                                    fields: [
-                                        {
-                                            id: "field1",
-                                            type: "text",
-                                            label: "Field 1 (Step 1)",
-                                            isRequired: true
-                                        },
-                                        {
-                                            id: "field2",
-                                            type: "text",
-                                            label: "Field 2 (Step 1)"
-                                        },
-                                    ]
+                                    on: "onBlurAndChangeIfLong",
+                                    fn: value => {
+                                        return value.replace("1", "2");
+                                    }
                                 },
                                 {
-                                    id: "step2",
-                                    type: "stage",
-                                    label: "Step 2",
-                                    fields: [
-                                        {
-                                            id: "field1",
-                                            type: "text",
-                                            label: "Field 1 (Step 2)",
-                                            isRequired: true
-                                        },
-                                        {
-                                            id: "field2",
-                                            type: "text",
-                                            label: "Field 2 (Step 2)"
-                                        },
-                                    ]
-                                },
-                                {
-                                    id: "step3",
-                                    type: "stage",
-                                    label: "Step 3",
-                                    fields: [
-                                        {
-                                            id: "field1",
-                                            type: "text",
-                                            label: "Field 1 (Step 3)",
-                                            isRequired: true
-                                        },
-                                        {
-                                            id: "field2",
-                                            type: "text",
-                                            label: "Field 2 (Step 3)"
-                                        },
-                                    ]
+                                    on: "init",
+                                    fn: value => {
+                                        return !value ? "1" : value;
+                                    }
                                 }
                             ]
                         }
@@ -316,81 +193,7 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <div>
-                            {fieldProps.fields.field1}
-                            <br />
-                            {fieldProps.fields.num1}
-                            <br />
-                            {fieldProps.fields.showAdvanced}
-                            <br />
-                            {fieldProps.fields.advanced ? fieldProps.fields.advanced.field1 : null}
-                            <br />
-                            {fieldProps.fields.myGroup && (
-                                <div style={{ border: "1px #999 solid", padding: "8px" }}>
-                                    {fieldProps.fields.myGroup.field1}
-                                    {fieldProps.fields.myGroup.field2}
-                                    {fieldProps.fields.myGroup.wizardInsideGroup ? (
-                                        <div>
-                                            <WizardNavigation
-                                                fieldKey="myGroup.wizardInsideGroup"
-                                                config={fieldProps.getConfig("myGroup.wizardInsideGroup")}
-                                                onNav={fieldProps.onWizardNav}
-                                                getHash={fieldProps.getWizardNavHash}
-                                                isStepActive={fieldProps.isWizardStepActive}
-                                                isStepDisabled={fieldProps.isWizardStepDisabled}
-                                            />
-                                            {fieldProps.fields.myGroup.wizardInsideGroup.step1 && (
-                                                <div>
-                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step1.field1}
-                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step1.field2}
-                                                </div>
-                                            )}
-                                            {fieldProps.fields.myGroup.wizardInsideGroup.step2 && (
-                                                <div>
-                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step2.field1}
-                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step2.field2}
-                                                </div>
-                                            )}
-                                            {fieldProps.fields.myGroup.wizardInsideGroup.step3 && (
-                                                <div>
-                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step3.field1}
-                                                    {fieldProps.fields.myGroup.wizardInsideGroup.step3.field2}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : null}
-                                </div>
-                            )}
-                            <br />
-                            {fieldProps.fields.wizard1 ? (
-                                <div>
-                                    <WizardNavigation
-                                        fieldKey="wizard1"
-                                        config={fieldProps.getConfig("wizard1")}
-                                        onNav={fieldProps.onWizardNav}
-                                        getHash={fieldProps.getWizardNavHash}
-                                        isStepActive={fieldProps.isWizardStepActive}
-                                        isStepDisabled={fieldProps.isWizardStepDisabled}
-                                    />
-                                    {fieldProps.fields.wizard1.step1 && (
-                                        <div>
-                                            {fieldProps.fields.wizard1.step1.field1}
-                                            {fieldProps.fields.wizard1.step1.field2}
-                                        </div>
-                                    )}
-                                    {fieldProps.fields.wizard1.step2 && (
-                                        <div>
-                                            {fieldProps.fields.wizard1.step2.field1}
-                                            {fieldProps.fields.wizard1.step2.field2}
-                                        </div>
-                                    )}
-                                    {fieldProps.fields.wizard1.step3 && (
-                                        <div>
-                                            {fieldProps.fields.wizard1.step3.field1}
-                                            {fieldProps.fields.wizard1.step3.field2}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : null}
+                            {fieldProps.fields.input1}
                             <br />
                             <button
                                 type="button"

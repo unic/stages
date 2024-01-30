@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import find from "lodash/find";
-import sortBy from "lodash/sortby";
-import findIndex from "lodash/findindex";
-import uniqWith from "lodash/uniqwith";
-import isEqual from "lodash/isequal";
+import sortBy from "lodash/sortBy";
+import findIndex from "lodash/findIndex";
+import uniqWith from "lodash/uniqWith";
+import isEqual from "lodash/isEqual";
 import get from "lodash/get";
 import set from "lodash/set";
 import unset from "lodash/unset";
@@ -139,6 +139,20 @@ const getFieldPaths = (fieldConfig, data, activeStages) => {
     getPathsForPath();
 
     return paths;
+};
+
+const isTransformForEvent = (t, event, activeCustomEvents) => {
+    return (
+        (
+            t.on === event || 
+            activeCustomEvents.indexOf(t.on) > -1 || 
+            (
+                Array.isArray(t.on) && 
+                (t.on.indexOf(event) > -1 || t.on.some(onEvent => activeCustomEvents.includes(onEvent)))
+            )
+        ) && 
+        typeof t.fn === "function"
+    );
 };
 
 /**
@@ -342,6 +356,26 @@ const Form = ({
                         set(alldata, fieldPath.path, defaultValue);
                     }
                 }
+
+                // Are there any custom events active?
+                const activeCustomEvents = getActiveCustomEvents("init", data);
+
+                let value = fieldPath.data;
+
+                // Run field transform functions:
+                if (fieldPath.config.transform && Array.isArray(fieldPath.config.transform)) {
+                    let transformed = false;
+                    fieldPath.config.transform.forEach((t) => {
+                        if (isTransformForEvent(t, "init", activeCustomEvents)) {
+                            value = t.fn(value);
+                            transformed = true;
+                        };
+                    });
+                    if (transformed) {
+                        set(alldata, fieldPath.path, value);
+                    }
+                }
+
                 // And trigger validation of fields with validate on init:
                 if (
                     (Array.isArray(fieldPath.config.validateOn) && fieldPath.config.validateOn.indexOf("init") > -1) || 
@@ -1248,11 +1282,29 @@ const Form = ({
         let newErrors;
         const timestamp = +new Date();
         const fieldConfig = getConfigForField(fieldKey);
+        let newValue = value;
 
         if (!syntheticCall) lastOnChange = timestamp;
         
         let newData = Object.assign({}, outsideData || alldata);
-        let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
+        
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
+
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && newValue) {
+            let transformed = false;
+            fieldConfig.transform.forEach((t) => {
+                if (isTransformForEvent(t, "change", activeCustomEvents)) {
+                    newValue = t.fn(newValue);
+                    transformed = true;
+                };
+            });
+            if (transformed) {
+                set(newData, fieldKey, newValue);
+                limitedOnChange(newData, errors, id, fieldKey);
+            }
+        }
 
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
@@ -1293,9 +1345,6 @@ const Form = ({
                 }
             }
         }
-
-        // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
 
         // Only validate if change or throttledChange or a custom event validation is enabled:
         if (
@@ -1395,10 +1444,28 @@ const Form = ({
 
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
-        const value = get(newData, fieldKey);
+        let value = get(newData, fieldKey);
 
         setFocusedField(fieldKey);
         setLastFocusedField(fieldKey);
+
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("focus", newData, value);
+
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform)) {
+            let transformed = false;
+            fieldConfig.transform.forEach((t) => {
+                if (isTransformForEvent(t, "focus", activeCustomEvents)) {
+                    value = t.fn(value);
+                    transformed = true;
+                };
+            });
+            if (transformed) {
+                set(newData, fieldKey, value);
+                limitedOnChange(newData, errors, id, fieldKey);
+            }
+        }
 
         // prepare the params for the validateOnCallback:
         const validateOnParams = {
@@ -1407,9 +1474,6 @@ const Form = ({
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
-
-        // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("focus", newData, value);
 
         // Only validate if blur validation or a custom event is enabled:
         if (
@@ -1451,17 +1515,22 @@ const Form = ({
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle blur for field "${fieldKey}"`, uniqId);
 
-        // Run field cleanUp function if one is set:
-        if (fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && typeof value !== "undefined") {
-            value = fieldConfig.cleanUp(value);
-            set(newData, fieldKey, value);
-            handleChange(fieldKey, value, newData, true); // As this is a change, we need to run the onChange handler!
-        }
+        // Are there any custom events active?
+        const activeCustomEvents = getActiveCustomEvents("blur", newData, value);
 
-        // If precision is set, parse the value accordingly:
-        if (typeof fieldConfig.precision === "number") {
-            set(newData, fieldKey, Number(value).toFixed(fieldConfig.precision));
-            limitedOnChange(newData, errors, id, fieldKey);
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform)) {
+            let transformed = false;
+            fieldConfig.transform.forEach((t) => {
+                if (isTransformForEvent(t, "blur", activeCustomEvents)) {
+                    value = t.fn(value);
+                    transformed = true;
+                };
+            });
+            if (transformed) {
+                set(newData, fieldKey, value);
+                limitedOnChange(newData, errors, id, fieldKey);
+            }
         }
 
         // prepare the params for the validateOnCallback:
@@ -1471,9 +1540,6 @@ const Form = ({
             fieldConfig,
             fieldHasFocus: !!(focusedField && focusedField === fieldKey)
         };
-
-        // Are there any custom events active?
-        const activeCustomEvents = getActiveCustomEvents("blur", newData, value);
 
         // Only validate if blur validation or a custom event is enabled:
         if (
@@ -2035,6 +2101,25 @@ const Form = ({
         // Are there any custom events active?
         const activeCustomEvents = getActiveCustomEvents("action", alldata);
         let suppressCallback = false;
+
+        fieldPaths.forEach(fieldPath => {
+            let value = fieldPath.data;
+            // Run field transform functions:
+            if (fieldPath.config.transform && Array.isArray(fieldPath.config.transform)) {
+                let transformed = false;
+                fieldPath.config.transform.forEach((t) => {
+                    if (isTransformForEvent(t, "action", activeCustomEvents)) {
+                        value = t.fn(value);
+                        transformed = true;
+                    };
+                });
+                if (transformed) {
+                    const newData = Object.assign({}, alldata);
+                    set(newData, fieldPath.path, value);
+                    limitedOnChange(newData, errors, id, fieldPath.path);
+                }
+            }
+        });
 
         // Only validate if action validation is enabled (which is the default):
         if (
