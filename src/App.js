@@ -221,19 +221,19 @@ function App() {
                                 {
                                     on: "change",
                                     fn: value => {
-                                        return value.toUpperCase();
+                                        return typeof value === "string" ? value.toUpperCase() : value;
                                     }
                                 },
                                 {
                                     on: ["action"],
                                     fn: value => {
-                                        return value.trim();
+                                        return typeof value === "string" ? value.trim() : value;
                                     }
                                 },
                                 {
                                     on: "onBlurAndChangeIfLong",
                                     fn: value => {
-                                        return value.replace("1", "2");
+                                        return typeof value === "string" ? value.replace("1", "2") : value;
                                     }
                                 },
                                 {
@@ -260,7 +260,7 @@ function App() {
                                         return value && (value.startsWith("++41") || value.startsWith("0041"));
                                     },
                                     then: ["input2", "input3"],
-                                    render: ({ value, errorCode }) => {
+                                    render: ({ value }) => {
                                         return <span>Wrong phone!</span>
                                     }
                                 }

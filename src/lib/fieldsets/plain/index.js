@@ -94,7 +94,7 @@ const fields = {
     text: {
         component: Input,
         validate: inputIsValid,
-        props: inputProps
+        props: inputProps,
     },
     number: {
         component: Input,

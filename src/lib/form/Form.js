@@ -1728,9 +1728,19 @@ const Form = ({
                 cleanedField.placeholder = chosenPlaceholders[path];
             }
 
-            // If this field type has a global custom error renderer and the specific field has no error renderer, use the global one:
-            if (typeValidations[fieldConfig.type] && typeof typeValidations[fieldConfig.type].renderer === "function" && !fieldConfig.errorRenderer) {
-                cleanedField.errorRenderer = typeValidations[fieldConfig.type].renderer;
+            // If this field has a custom error renderer:
+            if (fields[fieldConfig.type] && typeof fields[fieldConfig.type].errorRenderer === "function") {
+                cleanedField.errorRenderer = fields[fieldConfig.type].errorRenderer;
+            }
+
+            // If this field type has a global custom error renderer:
+            if (typeValidations[fieldConfig.type] && typeof typeValidations[fieldConfig.type].errorRenderer === "function") {
+                cleanedField.errorRenderer = typeValidations[fieldConfig.type].errorRenderer;
+            }
+            
+            // If this errorCode has a custom error renderer:
+            if (errors[path] && errors[path].errorCode && fieldConfig.validation && fieldConfig.validation[errors[path].errorCode] && typeof fieldConfig.validation[errors[path].errorCode].render === "function") {
+                cleanedField.errorRenderer = fieldConfig.validation[errors[path].errorCode].render;
             }
 
             // If this field has a pending async validation, set isValidationg to true
