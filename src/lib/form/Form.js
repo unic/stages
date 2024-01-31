@@ -141,6 +141,13 @@ const getFieldPaths = (fieldConfig, data, activeStages) => {
     return paths;
 };
 
+/**
+ * 
+ * @param {Object} t transform object
+ * @param {string} event event to check for
+ * @param {Array} activeCustomEvents currently active custom events
+ * @returns {boolean} true if transform is for event
+ */
 const isTransformForEvent = (t, event, activeCustomEvents) => {
     return (
         (
@@ -185,27 +192,27 @@ const computeFieldsetParams = (fieldConfig, paramConfig) => {
  * @returns {Array<object>} the parsed config
  */
 const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, fieldsets, validateOn) => {
-    let parsedConfig = typeof config.fields === "function" ? config.fields(data, asyncData, interfaceState, validateOn) : 
+    let parsedConfig = typeof config.fields === "function" ? config.fields({ data, asyncData, interfaceState, validateOn }) : 
         typeof config === "function" ? config(data, asyncData, interfaceState) : 
         Array.isArray(config) ? config : 
         [];
 
     const parseConfigItem = configItem => {
         if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
-            return config.fieldConfigs[configItem](data, asyncData, interfaceState);
+            return config.fieldConfigs[configItem]({ data, asyncData, interfaceState });
         } else if (typeof configItem === "object" && config.fieldConfigs && typeof config.fieldConfigs[configItem.type] === "function") {
-            const thisParsedConfig = config.fieldConfigs[configItem.type](data, asyncData, interfaceState);
+            const thisParsedConfig = config.fieldConfigs[configItem.type]({ data, asyncData, interfaceState });
             return Object.assign({}, thisParsedConfig, configItem, { type: thisParsedConfig.type });
         } else if (typeof configItem === "object" && fieldsets[configItem.type]) {
             return {
                 id: configItem.id,
                 type: "fieldset",
                 fieldset: configItem.type,
-                fields: fieldsets[configItem.type].config({data, asyncData, interfaceState, params: computeFieldsetParams(configItem.params || {}, fieldsets[configItem.type].params)}),
+                fields: fieldsets[configItem.type].config({ data, asyncData, interfaceState, params: computeFieldsetParams(configItem.params || {}, fieldsets[configItem.type].params) }),
                 params: configItem.params
             };
         } else if (typeof configItem === "function") {
-            return configItem(data, asyncData, interfaceState);
+            return configItem({ data, asyncData, interfaceState });
         }
         return configItem;
     };
@@ -507,8 +514,8 @@ const Form = ({
             // This field type has a global custom validation and no per field custom validation, 
             // so use the global custom validation!
             return typeValidations[field.type].validation({
-                data: thisData,
-                allData: fieldData,
+                value: thisData,
+                data: fieldData,
                 interfaceState,
                 fieldConfig: field,
                 isValid,
@@ -534,8 +541,8 @@ const Form = ({
         if (!isReservedType(field.type) && typeof field.customValidation === "function") {
             // As this is an async call, only call it if data has changed!
             const customValidationResult = field.customValidation({
-                data: thisData,
-                allData: fieldData,
+                value: thisData,
+                data: fieldData,
                 interfaceState,
                 fieldConfig: field,
                 isValid,
@@ -1007,7 +1014,7 @@ const Form = ({
             if (optionsConfig.enableCaching && optionsCache[cacheKey]) {
                 options = optionsCache[cacheKey];
             } else {
-                options = await optionsConfig.loader(updatedData, handleChange);
+                options = await optionsConfig.loader({ updatedData, handleChange });
                 nrAfterAsyncCall = latestOptionsRequestIDsPerField[fieldKey];
             }
 
@@ -1019,7 +1026,7 @@ const Form = ({
             if (nrAfterAsyncCall === newNr) {
                 updateOptionsLoaded(fieldKey, options);
                 if (optionsConfig.onOptionsChange && typeof optionsConfig.onOptionsChange === "function") {
-                    optionsConfig.onOptionsChange(options, updatedData, handleChange);
+                    optionsConfig.onOptionsChange({ options, updatedData, handleChange });
                 }
             }
         }
@@ -1152,13 +1159,13 @@ const Form = ({
                     if (typeof field.init === "string") {
                         // Init union types with a specific type:
                         if (typeof field.setInitialData === "function") {
-                            fieldData.push(field.setInitialData(fieldData, newData, field.init));
+                            fieldData.push(field.setInitialData({ value: fieldData, data: newData, init: field.init }));
                         } else {
                             fieldData.push({ __typename: field.init });
                         }
                     } else {
                         if (typeof field.setInitialData === "function") {
-                            fieldData.push(field.setInitialData(fieldData, newData));
+                            fieldData.push(field.setInitialData({ value: fieldData, data: newData }));
                         } else {
                             fieldData.push({});
                         }
@@ -1215,7 +1222,7 @@ const Form = ({
         fieldPaths.forEach(fieldPath => {
             if (typeof fieldPath.config.computedValue === "function") {
                 const itemData = get(alldata, fieldPath.path.split(".").slice(0, -1).join("."));
-                const computedValue = fieldPath.config.computedValue(data, itemData, interfaceState);
+                const computedValue = fieldPath.config.computedValue({ data, value: itemData, interfaceState });
                 set(newData, fieldPath.path, computedValue);
             }
         });
@@ -1246,7 +1253,7 @@ const Form = ({
         if (typeof customEvents === "object") {
             Object.keys(customEvents).forEach(key => {
                 if (typeof customEvents[key] === "function" && customEvents[key]({
-                    fieldValue,
+                    value: fieldValue,
                     data: eventData,
                     dirtyFields,
                     optionsLoaded,
@@ -1465,7 +1472,7 @@ const Form = ({
         // If there are any fields to be cleared, do that now:
         if (fieldConfig.clearFields && (Array.isArray(fieldConfig.clearFields) || typeof fieldConfig.clearFields === "function")) {
             const newOptionsLoaded = Object.assign({}, optionsLoaded);
-            const fields = Array.isArray(fieldConfig.clearFields) ? fieldConfig.clearFields : fieldConfig.clearFields(newValue, newData, newErrors);
+            const fields = Array.isArray(fieldConfig.clearFields) ? fieldConfig.clearFields : fieldConfig.clearFields({ value: newValue, data: newData, errors: newErrors });
             fields.forEach((field) => {
                 set(newData, field, undefined);
                 delete newOptionsLoaded[field];
@@ -1657,7 +1664,7 @@ const Form = ({
             });
             if (isInsideHiddenPath) return null;
             if (!parsedFields[fieldConfig.type] && fieldConfig.type !== "subform" && fieldConfig.type !== "group") return null;
-            if (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered(path, fieldData, alldata, interfaceState)) {
+            if (typeof fieldConfig.isRendered === "function" && !fieldConfig.isRendered({ path, value: fieldData, data: alldata, interfaceState })) {
                 if (fieldConfig.type === "group") notRenderedPaths.push(path);
                 return null;
             }
@@ -1669,7 +1676,7 @@ const Form = ({
             if (optionsLoaded[path]) {
                 cleanedField.options = optionsLoaded[path];
             } else if (typeof cleanedField.options === "function") {
-                cleanedField.options = cleanedField.options(path, fieldData, alldata);
+                cleanedField.options = cleanedField.options({ path, value: fieldData, data: alldata });
             } else if (typeof cleanedField.computedOptions === "object") {
                 // Compute options from the data of a collection:
                 let options = get(data, cleanedField.computedOptions.source, []);
@@ -1728,7 +1735,7 @@ const Form = ({
             if (!isReservedType(fieldConfig.type)) {
                 Object.keys(cleanedField).forEach(prop => {
                     if (prop !== "id" && typeof cleanedField[prop] === "function" && prop.endsWith("Fn")) {
-                        cleanedField[prop.substring(0, prop.length - 2)] = cleanedField[prop]({ path, fieldData, alldata, interfaceState });
+                        cleanedField[prop.substring(0, prop.length - 2)] = cleanedField[prop]({ path, value: fieldData, data: alldata, interfaceState });
                         delete cleanedField[prop];
                     }
                 });
