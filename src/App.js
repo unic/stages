@@ -208,7 +208,7 @@ function App() {
                         {
                             id: "input4",
                             type: "select",
-                            label: "Computed Country Options",
+                            label: "Computed Options",
                             compute: {
                                 options: ({ data }) => {
                                     return [1, 2, 3, 4].map(nr => {
@@ -217,6 +217,36 @@ function App() {
                                             text: `${data.input2 || ""}: ${nr}.`
                                         };
                                     });
+                                }
+                            }
+                        },
+                        {
+                            id: "input5",
+                            type: "select",
+                            label: "Dynamic Options",
+                            compute: {
+                                options: {
+                                    watchFields: ['post'],
+                                    events: ["init", "change"],
+                                    enableCaching: true,
+                                    loader: async (data) => {
+                                        if (!data || !data.input2) {
+                                            return [{
+                                                value: "",
+                                                text: "Select a posts comment ..."
+                                            }];
+                                        }
+                                        const response = await fetch(`https://jsonplaceholder.typicode.com/posts`);
+                                        const asyncData = await response.json();
+                                        return asyncData.map(comment => {
+                                            return {
+                                                value: comment.id, text: comment.name
+                                            }
+                                        });
+                                    },
+                                    onOptionsChange: (options, updatedData, handleChange) => {
+                                        // do something with new options
+                                    }
                                 }
                             }
                         }
@@ -232,6 +262,8 @@ function App() {
                             {fields.input3}
                             <br />
                             {fields.input4}
+                            <br />
+                            {fields.input5}
                             <br />
                             <button
                                 type="button"

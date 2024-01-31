@@ -1192,8 +1192,8 @@ const Form = ({
             // Check if a field has dynamic options and needs to initialize them:
             if (Array.isArray(fieldPaths)) {
                 fieldPaths.forEach(fieldPath => {
-                    if (fieldPath.config.dynamicOptions && fieldPath.config.dynamicOptions.events && fieldPath.config.dynamicOptions.events.indexOf("init") > -1) {
-                        createDynamicOptions(fieldPath.path, fieldPath.config.dynamicOptions, newData);
+                    if (typeof fieldPath.config.compute === "object" && typeof fieldPath.config.compute.options === "object" && fieldPath.config.compute.options.events && fieldPath.config.compute.options.events.indexOf("init") > -1) {
+                        createDynamicOptions(fieldPath.path, fieldPath.config.compute.options, newData);
                     }
                 });
             }
@@ -1484,18 +1484,19 @@ const Form = ({
         if (Array.isArray(fieldPaths)) {
             fieldPaths.forEach(fieldPath => {
                 if (
-                    fieldPath.config.dynamicOptions &&
-                    fieldPath.config.dynamicOptions.events &&
-                    fieldPath.config.dynamicOptions.events.indexOf('change') > -1 &&
-                    fieldPath.config.dynamicOptions.watchFields &&
-                    fieldPath.config.dynamicOptions.watchFields.indexOf(fieldKey) > -1 &&
-                    (!fieldConfig.dynamicOptions ||
-                    (fieldConfig.dynamicOptions &&
+                    typeof fieldPath.config.compute === "object" &&
+                    typeof fieldPath.config.compute.options === "object" &&
+                    fieldPath.config.compute.options.events &&
+                    fieldPath.config.compute.options.events.indexOf('change') > -1 &&
+                    fieldPath.config.compute.options.watchFields &&
+                    fieldPath.config.compute.options.watchFields.indexOf(fieldKey) > -1 &&
+                    (!fieldConfig.compute.options ||
+                    (fieldConfig.compute.options &&
                         optionsLoaded[fieldPath.path] &&
                         optionsLoaded[fieldPath.path].indexOf(get(newData, fieldKey)) > -1) ||
                     !optionsLoaded[fieldPath.path])
                 ) {
-                    createDynamicOptions(fieldPath.path, fieldPath.config.dynamicOptions, newData);
+                    createDynamicOptions(fieldPath.path, fieldPath.config.compute.options, newData);
                 }
             });
         }
@@ -1608,13 +1609,14 @@ const Form = ({
         if (Array.isArray(fieldPaths)) {
             fieldPaths.forEach(fieldPath => {
                 if (
-                    fieldPath.config.dynamicOptions && 
-                    fieldPath.config.dynamicOptions.events && 
-                    fieldPath.config.dynamicOptions.events.indexOf("blur") > -1 && 
-                    fieldPath.config.dynamicOptions.watchFields && 
-                    fieldPath.config.dynamicOptions.watchFields.indexOf(fieldConfig.id) > -1
+                    typeof fieldPath.config.compute === "object" && 
+                    typeof fieldPath.config.compute.options === "object" && 
+                    fieldPath.config.compute.options.events && 
+                    fieldPath.config.compute.options.events.indexOf("blur") > -1 && 
+                    fieldPath.config.compute.options.watchFields && 
+                    fieldPath.config.compute.options.watchFields.indexOf(fieldConfig.id) > -1
                 ) {
-                    createDynamicOptions(fieldPath.config.id, fieldPath.config.dynamicOptions, newData);
+                    createDynamicOptions(fieldPath.config.id, fieldPath.config.compute.options, newData);
                 }
                 if (typeof autoSave !== "undefined") {
                     // if autoSave is enabled, but a field has autoSave disabled, remove it from autoSavedData:
