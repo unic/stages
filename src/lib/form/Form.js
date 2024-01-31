@@ -1421,6 +1421,7 @@ const Form = ({
 
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
+        if (fieldConfig.isLogged) console.log(`Change event for field "${fieldKey}" with value:`, newValue);
 
         if (newValue) {
             set(newData, fieldKey, newValue);
@@ -1536,6 +1537,8 @@ const Form = ({
         const newData = Object.assign({}, alldata);
         let value = get(newData, fieldKey);
 
+        if (fieldConfig.isLogged) console.log(`Focus event for field "${fieldKey}" with value:`, value);
+
         setFocusedField(fieldKey);
         setLastFocusedField(fieldKey);
 
@@ -1578,6 +1581,8 @@ const Form = ({
         const newData = Object.assign({}, alldata);
         const autoSavedData = Object.assign({}, alldata);
         let value = get(newData, fieldKey);
+
+        if (fieldConfig.isLogged) console.log(`Blur event for field "${fieldKey}" with value:`, value);
 
         lastOnChange = 0; // Reset the throttled change, so it starts from fresh again
 
