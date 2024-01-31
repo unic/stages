@@ -1220,9 +1220,9 @@ const Form = ({
     const computeValues = (data) => {
         const newData = Object.assign({}, data);
         fieldPaths.forEach(fieldPath => {
-            if (typeof fieldPath.config.computedValue === "function") {
+            if (typeof fieldPath.config.compute === "object" && typeof fieldPath.config.compute.value === "function") {
                 const itemData = get(alldata, fieldPath.path.split(".").slice(0, -1).join("."));
-                const computedValue = fieldPath.config.computedValue({ data, value: itemData, interfaceState });
+                const computedValue = fieldPath.config.compute.value({ data, value: itemData, interfaceState });
                 set(newData, fieldPath.path, computedValue);
             }
         });
@@ -1677,15 +1677,17 @@ const Form = ({
                 cleanedField.options = optionsLoaded[path];
             } else if (typeof cleanedField.options === "function") {
                 cleanedField.options = cleanedField.options({ path, value: fieldData, data: alldata });
-            } else if (typeof cleanedField.computedOptions === "object") {
+            } else if (typeof cleanedField.compute === "object" && typeof cleanedField.compute.options === "function") {
+                cleanedField.options = cleanedField.compute.options({ path, value: fieldData, data: alldata });
+            } else if (typeof cleanedField.compute === "object" && typeof cleanedField.compute.options === "object") {
                 // Compute options from the data of a collection:
-                let options = get(data, cleanedField.computedOptions.source, []);
+                let options = get(data, cleanedField.compute.options.source, []);
                 let fieldValue = get(alldata, path);
 
-                if (typeof cleanedField.computedOptions.filter === "function") options = options.filter(cleanedField.computedOptions.filter);
-                if (typeof cleanedField.computedOptions.sort === "function") options = options.sort(cleanedField.computedOptions.sort);
-                if (typeof cleanedField.computedOptions.map === "function") options = options.map(cleanedField.computedOptions.map);
-                if (cleanedField.computedOptions.initWith && Array.isArray(cleanedField.computedOptions.initWith)) options = cleanedField.computedOptions.initWith.concat(options);
+                if (typeof cleanedField.compute.options.filter === "function") options = options.filter(cleanedField.compute.options.filter);
+                if (typeof cleanedField.compute.options.sort === "function") options = options.sort(cleanedField.compute.options.sort);
+                if (typeof cleanedField.compute.options.map === "function") options = options.map(cleanedField.compute.options.map);
+                if (cleanedField.compute.options.initWith && Array.isArray(cleanedField.compute.options.initWith)) options = cleanedField.compute.options.initWith.concat(options);
                 
                 // If isUnique is set on this field, than disable all already selected options from other items in the collection:
                 if (fieldConfig.isUnique) {

@@ -193,6 +193,32 @@ function App() {
                             type: "text",
                             label: "Input 2",
                             isRequired: true
+                        },
+                        {
+                            id: "input3",
+                            type: "text",
+                            label: "Computed Value from Input 2",
+                            isDisabled: true,
+                            compute: {
+                                value: ({ data }) => {
+                                    return `${data.input2 || ""}!`;
+                                }
+                            }
+                        },
+                        {
+                            id: "input4",
+                            type: "select",
+                            label: "Computed Country Options",
+                            compute: {
+                                options: ({ data }) => {
+                                    return [1, 2, 3, 4].map(nr => {
+                                        return {
+                                            value: nr,
+                                            text: `${data.input2 || ""}: ${nr}.`
+                                        };
+                                    });
+                                }
+                            }
                         }
                     ];
                 } }}
@@ -202,6 +228,10 @@ function App() {
                             {fields.input1}
                             <br />
                             {fields.input2}
+                            <br />
+                            {fields.input3}
+                            <br />
+                            {fields.input4}
                             <br />
                             <button
                                 type="button"
