@@ -1240,7 +1240,8 @@ const Form = ({
      * @returns {object} the field configuration
      */
     const getConfigForField = fieldKey => {
-        return find(fieldPaths, { path: fieldKey }).config;
+        const fieldPath = find(fieldPaths, { path: fieldKey });
+        return fieldPath ? fieldPath.config : {};
     };
 
     /**
