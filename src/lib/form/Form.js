@@ -397,12 +397,12 @@ const Form = ({
 
             // Scan through the fieldPaths to find fields with default data:
             fieldPaths.forEach(fieldPath => {
-                if (typeof fieldPath.config.defaultValue !== "undefined") {
+                if (typeof fieldPath.config.value === "object" && typeof fieldPath.config.value.initial !== "undefined") {
                     const originalData = get(data, fieldPath.path);
                     if (typeof originalData === "undefined") {
-                        const defaultValue = typeof fieldPath.config.defaultValue === "function" ? fieldPath.config.defaultValue(data) : fieldPath.config.defaultValue;
-                        set(data, fieldPath.path, defaultValue);
-                        set(alldata, fieldPath.path, defaultValue);
+                        const initialValue = typeof fieldPath.config.value.initial === "function" ? fieldPath.config.value.initial(data) : fieldPath.config.value.initial;
+                        set(data, fieldPath.path, initialValue);
+                        set(alldata, fieldPath.path, initialValue);
                     }
                 }
 
@@ -1047,7 +1047,7 @@ const Form = ({
         const newData = Object.assign({}, thisData);
 
         fieldPaths.forEach(fieldPath => {
-            if (fieldPath.config.isInterfaceState) {
+            if (typeof fieldPath.config.value === "object" && fieldPath.config.value.isInternal) {
                 const pathData = get(thisData, fieldPath.path);
                 if (typeof pathData !== "undefined") {
                     set(interfaceState, fieldPath.path, pathData);
@@ -2188,7 +2188,7 @@ const Form = ({
         let newIsDirty = false;
         let newDirtyFields = {};
         fieldPaths.forEach(fieldPath => {
-            if (!fieldPath.config.isInterfaceState) {
+            if (!(typeof fieldPath.config.value === "object" &&fieldPath.config.value.isInternal)) {
                 const newPathData = get(data, fieldPath.path);
                 const initialPathData = get(initialData, fieldPath.path);
                 if (newPathData !== initialPathData) {
