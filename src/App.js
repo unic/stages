@@ -141,6 +141,59 @@ function App() {
                         return false;
                     }
                 }}
+                fieldsets={{
+                    dateRange: {
+                        params: {
+                            required: {
+                                type: "boolean",
+                                required: false,
+                                default: true
+                            }
+                        },
+                        config: ({ data, params }) => {
+                            return [
+                                {
+                                    id: "from",
+                                    label: "From",
+                                    type: "date",
+                                    isRequired: params.required
+                                },
+                                {
+                                    id: "to",
+                                    label: "To",
+                                    type: "date",
+                                    isRequired: params.required
+                                }
+                            ];
+                        },
+                        render: ({ fields, params }) => {
+                            return (
+                                <div className="pure-g" style={{ background: params.required ? "#ffeeee" : "transparent" }}>
+                                    <div className="pure-u-1-3">{fields.from}</div>
+                                    <div className="pure-u-1-3">{fields.to}</div>
+                                </div>
+                            );
+                        }
+                    },
+                    coordinates: ({ data }) => {
+                        return {
+                            id: "coords",
+                            type: "group",
+                            fields: [
+                                {
+                                    id: "lat",
+                                    label: "Latitude",
+                                    type: "text"
+                                },
+                                {
+                                    id: "lng",
+                                    label: "Longitude",
+                                    type: "text"
+                                }
+                            ]
+                        };
+                    }
+                }}
                 config={{ fields: ({ data, asyncData, interfaceState, validateOn }) => {
                     return [
                         {
@@ -220,6 +273,11 @@ function App() {
                                 }
                             }
                         },
+                        "coordinates",
+                        {
+                            id: "dateRange",
+                            type: "dateRange"
+                        },
                         {
                             id: "input5",
                             type: "select",
@@ -253,6 +311,7 @@ function App() {
                     ];
                 } }}
                 render={({ fields, handleActionClick }) => {
+                    console.log({ fields });
                     return (
                         <div>
                             {fields.input1}
@@ -262,6 +321,10 @@ function App() {
                             {fields.input3}
                             <br />
                             {fields.input4}
+                            <br />
+                            <div>{fields.coords.lat}{fields.coords.lng}</div>
+                            <br />
+                            <div>{fields.dateRange.from}{fields.dateRange.to}</div>
                             <br />
                             {fields.input5}
                             <br />

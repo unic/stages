@@ -198,10 +198,12 @@ const parseConfig = (config, data, asyncData, interfaceState, modifiedConfigs, f
         [];
 
     const parseConfigItem = configItem => {
-        if (typeof configItem === "string" && config.fieldConfigs && typeof config.fieldConfigs[configItem] === "function") {
-            return config.fieldConfigs[configItem]({ data, asyncData, interfaceState });
-        } else if (typeof configItem === "object" && config.fieldConfigs && typeof config.fieldConfigs[configItem.type] === "function") {
-            const thisParsedConfig = config.fieldConfigs[configItem.type]({ data, asyncData, interfaceState });
+        if (typeof configItem === "string" && config.fieldsets && typeof config.fieldsets[configItem] === "function") {
+            return config.fieldsets[configItem]({ data, asyncData, interfaceState });
+        } else if (typeof configItem === "string" && fieldsets && typeof fieldsets[configItem] === "function") {
+            return fieldsets[configItem]({ data, asyncData, interfaceState });
+        } else if (typeof configItem === "object" && config.fieldsets && typeof config.fieldsets[configItem.type] === "function") {
+            const thisParsedConfig = config.fieldsets[configItem.type]({ data, asyncData, interfaceState });
             return Object.assign({}, thisParsedConfig, configItem, { type: thisParsedConfig.type });
         } else if (typeof configItem === "object" && fieldsets[configItem.type]) {
             return {
@@ -1802,6 +1804,7 @@ const Form = ({
         };
 
         fieldPaths.forEach(fieldPath => {
+            console.log({ fieldPath });
             if (startPath && !fieldPath.path.startsWith(`${startPath}.`)) return;
 
             if (fieldPath.config.type === "fieldset" && fieldsets[fieldPath.config.fieldset]) {
@@ -2085,11 +2088,11 @@ const Form = ({
      * This adds a specific config to the field configuration at a certain path
      * 
      * @param {string} path The path to the field config which should be modified
-     * @param {string} configKey The key of the `fieldConfigs` property to modify
-     * @param {string} action The action to perform on the `fieldConfigs` property
+     * @param {string} configKey The key of the `fieldsets` property to modify
+     * @param {string} action The action to perform on the `fieldsets` property
      */
     const modifyConfig = (path, configKey, action) => {
-        if (config.fieldConfigs && typeof config.fieldConfigs[configKey] === "function") {
+        if (config.fieldsets && typeof config.fieldsets[configKey] === "function") {
             const pathParts = path.split(".");
             let configPath = "";
 
@@ -2108,7 +2111,7 @@ const Form = ({
 
             if (configPath !== "") {
                 modifiedConfigs.push({
-                    fields: config.fieldConfigs[configKey],
+                    fields: config.fieldsets[configKey],
                     path: configPath,
                     action
                 });
