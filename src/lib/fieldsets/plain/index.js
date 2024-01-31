@@ -129,7 +129,8 @@ const fields = {
     checkbox: {
         component: CheckBox,
         validate: checkBoxIsValid,
-        props: checkboxProps
+        props: checkboxProps,
+        transform: value => !!value
     },
     select: {
         component: Select,

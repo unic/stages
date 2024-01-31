@@ -307,7 +307,22 @@ function App() {
                                     }
                                 }
                             }
-                        }
+                        },
+                        {
+                            id: "advanced",
+                            type: "checkbox",
+                            label: "Advanced Options",
+                            value: {
+                                isInternal: true,
+                                initial: false
+                            },
+                            isLogged: true
+                        },
+                        {
+                            id: "checkTest",
+                            type: "checkbox",
+                            label: "Checkbox Test"
+                        },
                     ];
                 } }}
                 render={({ fields, handleActionClick }) => {
@@ -324,9 +339,13 @@ function App() {
                             <br />
                             <div>{fields.coords.lat}{fields.coords.lng}</div>
                             <br />
-                            <div>{fields.dateRange.from}{fields.dateRange.to}</div>
+                            {fields.dateRange}
                             <br />
                             {fields.input5}
+                            <br />
+                            {fields.advanced}
+                            <br />
+                            {fields.checkTest}
                             <br />
                             <button
                                 type="button"

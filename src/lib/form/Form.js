@@ -1771,10 +1771,10 @@ const Form = ({
             if (fieldConfig.type !== "subform") {
                 return React.createElement(
                     parsedFields[fieldConfig.type].component,
-                    Object.assign({
+                    Object.assign({}, cleanedField, {
                         key: path,
-                        value: castValue(fieldData),
-                        initialValue: get(initialData, path),
+                        value: typeof parsedFields[fieldConfig.type].transform === "function" ? parsedFields[fieldConfig.type].transform(castValue(fieldData)) : castValue(fieldData),
+                        initialValue: typeof parsedFields[fieldConfig.type].transform === "function" ? parsedFields[fieldConfig.type].transform(get(initialData, path)) : get(initialData, path),
                         error: errors[path],
                         isDirty: !!dirtyFields[path],
                         isDisabled: isDisabled || fieldConfig.isDisabled,
@@ -1782,7 +1782,7 @@ const Form = ({
                         onChange: value => handleChange(path, value),
                         onFocus: () => handleFocus(path),
                         onBlur: () => handleBlur(path)
-                    }, cleanedField)
+                    })
                 );
             } else {
                 return (
@@ -1804,7 +1804,6 @@ const Form = ({
         };
 
         fieldPaths.forEach(fieldPath => {
-            console.log({ fieldPath });
             if (startPath && !fieldPath.path.startsWith(`${startPath}.`)) return;
 
             if (fieldPath.config.type === "fieldset" && fieldsets[fieldPath.config.fieldset]) {
