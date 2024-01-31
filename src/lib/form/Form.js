@@ -327,6 +327,7 @@ const Form = ({
     fieldsets,
     initialInterfaceState,
     hashSeparator,
+    initialUndoData
 }) => {
     const mounted = useRef(false);
 
@@ -340,8 +341,8 @@ const Form = ({
     const [isDirty, setIsDirty] = useState(false);
     const [dirtyFields, setDirtyFields] = useState({});
     const [initialData, setInitialData] = useState(false);
-    const [undoData, setUndoData] = useState([]);
-    const [activeUndoIndex, setActiveUndoIndex] = useState(0);
+    const [undoData, setUndoData] = useState(Array.isArray(initialUndoData) ? initialUndoData :[]);
+    const [activeUndoIndex, setActiveUndoIndex] = useState(Array.isArray(initialUndoData) ? initialUndoData.length : 0);
     const [runValidation, setRunValidation] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [optionsLoaded, setOptionsLoaded] = useState({});
