@@ -13,7 +13,6 @@ import stringify from "fast-json-stable-stringify";
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
 import { isElementInViewport, isDebugging, isPromise } from "../utils/browser";
-import { has } from "lodash";
 
 /**
  * Cast a value to a specific type
