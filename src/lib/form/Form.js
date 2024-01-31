@@ -1371,7 +1371,7 @@ const Form = ({
                 }
             });
         }
-        
+
         return { hasNewErrors, newErrors };
     };
 
@@ -1741,7 +1741,7 @@ const Form = ({
             if (!isReservedType(fieldConfig.type)) {
                 Object.keys(cleanedField).forEach(prop => {
                     if (prop !== "id" && typeof cleanedField[prop] === "function" && prop.endsWith("Fn")) {
-                        cleanedField[prop.substring(0, prop.length - 2)] = cleanedField[prop]({ path, value: fieldData, data: alldata, interfaceState });
+                        cleanedField[prop.substring(0, prop.length - 2)] = cleanedField[prop]({ path, value: fieldData, data: alldata, interfaceState, config: fieldConfig });
                         delete cleanedField[prop];
                     }
                 });
