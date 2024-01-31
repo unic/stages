@@ -202,20 +202,7 @@ function App() {
                             type: "text",
                             isRequired: true,
                             validation: {
-                                allowedChars: "^[A-Z0-9]*$",
-                                phone: ({ value }) => {
-                                    return true;
-                                },
-                                swissPhone: {
-                                    on: ["change","blur"],
-                                    check: ({ value }) => {
-                                        return value && (value.startsWith("++41") || value.startsWith("0041"));
-                                    },
-                                    then: ["field2", "group1.input4"],
-                                    render: ({ data }) => {
-                                        return <span>Wrong phone!</span>
-                                    }
-                                }
+                                allowedChars: "^[A-Z0-9]*$"
                             },
                             transform: [
                                 {

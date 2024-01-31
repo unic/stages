@@ -13,6 +13,7 @@ import stringify from "fast-json-stable-stringify";
 
 import { getDataFromStorage, saveDataToStorage, removeDataFromStorage } from "../utils/storage";
 import { isElementInViewport, isDebugging, isPromise } from "../utils/browser";
+import { has } from "lodash";
 
 /**
  * Cast a value to a specific type
@@ -1316,7 +1317,9 @@ const Form = ({
 
     const handleValidation = (event, fieldKey, fieldConfig, activeCustomEvents, newData, errors) => {
         const value = get(newData, fieldKey);
+        const isValid = !isReservedType(fieldConfig.type) && parsedFields[fieldConfig.type].validate(value, fieldConfig);
         let newErrors = {...errors};
+        delete newErrors[fieldKey];
         let hasNewErrors = false;
         const isGlobalValidationEvent = validateOn.indexOf(event) > -1 || activeCustomEvents.some(r => validateOn.indexOf(r) > -1);
 
@@ -1328,7 +1331,7 @@ const Form = ({
                     // Regex validation, only global events:
                     if (typeof validationRule === "string" && isGlobalValidationEvent) {
                         const regexRule = new RegExp(validationRule);
-                        if (typeof value === "string" && regexRule.test(value)) {
+                        if (typeof value === "string" && !regexRule.test(value)) {
                             newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
                             hasNewErrors = true;
                         }
@@ -1373,8 +1376,29 @@ const Form = ({
                 }
             });
         }
+        
+        if (!hasNewErrors && !isValid) {
+            hasNewErrors = true;
+            newErrors[fieldKey] = { errorCode: "required", value, field: fieldConfig };
+        }
 
         return { hasNewErrors, newErrors };
+    };
+
+    /**
+     * Validates all paths for the given event and returns any errors found.
+     *
+     * @param {string} event - The event to validate paths for
+     * @return {object} The errors found during validation
+     */
+    const validateAllPaths = (event) => {
+        const activeCustomEvents = getActiveCustomEvents(event, alldata);
+        let allErrors = {};
+        fieldPaths.forEach(fieldPath => {
+            const { hasNewErrors, newErrors } = handleValidation(event, fieldPath.path, fieldPath.config, activeCustomEvents, data, allErrors);
+            if (hasNewErrors) allErrors = newErrors;
+        });
+        return allErrors;
     };
 
     /**
@@ -2194,7 +2218,7 @@ const Form = ({
                 setRunValidation(true);
                 setTimeout(() => setRunValidation(false), 0);
             }
-            let errors = validate ? validationErrors(true) : {};
+            let errors = validate ? validateAllPaths("action") : {};
             setErrors(errors);
             if (Object.keys(errors).length > 0) suppressCallback = true;
         }
