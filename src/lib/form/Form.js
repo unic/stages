@@ -1393,12 +1393,24 @@ const Form = ({
     const validateAllPaths = (event, newData, path) => {
         const activeCustomEvents = getActiveCustomEvents(event, newData || data);
         let allErrors = {};
+        let firstErrorField;
+
         fieldPaths.forEach(fieldPath => {
             if (!path || (path && fieldPath.path.startsWith(path))) {
                 const { hasNewErrors, newErrors } = handleValidation(event, fieldPath.path, fieldPath.config, activeCustomEvents, newData || data, allErrors);
-                if (hasNewErrors) allErrors = newErrors;
+                if (hasNewErrors) {
+                    allErrors = newErrors;
+                    if (!firstErrorField) firstErrorField = fieldPath.path;
+                }
             }
         });
+
+        // Jump to the first field which has an error:
+        if (firstErrorField && isVisible && event) {
+            const element = document.getElementById(firstErrorField);
+            if (element && !isElementInViewport(element)) element.scrollIntoView();
+        }
+
         return allErrors;
     };
 
