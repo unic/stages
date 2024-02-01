@@ -451,7 +451,7 @@ const Form = ({
                     setTimeout(() => {
                         setIsDirty(!!savedData.isDirty);
                         setDirtyFields(typeof savedData.dirtyFields === "object" ? savedData.dirtyFields : {});
-                        limitedOnChange(savedData.data, validationErrors(false, savedData.data), id);
+                        limitedOnChange(savedData.data, validateAllPaths("", savedData.data), id);
                     }, 0);   
                 }
             }
@@ -925,7 +925,7 @@ const Form = ({
      * @returns {object} an object containing the errors
      */
     const silentlyGetValidationErrors = () => {
-        return validationErrors(false);
+        return validateAllPaths("");
     };
 
     // To make sure that subforms are being validated, we have to run validation each time validation is being 
@@ -934,7 +934,7 @@ const Form = ({
         if (typeof onValidation === "function" && parentRunValidation) {
             // @ts-ignore
             if (isDebugging()) window.stagesLogging(`Get errors on validation`, uniqId);
-            let errors = validationErrors(true);
+            let errors = validateAllPaths("");
             setErrors(errors);
             onValidation(errors);
         }
@@ -949,7 +949,7 @@ const Form = ({
     const handleSubValidation = (subId, subErrors) => {
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Get sub form errors for sub id "${subId}"`, uniqId);
-        validationErrors(true);
+        validateAllPaths("");
         if (subErrors && Object.keys(subErrors).length > 0) {
             errors[subId] = subErrors;
         }
@@ -1078,7 +1078,7 @@ const Form = ({
             newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey, interfaceState });
         } catch(error) {};
         if (newLastOnChangeData !== lastOnChangeData || forceChange) {
-            onChange(removeInterfaceState(newData), errors, id, fieldKey, interfaceState, validationErrors(false, newData));
+            onChange(removeInterfaceState(newData), errors, id, fieldKey, interfaceState, validateAllPaths("", newData));
             lastOnChangeData = newLastOnChangeData;
         }
     };
@@ -1210,7 +1210,7 @@ const Form = ({
             }
         }
 
-        limitedOnChange(newData, validationErrors(), id); // will trigger validations even with no inits
+        limitedOnChange(newData, validateAllPaths(""), id); // will trigger validations even with no inits
     }, [isVisible]);
 
     /**
@@ -1390,12 +1390,14 @@ const Form = ({
      * @param {string} event - The event to validate paths for
      * @return {object} The errors found during validation
      */
-    const validateAllPaths = (event) => {
-        const activeCustomEvents = getActiveCustomEvents(event, alldata);
+    const validateAllPaths = (event, newData, path) => {
+        const activeCustomEvents = getActiveCustomEvents(event, newData || data);
         let allErrors = {};
         fieldPaths.forEach(fieldPath => {
-            const { hasNewErrors, newErrors } = handleValidation(event, fieldPath.path, fieldPath.config, activeCustomEvents, data, allErrors);
-            if (hasNewErrors) allErrors = newErrors;
+            if (!path || (path && fieldPath.path.startsWith(path))) {
+                const { hasNewErrors, newErrors } = handleValidation(event, fieldPath.path, fieldPath.config, activeCustomEvents, newData || data, allErrors);
+                if (hasNewErrors) allErrors = newErrors;
+            }
         });
         return allErrors;
     };
@@ -1541,7 +1543,7 @@ const Form = ({
             }
         }
 
-        limitedOnChange(newData, validationErrors(false, newData), id, fieldKey);
+        limitedOnChange(newData, validateAllPaths("", newData), id, fieldKey);
     };
 
     /*
@@ -1664,15 +1666,15 @@ const Form = ({
         // Auto save data if enabled:
         if (typeof autoSave !== "undefined") {
             if (autoSave === "local" || autoSave === "session") {
-                const currentErrors = validationErrors(false, newData);
+                const currentErrors = validateAllPaths("", newData);
                 if (Object.keys(currentErrors).length === 0) saveDataToStorage(id, { data: autoSavedData, isDirty, dirtyFields }, autoSave);
             } else if (typeof autoSave === "object" && (autoSave.type === "local" || autoSave.type === "session")) {
-                const currentErrors = validationErrors(false, newData);
+                const currentErrors = validateAllPaths("", newData);
                 if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
                     saveDataToStorage(id, { data: autoSavedData, isDirty, dirtyFields }, autoSave.type);
                 }
             } else if (typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.save === "function") {
-                const currentErrors = validationErrors(false, newData);
+                const currentErrors = validateAllPaths("", newData);
                 if ((autoSave.validDataOnly && Object.keys(currentErrors).length === 0) || !autoSave.validDataOnly) {
                     autoSave.save(id, { data: autoSavedData, isDirty, dirtyFields });
                 }
@@ -2000,7 +2002,7 @@ const Form = ({
             setErrors(newErrors);
         }
 
-        limitedOnChange(newData, newErrors || validationErrors(), id, fieldKey);
+        limitedOnChange(newData, newErrors || validateAllPaths(""), id, fieldKey);
     };
 
     const onWizardNav = (navType, path, stage) => {
@@ -2114,7 +2116,7 @@ const Form = ({
 
             // Only advance if all previous steps are valid:
             for (let i = 0; i < thisIndex; i++) {
-                const thisErrors = validationErrors(false, data, `${path}.${fieldConfig.stages[i].id}`);
+                const thisErrors = validateAllPaths("", data, `${path}.${fieldConfig.stages[i].id}`);
                 if (Object.keys(thisErrors).length > 0) {
                     return true;
                 }
@@ -2180,7 +2182,7 @@ const Form = ({
             if (id && typeof autoSave === "object" && autoSave.type === "custom" && typeof autoSave.remove === "function") {
                 autoSave.remove(id);
             }
-            limitedOnChange(initialData, validationErrors(), id);
+            limitedOnChange(initialData, validateAllPaths(""), id);
             setDirtyFields({});
             setIsDirty(false);
         }
@@ -2226,7 +2228,7 @@ const Form = ({
     };
 
     const updateData = (data) => {
-        limitedOnChange(data, validationErrors(), id);
+        limitedOnChange(data, validateAllPaths(""), id);
 
         // We need to recalculate dirty fields!
         let newIsDirty = false;
