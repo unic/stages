@@ -1343,8 +1343,17 @@ const Form = ({
                         }
                     // Function validation, only global events:
                     } else if (typeof validationRule === "function" && isGlobalValidationEvent) {
-                        const isValid = validationRule({ value, data: newData, event });
-                        if (!isValid) {
+                        const fieldIsValid = validationRule({
+                            value,
+                            data: newData,
+                            event,
+                            interfaceState,
+                            fieldConfig,
+                            isValid,
+                            fieldHasFocus: !!(focusedField && focusedField === fieldKey),
+                            fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined"
+                        });
+                        if (!fieldIsValid) {
                             newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
                             hasNewErrors = true;
                         }
@@ -1361,8 +1370,17 @@ const Form = ({
                                     ruleHasNewErrors = true;
                                 }
                             } else if (typeof validationRule.check === "function") {
-                                const isValid = validationRule.check({ value, data: newData, event });
-                                if (!isValid) {
+                                const fieldIsValid = validationRule.check({
+                                    value,
+                                    data: newData,
+                                    event,
+                                    interfaceState,
+                                    fieldConfig,
+                                    isValid,
+                                    fieldHasFocus: !!(focusedField && focusedField === fieldKey),
+                                    fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined"
+                                });
+                                if (!fieldIsValid) {
                                     newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
                                     ruleHasNewErrors = true;
                                 }
