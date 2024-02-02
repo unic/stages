@@ -1310,8 +1310,8 @@ const Form = ({
                     if (!ruleConformsToData) {
                         errors[fieldKey] = {
                             value: fieldValidationData,
-                            fieldConfig,
-                            errorCode: valueRules.errorCode || "invalidRule"
+                            errorCode: valueRules.errorCode || "invalidRule",
+                            event
                         };
                     }
                 });
@@ -1338,7 +1338,7 @@ const Form = ({
                     if (typeof validationRule === "string" && isGlobalValidationEvent) {
                         const regexRule = new RegExp(validationRule);
                         if (typeof value === "string" && !regexRule.test(value)) {
-                            newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                            newErrors[fieldKey] = { errorCode, value, event };
                             hasNewErrors = true;
                         }
                     // Function validation, only global events:
@@ -1354,7 +1354,7 @@ const Form = ({
                             fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined"
                         });
                         if (!fieldIsValid) {
-                            newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                            newErrors[fieldKey] = { errorCode, value, event };
                             hasNewErrors = true;
                         }
                     // Object validation, events defined in object:
@@ -1366,7 +1366,7 @@ const Form = ({
                             if (typeof validationRule.check === "string") {
                                 const regexRule = new RegExp(validationRule.check);
                                 if (typeof value === "string" && regexRule.test(value)) {
-                                    newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                                    newErrors[fieldKey] = { errorCode, value, event };
                                     ruleHasNewErrors = true;
                                 }
                             } else if (typeof validationRule.check === "function") {
@@ -1381,7 +1381,7 @@ const Form = ({
                                     fieldIsDirty: typeof dirtyFields[fieldKey] !== "undefined"
                                 });
                                 if (!fieldIsValid) {
-                                    newErrors[fieldKey] = { errorCode, value, field: fieldConfig };
+                                    newErrors[fieldKey] = { errorCode, value, event };
                                     ruleHasNewErrors = true;
                                 }
                             }
@@ -1409,7 +1409,7 @@ const Form = ({
         
         if (!hasNewErrors && !isValid) {
             hasNewErrors = true;
-            newErrors[fieldKey] = { errorCode: "required", value, field: fieldConfig };
+            newErrors[fieldKey] = { errorCode: "required", value, event };
         }
 
         return { hasNewErrors, newErrors };
