@@ -212,7 +212,7 @@ function App() {
                                     }
                                 },
                                 {
-                                    on: ["action"],
+                                    on: ["action", "blur"],
                                     fn: value => {
                                         return typeof value === "string" ? value.trim() : value;
                                     }
@@ -335,9 +335,31 @@ function App() {
                             type: "checkbox",
                             label: "Checkbox Test"
                         },
+                        {
+                            id: "collection8",
+                            type: "collection",
+                            isRequired: true,
+                            uniqEntries: true,
+                            init: true,
+                            min: 1,
+                            fields: [
+                                {
+                                    id: "field1",
+                                    label: "Field 1",
+                                    type: "text",
+                                    isRequired: true
+                                },
+                                {
+                                    id: "field2",
+                                    label: "Field 2",
+                                    type: "text",
+                                    isRequired: false
+                                }
+                            ]
+                        },
                     ];
                 } }}
-                render={({ fields, handleActionClick }) => {
+                render={({ fields, handleActionClick, onCollectionAction }) => {
                     console.log({ fields });
                     return (
                         <div>
@@ -360,6 +382,20 @@ function App() {
                             {fields.advanced}
                             <br />
                             {fields.checkTest}
+                            <br />
+                            <fieldset style={{ flexGrow: 1, padding: "0", border: "none", background: "#eee" }}>
+                                <h3 style={{ padding: "8px", margin: 0 }}>Done:</h3>
+                                {fields.collection8 ? fields.collection8.map((subFields, index) => {
+                                    return (
+                                        <div key={`collection8-${index}`} style={{ background: "#eee", margin: "8px", padding: "8px", display: "flex" }}>
+                                            {subFields.field1}
+                                            {subFields.field2}
+                                            <button type="button" onClick={() => onCollectionAction("collection8", "remove", index)}>-</button>
+                                        </div>
+                                    );
+                                }) : null}
+                                <button type="button" onClick={() => onCollectionAction("collection8", "add")}>+</button>
+                            </fieldset>
                             <br />
                             <button
                                 type="button"

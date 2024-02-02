@@ -615,270 +615,8 @@ const Form = ({
                 errorCode: fieldIsValid !== false ? fieldIsValid : undefined
             };
         // Collections which are required (need to have at least one entry!):
-        } else if (
-            field.type === "collection" && 
-            field.isRequired && 
-            (
-                !fieldValidationData || 
-                fieldValidationData.length === 0 || 
-                (fieldValidationData.length === 1 && 
-                Object.keys(fieldValidationData[0]).length === 0)
-            )
-        ) {
-            if (!firstErrorField) firstErrorField = fieldKey;
-            errors[fieldKey] = {
-                value: fieldValidationData,
-                field
-            };
-        // Collections which are not required will only be checked if data has been added:
-        } else if (field.type === "collection") {
-            if (Array.isArray(field.fields)) {
-                field.fields.forEach(subField => {
-                    fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
-                        const arrayFieldPath = `${fieldKey}[${index}].${subField.id}`;
-
-                        // Don't check fields if the collection isn't required and the object is empty:
-                        if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
-
-                        // Is the data entered valid, check with default field function and optionally with custom validation:
-                        const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, triggeringEvent);
-
-                        if (parsedFields[subField.type] && fieldIsValid !== true) {
-                            errors[fieldKey] = {
-                                value: fieldValidationData,
-                                subField,
-                                errorCode: fieldIsValid !== false ? fieldIsValid : undefined
-                            };
-                        } else if (parsedFields[subField.type] && subField.isUnique) {
-                            // Check if field is unique in collection:
-                            let collectionData = get(validationData, fieldKey, [])
-                                .filter(item => typeof item[subField.id] !== "undefined")
-                                .map(item => item[subField.id]);
-                            
-                            const uniqCollectionData = [...new Set(collectionData)];
-
-                            if (uniqCollectionData.length !== collectionData.length) {
-                                errors[fieldKey] = {
-                                    value: fieldValidationData,
-                                    subField,
-                                    errorCode: "notUnique"
-                                };
-                            }
-                        }
-                    });
-                });
-            } else {
-                // This is a union type collection, so we need to get the validation config inside the types object:
-                fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
-                    // Don't check fields if the collection isn't required and the object is empty:
-                    if (!field.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
-
-                    if (field.fields[dataEntry.__typename]) {
-                        const subFields = field.fields[dataEntry.__typename];
-                        subFields.forEach(subField => {
-                            const arrayFieldPath = `${fieldKey}[${index}].${subField.id}`;
-
-                            // Is the data entered valid, check with default field function and optionally with custom validation:
-                            const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, triggeringEvent);
-
-                            if (parsedFields[subField.type] && fieldIsValid !== true) {
-                                errors[fieldKey] = {
-                                    value: fieldValidationData,
-                                    subField,
-                                    errorCode: fieldIsValid !== false ? fieldIsValid : undefined
-                                };
-                            }
-                        });
-                    }
-                });
-            }
         }
 
-        // Check if data is unique if that's a requirement:
-        if (field.type === "collection" && field.uniqEntries && fieldValidationData) {
-            // Add error if collection entries are not unique!
-            if (uniqWith(fieldValidationData, (arrVal, othVal) => stringify(arrVal) === stringify(othVal)).length !== fieldValidationData.length) {
-                errors[fieldKey] = {
-                    value: fieldValidationData,
-                    field
-                };
-            }
-        }
-
-        // If the collection has rules set, check them against the data:
-        if (field.type === "collection" && field.rules && typeof field.rules === "object" && fieldValidationData) {
-            Object.keys(field.rules).forEach(ruleField => {
-                const rules = field.rules[ruleField];
-                Object.keys(rules).forEach((value) => {
-                    const valueRules = rules[value]; // An object of rules for this field/value combo
-                    
-                    // Convert fields and values to array, even if they are a primitive value:
-                    const ruleFields = ruleField.indexOf(",") > -1 ? ruleField.split(",") : [ruleField];
-                    const values = value.indexOf(",") > -1 ? value.split(",") : [value];
-                    const fieldValueCombos = getCombosFromTwoArrays(ruleFields, values);
-
-                    let ruleConformsToData = true;
-
-                    /*
-                        For rule: "position": { "goalkeeper": { maxCount: 1 } }
-
-                        ruleFields: ["position"]
-                        values: ["goalkeeper"] or [] (for calculation on a field)
-                        valueRules: { maxCount: 1 }
-                        fieldValidationData: collection data array -> [{}, {}, ...]
-
-                        Multiple fields or values can be added, by comma separating them like this: "prename,lastname"
-                        Fields can use dot syntax, for nested properties: "coords.lat"
-                    */
-
-                    // max occurence of value, example: "position": { "goalkeeper": { maxCount: 1, errorCode: "goalkeeperOne" } }
-                    if (valueRules.maxCount && typeof valueRules.maxCount === "number") {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let count = 0;
-                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
-                            if (count > valueRules.maxCount) ruleConformsToData = false;
-                        });
-                    }
-
-                    // min occurence of value, example: "position": { "defender": { minCount: 3, errorCode: "defenderMiminum" } }
-                    if (valueRules.minCount && typeof valueRules.minCount === "number") {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let count = 0;
-                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
-                            if (count < valueRules.minCount) ruleConformsToData = false;
-                        });
-                    }
-
-                    // exact occurence of value, example: "position": { "defender": { exactCount: 3 } }
-                    if (valueRules.exactCount && typeof valueRules.exactCount === "number") {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let count = 0;
-                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
-                            if (count !== valueRules.exactCount) ruleConformsToData = false;
-                        });
-                    }
-
-                    // same occurence of value as another field, example: "position": { "defender": { sameCountAs: "midfield" } }
-                    if (valueRules.sameCountAs && typeof valueRules.sameCountAs === "string") {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let count = 0;
-                            let otherValueCount = 0;
-                            fieldValidationData.forEach(d => {
-                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) count++;
-                                if (get(d, fieldValueCombo[0]) === valueRules.sameCountAs) otherValueCount++;
-                            });
-                            if (count !== otherValueCount) ruleConformsToData = false;
-                        });
-                    }
-
-                    // same occurence of value as another field, example: "position": { "defender": { differentCountAs: "midfield" } }
-                    if (valueRules.differentCountAs && typeof valueRules.differentCountAs === "string") {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let count = 0;
-                            let otherValueCount = 0;
-                            fieldValidationData.forEach(d => {
-                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) count++;
-                                if (get(d, fieldValueCombo[0]) === valueRules.differentCountAs) otherValueCount++;
-                            });
-                            if (count === otherValueCount) ruleConformsToData = false;
-                        });
-                    }
-
-                    // same sum as, example: "spending": { "": { sameSumAs: "income" } }
-                    if (
-                        (valueRules.sameSumAs && typeof valueRules.sameSumAs === "string") ||
-                        (valueRules.differentSumAs && typeof valueRules.differentSumAs === "string") || 
-                        (valueRules.biggerSumAs && typeof valueRules.biggerSumAs === "string") ||
-                        (valueRules.smallerSumAs && typeof valueRules.smallerSumAs === "string")
-                    ) {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let sum1 = 0;
-                            let sum2 = 0;
-                            fieldValidationData.forEach(d => {
-                                const thisValue1 = Number(get(d, fieldValueCombo[0]));
-                                const thisValue2 = Number(get(d, valueRules.sameSumAs || valueRules.differentSumAs || valueRules.biggerSumAs || valueRules.smallerSumAs));
-                                if (!isNaN(thisValue1)) sum1 = sum1 + thisValue1;
-                                if (!isNaN(thisValue2)) sum2 = sum2 + thisValue2;
-                            });
-                            if (valueRules.sameSumAs && sum1 !== sum2) ruleConformsToData = false;
-                            if (valueRules.differentSumAs && sum1 === sum2) ruleConformsToData = false;
-                            if (valueRules.biggerSumAs && sum1 <= sum2) ruleConformsToData = false;
-                            if (valueRules.smallerSumAs && sum1 >= sum2) ruleConformsToData = false;
-                        });
-                    }
-
-                    // Check if multi field value combinations are unique, example: "prename,lastname": { "": { isUnique: true } }
-                    if (valueRules.isUnique && ruleFields.length > 0) {
-                        const valueCombos = [];
-                        let duplicateFound = false;
-                        fieldValidationData.forEach(d => {
-                            const combo = ruleFields.map(f => get(d, f));
-                            valueCombos.forEach(c => {
-                                if (isEqual(combo, c)) duplicateFound = true;
-                            });
-                            valueCombos.push(combo);
-                        });
-                        if (duplicateFound) ruleConformsToData = false;
-                    }
-
-                    // Disallow certain values if something is set, example: "gender": { "ms": { disallow: "mr" } }
-                    if (valueRules.disallow) {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let bannedValueFound = false;
-                            let searchValueFound = false;
-                            fieldValidationData.forEach(d => {
-                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) searchValueFound = true;
-                                if (Array.isArray(valueRules.disallow)) {
-                                    valueRules.disallow.forEach(str => {
-                                        if (get(d, fieldValueCombo[0]) === str) bannedValueFound = true;
-                                    });
-                                } else {
-                                    if (get(d, fieldValueCombo[0]) === valueRules.disallow) bannedValueFound = true;
-                                }
-                            });
-                            if (searchValueFound && bannedValueFound) ruleConformsToData = false;
-                        });
-                    }
-
-                    // Require certain values if something is set, example: "gender": { "ms": { require: "mr" } }
-                    if (valueRules.disallow) {
-                        fieldValueCombos.forEach(fieldValueCombo => {
-                            let requiredValueFound = false;
-                            let searchValueFound = false;
-                            fieldValidationData.forEach(d => {
-                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) searchValueFound = true;
-                                if (Array.isArray(valueRules.disallow)) {
-                                    valueRules.disallow.forEach(str => {
-                                        if (get(d, fieldValueCombo[0]) === str) requiredValueFound = true;
-                                    });
-                                } else {
-                                    if (get(d, fieldValueCombo[0]) === valueRules.disallow) requiredValueFound = true;
-                                }
-                            });
-                            if (searchValueFound && !requiredValueFound) ruleConformsToData = false;
-                        });
-                    }
-
-                    // Check all custom rule handlers
-                    if (ruleConformsToData && typeof customRuleHandlers === "object") {
-                        Object.keys(customRuleHandlers).forEach(customRule => {
-                            if (typeof valueRules[customRule] !== "undefined" && typeof customRuleHandlers[customRule] === "function") {
-                                const result = customRuleHandlers[customRule]({ fieldValueCombos, fieldValidationData, valueRules, get });
-                                if (!result) ruleConformsToData = false;
-                            }
-                        });
-                    }
-
-                    if (!ruleConformsToData) {
-                        errors[fieldKey] = {
-                            value: fieldValidationData,
-                            field,
-                            errorCode: valueRules.errorCode || "invalidRule"
-                        };
-                    }
-                });
-            });
-        }
         return {
             errors,
             firstErrorField
@@ -1314,6 +1052,275 @@ const Form = ({
         return newPath;
     };
 
+    const validateCollection = (event, fieldKey, fieldConfig, newData, errors) => {
+        const fieldValidationData = get(newData, fieldKey);
+
+        if (
+            fieldConfig.isRequired && 
+            (
+                !fieldValidationData || 
+                fieldValidationData.length === 0 || 
+                (fieldValidationData.length === 1 && 
+                Object.keys(fieldValidationData[0]).length === 0)
+            )
+        ) {
+            errors[fieldKey] = {
+                value: fieldValidationData,
+                fieldConfig
+            };
+        // Collections which are not required will only be checked if data has been added:
+        } else {
+            if (Array.isArray(fieldConfig.fields)) {
+                fieldConfig.fields.forEach(subField => {
+                    fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
+                        const arrayFieldPath = `${fieldKey}[${index}].${subField.id}`;
+
+                        // Don't check fields if the collection isn't required and the object is empty:
+                        if (!fieldConfig.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
+
+                        // Is the data entered valid, check with default field function and optionally with custom validation:
+                        const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, event);
+
+                        if (parsedFields[subField.type] && fieldIsValid !== true) {
+                            errors[fieldKey] = {
+                                value: fieldValidationData,
+                                subField,
+                                errorCode: fieldIsValid !== false ? fieldIsValid : undefined
+                            };
+                        } else if (parsedFields[subField.type] && subField.isUnique) {
+                            // Check if field is unique in collection:
+                            let collectionData = get(newData, fieldKey, [])
+                                .filter(item => typeof item[subField.id] !== "undefined")
+                                .map(item => item[subField.id]);
+                            
+                            const uniqCollectionData = [...new Set(collectionData)];
+
+                            if (uniqCollectionData.length !== collectionData.length) {
+                                errors[fieldKey] = {
+                                    value: fieldValidationData,
+                                    subField,
+                                    errorCode: "notUnique"
+                                };
+                            }
+                        }
+                    });
+                });
+            } else {
+                // This is a union type collection, so we need to get the validation config inside the types object:
+                fieldValidationData && fieldValidationData.forEach((dataEntry, index) => {
+                    // Don't check fields if the collection isn't required and the object is empty:
+                    if (!fieldConfig.isRequired && (!dataEntry || Object.keys(dataEntry).length === 0)) return;
+
+                    if (fieldConfig.fields[dataEntry.__typename]) {
+                        const subFields = fieldConfig.fields[dataEntry.__typename];
+                        subFields.forEach(subField => {
+                            const arrayFieldPath = `${fieldKey}[${index}].${subField.id}`;
+
+                            // Is the data entered valid, check with default field function and optionally with custom validation:
+                            const fieldIsValid = isFieldValid(subField, arrayFieldPath, dataEntry, event);
+
+                            if (parsedFields[subField.type] && fieldIsValid !== true) {
+                                errors[fieldKey] = {
+                                    value: fieldValidationData,
+                                    subField,
+                                    errorCode: fieldIsValid !== false ? fieldIsValid : undefined
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        // Check if data is unique if that's a requirement:
+        if (fieldConfig.uniqEntries && fieldValidationData) {
+            // Add error if collection entries are not unique!
+            if (uniqWith(fieldValidationData, (arrVal, othVal) => stringify(arrVal) === stringify(othVal)).length !== fieldValidationData.length) {
+                errors[fieldKey] = {
+                    value: fieldValidationData,
+                    fieldConfig
+                };
+            }
+        }
+
+        // If the collection has rules set, check them against the data:
+        if (fieldConfig.rules && typeof fieldConfig.rules === "object" && fieldValidationData) {
+            Object.keys(fieldConfig.rules).forEach(ruleField => {
+                const rules = fieldConfig.rules[ruleField];
+                Object.keys(rules).forEach((value) => {
+                    const valueRules = rules[value]; // An object of rules for this field/value combo
+                    
+                    // Convert fields and values to array, even if they are a primitive value:
+                    const ruleFields = ruleField.indexOf(",") > -1 ? ruleField.split(",") : [ruleField];
+                    const values = value.indexOf(",") > -1 ? value.split(",") : [value];
+                    const fieldValueCombos = getCombosFromTwoArrays(ruleFields, values);
+
+                    let ruleConformsToData = true;
+
+                    /*
+                        For rule: "position": { "goalkeeper": { maxCount: 1 } }
+
+                        ruleFields: ["position"]
+                        values: ["goalkeeper"] or [] (for calculation on a field)
+                        valueRules: { maxCount: 1 }
+                        fieldValidationData: collection data array -> [{}, {}, ...]
+
+                        Multiple fields or values can be added, by comma separating them like this: "prename,lastname"
+                        Fields can use dot syntax, for nested properties: "coords.lat"
+                    */
+
+                    // max occurence of value, example: "position": { "goalkeeper": { maxCount: 1, errorCode: "goalkeeperOne" } }
+                    if (valueRules.maxCount && typeof valueRules.maxCount === "number") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
+                            if (count > valueRules.maxCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // min occurence of value, example: "position": { "defender": { minCount: 3, errorCode: "defenderMiminum" } }
+                    if (valueRules.minCount && typeof valueRules.minCount === "number") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
+                            if (count < valueRules.minCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // exact occurence of value, example: "position": { "defender": { exactCount: 3 } }
+                    if (valueRules.exactCount && typeof valueRules.exactCount === "number") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            fieldValidationData.forEach(d => get(d, fieldValueCombo[0]) === fieldValueCombo[1] ? count++ : undefined);
+                            if (count !== valueRules.exactCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // same occurence of value as another field, example: "position": { "defender": { sameCountAs: "midfield" } }
+                    if (valueRules.sameCountAs && typeof valueRules.sameCountAs === "string") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            let otherValueCount = 0;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) count++;
+                                if (get(d, fieldValueCombo[0]) === valueRules.sameCountAs) otherValueCount++;
+                            });
+                            if (count !== otherValueCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // same occurence of value as another field, example: "position": { "defender": { differentCountAs: "midfield" } }
+                    if (valueRules.differentCountAs && typeof valueRules.differentCountAs === "string") {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let count = 0;
+                            let otherValueCount = 0;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) count++;
+                                if (get(d, fieldValueCombo[0]) === valueRules.differentCountAs) otherValueCount++;
+                            });
+                            if (count === otherValueCount) ruleConformsToData = false;
+                        });
+                    }
+
+                    // same sum as, example: "spending": { "": { sameSumAs: "income" } }
+                    if (
+                        (valueRules.sameSumAs && typeof valueRules.sameSumAs === "string") ||
+                        (valueRules.differentSumAs && typeof valueRules.differentSumAs === "string") || 
+                        (valueRules.biggerSumAs && typeof valueRules.biggerSumAs === "string") ||
+                        (valueRules.smallerSumAs && typeof valueRules.smallerSumAs === "string")
+                    ) {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let sum1 = 0;
+                            let sum2 = 0;
+                            fieldValidationData.forEach(d => {
+                                const thisValue1 = Number(get(d, fieldValueCombo[0]));
+                                const thisValue2 = Number(get(d, valueRules.sameSumAs || valueRules.differentSumAs || valueRules.biggerSumAs || valueRules.smallerSumAs));
+                                if (!isNaN(thisValue1)) sum1 = sum1 + thisValue1;
+                                if (!isNaN(thisValue2)) sum2 = sum2 + thisValue2;
+                            });
+                            if (valueRules.sameSumAs && sum1 !== sum2) ruleConformsToData = false;
+                            if (valueRules.differentSumAs && sum1 === sum2) ruleConformsToData = false;
+                            if (valueRules.biggerSumAs && sum1 <= sum2) ruleConformsToData = false;
+                            if (valueRules.smallerSumAs && sum1 >= sum2) ruleConformsToData = false;
+                        });
+                    }
+
+                    // Check if multi field value combinations are unique, example: "prename,lastname": { "": { isUnique: true } }
+                    if (valueRules.isUnique && ruleFields.length > 0) {
+                        const valueCombos = [];
+                        let duplicateFound = false;
+                        fieldValidationData.forEach(d => {
+                            const combo = ruleFields.map(f => get(d, f));
+                            valueCombos.forEach(c => {
+                                if (isEqual(combo, c)) duplicateFound = true;
+                            });
+                            valueCombos.push(combo);
+                        });
+                        if (duplicateFound) ruleConformsToData = false;
+                    }
+
+                    // Disallow certain values if something is set, example: "gender": { "ms": { disallow: "mr" } }
+                    if (valueRules.disallow) {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let bannedValueFound = false;
+                            let searchValueFound = false;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) searchValueFound = true;
+                                if (Array.isArray(valueRules.disallow)) {
+                                    valueRules.disallow.forEach(str => {
+                                        if (get(d, fieldValueCombo[0]) === str) bannedValueFound = true;
+                                    });
+                                } else {
+                                    if (get(d, fieldValueCombo[0]) === valueRules.disallow) bannedValueFound = true;
+                                }
+                            });
+                            if (searchValueFound && bannedValueFound) ruleConformsToData = false;
+                        });
+                    }
+
+                    // Require certain values if something is set, example: "gender": { "ms": { require: "mr" } }
+                    if (valueRules.disallow) {
+                        fieldValueCombos.forEach(fieldValueCombo => {
+                            let requiredValueFound = false;
+                            let searchValueFound = false;
+                            fieldValidationData.forEach(d => {
+                                if (get(d, fieldValueCombo[0]) === fieldValueCombo[1]) searchValueFound = true;
+                                if (Array.isArray(valueRules.disallow)) {
+                                    valueRules.disallow.forEach(str => {
+                                        if (get(d, fieldValueCombo[0]) === str) requiredValueFound = true;
+                                    });
+                                } else {
+                                    if (get(d, fieldValueCombo[0]) === valueRules.disallow) requiredValueFound = true;
+                                }
+                            });
+                            if (searchValueFound && !requiredValueFound) ruleConformsToData = false;
+                        });
+                    }
+
+                    // Check all custom rule handlers
+                    if (ruleConformsToData && typeof customRuleHandlers === "object") {
+                        Object.keys(customRuleHandlers).forEach(customRule => {
+                            if (typeof valueRules[customRule] !== "undefined" && typeof customRuleHandlers[customRule] === "function") {
+                                const result = customRuleHandlers[customRule]({ fieldValueCombos, fieldValidationData, valueRules, get });
+                                if (!result) ruleConformsToData = false;
+                            }
+                        });
+                    }
+
+                    if (!ruleConformsToData) {
+                        errors[fieldKey] = {
+                            value: fieldValidationData,
+                            fieldConfig,
+                            errorCode: valueRules.errorCode || "invalidRule"
+                        };
+                    }
+                });
+            });
+        }
+
+        return errors;
+    };
+
     const handleValidation = (event, fieldKey, fieldConfig, activeCustomEvents, newData, errors) => {
         const value = get(newData, fieldKey);
         const isValid = !isReservedType(fieldConfig.type) && parsedFields[fieldConfig.type].validate(value, fieldConfig);
@@ -1322,7 +1329,7 @@ const Form = ({
         let hasNewErrors = false;
         const isGlobalValidationEvent = validateOn.indexOf(event) > -1 || activeCustomEvents.some(r => validateOn.indexOf(r) > -1);
 
-        if (fieldConfig.validation && typeof fieldConfig.validation === "object") {
+        if (fieldConfig.validation && typeof fieldConfig.validation === "object" && !isReservedType(fieldConfig.type)) {
             Object.keys(fieldConfig.validation).forEach(errorCode => {
                 if (errorCode !== "render") {
                     const validationRule = fieldConfig.validation[errorCode];
@@ -1374,6 +1381,12 @@ const Form = ({
                     }
                 }
             });
+        } else if (fieldConfig.type === "collection") {
+            const collectionErrors = validateCollection(event, fieldKey, fieldConfig, newData, {});
+            if (Object.keys(collectionErrors).length > 0) {
+                newErrors = Object.assign({}, newErrors, collectionErrors);
+                hasNewErrors = true;
+            }
         }
         
         if (!hasNewErrors && !isValid) {
