@@ -297,7 +297,7 @@ const cleanUpStaleData = (data, fieldPaths) => {
     const newData = {};
     fieldPaths.forEach(fieldPath => {
         const value = get(data, fieldPath.path);
-        if (typeof value !== "undefined") set(newData, fieldPath.path, get(data, fieldPath.path));
+        if (typeof value !== "undefined" && value !== "") set(newData, fieldPath.path, get(data, fieldPath.path));
     });
     return newData;
 };
@@ -1483,7 +1483,7 @@ const Form = ({
         if (!syntheticCall) lastOnChange = timestamp;
         
         let newData = Object.assign({}, outsideData || alldata);
-        
+
         // Are there any custom events active?
         const activeCustomEvents = getActiveCustomEvents("change", newData, newValue);
 
