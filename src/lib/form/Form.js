@@ -287,6 +287,21 @@ const parseFieldProps = fields => {
     return parsedFields;
 };
 
+/**
+ * Removes stale data
+ * @param {Object} data the latest form data
+ * @param {Array<object>} fieldPaths all the current paths
+ * @returns {object} the cleaned up form data
+ */
+const cleanUpStaleData = (data, fieldPaths) => {
+    const newData = {};
+    fieldPaths.forEach(fieldPath => {
+        const value = get(data, fieldPath.path);
+        if (typeof value !== "undefined") set(newData, fieldPath.path, get(data, fieldPath.path));
+    });
+    return newData;
+};
+
 const latestOptionsRequestIDsPerField = {}; // Used to prevent race conditions in options loaders
 let pendingAsyncValidations; // Used to prevent race conditions with async validations
 
@@ -327,7 +342,8 @@ const Form = ({
     fieldsets,
     initialInterfaceState,
     hashSeparator,
-    initialUndoData
+    initialUndoData,
+    cleanUpData
 }) => {
     const mounted = useRef(false);
 
@@ -387,6 +403,8 @@ const Form = ({
         });
 
         if (JSON.stringify(activeStages) !== JSON.stringify(newActiveStages)) setActiveStages(newActiveStages);
+
+        if (cleanUpData) limitedOnChange(cleanUpStaleData(alldata, fieldPaths), errors, id);
     }, [config]);
 
     // Checks if the component is mounted, to prevent memory leaks for all callbacks from outside
@@ -2363,7 +2381,9 @@ Form.propTypes = {
     //** @type {Object} Definition for fieldsets containing fields config and a render function for multiple fields */
     fieldsets: PropTypes.object,
     //** @type {Object} The initial value for the forms interface state */
-    initialInterfaceState: PropTypes.object
+    initialInterfaceState: PropTypes.object,
+    //** @type {boolean} Whether the form should clean up stale data if the config changes */
+    cleanUpData: PropTypes.bool
 };
 
 Form.defaultProps = {
@@ -2377,7 +2397,8 @@ Form.defaultProps = {
     autoSave: false,
     typeValidations: {},
     fieldsets: {},
-    initialInterfaceState: {}
+    initialInterfaceState: {},
+    cleanUpData: false
 };
 
 export default Form;

@@ -132,6 +132,7 @@ function App() {
                     setErrors(errors);
                 }}
                 fields={fields}
+                cleanUpData
                 id="test"
                 customEvents={{
                     'onBlurAndChangeIfLong': ({ fieldValue, triggeringEvent }) => {
@@ -195,7 +196,7 @@ function App() {
                     }
                 }}
                 config={{ fields: ({ data, asyncData, interfaceState, validateOn }) => {
-                    return [
+                    const fieldConfig = [
                         {
                             id: "input1",
                             label: "Input 1 (default)",
@@ -321,16 +322,6 @@ function App() {
                             }
                         },
                         {
-                            id: "advanced",
-                            type: "checkbox",
-                            label: "Advanced Options",
-                            value: {
-                                isInternal: true,
-                                initial: false
-                            },
-                            isLogged: true
-                        },
-                        {
                             id: "checkTest",
                             type: "checkbox",
                             label: "Checkbox Test"
@@ -357,10 +348,35 @@ function App() {
                                 }
                             ]
                         },
+                        {
+                            id: "advanced",
+                            type: "checkbox",
+                            label: "Advanced Options",
+                            value: {
+                                isInternal: true,
+                                initial: false
+                            },
+                            isLogged: true
+                        },
+                        {
+                            id: "hiddenField",
+                            type: "text",
+                            label: "Hidden Field",
+                            isRendered: ({ data }) => !!data.advanced
+                        },
                     ];
+                    if (data.advanced) {
+                        fieldConfig.push(
+                            {
+                                id: "hiddenField2",
+                                type: "text",
+                                label: "Hidden Field 2"
+                            }
+                        );
+                    }
+                    return fieldConfig;
                 } }}
                 render={({ fields, handleActionClick, onCollectionAction }) => {
-                    console.log({ fields });
                     return (
                         <div>
                             {fields.input1}
@@ -379,8 +395,6 @@ function App() {
                             <br />
                             {fields.input5}
                             <br />
-                            {fields.advanced}
-                            <br />
                             {fields.checkTest}
                             <br />
                             <fieldset style={{ flexGrow: 1, padding: "0", border: "none", background: "#eee" }}>
@@ -396,6 +410,12 @@ function App() {
                                 }) : null}
                                 <button type="button" onClick={() => onCollectionAction("collection8", "add")}>+</button>
                             </fieldset>
+                            <br />
+                            {fields.advanced}
+                            <br />
+                            {fields.hiddenField}
+                            <br />
+                            {fields.hiddenField2}
                             <br />
                             <button
                                 type="button"
