@@ -258,7 +258,16 @@ function App() {
                             id: "input2",
                             type: "text",
                             label: "Input 2",
-                            isRequired: true
+                            isRequired: true,
+                            validation: {
+                                minTwoChars: {
+                                    on: ["change","blur"],
+                                    check: ({ value }) => {
+                                        return value && value.length >= 2;
+                                    },
+                                    then: ["phone"]
+                                }
+                            }
                         },
                         {
                             id: "input3",

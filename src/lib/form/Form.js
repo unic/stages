@@ -297,7 +297,9 @@ const cleanUpStaleData = (data, fieldPaths) => {
     const newData = {};
     fieldPaths.forEach(fieldPath => {
         const value = get(data, fieldPath.path);
-        if (typeof value !== "undefined" && value !== "") set(newData, fieldPath.path, get(data, fieldPath.path));
+        if (typeof value !== "undefined" && value !== "" && !(Array.isArray(value) && value.length === 0)) {
+            set(newData, fieldPath.path, get(data, fieldPath.path));
+        }
     });
     return newData;
 };
@@ -1339,7 +1341,8 @@ const Form = ({
         return errors;
     };
 
-    const handleValidation = (event, fieldKey, fieldConfig, activeCustomEvents, newData, errors) => {
+    const handleValidation = (event, fieldKey, fieldConfig, activeCustomEvents, newData, errors, previousThenFields) => {
+        const thenFields = previousThenFields || [fieldKey];
         const value = get(newData, fieldKey);
         const isValid = !isReservedType(fieldConfig.type) && parsedFields[fieldConfig.type].validate(value, fieldConfig);
         let newErrors = {...errors};
@@ -1407,9 +1410,12 @@ const Form = ({
                         if (ruleHasNewErrors) {
                             if (Array.isArray(validationRule.then)) {
                                 validationRule.then.forEach(thenField => {
-                                    const result = handleValidation(event, thenField, getConfigForField(thenField), activeCustomEvents, newData, newErrors);
-                                    newErrors = Object.assign({}, newErrors, result.errors);
-                                    hasNewErrors = true;
+                                    if (thenFields.indexOf(thenField) === -1) {
+                                        const result = handleValidation(event, thenField, getConfigForField(thenField), activeCustomEvents, newData, newErrors, thenFields);
+                                        newErrors = Object.assign({}, newErrors, result.errors);
+                                        hasNewErrors = true;
+                                        thenFields.push(thenField);
+                                    }
                                 });
                             }
                             hasNewErrors = true;
