@@ -2,6 +2,7 @@ import Input, { isValid as inputIsValid } from "./Input";
 import CheckBox, { isValid as checkBoxIsValid } from "./CheckBox";
 import Select, { isValid as selectIsValid } from "./Select";
 import RadioGroup, { isValid as radioGroupIsValid } from "./RadioGroup";
+import CheckBoxGroup, { isValid as checkBoxGroupIsValid } from "./CheckBoxGroup";
 import Dummy from "./Dummy";
 
 const fields = {
@@ -44,6 +45,10 @@ const fields = {
     radio: {
         component: RadioGroup,
         isValid: radioGroupIsValid
+    },
+    checkboxGroup: {
+        component: CheckBoxGroup,
+        isValid: checkBoxGroupIsValid
     },
     dummy: {
         component: Dummy,

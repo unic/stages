@@ -131,11 +131,21 @@ function App() {
                 onChange={(payload, errors, id, fieldKey, interfaceState, allErrors) => {
                     setData(payload);
                     setErrors(errors);
-                    console.log({allErrors});
+                    console.log({allErrors, payload});
                 }}
                 fields={fields}
                 config={{ fields: () => {
                     return [
+                        {
+                            id: "checkboxes",
+                            type: "checkboxGroup",
+                            label: "Checkboxes",
+                            options: [
+                                { value: "option1", text: "Option 1" },
+                                { value: "option2", text: "Option 2" },
+                                { value: "option3", text: "Option 3" },
+                            ]
+                        },
                         {
                             id: "field1",
                             type: "text",
@@ -316,6 +326,8 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <div>
+                            {fieldProps.fields.checkboxes}
+                            <br />
                             {fieldProps.fields.field1}
                             <br />
                             {fieldProps.fields.num1}

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import find from "lodash/find";
-import sortBy from "lodash/sortby";
-import findIndex from "lodash/findindex";
-import uniqWith from "lodash/uniqwith";
-import isEqual from "lodash/isequal";
+import sortBy from "lodash/sortBy";
+import findIndex from "lodash/findIndex";
+import uniqWith from "lodash/uniqWith";
+import isEqual from "lodash/isEqual";
 import get from "lodash/get";
 import set from "lodash/set";
 import unset from "lodash/unset";
@@ -1261,12 +1261,13 @@ const Form = ({
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
-        if (newValue) {
-            set(newData, fieldKey, newValue);
-        } else {
+        if (!newValue || (Array.isArray(newValue) && newValue.length === 0)) {
             // Remove if false, to make sure isDirty is calculated correctly!
             set(newData, fieldKey, undefined);
+        } else {
+            set(newData, fieldKey, newValue);
         }
+
 
         // Now run over all computed value fields to recalculate all dynamic data:
         newData = computeValues(newData);
@@ -1330,6 +1331,7 @@ const Form = ({
             } else if (typeof dirtyFields[fieldKey] !== "undefined") {
                 delete dirtyFields[fieldKey];
             }
+            console.log({ dirtyFields, isDirty: Object.keys(dirtyFields).length > 0 });
             setIsDirty(Object.keys(dirtyFields).length > 0);
             setDirtyFields(dirtyFields);
         }
