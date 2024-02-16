@@ -1331,7 +1331,6 @@ const Form = ({
             } else if (typeof dirtyFields[fieldKey] !== "undefined") {
                 delete dirtyFields[fieldKey];
             }
-            console.log({ dirtyFields, isDirty: Object.keys(dirtyFields).length > 0 });
             setIsDirty(Object.keys(dirtyFields).length > 0);
             setDirtyFields(dirtyFields);
         }
