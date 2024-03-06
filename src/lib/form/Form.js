@@ -997,7 +997,7 @@ const Form = ({
             newLastOnChangeData = stringify({ newData, errors: Object.keys(errors), id, fieldKey, interfaceState });
         } catch(error) {};
         if (newLastOnChangeData !== lastOnChangeData || forceChange) {
-            onChange(removeInterfaceState(newData), errors, id, fieldKey, interfaceState, validationErrors(false, newData));
+            onChange(removeInterfaceState(newData), errors, id, fieldKey, interfaceState, validationErrors(false, newData), Object.keys(dirtyFields).length > 0, dirtyFields);
             lastOnChangeData = newLastOnChangeData;
         }
     };

@@ -80,6 +80,7 @@ function App() {
         ]
     });
     const [errors, setErrors] = useState({});
+    const [isDirty, setIsDirty] = useState(false);
     const onSubmit = () => {
         console.log("submit:", data);
     };
@@ -125,13 +126,15 @@ function App() {
     return (
         <>
             <Debugger />
+            {isDirty ? "dirty" : ""}
             <Form
                 id="wizard"
                 data={data}
-                onChange={(payload, errors, id, fieldKey, interfaceState, allErrors) => {
+                onChange={(payload, errors, id, fieldKey, interfaceState, allErrors, isDirty) => {
                     setData(payload);
                     setErrors(errors);
-                    console.log({allErrors, payload});
+                    setIsDirty(isDirty);
+                    console.log({allErrors, payload, isDirty});
                 }}
                 fields={fields}
                 config={{ fields: () => {
