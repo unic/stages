@@ -1254,6 +1254,22 @@ const Form = ({
         let newData = Object.assign({}, outsideData || alldata);
         let newValue = typeof fieldConfig.filter === "function" ? fieldConfig.filter(value) : value; //Filter data if needed
 
+        // Run field cleanUp function if this is a throttled change and the field is not focused to prevent a race condition with cleanups:
+        if (syntheticCall && fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && typeof newValue !== "undefined") {
+            // To make sure we always have the correct value for the focusedField, we need to wrap this in a setTimeout and a set state:
+            setTimeout(() => {
+                setFocusedField(prevFocusedField => {
+                    if (prevFocusedField !== fieldKey) {
+                        const cleanedValue = fieldConfig.cleanUp(newValue);
+                        let cleanedData = Object.assign({}, outsideData || alldata);
+                        set(cleanedData, fieldKey, cleanedValue);
+                        limitedOnChange(cleanedData, validationErrors(false, cleanedData), id, fieldKey);
+                    }
+                    return prevFocusedField;
+                });
+            }, 0);
+        }
+
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
         if (fieldConfig.cast && Array.isArray(fieldConfig.cast.data)) newValue = castValueStrType(newValue, fieldConfig.cast.data[0], true);
@@ -1267,7 +1283,6 @@ const Form = ({
         } else {
             set(newData, fieldKey, newValue);
         }
-
 
         // Now run over all computed value fields to recalculate all dynamic data:
         newData = computeValues(newData);
@@ -1442,6 +1457,7 @@ const Form = ({
         if (!isMounted()) return;
 
         setFocusedField("");
+
         const fieldConfig = getConfigForField(fieldKey);
         const newData = Object.assign({}, alldata);
         const autoSavedData = Object.assign({}, alldata);
@@ -1535,7 +1551,6 @@ const Form = ({
                 }
             }
         }
-        
     };
 
     /**

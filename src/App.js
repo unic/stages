@@ -154,7 +154,9 @@ function App() {
                             type: "text",
                             label: "Field 1",
                             isRequired: true,
-                            defaultValue: "Default Value"
+                            defaultValue: "Default Value",
+                            cleanUp: (value) => value.replace(/ +/g, ' ').trim(),
+                            validateOn: ["throttledChange", "action"]
                         },
                         {
                             id: "num1",
