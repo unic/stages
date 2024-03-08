@@ -1256,18 +1256,17 @@ const Form = ({
 
         // Run field cleanUp function if this is a throttled change and the field is not focused to prevent a race condition with cleanups:
         if (syntheticCall && fieldConfig.cleanUp && typeof fieldConfig.cleanUp === "function" && typeof newValue !== "undefined") {
-            // To make sure we always have the correct value for the focusedField, we need to wrap this in a setTimeout and a set state:
-            setTimeout(() => {
-                setFocusedField(prevFocusedField => {
-                    if (prevFocusedField !== fieldKey) {
-                        const cleanedValue = fieldConfig.cleanUp(newValue);
-                        let cleanedData = Object.assign({}, outsideData || alldata);
-                        set(cleanedData, fieldKey, cleanedValue);
-                        limitedOnChange(cleanedData, validationErrors(false, cleanedData), id, fieldKey);
-                    }
-                    return prevFocusedField;
-                });
-            }, 0);
+            // To make sure we always have the correct value for the focusedField, we need to set this inside a set state:
+            setFocusedField(prevFocusedField => {
+                if (prevFocusedField !== fieldKey) {
+                    const cleanedValue = fieldConfig.cleanUp(newValue);
+                    let cleanedData = Object.assign({}, outsideData || alldata);
+                    set(cleanedData, fieldKey, cleanedValue);
+                    // Needed to not freak out React:
+                    setTimeout(() => limitedOnChange(cleanedData, validationErrors(false, cleanedData), id, fieldKey), 0);
+                }
+                return prevFocusedField;
+            });
         }
 
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "function") newValue = fieldConfig.cast.data(newValue);
