@@ -2086,12 +2086,12 @@ const Form = ({
         if (!suppressCallback) callback();
     };
 
-    const updateData = (data) => {
-        limitedOnChange(data, validationErrors(), id);
-
-        // We need to recalculate dirty fields!
+    const updateData = (data, pathsToValidate = []) => {
+        // We need to recalculate dirty fields and new errors!
         let newIsDirty = false;
         let newDirtyFields = {};
+        let newErrors = {...errors};
+
         fieldPaths.forEach(fieldPath => {
             if (!fieldPath.config.isInterfaceState) {
                 const newPathData = get(data, fieldPath.path);
@@ -2103,9 +2103,17 @@ const Form = ({
                     }
                 }
             }
+            if (pathsToValidate.indexOf(fieldPath.path) > -1) {
+                const fieldErrors = validateField(fieldPath.path, 'change', data, errors);
+                newErrors = Object.assign({}, newErrors, fieldErrors.errors);
+            }
         });
+
+        setErrors(newErrors);
         setIsDirty(newIsDirty);
         setDirtyFields(newDirtyFields);
+
+        limitedOnChange(data, newErrors, id);
     };
 
     const getConfig = (path) => {

@@ -343,6 +343,7 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <div>
+                            <button onClick={() => actionProps.updateData({ f1: "Test ..." }, ["f2"])}>Update Data</button>
                             {fieldProps.fields.f1}
                             <br />
                             {fieldProps.fields.f2}
