@@ -1335,6 +1335,15 @@ const Form = ({
             setErrors(newErrors);
         }
 
+        // Check if there are any fields which have a dependent validation defined, like: validateOn: ["change", "field1:change"]
+        fieldPaths.forEach(fieldPath => {
+            if (fieldPath.config.validateOn && Array.isArray(fieldPath.config.validateOn) && fieldPath.config.validateOn.indexOf(`${fieldKey}:change`) > -1) {
+                const result = validateField(fieldPath.path, "change", newData, newErrors || errors);
+                newErrors = Object.assign({}, newErrors || errors, result.errors);
+                setErrors(newErrors);
+            }
+        });
+
         // Set the isDirty flag and per field object:
         if (initialData) {
             if (!isEqual(get(newData, fieldKey), get(initialData, fieldKey))) {
@@ -1509,6 +1518,15 @@ const Form = ({
             setErrors(Object.assign({}, errors, result.errors));
             limitedOnChange(newData, result.errors, id, fieldKey);
         }
+
+        // Check if there are any fields which have a dependent validation defined, like: validateOn: ["blur", "field1:blur"]
+        fieldPaths.forEach(fieldPath => {
+            if (fieldPath.config.validateOn && Array.isArray(fieldPath.config.validateOn) && fieldPath.config.validateOn.indexOf(`${fieldKey}:blur`) > -1) {
+                const result = validateField(fieldPath.path, "blur", newData, errors);
+                const newErrors = Object.assign({}, errors, result.errors);
+                setErrors(newErrors);
+            }
+        });
 
         // Check if a field has dynamic options which have to be loaded:
         if (Array.isArray(fieldPaths)) {

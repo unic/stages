@@ -140,6 +140,18 @@ function App() {
                 config={{ fields: () => {
                     return [
                         {
+                            id: "f1",
+                            type: "text",
+                            label: "F1"
+                        },
+                        {
+                            id: "f2",
+                            type: "text",
+                            label: "F2",
+                            isRequired: true,
+                            validateOn: ["change", "f1:change"]
+                        },
+                        {
                             id: "checkboxes",
                             type: "checkboxGroup",
                             label: "Checkboxes",
@@ -331,6 +343,10 @@ function App() {
                 render={({ fieldProps, actionProps }) => {
                     return (
                         <div>
+                            {fieldProps.fields.f1}
+                            <br />
+                            {fieldProps.fields.f2}
+                            <br />
                             {fieldProps.fields.checkboxes}
                             <br />
                             {fieldProps.fields.field1}
