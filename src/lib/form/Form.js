@@ -291,7 +291,7 @@ const Form = ({
 
     // Lastly, we craete the actual objects we will work with:
     const parsedFieldConfig = parseConfig(config, alldata, asyncData, interfaceState, modifiedConfigs, fieldsets);
-    const fieldPaths = getFieldPaths(parsedFieldConfig, alldata, activeStages);
+    let fieldPaths = getFieldPaths(parsedFieldConfig, alldata, activeStages);
 
     // As we have functions which can be triggered from outside and do state updates, we need to check if the component is still mounted!
     useEffect(() => {
@@ -1875,15 +1875,14 @@ const Form = ({
 
         // Only validate if collection action validation is enabled:
         if (validateOn.indexOf("collectionAction") > -1 || (field.validateOn && field.validateOn.indexOf("collectionAction") > -1)) {
-            let updatedFieldPaths = fieldPaths;
-            if (collectionIsUpdated) updatedFieldPaths = getFieldPaths(parsedFieldConfig, newData, activeStages);
+            if (collectionIsUpdated) fieldPaths = getFieldPaths(parsedFieldConfig, newData, activeStages);
             
             // Validate the collection:
             const result = validateField(fieldKey, 'collectionAction', newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
 
             // And validate all fields inside the collection:
-            updatedFieldPaths.forEach((fieldPath) => {
+            fieldPaths.forEach((fieldPath) => {
                 if (fieldPath.path.startsWith(fieldKey) && (validateOn.indexOf("collectionAction") > -1 || (fieldPath.config.validateOn && fieldPath.config.validateOn.indexOf("collectionAction") > -1))) {
                     const result = validateField(fieldPath.path, 'collectionAction', newData, errors);
                     newErrors = Object.assign({}, errors, result.errors);
