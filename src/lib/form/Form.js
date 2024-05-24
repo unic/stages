@@ -1875,12 +1875,15 @@ const Form = ({
 
         // Only validate if collection action validation is enabled:
         if (validateOn.indexOf("collectionAction") > -1 || (field.validateOn && field.validateOn.indexOf("collectionAction") > -1)) {
+            let updatedFieldPaths = fieldPaths;
+            if (collectionIsUpdated) updatedFieldPaths = getFieldPaths(parsedFieldConfig, newData, activeStages);
+            
             // Validate the collection:
             const result = validateField(fieldKey, 'collectionAction', newData, errors);
             newErrors = Object.assign({}, errors, result.errors);
 
             // And validate all fields inside the collection:
-            fieldPaths.forEach((fieldPath) => {
+            updatedFieldPaths.forEach((fieldPath) => {
                 if (fieldPath.path.startsWith(fieldKey) && (validateOn.indexOf("collectionAction") > -1 || (fieldPath.config.validateOn && fieldPath.config.validateOn.indexOf("collectionAction") > -1))) {
                     const result = validateField(fieldPath.path, 'collectionAction', newData, errors);
                     newErrors = Object.assign({}, errors, result.errors);
