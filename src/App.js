@@ -145,7 +145,10 @@ function App() {
                             label: "F1",
                             transform: [{
                                 event: "change",
-                                fn: (value) => value && value.length && !value.endsWith(".") && !value.endsWith(" ") ? value + " ..." : value
+                                fn: (value, oldValue) => {
+                                    console.log("transform:", { value, oldValue });
+                                    return value && value.length && !value.endsWith(".") && !value.endsWith(" ") ? value + " ..." : value;
+                                }
                             }]
                         },
                         {

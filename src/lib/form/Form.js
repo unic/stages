@@ -1277,7 +1277,7 @@ const Form = ({
         if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && newValue) {
             fieldConfig.transform.forEach((t) => {
                 if (t.event === "change" && typeof t.fn === "function") {
-                    newValue = t.fn(newValue);
+                    newValue = t.fn(newValue, get(alldata, fieldKey));
                 };
             });
         }
