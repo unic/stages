@@ -142,7 +142,11 @@ function App() {
                         {
                             id: "f1",
                             type: "text",
-                            label: "F1"
+                            label: "F1",
+                            transform: [{
+                                event: "change",
+                                fn: (value) => value && value.length && !value.endsWith(".") && !value.endsWith(" ") ? value + " ..." : value
+                            }]
                         },
                         {
                             id: "f2",

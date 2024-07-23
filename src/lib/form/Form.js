@@ -1273,6 +1273,15 @@ const Form = ({
         if (fieldConfig.cast && typeof fieldConfig.cast.data === "string") newValue = castValueStrType(newValue, fieldConfig.cast.data);
         if (fieldConfig.cast && Array.isArray(fieldConfig.cast.data)) newValue = castValueStrType(newValue, fieldConfig.cast.data[0], true);
 
+        // Run field transform functions:
+        if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && newValue) {
+            fieldConfig.transform.forEach((t) => {
+                if (t.event === "change" && typeof t.fn === "function") {
+                    newValue = t.fn(newValue);
+                };
+            });
+        }
+
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
