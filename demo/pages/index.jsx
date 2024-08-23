@@ -44,6 +44,7 @@ function FormPage() {
             <Heading>Fields</Heading>
             <Paragraph>
                 <a href="/dynamicfields">Dynamic Fields</a>{", "}
+                <a href="/transforms">Transforms</a>{", "}
                 <a href="/dynamicoptions">Dynamic Options</a>{", "}
                 <a href="/computedoptions">Computed Options</a>{", "}
                 <a href="/dynamicvalues">Dynamic Values</a>{", "}

@@ -37,6 +37,7 @@ const DemoNav = () => {
                     </optgroup>
                     <optgroup label="Fields">
                         <option value="/dynamicfields">Dynamic Fields</option>
+                        <option value="/transforms">Transforms</option>
                         <option value="/dynamicoptions">Dynamic Options</option>
                         <option value="/computedoptions">Computed Options</option>
                         <option value="/dynamicvalues">Dynamic Values</option>
