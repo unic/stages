@@ -125,7 +125,7 @@ function SlideshowPage() {
                         <Fragment key={`step-${key}`}>
                             <SlideShowContainer onKeyDown={(e) => e.keyCode === 38 ? onNav("prev") : e.keyCode === 40 ? onNav("next") : () => {} }>
                                 <h2>Slide 3</h2>
-                                <p>... and that you can navigate however you want, with no valiudation!</p>
+                                <p>... and that you can navigate however you want, with no validation!</p>
                             </SlideShowContainer>
                             <PrevNav><button type="button" onClick={() => onNav("prev")}>Prev</button></PrevNav>
                             <NextNav><button type="button" onClick={() => onNav("next")}>Next</button></NextNav>
