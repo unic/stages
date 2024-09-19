@@ -1276,7 +1276,7 @@ const Form = ({
         // Run field transform functions:
         if (fieldConfig.transform && Array.isArray(fieldConfig.transform) && newValue) {
             fieldConfig.transform.forEach((t) => {
-                if (t.event === "change" && typeof t.fn === "function") {
+                if ((t.event === "change" || t.event.includes("change")) && typeof t.fn === "function") {
                     newValue = t.fn(newValue, get(alldata, fieldKey));
                 };
             });
@@ -1285,7 +1285,7 @@ const Form = ({
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`Handle change for field "${fieldKey}"`, uniqId);
 
-        if (!newValue || (Array.isArray(newValue) && newValue.length === 0)) {
+        if ((!newValue && newValue !== 0 && newValue !== false) || (Array.isArray(newValue) && newValue.length === 0)) {
             // Remove if false, to make sure isDirty is calculated correctly!
             set(newData, fieldKey, undefined);
         } else {
