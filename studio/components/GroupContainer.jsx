@@ -4,6 +4,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { GripHorizontal } from 'lucide-react';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
+import Label from './Label';
 import { pathIsSelected, getWidth, parseTemplateLiterals, textHasTemplateLiterals } from './helpers';
 
 const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, border, inGroup }) => {
@@ -79,7 +80,7 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
         >
             {isEditMode && !isFieldConfigEditor ? <div style={{ position: "absolute", top: "6px", right: "8px", cursor: "grab" }} ref={setNodeRef} {...listeners} {...attributes}><GripHorizontal size={20} color={isInEditMode ? "#0A94F8" : "transparent"} /></div> : null}
             {isEditMode && !isFieldConfigEditor ? <BlockPathLabel onChangeBlockWidth={(width) => store.onChangeBlockWidth(path, width)} blockWidth={width} path={path} isHovered={isInEditMode} type="group" /> : null}
-            {label ? <label style={{ marginLeft: "6px", flex: "0 0 100%", margin: "-6px 0 8px 8px" }}><span contentEditable={!textHasTemplateLiterals(label)} dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></label> : null}
+            {label ? <Label><span contentEditable={!textHasTemplateLiterals(label)} dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></Label> : null}
             {secondaryText ? <div style={{ margin: "-22px 0 2px 8px", color: "#999", flex: "0 0 100%" }}><span contentEditable={!textHasTemplateLiterals(secondaryText)} dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
             {children}
         </div>
