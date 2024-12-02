@@ -35,16 +35,6 @@ const Header = styled.div`
 export default function Page() {
     return (
         <MantineProvider withNormalizeCSS>
-            <Global
-                styles={() => ({
-                    "*, *::before, *::after": {
-                        boxSizing: 'border-box',
-                    },
-                    "body": {
-                        "font-family": "'Inter', sans-serif"
-                    }
-                })}
-            />
             <div>
                 <Header>
                     <Logo />

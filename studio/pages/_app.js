@@ -1,5 +1,6 @@
 import { PrimeReactProvider } from 'primereact/api';
 import App from '../components/App';
+import '../styles/globals.css';
 import '../styles.css';
 
 import "primeflex/primeflex.css";
