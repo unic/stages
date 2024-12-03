@@ -5,6 +5,7 @@ import { GripHorizontal } from 'lucide-react';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected, getWidth } from './helpers';
 import WizardNavigation from './WizardNavigation';
+import Container from "./Container";
 
 const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, inGroup }) => {
     const store = useStagesStore();
@@ -18,22 +19,15 @@ const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, pa
     }, [path, selectedElement]);
 
     return (
-        <div
+        <Container
+            isInEditMode={isInEditMode}
+            isEditMode={isEditMode}
+            isFieldConfigEditor={isFieldConfigEditor}
+            inGroup={inGroup}
+            store={store}
+            transform={transform}
+            width={width}
             className="flex"
-            style={{
-                position: "relative",
-                flexWrap: "wrap",
-                flexDirection: isFieldConfigEditor ? "column" : "row",
-                border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && isEditMode ? "1px dashed #ddd" : "1px solid rgba(0,0,0,0)",
-                borderRadius: "5px",
-                padding: "8px 2px",
-                background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
-                boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
-                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
-                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width),
-                transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-                zIndex: transform ? 1000 : 1
-            }}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
                     contextMenuRef.current.show(e);
@@ -61,7 +55,7 @@ const WizardContainer = ({ children, fieldProps, handleEditGroup, isEditMode, pa
                 />
                 {children}
             </div>
-        </div>
+        </Container>
     );
 };
 

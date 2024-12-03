@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import { pathIsSelected } from './helpers';
+import Container from "./Container";
 
 const StageContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId }) => {
     const store = useStagesStore();

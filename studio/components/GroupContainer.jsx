@@ -6,6 +6,7 @@ import useStagesStore from './store';
 import BlockPathLabel from './BlockPathLabel';
 import Label from './Label';
 import { pathIsSelected, getWidth, parseTemplateLiterals, textHasTemplateLiterals } from './helpers';
+import Container from "./Container";
 
 const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, secondaryText, selectedElement, isFieldConfigEditor, contextMenuRef, fieldsetId, width, border, inGroup }) => {
     const store = useStagesStore();
@@ -49,23 +50,16 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
     }, []);
 
     return (
-        <div
+        <Container
+            isInEditMode={isInEditMode}
+            isEditMode={isEditMode}
+            isFieldConfigEditor={isFieldConfigEditor}
+            inGroup={inGroup}
+            store={store}
+            transform={transform}
+            width={width}
             className="flex"
-            style={{
-                position: "relative",
-                flexWrap: "wrap",
-                flexDirection: isFieldConfigEditor ? "column" : "row",
-                rowGap: "16px",
-                border: isInEditMode && isEditMode && !isFieldConfigEditor ? "1px dashed #0A94F8" : !isFieldConfigEditor && isEditMode ? "1px dashed #ddd" : border ? "1px solid #ddd" : "1px solid rgba(0,0,0,0)",
-                borderRadius: "5px",
-                padding: "16px 2px",
-                background: isEditMode && !isFieldConfigEditor ? "#fff" : "transparent",
-                boxShadow: isEditMode && !isFieldConfigEditor ? "1px 1px 1px 0px rgba(0,0,0,0.05)" : "none",
-                minWidth: !isFieldConfigEditor ? getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width) : "auto",
-                maxWidth: getWidth(inGroup, isFieldConfigEditor, store.isEditMode, width),
-                transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-                zIndex: transform ? 1000 : 1
-            }}
+            colums={isFieldConfigEditor}
             onContextMenu={(e) => {
                 if (contextMenuRef && contextMenuRef.current) {
                     contextMenuRef.current.show(e);
@@ -83,7 +77,7 @@ const GroupContainer = ({ children, handleEditGroup, isEditMode, path, label, se
             {label ? <Label><span contentEditable={!textHasTemplateLiterals(label)} dangerouslySetInnerHTML={{__html: labelText}} onClick={(e) => e.preventDefault()} onBlur={handleEditLabel} /></Label> : null}
             {secondaryText ? <div style={{ margin: "-22px 0 2px 8px", color: "#999", flex: "0 0 100%" }}><span contentEditable={!textHasTemplateLiterals(secondaryText)} dangerouslySetInnerHTML={{__html: secText}} onClick={(e) => e.preventDefault()} onBlur={handleEditSecondaryText} /></div> : null}
             {children}
-        </div>
+        </Container>
     );
 };
 
