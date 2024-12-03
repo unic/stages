@@ -8,7 +8,6 @@ import BlockPathLabel from "./BlockPathLabel";
 import Label from "./Label";
 import {
   pathIsSelected,
-  getWidth,
   parseTemplateLiterals,
   textHasTemplateLiterals,
 } from "./helpers";

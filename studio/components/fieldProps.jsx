@@ -1,1237 +1,1242 @@
 const globalFieldProps = {
-    id: {
-        id: "id",
-        type: "blurtext",
-        label: "ID",
+  id: {
+    id: "id",
+    type: "blurtext",
+    label: "ID",
+    isRequired: true,
+    filter: (value) => value.replace(/[^a-zA-Z0-9-]/g, ""),
+  },
+  basicsDivider: {
+    id: "basicsDivider",
+    type: "divider",
+    text: "Basics",
+  },
+  stylesDivider: {
+    id: "stylesDivider",
+    type: "divider",
+    text: "Styles",
+  },
+  specificsDivider: {
+    id: "specificsDivider",
+    type: "divider",
+    text: "Field Specifics",
+  },
+  advancedDivider: {
+    id: "advancedDivider",
+    type: "divider",
+    text: "Advanced",
+  },
+  validationsDivider: {
+    id: "validationsDivider",
+    type: "divider",
+    text: "Validations",
+  },
+  label: {
+    id: "label",
+    type: "text",
+    label: "Label",
+    isRequired: true,
+    tooltip:
+      "Create dynamic labels with Mustache template literals, like: My {{ myField }} is {{ myGroup.myField }}",
+  },
+  secondaryText: {
+    id: "secondaryText",
+    type: "text",
+    label: "Secondary Text",
+    tooltip:
+      "Create dynamic text with Mustache template literals, like: My My {{ myField }} is {{ myGroup.myField }}",
+  },
+  prefix: {
+    id: "prefix",
+    type: "text",
+    label: "Prefix",
+  },
+  suffix: {
+    id: "suffix",
+    type: "text",
+    label: "Suffix",
+  },
+  defaultValueText: {
+    id: "defaultValue",
+    type: "text",
+    label: "Default Value",
+  },
+  defaultValueBoolean: {
+    id: "defaultValue",
+    type: "checkbox",
+    label: "Default Value",
+  },
+  defaultValueNumber: {
+    id: "defaultValue",
+    type: "number",
+    label: "Default Value",
+  },
+  computedValue: {
+    id: "computedValue",
+    type: "textarea",
+    autoResize: true,
+    label: "Computed Value",
+    placeholder: "data.field1 + data.field2",
+    tooltip:
+      "You have access to: data.x (form data), itemData.x (for collection item data) and interfaceState.x (for a forms interface state)",
+  },
+  type: {
+    id: "type",
+    type: "select",
+    label: "Type",
+    isRequired: true,
+    options: [
+      {
+        value: "text",
+        text: "Textfield",
+      },
+      {
+        value: "textarea",
+        text: "Textarea",
+      },
+      {
+        value: "select",
+        text: "Select",
+      },
+      {
+        value: "multiselect",
+        text: "Multi Select",
+      },
+      {
+        value: "calendar",
+        text: "Calendar",
+      },
+      {
+        value: "checkbox",
+        text: "Checkbox",
+      },
+      {
+        value: "switch",
+        text: "Switch",
+      },
+      {
+        value: "number",
+        text: "Number",
+      },
+      {
+        value: "rating",
+        text: "Rating",
+      },
+      {
+        value: "buttons",
+        text: "Buttons",
+      },
+      {
+        value: "slider",
+        text: "Slider",
+      },
+      {
+        value: "toggle",
+        text: "Toggle",
+      },
+      {
+        value: "editor",
+        text: "Editor",
+      },
+      {
+        value: "chips",
+        text: "Chips",
+      },
+      {
+        value: "color",
+        text: "Color",
+      },
+      {
+        value: "mask",
+        text: "Mask",
+      },
+      {
+        value: "password",
+        text: "Password",
+      },
+    ],
+  },
+  isRequired: {
+    id: "isRequired",
+    type: "checkbox",
+    label: "Required?",
+  },
+  isDisabled: {
+    id: "isDisabled",
+    type: "checkbox",
+    label: "Disabled?",
+  },
+  isInterfaceState: {
+    id: "isInterfaceState",
+    type: "checkbox",
+    label: "Interface State?",
+  },
+  isRendered: {
+    id: "isRendered",
+    type: "textarea",
+    autoResize: true,
+    label: "Is Rendered?",
+    placeholder: "!!data.myCheckbox",
+    tooltip:
+      "You have access to: path (full path of field), fieldData (the fields current data), data.x (form data) and interfaceState.x (for a forms interface state)",
+  },
+  tooltip: {
+    id: "tooltip",
+    type: "text",
+    label: "Tooltip",
+  },
+  options: {
+    id: "options",
+    type: "collection",
+    label: "Options",
+    min: 1,
+    init: true,
+    fields: [
+      {
+        id: "value",
+        label: "Value",
+        type: "text",
         isRequired: true,
-        filter: value => value.replace(/[^a-zA-Z0-9-]/g, '')
-    },
-    basicsDivider: {
-        id: "basicsDivider",
-        type: "divider",
-        text: "Basics"
-    },
-    stylesDivider: {
-        id: "stylesDivider",
-        type: "divider",
-        text: "Styles"
-    },
-    specificsDivider: {
-        id: "specificsDivider",
-        type: "divider",
-        text: "Field Specifics"
-    },
-    advancedDivider: {
-        id: "advancedDivider",
-        type: "divider",
-        text: "Advanced"
-    },
-    validationsDivider: {
-        id: "validationsDivider",
-        type: "divider",
-        text: "Validations"
-    },
-    label: {
-        id: "label",
+      },
+      {
+        id: "text",
+        label: "Text",
         type: "text",
-        label: "Label",
         isRequired: true,
-        tooltip: "Create dynamic labels with Mustache template literals, like: My {{ myField }} is {{ myGroup.myField }}",
+      },
+    ],
+  },
+  autoResize: {
+    id: "autoResize",
+    type: "checkbox",
+    label: "Auto resize?",
+  },
+  placeholder: {
+    id: "placeholder",
+    type: "text",
+    label: "Placeholder",
+  },
+  textValidation: {
+    id: "validation",
+    type: "collection",
+    fields: {
+      email: [
+        {
+          id: "strong",
+          type: "checkbox",
+          label: "Strong email validation?",
+        },
+      ],
+      phone: [
+        {
+          id: "type",
+          type: "select",
+          label: "Country specific phone",
+          isRequired: true,
+          options: [
+            {
+              value: "all",
+              text: "All Country Codes",
+            },
+            {
+              value: "CH",
+              text: "Switzerland",
+            },
+          ],
+        },
+      ],
+      regex: [
+        {
+          id: "rule",
+          type: "text",
+          label: "Regex",
+        },
+      ],
     },
-    secondaryText: {
-        id: "secondaryText",
-        type: "text",
-        label: "Secondary Text",
-        tooltip: "Create dynamic text with Mustache template literals, like: My My {{ myField }} is {{ myGroup.myField }}",
-    },
-    prefix: {
-        id: "prefix",
-        type: "text",
-        label: "Prefix"
-    },
-    suffix: {
-        id: "suffix",
-        type: "text",
-        label: "Suffix"
-    },
-    defaultValueText: {
-        id: "defaultValue",
-        type: "text",
-        label: "Default Value"
-    },
-    defaultValueBoolean: {
-        id: "defaultValue",
-        type: "checkbox",
-        label: "Default Value"
-    },
-    defaultValueNumber: {
-        id: "defaultValue",
-        type: "number",
-        label: "Default Value"
-    },
-    computedValue: {
-        id: "computedValue",
-        type: "textarea",
-        autoResize: true,
-        label: "Computed Value",
-        placeholder: "data.field1 + data.field2",
-        tooltip: "You have access to: data.x (form data), itemData.x (for collection item data) and interfaceState.x (for a forms interface state)"
-    },
-    type: {
-        id: "type",
-        type: "select",
-        label: "Type",
-        isRequired: true,
+  },
+  blockWidth: {
+    id: "blockWidth",
+    type: "group",
+    fields: [
+      {
+        id: "mobile",
+        type: "buttons",
+        label: "Block Width Mobile",
+        defaultValue: "large",
+        width: "100%",
         options: [
-            {
-                value: "text",
-                text: "Textfield"
-            },
-            {
-                value: "textarea",
-                text: "Textarea"
-            },
-            {
-                value: "select",
-                text: "Select"
-            },
-            {
-                value: "multiselect",
-                text: "Multi Select"
-            },
-            {
-                value: "calendar",
-                text: "Calendar"
-            },
-            {
-                value: "checkbox",
-                text: "Checkbox"
-            },
-            {
-                value: "switch",
-                text: "Switch"
-            },
-            {
-                value: "number",
-                text: "Number"
-            },
-            {
-                value: "rating",
-                text: "Rating"
-            },
-            {
-                value: "buttons",
-                text: "Buttons"
-            },
-            {
-                value: "slider",
-                text: "Slider"
-            },
-            {
-                value: "toggle",
-                text: "Toggle"
-            },
-            {
-                value: "editor",
-                text: "Editor"
-            },
-            {
-                value: "chips",
-                text: "Chips"
-            },
-            {
-                value: "color",
-                text: "Color"
-            },
-            {
-                value: "mask",
-                text: "Mask"
-            },
-            {
-                value: "password",
-                text: "Password"
-            }
-        ]
-    },
-    isRequired: {
-        id: "isRequired",
-        type: "checkbox",
-        label: "Required?"
-    },
-    isDisabled: {
-        id: "isDisabled",
-        type: "checkbox",
-        label: "Disabled?"
-    },
-    isInterfaceState: {
-        id: "isInterfaceState",
-        type: "checkbox",
-        label: "Interface State?"
-    },
-    isRendered: {
-        id: "isRendered",
-        type: "textarea",
-        autoResize: true,
-        label: "Is Rendered?",
-        placeholder: "!!data.myCheckbox",
-        tooltip: "You have access to: path (full path of field), fieldData (the fields current data), data.x (form data) and interfaceState.x (for a forms interface state)"
-    },
-    tooltip: {
-        id: "tooltip",
-        type: "text",
-        label: "Tooltip"
-    },
-    options: {
-        id: "options",
-        type: "collection",
-        label: "Options",
-        min: 1,
-        init: true,
-        fields: [
-            {
-                id: "value",
-                label: "Value",
-                type: "text",
-                isRequired: true
-            },
-            {
-                id: "text",
-                label: "Text",
-                type: "text",
-                isRequired: true
-            }
-        ]
-    },
-    autoResize: {
-        id: "autoResize",
-        type: "checkbox",
-        label: "Auto resize?"
-    },
-    placeholder: {
-        id: "placeholder",
-        type: "text",
-        label: "Placeholder"
-    },
-    textValidation: {
-        id: "validation",
-        type: "collection",
-        fields: {
-            email: [
-                {
-                    id: "strong",
-                    type: "checkbox",
-                    label: "Strong email validation?"
-                }
-            ],
-            phone: [
-                {
-                    id: "type",
-                    type: "select",
-                    label: "Country specific phone",
-                    isRequired: true,
-                    options: [
-                        {
-                            value: "all",
-                            text: "All Country Codes"
-                        },
-                        {
-                            value: "CH",
-                            text: "Switzerland"
-                        }
-                    ]
-                }
-            ],
-            regex: [
-                {
-                    id: "rule",
-                    type: "text",
-                    label: "Regex"
-                }
-            ],
-        }
-    },
-    blockWidth: {
-        id: "blockWidth",
-        type: "group",
-        fields: [
-            {
-                id: "mobile",
-                type: "buttons",
-                label: "Block Width Mobile",
-                defaultValue: "large",
-                width: "100%",
-                options: [
-                    {
-                        value: "small",
-                        text: "Small 25%"
-                    },
-                    {
-                        value: "medium",
-                        text: "Medium 50%"
-                    },
-                    {
-                        value: "large",
-                        text: "Large 100%"
-                    }
-                ]
-            },
-            {
-                id: "tablet",
-                type: "buttons",
-                label: "Block Width Tablet",
-                defaultValue: "large",
-                options: [
-                    {
-                        value: "small",
-                        text: "Small 25%"
-                    },
-                    {
-                        value: "medium",
-                        text: "Medium 50%"
-                    },
-                    {
-                        value: "large",
-                        text: "Large 100%"
-                    }
-                ]
-            },
-            {
-                id: "desktop",
-                type: "buttons",
-                label: "Block Width Desktop",
-                defaultValue: "large",
-                options: [
-                    {
-                        value: "small",
-                        text: "Small 25%"
-                    },
-                    {
-                        value: "medium",
-                        text: "Medium 50%"
-                    },
-                    {
-                        value: "large",
-                        text: "Large 100%"
-                    }
-                ]
-            }
+          {
+            value: "small",
+            text: "Small 25%",
+          },
+          {
+            value: "medium",
+            text: "Medium 50%",
+          },
+          {
+            value: "large",
+            text: "Large 100%",
+          },
         ],
-    },
-    blockBorder: {
-        id: "blockBorder",
-        type: "switch",
-        label: "Block Border"
-    },
-}
+      },
+      {
+        id: "tablet",
+        type: "buttons",
+        label: "Block Width Tablet",
+        defaultValue: "large",
+        options: [
+          {
+            value: "small",
+            text: "Small 25%",
+          },
+          {
+            value: "medium",
+            text: "Medium 50%",
+          },
+          {
+            value: "large",
+            text: "Large 100%",
+          },
+        ],
+      },
+      {
+        id: "desktop",
+        type: "buttons",
+        label: "Block Width Desktop",
+        defaultValue: "large",
+        options: [
+          {
+            value: "small",
+            text: "Small 25%",
+          },
+          {
+            value: "medium",
+            text: "Medium 50%",
+          },
+          {
+            value: "large",
+            text: "Large 100%",
+          },
+        ],
+      },
+    ],
+  },
+  blockBorder: {
+    id: "blockBorder",
+    type: "switch",
+    label: "Block Border",
+  },
+};
 
 const fieldProps = {
-    heading: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
+  heading: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "title",
+      type: "text",
+      label: "Title",
+      isRequired: true,
+    },
+    {
+      id: "level",
+      type: "select",
+      label: "Level",
+      defaultValue: 2,
+      options: [
         {
-            id: "title",
-            type: "text",
-            label: "Title",
-            isRequired: true,
+          value: 2,
+          text: "2",
         },
         {
-            id: "level",
-            type: "select",
-            label: "Level",
-            defaultValue: 2,
-            options: [
-                {
-                    value: 2,
-                    text: "2"
-                },
-                {
-                    value: 3,
-                    text: "3"
-                },
-                {
-                    value: 4,
-                    text: "4"
-                }
-            ]
+          value: 3,
+          text: "3",
         },
         {
-            id: "text",
-            type: "textarea",
-            label: "Text",
-            isRequired: false,
+          value: 4,
+          text: "4",
         },
-    ],
-    message: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
+      ],
+    },
+    {
+      id: "text",
+      type: "textarea",
+      label: "Text",
+      isRequired: false,
+    },
+  ],
+  message: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "text",
+      type: "text",
+      label: "Text",
+      isRequired: true,
+    },
+    {
+      id: "severity",
+      type: "select",
+      label: "Severity",
+      defaultValue: "info",
+      options: [
         {
-            id: "text",
-            type: "text",
-            label: "Text",
-            isRequired: true,
-        },
-        {
-            id: "severity",
-            type: "select",
-            label: "Severity",
-            defaultValue: "info",
-            options: [
-                {
-                    value: "info",
-                    text: "Info"
-                },
-                {
-                    value: "success",
-                    text: "Success"
-                },
-                {
-                    value: "warn",
-                    text: "Warn"
-                },
-                {
-                    value: "error",
-                    text: "Error"
-                }
-            ]
-        }
-    ],
-    divider: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "text",
-            type: "text",
-            label: "Text",
-            isRequired: false,
+          value: "info",
+          text: "Info",
         },
         {
-            id: "align",
-            type: "select",
-            label: "Text Alignment",
-            defaultValue: "right",
-            options: [
-                {
-                    value: "center",
-                    text: "Center"
-                },
-                {
-                    value: "left",
-                    text: "Left"
-                },
-                {
-                    value: "right",
-                    text: "Right"
-                },
-                {
-                    value: "top",
-                    text: "Top"
-                },
-                {
-                    value: "bottom",
-                    text: "Bottom"
-                }
-            ]
+          value: "success",
+          text: "Success",
         },
         {
-            id: "layout",
-            type: "select",
-            label: "Layout",
-            defaultValue: "horizontal",
-            options: [
-                {
-                    value: "horizontal",
-                    text: "Horizontal"
-                },
-                {
-                    value: "vertical",
-                    text: "Vertical"
-                }
-            ]
+          value: "warn",
+          text: "Warn",
         },
         {
-            id: "borderType",
-            type: "select",
-            label: "Border Type",
-            defaultValue: "dashed",
-            options: [
-                {
-                    value: "dashed",
-                    text: "Dashed"
-                },
-                {
-                    value: "dotted",
-                    text: "Dotted"
-                },
-                {
-                    value: "solid",
-                    text: "Solid"
-                }
-            ]
-        }
-    ],
-    group: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.blockBorder,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-    ],
-    wizard: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-    ],
-    stage: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-    ],
-    collection: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
+          value: "error",
+          text: "Error",
+        },
+      ],
+    },
+  ],
+  divider: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "text",
+      type: "text",
+      label: "Text",
+      isRequired: false,
+    },
+    {
+      id: "align",
+      type: "select",
+      label: "Text Alignment",
+      defaultValue: "right",
+      options: [
         {
-            id: "init",
-            type: "checkbox",
-            label: "Init?"
+          value: "center",
+          text: "Center",
         },
         {
-            id: "min",
-            type: "number",
-            label: "Min entries"
+          value: "left",
+          text: "Left",
         },
         {
-            id: "max",
-            type: "number",
-            label: "Max entries"
-        },
-    ],
-    text: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        globalFieldProps.prefix,
-        globalFieldProps.suffix,
-        {
-            id: "keyfilter",
-            type: "select",
-            label: "Key Filter",
-            options: [
-                {
-                    value: "",
-                    text: "No Filter"
-                },
-                {
-                    value: "pint",
-                    text: "Positive Integer"
-                },
-                {
-                    value: "int",
-                    text: "Integer"
-                },
-                {
-                    value: "pnum",
-                    text: "Positive Number"
-                },
-                {
-                    value: "money",
-                    text: "Money"
-                },
-                {
-                    value: "num",
-                    text: "Number"
-                },
-                {
-                    value: "hex",
-                    text: "Hex"
-                },
-                {
-                    value: "email",
-                    text: "Email"
-                },
-                {
-                    value: "alpha",
-                    text: "Alpha"
-                },
-                {
-                    value: "alphanum",
-                    text: "Alphanumeric"
-                }
-            ]
-        },
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.tooltip,
-        globalFieldProps.defaultValueText,
-        globalFieldProps.computedValue,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-        globalFieldProps.textValidation
-    ],
-    textarea: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        globalFieldProps.autoResize,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.tooltip,
-        globalFieldProps.defaultValueText,
-        globalFieldProps.computedValue,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-        globalFieldProps.textValidation
-    ],
-    select: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        globalFieldProps.options,
-        {
-            id: "editable",
-            type: "checkbox",
-            label: "Editable?"
+          value: "right",
+          text: "Right",
         },
         {
-            id: "showFilter",
-            type: "checkbox",
-            label: "Filter?"
+          value: "top",
+          text: "Top",
         },
         {
-            id: "showFilterClear",
-            type: "checkbox",
-            label: "Show Filter Clear?"
+          value: "bottom",
+          text: "Bottom",
+        },
+      ],
+    },
+    {
+      id: "layout",
+      type: "select",
+      label: "Layout",
+      defaultValue: "horizontal",
+      options: [
+        {
+          value: "horizontal",
+          text: "Horizontal",
         },
         {
-            id: "showClear",
-            type: "checkbox",
-            label: "Show Clear Icon?"
+          value: "vertical",
+          text: "Vertical",
         },
-        globalFieldProps.placeholder,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.defaultValueText,
-        globalFieldProps.tooltip,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    multiselect: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
+      ],
+    },
+    {
+      id: "borderType",
+      type: "select",
+      label: "Border Type",
+      defaultValue: "dashed",
+      options: [
         {
-            id: "display",
-            type: "select",
-            label: "Display Type",
-            options: [
-                {
-                    value: "comma",
-                    text: "Comma"
-                },
-                {
-                    value: "chips",
-                    text: "Chips"
-                }
-            ]
+          value: "dashed",
+          text: "Dashed",
         },
         {
-            id: "showFilter",
-            type: "checkbox",
-            label: "Filter?"
+          value: "dotted",
+          text: "Dotted",
         },
         {
-            id: "inline",
-            type: "checkbox",
-            label: "Inline?"
+          value: "solid",
+          text: "Solid",
+        },
+      ],
+    },
+  ],
+  group: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.blockBorder,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+  ],
+  wizard: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+  ],
+  stage: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+  ],
+  collection: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "init",
+      type: "checkbox",
+      label: "Init?",
+    },
+    {
+      id: "min",
+      type: "number",
+      label: "Min entries",
+    },
+    {
+      id: "max",
+      type: "number",
+      label: "Max entries",
+    },
+  ],
+  text: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    globalFieldProps.prefix,
+    globalFieldProps.suffix,
+    {
+      id: "keyfilter",
+      type: "select",
+      label: "Key Filter",
+      options: [
+        {
+          value: "",
+          text: "No Filter",
         },
         {
-            id: "showClear",
-            type: "checkbox",
-            label: "Show Clear Icon?"
+          value: "pint",
+          text: "Positive Integer",
         },
         {
-            id: "showSelectAll",
-            type: "checkbox",
-            label: "Show Select All?"
+          value: "int",
+          text: "Integer",
         },
         {
-            id: "selectionLimit",
-            type: "number",
-            label: "Selection Limit"
-        },
-        globalFieldProps.placeholder,
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.options,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    calendar: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "numberOfMonths",
-            type: "number",
-            label: "Number of Months"
+          value: "pnum",
+          text: "Positive Number",
         },
         {
-            id: "selectionMode",
-            type: "select",
-            label: "Selection Mode",
-            options: [
-                {
-                    value: "single",
-                    text: "Single"
-                },
-                {
-                    value: "range",
-                    text: "Range"
-                },
-                {
-                    value: "multiple",
-                    text: "Multiple"
-                }
-            ]
+          value: "money",
+          text: "Money",
         },
         {
-            id: "inline",
-            type: "checkbox",
-            label: "Inline?"
+          value: "num",
+          text: "Number",
         },
         {
-            id: "showButtonBar",
-            type: "checkbox",
-            label: "Show button bar?"
+          value: "hex",
+          text: "Hex",
         },
         {
-            id: "showIcon",
-            type: "checkbox",
-            label: "Show icon?"
+          value: "email",
+          text: "Email",
         },
         {
-            id: "showTime",
-            type: "checkbox",
-            label: "Show time?"
+          value: "alpha",
+          text: "Alpha",
         },
         {
-            id: "hideOnDateTimeSelect",
-            type: "checkbox",
-            label: "Hide on Select?"
+          value: "alphanum",
+          text: "Alphanumeric",
         },
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    checkbox: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
+      ],
+    },
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.tooltip,
+    globalFieldProps.defaultValueText,
+    globalFieldProps.computedValue,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+    globalFieldProps.textValidation,
+  ],
+  textarea: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    globalFieldProps.autoResize,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.tooltip,
+    globalFieldProps.defaultValueText,
+    globalFieldProps.computedValue,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+    globalFieldProps.textValidation,
+  ],
+  select: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    globalFieldProps.options,
+    {
+      id: "editable",
+      type: "checkbox",
+      label: "Editable?",
+    },
+    {
+      id: "showFilter",
+      type: "checkbox",
+      label: "Filter?",
+    },
+    {
+      id: "showFilterClear",
+      type: "checkbox",
+      label: "Show Filter Clear?",
+    },
+    {
+      id: "showClear",
+      type: "checkbox",
+      label: "Show Clear Icon?",
+    },
+    globalFieldProps.placeholder,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.defaultValueText,
+    globalFieldProps.tooltip,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  multiselect: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "display",
+      type: "select",
+      label: "Display Type",
+      options: [
         {
-            id: "falseValue",
-            type: "text",
-            label: "False Value"
-        },
-        {
-            id: "trueValue",
-            type: "text",
-            label: "True Value"
-        },
-        globalFieldProps.defaultValueBoolean,
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    switch: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "falseValue",
-            type: "text",
-            label: "False Value"
-        },
-        {
-            id: "trueValue",
-            type: "text",
-            label: "True Value"
-        },
-        globalFieldProps.defaultValueBoolean,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    number: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        globalFieldProps.prefix,
-        globalFieldProps.suffix,
-        {
-            id: "buttonLayout",
-            type: "select",
-            label: "Button Layout",
-            options: [
-                {
-                    value: "horizontal",
-                    text: "Horizontal"
-                },
-                {
-                    value: "vertical",
-                    text: "Vertical"
-                },
-                {
-                    value: "stacked",
-                    text: "Stacked"
-                }
-            ]
+          value: "comma",
+          text: "Comma",
         },
         {
-            id: "mode",
-            type: "select",
-            label: "Mode",
-            options: [
-                {
-                    value: "decimal",
-                    text: "Decimal"
-                },
-                {
-                    value: "currency",
-                    text: "Currency"
-                }
-            ]
+          value: "chips",
+          text: "Chips",
+        },
+      ],
+    },
+    {
+      id: "showFilter",
+      type: "checkbox",
+      label: "Filter?",
+    },
+    {
+      id: "inline",
+      type: "checkbox",
+      label: "Inline?",
+    },
+    {
+      id: "showClear",
+      type: "checkbox",
+      label: "Show Clear Icon?",
+    },
+    {
+      id: "showSelectAll",
+      type: "checkbox",
+      label: "Show Select All?",
+    },
+    {
+      id: "selectionLimit",
+      type: "number",
+      label: "Selection Limit",
+    },
+    globalFieldProps.placeholder,
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.options,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  calendar: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "numberOfMonths",
+      type: "number",
+      label: "Number of Months",
+    },
+    {
+      id: "selectionMode",
+      type: "select",
+      label: "Selection Mode",
+      options: [
+        {
+          value: "single",
+          text: "Single",
         },
         {
-            id: "currency",
-            type: "text",
-            label: "Currency (USD etc.)"
+          value: "range",
+          text: "Range",
         },
         {
-            id: "currencyDisplay",
-            type: "select",
-            label: "Currency Display",
-            options: [
-                {
-                    value: "symbol",
-                    text: "Symbol"
-                },
-                {
-                    value: "code",
-                    text: "Code"
-                },
-                {
-                    value: "name",
-                    text: "Name"
-                }
-            ]
+          value: "multiple",
+          text: "Multiple",
+        },
+      ],
+    },
+    {
+      id: "inline",
+      type: "checkbox",
+      label: "Inline?",
+    },
+    {
+      id: "showButtonBar",
+      type: "checkbox",
+      label: "Show button bar?",
+    },
+    {
+      id: "showIcon",
+      type: "checkbox",
+      label: "Show icon?",
+    },
+    {
+      id: "showTime",
+      type: "checkbox",
+      label: "Show time?",
+    },
+    {
+      id: "hideOnDateTimeSelect",
+      type: "checkbox",
+      label: "Hide on Select?",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  checkbox: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "falseValue",
+      type: "text",
+      label: "False Value",
+    },
+    {
+      id: "trueValue",
+      type: "text",
+      label: "True Value",
+    },
+    globalFieldProps.defaultValueBoolean,
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  switch: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "falseValue",
+      type: "text",
+      label: "False Value",
+    },
+    {
+      id: "trueValue",
+      type: "text",
+      label: "True Value",
+    },
+    globalFieldProps.defaultValueBoolean,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  number: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    globalFieldProps.prefix,
+    globalFieldProps.suffix,
+    {
+      id: "buttonLayout",
+      type: "select",
+      label: "Button Layout",
+      options: [
+        {
+          value: "horizontal",
+          text: "Horizontal",
         },
         {
-            id: "format",
-            type: "checkbox",
-            defaultValue: true,
-            label: "Format?"
+          value: "vertical",
+          text: "Vertical",
         },
         {
-            id: "useGrouping",
-            type: "checkbox",
-            defaultValue: true,
-            label: "Use Grouping?"
+          value: "stacked",
+          text: "Stacked",
+        },
+      ],
+    },
+    {
+      id: "mode",
+      type: "select",
+      label: "Mode",
+      options: [
+        {
+          value: "decimal",
+          text: "Decimal",
         },
         {
-            id: "max",
-            type: "number",
-            label: "Max Value"
+          value: "currency",
+          text: "Currency",
+        },
+      ],
+    },
+    {
+      id: "currency",
+      type: "text",
+      label: "Currency (USD etc.)",
+    },
+    {
+      id: "currencyDisplay",
+      type: "select",
+      label: "Currency Display",
+      options: [
+        {
+          value: "symbol",
+          text: "Symbol",
         },
         {
-            id: "min",
-            type: "number",
-            label: "Min Value"
+          value: "code",
+          text: "Code",
         },
         {
-            id: "maxFractionDigits",
-            type: "number",
-            label: "Max Fraction Digits"
+          value: "name",
+          text: "Name",
+        },
+      ],
+    },
+    {
+      id: "format",
+      type: "checkbox",
+      defaultValue: true,
+      label: "Format?",
+    },
+    {
+      id: "useGrouping",
+      type: "checkbox",
+      defaultValue: true,
+      label: "Use Grouping?",
+    },
+    {
+      id: "max",
+      type: "number",
+      label: "Max Value",
+    },
+    {
+      id: "min",
+      type: "number",
+      label: "Min Value",
+    },
+    {
+      id: "maxFractionDigits",
+      type: "number",
+      label: "Max Fraction Digits",
+    },
+    {
+      id: "minFractionDigits",
+      type: "number",
+      label: "Min Fraction Digits",
+    },
+    {
+      id: "step",
+      type: "number",
+      label: "Step Increment",
+    },
+    globalFieldProps.placeholder,
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.defaultValueNumber,
+    globalFieldProps.computedValue,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  rating: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "cancel",
+      type: "checkbox",
+      defaultValue: true,
+      label: "Show Cancel Icon?",
+    },
+    {
+      id: "stars",
+      type: "number",
+      defaultValue: 5,
+      label: "Star Count",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  buttons: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    globalFieldProps.options,
+    {
+      id: "multiple",
+      type: "checkbox",
+      defaultValue: false,
+      label: "Multiple?",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.options,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  slider: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "max",
+      type: "number",
+      defaultValue: 100,
+      label: "Max Value",
+    },
+    {
+      id: "min",
+      type: "number",
+      defaultValue: 0,
+      label: "Min Value",
+    },
+    {
+      id: "range",
+      type: "checkbox",
+      defaultValue: false,
+      label: "Range?",
+    },
+    {
+      id: "step",
+      type: "number",
+      defaultValue: 1,
+      label: "Step Increment",
+    },
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  toggle: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "onLabel",
+      type: "text",
+      label: "On Label",
+    },
+    {
+      id: "offLabel",
+      type: "text",
+      label: "Off Label",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.defaultValueBoolean,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  editor: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "showHeader",
+      type: "checkbox",
+      label: "Show Header?",
+    },
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.textValidation,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  chips: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "allowDuplicate",
+      type: "checkbox",
+      label: "Allow Duplicate?",
+    },
+    {
+      id: "max",
+      type: "number",
+      label: "Max Entries",
+    },
+    {
+      id: "removable",
+      type: "checkbox",
+      label: "Removable Items",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  color: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "format",
+      type: "select",
+      label: "Format",
+      defaultValue: "hex",
+      options: [
+        {
+          value: "rgb",
+          text: "RGB",
         },
         {
-            id: "minFractionDigits",
-            type: "number",
-            label: "Min Fraction Digits"
+          value: "hex",
+          text: "Hex",
         },
         {
-            id: "step",
-            type: "number",
-            label: "Step Increment"
+          value: "hsb",
+          text: "HSB",
         },
-        globalFieldProps.placeholder,
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.defaultValueNumber,
-        globalFieldProps.computedValue,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    rating: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "cancel",
-            type: "checkbox",
-            defaultValue: true,
-            label: "Show Cancel Icon?"
-        },
-        {
-            id: "stars",
-            type: "number",
-            defaultValue: 5,
-            label: "Star Count"
-        },
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    buttons: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        globalFieldProps.options,
-        {
-            id: "multiple",
-            type: "checkbox",
-            defaultValue: false,
-            label: "Multiple?"
-        },
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.options,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    slider: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "max",
-            type: "number",
-            defaultValue: 100,
-            label: "Max Value"
-        },
-        {
-            id: "min",
-            type: "number",
-            defaultValue: 0,
-            label: "Min Value"
-        },
-        {
-            id: "range",
-            type: "checkbox",
-            defaultValue: false,
-            label: "Range?"
-        },
-        {
-            id: "step",
-            type: "number",
-            defaultValue: 1,
-            label: "Step Increment"
-        },
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    toggle: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "onLabel",
-            type: "text",
-            label: "On Label"
-        },
-        {
-            id: "offLabel",
-            type: "text",
-            label: "Off Label"
-        },
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.defaultValueBoolean,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    editor: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "showHeader",
-            type: "checkbox",
-            label: "Show Header?"
-        }, 
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.textValidation,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    chips: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "allowDuplicate",
-            type: "checkbox",
-            label: "Allow Duplicate?"
-        }, 
-        {
-            id: "max",
-            type: "number",
-            label: "Max Entries"
-        }, 
-        {
-            id: "removable",
-            type: "checkbox",
-            label: "Removable Items"
-        }, 
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    color: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "format",
-            type: "select",
-            label: "Format",
-            defaultValue: "hex",
-            options: [
-                {
-                    value: "rgb",
-                    text: "RGB"
-                },
-                {
-                    value: "hex",
-                    text: "Hex"
-                },
-                {
-                    value: "hsb",
-                    text: "HSB"
-                }
-            ]
-        },
-        {
-            id: "inline",
-            type: "checkbox",
-            label: "Inline?"
-        },
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    mask: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "autoClear",
-            type: "checkbox",
-            label: "Auto Clear?"
-        },
-        {
-            id: "mask",
-            type: "text",
-            label: "Mask Pattern",
-            tooltip: "For example: 99-999999 (use 9, a, or * for defining the mask, any other chars are for fixed values)"
-        },
-        globalFieldProps.prefix,
-        globalFieldProps.suffix,
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.textValidation,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
-    password: [
-        globalFieldProps.basicsDivider,
-        globalFieldProps.id,
-        globalFieldProps.label,
-        globalFieldProps.secondaryText,
-        globalFieldProps.type,
-        globalFieldProps.isRequired,
-        globalFieldProps.stylesDivider,
-        globalFieldProps.blockWidth,
-        globalFieldProps.specificsDivider,
-        {
-            id: "feedback",
-            type: "checkbox",
-            label: "Show Feedback?"
-        },
-        {
-            id: "toggleMask",
-            type: "checkbox",
-            label: "Toggle Mask?"
-        },
-        globalFieldProps.tooltip,
-        globalFieldProps.advancedDivider,
-        globalFieldProps.isDisabled,
-        globalFieldProps.isInterfaceState,
-        globalFieldProps.textValidation,
-        globalFieldProps.isRendered,
-        globalFieldProps.validationsDivider,
-    ],
+      ],
+    },
+    {
+      id: "inline",
+      type: "checkbox",
+      label: "Inline?",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  mask: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "autoClear",
+      type: "checkbox",
+      label: "Auto Clear?",
+    },
+    {
+      id: "mask",
+      type: "text",
+      label: "Mask Pattern",
+      tooltip:
+        "For example: 99-999999 (use 9, a, or * for defining the mask, any other chars are for fixed values)",
+    },
+    globalFieldProps.prefix,
+    globalFieldProps.suffix,
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.textValidation,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
+  password: [
+    globalFieldProps.basicsDivider,
+    globalFieldProps.id,
+    globalFieldProps.label,
+    globalFieldProps.secondaryText,
+    globalFieldProps.type,
+    globalFieldProps.isRequired,
+    globalFieldProps.stylesDivider,
+    globalFieldProps.blockWidth,
+    globalFieldProps.specificsDivider,
+    {
+      id: "feedback",
+      type: "checkbox",
+      label: "Show Feedback?",
+    },
+    {
+      id: "toggleMask",
+      type: "checkbox",
+      label: "Toggle Mask?",
+    },
+    globalFieldProps.tooltip,
+    globalFieldProps.advancedDivider,
+    globalFieldProps.isDisabled,
+    globalFieldProps.isInterfaceState,
+    globalFieldProps.textValidation,
+    globalFieldProps.isRendered,
+    globalFieldProps.validationsDivider,
+  ],
 };
 
 export default fieldProps;

@@ -12,7 +12,7 @@ const FormattedPath = ({ path }) => {
         marginRight: "16px",
         whiteSpace: "nowrap",
         maxWidth: "324px",
-        overflow: "hidden"
+        overflow: "hidden",
       }}
     >
       {pathItems.join(".")}
