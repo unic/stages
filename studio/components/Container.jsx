@@ -43,6 +43,7 @@ const Container = styled.div`
   z-index: ${(props) => (props.transform ? 1000 : 1)};
   margin-bottom: ${(props) => (props.isFieldConfigEditor ? "16px" : 0)};
   flex-direction: ${(props) => (props.colums ? "column" : "row")};
+  padding-bottom: 8px;
 `;
 
 export default Container;
