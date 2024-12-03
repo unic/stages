@@ -1,11 +1,10 @@
 import { PrimeReactProvider } from 'primereact/api';
 import App from '../components/App';
 import '../styles/globals.css';
-import '../styles.css';
 
-import "primeflex/primeflex.css";
-import "primeflex/themes/primeone-light.css";
-import "../public/studio-styles.css";
+import "../node_modules/primeflex/primeflex.css";
+import "../node_modules/primeflex/themes/primeone-light.css";
+import "../node_modules/primereact/resources/themes/lara-light-cyan/theme.css";
 
 const MyApp = ({ Component, pageProps }) => {
     const value = {};
