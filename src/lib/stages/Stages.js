@@ -94,7 +94,7 @@ const Stages = ({
      */
     const setStepKey = (key, index) => {
         if (!keys[index]) {
-            keys[index] = {key, visible: true};
+            keys[index] = { key, visible: true };
             setKeys([...keys]);
         }
         return key;
@@ -247,7 +247,7 @@ const Stages = ({
 
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On nav "${navType}" -> "${nr}"`, uniqId);
-        
+
         if (navType === "next") {
             // Find the next step that is visible:
             let found = false;
@@ -261,7 +261,7 @@ const Stages = ({
         if (navType === "prev") {
             // Find the next lower step that is visible:
             let found = false;
-            for (let i = currentStep -1; i >= 0; i--) {
+            for (let i = currentStep - 1; i >= 0; i--) {
                 if (keys[i].visible && !found) {
                     newStepNr = i;
                     found = true;
@@ -312,7 +312,7 @@ const Stages = ({
         // @ts-ignore
         if (isDebugging()) window.stagesLogging(`On change step "${step}"`, uniqId);
         if (
-            (typeof lastValidStep === "number" && typeof step === "number" && lastValidStep + 1 >= step) || 
+            (typeof lastValidStep === "number" && typeof step === "number" && lastValidStep + 1 >= step) ||
             validateOnStepChange === false
         ) {
             setCurrentStep(step);
@@ -387,7 +387,21 @@ const Stages = ({
         },
         progressionProps: calculateProgression(),
         routerProps: { step: currentStep, onChange: setCurrentStep, keys: keys },
-        steps: activeChildren
+        steps: children.map((item, index) => item({
+            data: getStepData(index),
+            allData: data,
+            onChange: handleOnChange,
+            reset,
+            onNav,
+            isActive: index === currentStep,
+            index,
+            errors: errors[index] || {},
+            setStepKey
+        })).filter((item, index) => {
+            const isVisible = item !== null;
+            if (keys[index]) keys[index].visible = isVisible;
+            return isVisible;
+        })
     }) : null;
 };
 
