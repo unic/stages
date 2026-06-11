@@ -31,12 +31,12 @@ import { isDebugging } from "../utils/browser";
  */
 const Stages = ({
     children,
-    initialData,
+    initialData = {},
     initialStep,
     render,
-    validateOnStepChange,
+    validateOnStepChange = true,
     onChange,
-    autoSave,
+    autoSave = true,
     id
 }) => {
     /**
@@ -418,12 +418,6 @@ Stages.propTypes = {
     validateOnStepChange: PropTypes.bool,
     //** @type {string|number} The wizards id which is shown in the debugger */
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-};
-
-Stages.defaultProps = {
-    initialData: {},
-    validateOnStepChange: true,
-    autoSave: false
 };
 
 export default Stages;

@@ -241,26 +241,26 @@ const chosenPlaceholders = {};
  */
 const Form = ({
     config,
-    data,
+    data = {},
     render,
     renderFields,
     fields,
-    onChange,
-    isVisible,
-    isDisabled,
+    onChange = () => {},
+    isVisible = true,
+    isDisabled = false,
     id,
     onValidation,
     parentRunValidation,
-    validateOn,
+    validateOn = ["action"],
     throttleWait,
     customEvents,
     enableUndo,
-    undoMaxDepth,
-    customRuleHandlers,
-    autoSave,
-    typeValidations,
-    fieldsets,
-    initialInterfaceState,
+    undoMaxDepth = 10,
+    customRuleHandlers = {},
+    autoSave = false,
+    typeValidations = {},
+    fieldsets = {},
+    initialInterfaceState = {},
     hashSeparator,
 }) => {
     const mounted = useRef(false);
@@ -2217,20 +2217,6 @@ Form.propTypes = {
     fieldsets: PropTypes.object,
     //** @type {Object} The initial value for the forms interface state */
     initialInterfaceState: PropTypes.object
-};
-
-Form.defaultProps = {
-    data: {},
-    onChange: () => {},
-    isVisible: true,
-    isDisabled: false,
-    validateOn: ["action"],
-    customRuleHandlers: {},
-    undoMaxDepth: 10,
-    autoSave: false,
-    typeValidations: {},
-    fieldsets: {},
-    initialInterfaceState: {}
 };
 
 export default Form;
