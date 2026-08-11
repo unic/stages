@@ -25,6 +25,7 @@ The rewrite is intentionally not API compatible with `react-stages` 0.x. It will
 9. **Serializable state has a versioned contract.** Persisted state contains JSON-safe data and durable interaction state, never functions, components, pending work, or browser handles.
 10. **No module-global instance state.** Request IDs, batching, caches, metadata, and cancellation belong to one controller.
 11. **No runtime utility dependencies.** Path access, immutable updates, equality, ordering, and scheduling use small purpose-built internal functions.
+12. **Configuration remains dynamic.** Pure schema factories, predicates, derived props, and conditional validators can react to controlled value, external context, and controller metadata without depending on framework renders.
 
 ## 3. Scope
 
@@ -34,6 +35,7 @@ The rewrite is intentionally not API compatible with `react-stages` 0.x. It will
 - `stages()` controller and fully typed public contracts.
 - Controlled values and immutable change proposals.
 - Recursive fields, groups, collections, collection variants, wizards, and stages.
+- Pure dynamic schema factories, conditional nodes, derived props, dynamic disabled state, and conditional validators.
 - Arbitrary named events and event transforms.
 - Synchronous and asynchronous validation with full-form validity status.
 - Internal automatic batching and an explicit batch API.
@@ -85,13 +87,14 @@ These can be reconsidered as optional packages after the v1 core contract is sta
 | Event-based transforms | Named events and deterministic transforms returning immutable patches. |
 | Internal batching | Per-controller transactions, automatic microtask flush, explicit `batch`, and selector subscriptions. |
 | Config-first simple-to-complex use | Immutable recursive schema with typed composition, predicates, transforms, and validators. |
+| Dynamic configuration | Pure schema factories and explicit resolvers receive controlled value, external context, and readonly controller metadata. |
 
 ## 4. Proposed public API
 
 The following is an API direction, not final declaration-file syntax. The implementation should refine names through compile-tested examples before freezing them.
 
 ```ts
-const form = stages<ApplicationValue, AppFieldViews>({
+const form = stages<ApplicationValue, AppFieldViews, ApplicationContext>({
   schema: {
     id: "subsidy-application",
     version: 1,
@@ -116,22 +119,32 @@ form.dispatch({
   payload: "person@example.com",
 });
 
-// Synchronize a value accepted or replaced by the owner.
-form.update({ value });
+// Synchronize value and external context accepted or replaced by the owner.
+form.update({ value, context: { locale: "de-CH" } });
 ```
 
 The controller should expose only cohesive engine operations:
 
 ```ts
-interface StagesController<TValue> {
+interface StagesController<
+  TValue,
+  TFields = Readonly<Record<string, unknown>>,
+  TContext = unknown,
+> {
   getSnapshot(): StagesSnapshot<TValue>;
   subscribe(listener: () => void): () => void;
-  update(input: StagesUpdate<TValue>): void;
+  update(input: StagesUpdate<TValue, TFields, TContext>): void;
   dispatch(event: StagesEvent): void;
   batch(run: () => void): void;
   validate(options?: ValidateOptions): Promise<ValidationSnapshot>;
   serialize(): SerializedStagesState;
   destroy(): void;
+}
+
+interface StagesUpdate<TValue, TFields, TContext> {
+  value?: TValue;
+  context?: TContext;
+  schema?: StagesSchemaInput<TValue, TFields, TContext>;
 }
 ```
 
@@ -145,6 +158,8 @@ interface StagesController<TValue> {
 - The owner may normalize, replace, or reject a proposal.
 - A transaction keeps a private draft so several events in the same batch reduce in order against one value.
 - Controller-owned metadata, such as focus or the active wizard stage, may change without a value change.
+- `context` and explicit schema input are controlled like `value`; `update({ value, context, schema })` applies them atomically and triggers one dynamic reevaluation/subscriber flush.
+- Context/schema-only updates never call value `onChange`.
 - `onChange` receives one named object, never positional arguments.
 
 ```ts
@@ -179,46 +194,96 @@ The engine also needs a separate `NodeAddress`. A data path identifies a value; 
 Structural kinds and registered field types must be separate. This avoids reserving field names such as `group` or `wizard`.
 
 ```ts
-type NodeConfig<TValue, TFields> =
-  | FieldNodeConfig<TValue, TFields>
-  | GroupNodeConfig<TValue, TFields>
-  | CollectionNodeConfig<TValue, TFields>
-  | WizardNodeConfig<TValue, TFields>;
+interface DynamicMetaSnapshot {
+  revision: number;
+  isDirty: boolean;
+  touched: readonly NodeAddress[];
+  visited: readonly NodeAddress[];
+  activeWizards: ReadonlyMap<NodeAddress, string>;
+  extensions: Readonly<Record<string, unknown>>;
+}
 
-interface FieldNodeConfig<TValue, TFields> {
+interface DynamicConfigContext<TValue, TContext = unknown> {
+  value: DeepReadonly<TValue>;
+  context: DeepReadonly<TContext>;
+  meta: DeepReadonly<DynamicMetaSnapshot>;
+}
+
+interface NodeResolverContext<TValue, TContext = unknown>
+  extends DynamicConfigContext<TValue, TContext> {
+  path: DataPath;
+  address: NodeAddress;
+  fieldValue: unknown;
+  parentValue: unknown;
+}
+
+type NodePredicate<TValue, TContext = unknown> = (
+  context: NodeResolverContext<TValue, TContext>,
+) => boolean;
+
+type DerivedProps<TValue, TContext = unknown> = (
+  context: NodeResolverContext<TValue, TContext>,
+) => Readonly<Record<string, unknown>>;
+
+interface StagesSchema<TValue, TFields, TContext = unknown> {
+  id: string;
+  version: number;
+  nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+}
+
+type StagesSchemaFactory<TValue, TFields, TContext = unknown> = (
+  context: DynamicConfigContext<TValue, TContext>,
+) => StagesSchema<TValue, TFields, TContext>;
+
+type StagesSchemaInput<TValue, TFields, TContext = unknown> =
+  | StagesSchema<TValue, TFields, TContext>
+  | StagesSchemaFactory<TValue, TFields, TContext>;
+
+type NodeConfig<TValue, TFields, TContext = unknown> =
+  | FieldNodeConfig<TValue, TFields, TContext>
+  | GroupNodeConfig<TValue, TFields, TContext>
+  | CollectionNodeConfig<TValue, TFields, TContext>
+  | WizardNodeConfig<TValue, TFields, TContext>;
+
+interface FieldNodeConfig<TValue, TFields, TContext = unknown> {
   kind: "field";
   id: string;
   type: keyof TFields;
   props?: Readonly<Record<string, unknown>>;
-  when?: NodePredicate<TValue>;
-  disabled?: boolean | NodePredicate<TValue>;
-  transforms?: readonly TransformConfig<TValue>[];
-  validators?: readonly ValidatorConfig<TValue>[];
+  deriveProps?: DerivedProps<TValue, TContext>;
+  when?: boolean | NodePredicate<TValue, TContext>;
+  disabled?: boolean | NodePredicate<TValue, TContext>;
+  transforms?: readonly TransformConfig<TValue, TContext>[];
+  validators?: readonly ValidatorConfig<TValue, TContext>[];
 }
 
-interface GroupNodeConfig<TValue, TFields> {
+interface GroupNodeConfig<TValue, TFields, TContext = unknown> {
   kind: "group";
   id: string;
-  nodes: readonly NodeConfig<TValue, TFields>[];
-  when?: NodePredicate<TValue>;
-  transforms?: readonly TransformConfig<TValue>[];
-  validators?: readonly ValidatorConfig<TValue>[];
+  nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+  when?: boolean | NodePredicate<TValue, TContext>;
+  disabled?: boolean | NodePredicate<TValue, TContext>;
+  transforms?: readonly TransformConfig<TValue, TContext>[];
+  validators?: readonly ValidatorConfig<TValue, TContext>[];
 }
 
-interface CollectionNodeBase<TValue> {
+interface CollectionNodeBase<TValue, TContext = unknown> {
   kind: "collection";
   id: string;
   min?: number;
   max?: number;
   itemKey?: (item: Readonly<unknown>, index: number) => string;
-  transforms?: readonly TransformConfig<TValue>[];
-  validators?: readonly ValidatorConfig<TValue>[];
+  when?: boolean | NodePredicate<TValue, TContext>;
+  disabled?: boolean | NodePredicate<TValue, TContext>;
+  transforms?: readonly TransformConfig<TValue, TContext>[];
+  validators?: readonly ValidatorConfig<TValue, TContext>[];
 }
 
-type CollectionNodeConfig<TValue, TFields> = CollectionNodeBase<TValue> &
+type CollectionNodeConfig<TValue, TFields, TContext = unknown> =
+  CollectionNodeBase<TValue, TContext> &
   (
     | {
-        nodes: readonly NodeConfig<TValue, TFields>[];
+        nodes: readonly NodeConfig<TValue, TFields, TContext>[];
         discriminator?: never;
         variants?: never;
       }
@@ -226,29 +291,32 @@ type CollectionNodeConfig<TValue, TFields> = CollectionNodeBase<TValue> &
         nodes?: never;
         discriminator: string;
         variants: Readonly<
-          Record<string, CollectionVariantConfig<TValue, TFields>>
+          Record<string, CollectionVariantConfig<TValue, TFields, TContext>>
         >;
       }
   );
 
-interface CollectionVariantConfig<TValue, TFields> {
-  nodes: readonly NodeConfig<TValue, TFields>[];
+interface CollectionVariantConfig<TValue, TFields, TContext = unknown> {
+  nodes: readonly NodeConfig<TValue, TFields, TContext>[];
 }
 
-interface WizardNodeConfig<TValue, TFields> {
+interface WizardNodeConfig<TValue, TFields, TContext = unknown> {
   kind: "wizard";
   id: string;
-  stages: readonly StageNodeConfig<TValue, TFields>[];
+  stages: readonly StageNodeConfig<TValue, TFields, TContext>[];
   initialStage?: string;
   navigation?: WizardNavigationConfig<TValue>;
-  transforms?: readonly TransformConfig<TValue>[];
-  validators?: readonly ValidatorConfig<TValue>[];
+  when?: boolean | NodePredicate<TValue, TContext>;
+  disabled?: boolean | NodePredicate<TValue, TContext>;
+  transforms?: readonly TransformConfig<TValue, TContext>[];
+  validators?: readonly ValidatorConfig<TValue, TContext>[];
 }
 
-interface StageNodeConfig<TValue, TFields> {
+interface StageNodeConfig<TValue, TFields, TContext = unknown> {
   id: string;
-  nodes: readonly NodeConfig<TValue, TFields>[];
-  when?: NodePredicate<TValue>;
+  nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+  when?: boolean | NodePredicate<TValue, TContext>;
+  disabled?: boolean | NodePredicate<TValue, TContext>;
 }
 ```
 
@@ -294,11 +362,105 @@ This produces entries such as `{ kind: "person", firstName: "..." }`. The discri
 
 ### 5.2 Dynamic configuration
 
-Configuration is immutable. The engine never modifies caller objects.
+Dynamic configuration is a required v1 capability. `stages()` accepts either an immutable schema object or a pure `StagesSchemaFactory`. Node-level resolvers cover changing properties without rebuilding stable structure; the schema factory covers genuinely structural changes such as adding stages or selecting a different subtree.
 
-Dynamic behavior should normally use pure `when`, `disabled`, derived props, transforms, and validators. Applications that need to change structure supply a new schema through `update({ schema })`. Schema updates are recursively normalized and diffed by stable node identity.
+Every dynamic callback receives readonly inputs:
 
-A root schema factory may be considered during the API spike, but it must not be required. If included, it must be synchronous, pure, recursively normalized, and return stable IDs. Runtime `modifyConfig`, partial recursive expansion, string templates, and magic `*Fn` prop names will not return.
+- `value`: the current transaction draft while reducing an event and the latest externally accepted controlled value otherwise;
+- `context`: an externally controlled application value for locale, permissions, feature flags, or previously loaded async data;
+- `meta`: a readonly controller snapshot for durable UI state such as touched/visited nodes and active wizard stages;
+- node resolvers additionally receive `path`, stable `address`, `fieldValue`, and `parentValue`.
+
+The supported node-level mechanisms are explicit:
+
+- `deriveProps(context)` returns props that are shallow-merged over static `props` for the registered view;
+- `when(context)` controls whether a field/container is applicable and appears in render snapshots;
+- `disabled(context)` controls engine disabled state and cascades from a disabled container to its descendants;
+- validator `when(context)` controls whether that validator participates;
+- transforms and navigation guards receive the same controlled value/context model.
+
+For example, the behavior in `demo/pages/dynamicfields.jsx` is expressed without recreating its stable six-field structure:
+
+```ts
+const dynamicFieldsSchema = {
+  id: "dynamic-fields",
+  version: 1,
+  nodes: [
+    { kind: "field", id: "field1", type: "text" },
+    {
+      kind: "field",
+      id: "field2",
+      type: "text",
+      deriveProps: ({ value }) => ({
+        required: Boolean(value.field1),
+      }),
+      validators: [
+        {
+          id: "field2.required",
+          on: ["init", "input", "submit"],
+          when: ({ value }) => Boolean(value.field1),
+          validate: required("Enter Field 2."),
+        },
+      ],
+    },
+    { kind: "field", id: "field3", type: "text" },
+    {
+      kind: "field",
+      id: "field4",
+      type: "text",
+      disabled: ({ value }) => !value.field3,
+    },
+    { kind: "field", id: "name", type: "text" },
+    {
+      kind: "field",
+      id: "age",
+      type: "number",
+      deriveProps: ({ value }) => ({
+        label: value.name ? `What is the age of ${value.name}?` : "Age",
+      }),
+    },
+  ],
+} satisfies StagesSchema<DynamicFieldsValue, typeof fields>;
+```
+
+Conditional fields use `when` instead of a render-time omission:
+
+```ts
+{
+  kind: "field",
+  id: "companyName",
+  type: "text",
+  when: ({ value }) => value.customerType === "company",
+}
+```
+
+A `when: false` node is dormant: it is absent from render snapshots and full-form validation, but its controlled value and interaction metadata are retained so toggling it back on does not lose user work. Removing a node from a schema factory result is a structural removal: its controller metadata is discarded, while domain data remains untouched unless an explicit transform removes it.
+
+Draft-based evaluation is used to validate and describe a proposed transaction, but it does not make the draft canonical. Published value-dependent configuration remains based on the last externally accepted value. If `onChange` synchronously supplies the proposal through `update({ value })`, acceptance and dynamic publication are coalesced into the same subscriber flush; if the owner rejects it, the draft-derived configuration is discarded.
+
+For structural changes, a schema factory is guaranteed—not optional:
+
+```ts
+const insuranceSchema: StagesSchemaFactory<
+  InsuranceValue,
+  typeof fields,
+  InsuranceContext
+> = ({ value, context }) => ({
+  id: "insurance",
+  version: 1,
+  nodes: [
+    productField,
+    ...(value.product === "vehicle" ? vehicleNodes : propertyNodes),
+    ...(context.features.includes("broker") ? brokerNodes : []),
+  ],
+});
+```
+
+Factories and resolvers are synchronous and pure. The schema factory runs at most once per transaction, and each resolver runs at most once for its node/address. Async work happens outside the schema and enters through controlled `context`. The engine reevaluates dynamic callbacks after value, context, exposed metadata, or explicit schema input changes, then recursively normalizes and diffs the result before publishing a snapshot.
+
+Stable kind/ID/address identity preserves compatible controller metadata and snapshot references across reevaluation. Removing, renaming, retyping, or moving a structural node is treated as removal plus addition; the engine emits diagnostics for incompatible identity reuse. No dynamic callback may mutate inputs, dispatch events, start async work, or depend on framework render timing.
+
+Applications may also replace a static schema or factory through `update({ schema })`. Runtime `modifyConfig`, partial recursive expansion, string templates, and magic `*Fn` prop names will not return.
 
 ### 5.3 Schema validation
 
@@ -312,9 +474,13 @@ Normalization fails early with structured diagnostics for:
 - union collections with an unsafe/missing discriminator or invalid variants;
 - invalid wizard targets;
 - invalid event and validator definitions;
-- unstable or missing identities required for state reconciliation.
+- unstable or missing identities required for state reconciliation;
+- a schema factory changing root ID/version during normal reevaluation;
+- resolver results with invalid prop/output shapes.
 
 Development builds may freeze normalized configuration to detect mutation. Production behavior must not depend on freezing.
+
+Factory/resolver exceptions and invalid dynamic results are reported as structured controller diagnostics—with callback/node identity and revision—through `snapshot.diagnostics` and optional `onDiagnostic`. The previous valid normalized schema remains active; the engine never publishes a partially normalized dynamic tree.
 
 ## 6. Field and component registration
 
@@ -356,7 +522,7 @@ interface FieldSnapshot<TFieldValue = unknown, TView = unknown> {
 }
 ```
 
-Adapters receive the snapshot plus a typed `emit(name, payload)` function. User configuration cannot overwrite engine event handlers, values, validity, or identity as it can in 0.x.
+`FieldSnapshot.props` is the resolved result of static `props` shallow-merged with `deriveProps` for the snapshot's current value/context/meta revision. Adapters receive the snapshot plus a typed `emit(name, payload)` function. User configuration cannot overwrite engine event handlers, values, validity, or identity as it can in 0.x.
 
 Custom rich-text editors, date pickers, maps, uploads, and other non-native controls use the exact same registry and event contracts as text inputs. The core makes no assumptions about DOM events or string values.
 
@@ -382,18 +548,21 @@ One event transaction runs in this order:
 3. Apply matching target transforms in declaration order.
 4. Apply matching ancestor and root transforms, nearest ancestor first.
 5. Apply the returned patches immutably to the transaction draft.
-6. Reconcile conditional nodes, collection addresses, and wizard state.
-7. Recompute or invalidate validation results affected by the patches.
-8. Queue asynchronous effects with per-instance cancellation tokens.
-9. Commit controller metadata and emit at most one value change and one subscriber notification at flush.
+6. Reevaluate the schema factory and node resolvers once against the transaction draft, controlled context, and metadata.
+7. Normalize/diff structural changes and reconcile conditional nodes, collection addresses, and wizard state.
+8. Recompute or invalidate validation results affected by value or configuration changes.
+9. Queue asynchronous effects with per-instance cancellation tokens.
+10. Commit controller metadata and emit at most one value change and one subscriber notification at flush.
 
 Transforms are synchronous and pure in v1. They receive readonly context and return patches; they never receive setters or mutate data.
 
 ```ts
-interface TransformConfig<TValue> {
+interface TransformConfig<TValue, TContext = unknown> {
   on: string | readonly string[];
-  when?: (context: TransformContext<TValue>) => boolean;
-  apply(context: TransformContext<TValue>): readonly StagesPatch[];
+  when?: (context: TransformContext<TValue, TContext>) => boolean;
+  apply(
+    context: TransformContext<TValue, TContext>,
+  ): readonly StagesPatch[];
 }
 ```
 
@@ -418,6 +587,27 @@ Validation execution and issue presentation are separate concerns.
 Each validator has a stable ID, dependencies, event policy, optional presentation policy, and a synchronous or asynchronous function. It returns zero or more structured issues rather than React nodes or copies of field configuration.
 
 ```ts
+interface ValidatorConfig<TValue, TContext = unknown> {
+  id: string;
+  on: string | readonly string[];
+  revealOn?: string | readonly string[];
+  when?: (
+    context: ValidationContext<TValue, TContext>,
+  ) => boolean;
+  dependencies?: readonly DataPath[];
+  validate(
+    context: ValidationContext<TValue, TContext>,
+  ):
+    | readonly ValidationIssue[]
+    | Promise<readonly ValidationIssue[]>;
+}
+
+interface ValidationContext<TValue, TContext = unknown>
+  extends NodeResolverContext<TValue, TContext> {
+  event: string;
+  fieldState: Readonly<FieldInteractionState>;
+}
+
 interface ValidationIssue {
   id: string;
   code: string;
@@ -446,6 +636,8 @@ Rules:
 - A changed dependency makes the old result stale immediately.
 - Stale async completions cannot update current state.
 - Rejections become a configurable validation/system issue; they are never unhandled.
+- Validator `when` is reevaluated from the same draft/context as dynamic configuration. A false validator is excluded rather than considered unknown.
+- When a validator becomes inapplicable, pending work is cancelled and its issues are removed. When it becomes applicable again, it is stale until its event policy or `validate()` runs it for the current dependencies.
 - Event policy determines when a validator runs. Presentation policy determines when its issue becomes visible.
 - A validator that has not run for the current dependencies makes aggregate status `unknown`, not valid.
 - Pending work makes aggregate status `pending` unless a current error already makes it `invalid`; counts remain available in either case.
@@ -514,9 +706,9 @@ interface SerializedStagesState {
 }
 ```
 
-It excludes focus, rendered views, callbacks, configuration, subscriptions, pending requests, abort controllers, option data, and cached validation results. Validation is recomputed on recreation. Dirty state is derived by comparing value with the serialized baseline.
+It excludes focus, rendered views, callbacks, schema objects/factories, external context, subscriptions, pending requests, abort controllers, option data, and cached validation results. Validation and dynamic configuration are recomputed on recreation. Dirty state is derived by comparing value with the serialized baseline.
 
-`stages()` accepts either a controlled initial `value` or a serialized `state`, not both. Recreation requires the same schema ID and a compatible version. Applications can register explicit schema migrations and value codecs. The default codec rejects unsupported values such as `Date`, `File`, class instances, functions, symbols, cycles, `NaN`, and infinities with a precise path instead of silently losing them through `JSON.stringify`.
+`stages()` accepts either a controlled initial `value` or a serialized `state`, not both. Recreation requires the same schema object/factory, the current external context, a matching schema ID, and a compatible version. Applications can register explicit schema migrations and value codecs. The default codec rejects unsupported values such as `Date`, `File`, class instances, functions, symbols, cycles, `NaN`, and infinities with a precise path instead of silently losing them through `JSON.stringify`.
 
 Extension metadata is serialized only through a registered namespaced codec. This keeps framework state and application secrets out of persistence by default.
 
@@ -577,12 +769,12 @@ The core package must be safe to import during server rendering and must not ref
 The core should be organized around these boundaries:
 
 ```text
-configuration -> normalize -> immutable schema
-                                  |
-event queue -> pure reduce -> state + patches + effects
-                                  |
-                         derive snapshot/validity
-                                  |
+schema input + value/context/meta -> evaluate -> normalize/diff
+                                                |
+event queue -> pure reduce -> draft + patches -> reevaluate dynamics
+                                                |
+                                      derive snapshot/validity
+                                                |
 controller -> schedule effects, flush changes, notify subscribers
 ```
 
@@ -590,7 +782,7 @@ Suggested internal modules:
 
 - `types`: public and internal discriminated unions.
 - `path`: safe immutable get/set/remove and path comparison.
-- `schema`: recursive normalization, indexing, diagnostics, and schema diff.
+- `schema`: pure factory/resolver evaluation, recursive normalization, indexing, diagnostics, and identity-based schema diff.
 - `events`: event targeting, transaction construction, and command reduction.
 - `transforms`: deterministic transform selection and patch application.
 - `collections`: row identity and immutable collection commands.
@@ -610,16 +802,16 @@ No module may mutate the normalized schema, external value, previous snapshot, o
 | React render props | Replace with framework-neutral snapshots/subscriptions and adapters. |
 | `plainFields` | Move to the DOM adapter as reference field definitions/views. |
 | exported Lodash `get` | Remove. Public paths are segment arrays. |
-| config arrays/functions | Keep config-first design; normalize recursively and never mutate input. |
+| config arrays/functions | Keep as immutable schema objects or guaranteed pure schema factories; evaluate from controlled value/context and normalize recursively without mutation. |
 | string templates / fieldsets | Use normal typed config-composition functions outside runtime. |
-| magic `*Fn` props | Replace with explicit derived props/predicates. |
+| magic `*Fn` props | Replace with typed `deriveProps`, `when`, `disabled`, and validator `when` resolvers. |
 | groups | Keep as recursive structural nodes. |
 | collections/unions | Keep with immutable commands, explicit variants, and stable row keys. |
 | subforms | Remove; recursive nodes cover the use case. |
 | embedded and outer wizards | Unify as the same nestable wizard node. |
 | filter/cast/cleanup/precision | Replace with field reducers and event transforms. |
 | computed values / clear fields | Replace with event transforms returning patches. |
-| dynamic options / async form data | Application/field-adapter resource concern, not form core. |
+| dynamic options / async form data | Load externally, then supply results through controlled `context`; field adapters may own option-resource behavior. |
 | registry/type/custom validation | Unify as structured validators with dependency and event policy. |
 | collection rule language | Replace with ordinary collection validators. |
 | interface state | Move to typed controller/adapter metadata; never merge into domain value. |
@@ -643,22 +835,24 @@ Create compile-tested examples for:
 - a wizard inside a collection and a wizard inside a stage;
 - a discriminated collection;
 - a custom non-native field;
+- parity with `demo/pages/dynamicfields.jsx` using derived props, disabled predicates, and conditional validators;
+- a pure schema factory that adds/removes a stable structural subtree from controlled value and external context;
 - sync and async event validation;
 - serialization and recreation;
 - external value rejection/normalization;
 - 100 events in one explicit batch.
 
-Exit when the proposed config, registry, controller, event, snapshot, and serialization types can express all fixtures without `any` or framework imports.
+Exit when the proposed config, registry, controller, event, snapshot, context, and serialization types can express all fixtures without `any` or framework imports.
 
 ### Phase 1 — Pure schema and value core
 
-Implement safe paths, patches, structural sharing, recursive normalization, diagnostics, node indexes, and pure state reduction. Add mutation/freeze tests and multiple-controller isolation tests.
+Implement safe paths, patches, structural sharing, schema factories, node resolvers, recursive normalization/diffing, diagnostics, node indexes, and pure state reduction. Add mutation/freeze tests and multiple-controller isolation tests.
 
-Exit when arbitrary recursive schemas and immutable value updates work without collections/wizards receiving special top-level treatment.
+Exit when arbitrary recursive and dynamic schemas work without collections/wizards receiving special top-level treatment, stable identities retain compatible metadata, and removed structures cannot leak active controller state.
 
 ### Phase 2 — Controller, controlled handshake, and batching
 
-Implement `stages()`, transactions, controlled proposals, subscriptions, selectors, default microtask batching, explicit batches, update reconciliation, and teardown.
+Implement `stages()`, transactions, controlled value/context/schema inputs, subscriptions, selectors, default microtask batching, explicit batches, update reconciliation, and teardown.
 
 Exit when one batch produces exactly one change callback and one notification, rejected proposals do not become canonical, and separate controllers cannot affect each other.
 
@@ -670,7 +864,7 @@ Exit when every old value-processing use case in the migration table is represen
 
 ### Phase 4 — Validation
 
-Implement issues, dependency invalidation, event/presentation policies, aggregate status, scoped/full validation, async cancellation, stale-result protection, and stage validity.
+Implement issues, dependency invalidation, conditional validators, event/presentation policies, aggregate status, scoped/full validation, async cancellation, stale-result protection, and stage validity.
 
 Exit when `isValid` can never be true with stale, unknown, pending, or failed error validators and every async rejection is handled.
 
@@ -705,6 +899,9 @@ Exit when all acceptance criteria below pass against the packed artifacts, not o
 - Strict TypeScript build has no explicit `any` escape hatches.
 - Every supported structural node can nest inside every other permitted structural node to arbitrary practical depth.
 - Input/config objects remain unchanged after every public operation.
+- The behaviors in `demo/pages/dynamicfields.jsx` work through explicit resolvers without framework-driven schema reconstruction.
+- A schema factory can add/remove nested fields, collections, and stages from controlled value/context while preserving all compatible stable identities.
+- A schema factory runs at most once per transaction; each node resolver runs at most once per node/address, and none observe stale value or context.
 - One hundred synchronous dispatches in a batch produce one proposed-value callback and one subscriber flush.
 - Selector subscribers for unaffected field snapshots are not invoked as changed.
 - Two controllers with identical paths have completely independent queues, validation, keys, and metadata.
