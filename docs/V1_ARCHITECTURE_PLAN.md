@@ -678,12 +678,14 @@ Implementation should begin with the Phase 0 fixtures only after items 1–9 are
 
 This example makes the proposed React integration concrete. It is intentionally a complete controlled form rather than isolated configuration fragments.
 
-It assumes the React adapter exposes two thin utilities:
+It assumes the React adapter exposes these thin utilities:
 
 - `useStages(factory, { value, context? })` creates and subscribes to the core controller, synchronizes the latest controlled inputs through `controller.update()`, and destroys the controller on unmount;
-- `StagesFields` recursively renders snapshot nodes using each registered React `view` and wires its typed `emit` function to `controller.dispatch()`.
+- `StagesField` subscribes to exactly one field path, renders that field's registered React `view`, and wires its typed `emit` function to `controller.dispatch()`;
+- `useStagesField(controller, path)` exposes the same selected field binding when an application wants to invoke or wrap the registered view itself;
+- `StagesFields` is an optional recursive renderer for generated/default layouts. It is not required and is not used below.
 
-Neither utility owns form data or behavior. The only engine constructor remains the core `stages()` function. The exact adapter names are part of the Phase 0 API spike and should be compile-tested before they are frozen.
+These utilities do not own form data or behavior. The only engine constructor remains the core `stages()` function. The exact adapter names are part of the Phase 0 API spike and should be compile-tested before they are frozen.
 
 ```tsx
 // ApplicationForm.tsx
@@ -695,7 +697,7 @@ import {
   type ValidationIssue,
 } from "@stages/core";
 import {
-  StagesFields,
+  StagesField,
   useStages,
   type ReactFieldProps,
   type ReactFieldRegistry,
@@ -957,6 +959,12 @@ const initialValue: ApplicationValue = {
   acceptTerms: false,
 };
 
+const fieldPaths = {
+  name: ["name"],
+  email: ["email"],
+  acceptTerms: ["acceptTerms"],
+} as const;
+
 export function ApplicationForm() {
   const [value, setValue] = useState<ApplicationValue>(initialValue);
   const [submittedValue, setSubmittedValue] = useState<string>();
@@ -997,18 +1005,42 @@ export function ApplicationForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <StagesFields controller={controller} nodes={snapshot.nodes} />
+      <header>
+        <h1>Contact application</h1>
+        <p>Tell us how we can contact you.</p>
+      </header>
 
-      <p aria-live="polite">
-        Full form status: {snapshot.validation.status}
-      </p>
+      <section aria-labelledby="contact-heading">
+        <h2 id="contact-heading">Contact details</h2>
 
-      <button
-        type="submit"
-        disabled={snapshot.validation.status === "pending"}
-      >
-        Submit
-      </button>
+        <div className="form-row form-row--wide">
+          <StagesField controller={controller} path={fieldPaths.name} />
+        </div>
+
+        <div className="form-row form-row--wide">
+          <StagesField controller={controller} path={fieldPaths.email} />
+          <p className="field-help">
+            We will only use this address to reply to your application.
+          </p>
+        </div>
+      </section>
+
+      <aside className="terms-panel" aria-label="Terms">
+        <StagesField controller={controller} path={fieldPaths.acceptTerms} />
+      </aside>
+
+      <footer className="form-actions">
+        <p aria-live="polite">
+          Full form status: {snapshot.validation.status}
+        </p>
+
+        <button
+          type="submit"
+          disabled={snapshot.validation.status === "pending"}
+        >
+          Submit
+        </button>
+      </footer>
 
       {submittedValue !== undefined && (
         <output>
@@ -1027,7 +1059,7 @@ The controlled lifecycle is:
 2. The controller reduces the event, applies matching transforms and validation, and batches a proposed value.
 3. `onChange` gives that proposal to React state.
 4. `useStages(..., { value })` supplies the accepted React value back to the controller.
-5. `StagesFields` rerenders only the field snapshots selected by the React adapter.
+5. Each manually placed `StagesField` subscribes to its own path and rerenders only when that selected field snapshot changes.
 6. Submission asks for definitive full-form validation, reveals submit issues, and reads the latest accepted controlled value.
 
-This intentionally leaves HTML structure and styling in React while field behavior, transforms, validation, aggregate validity, batching, and form state remain in the framework-neutral controller.
+The `<header>`, `<section>`, help text, `<aside>`, `<footer>`, and ordering are entirely application-owned React layout. `StagesField` only renders the one registered field placed at that exact position. An application needing even more control can replace it with `useStagesField()` and render the returned binding through its own component composition. Field behavior, transforms, validation, aggregate validity, batching, and form state remain in the framework-neutral controller.
