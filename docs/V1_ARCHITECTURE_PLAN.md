@@ -205,15 +205,34 @@ interface GroupNodeConfig<TValue, TFields> {
   validators?: readonly ValidatorConfig<TValue>[];
 }
 
-interface CollectionNodeConfig<TValue, TFields> {
+interface CollectionNodeBase<TValue> {
   kind: "collection";
   id: string;
-  item: CollectionItemConfig<TValue, TFields>;
   min?: number;
   max?: number;
   itemKey?: (item: Readonly<unknown>, index: number) => string;
   transforms?: readonly TransformConfig<TValue>[];
   validators?: readonly ValidatorConfig<TValue>[];
+}
+
+type CollectionNodeConfig<TValue, TFields> = CollectionNodeBase<TValue> &
+  (
+    | {
+        nodes: readonly NodeConfig<TValue, TFields>[];
+        discriminator?: never;
+        variants?: never;
+      }
+    | {
+        nodes?: never;
+        discriminator: string;
+        variants: Readonly<
+          Record<string, CollectionVariantConfig<TValue, TFields>>
+        >;
+      }
+  );
+
+interface CollectionVariantConfig<TValue, TFields> {
+  nodes: readonly NodeConfig<TValue, TFields>[];
 }
 
 interface WizardNodeConfig<TValue, TFields> {
@@ -235,7 +254,43 @@ interface StageNodeConfig<TValue, TFields> {
 
 Every group, collection, wizard, and stage contributes its ID to the data path. This keeps nested data deterministic and follows the current library's general model. If transparent/presentational containers are needed, they should be a later explicit node kind rather than a flag that changes path semantics.
 
-Collection items may be a single recursive node list or a discriminated set of variants. Variant configuration replaces the current implicit `__typename` union behavior with an explicit discriminator contract.
+Homogeneous collections put their repeated child schema directly in `nodes`. Every array entry is an implicit object scope, so those child IDs resolve beneath the current row without adding another data-path segment:
+
+```ts
+{
+  kind: "collection",
+  id: "members",
+  nodes: [
+    { kind: "field", id: "name", type: "text" },
+    { kind: "field", id: "email", type: "text" },
+  ],
+}
+```
+
+Union collections omit `nodes` and instead declare a discriminator plus named `variants`:
+
+```ts
+{
+  kind: "collection",
+  id: "contacts",
+  discriminator: "kind",
+  variants: {
+    person: {
+      nodes: [
+        { kind: "field", id: "firstName", type: "text" },
+        { kind: "field", id: "lastName", type: "text" },
+      ],
+    },
+    company: {
+      nodes: [
+        { kind: "field", id: "companyName", type: "text" },
+      ],
+    },
+  },
+}
+```
+
+This produces entries such as `{ kind: "person", firstName: "..." }`. The discriminator property is part of domain data and selects exactly one variant. A collection must define either `nodes` or `variants`, never both. This replaces the current implicit `__typename` union behavior with an explicit contract.
 
 ### 5.2 Dynamic configuration
 
@@ -253,6 +308,8 @@ Normalization fails early with structured diagnostics for:
 - unsafe property keys;
 - unknown field types;
 - invalid collection constraints;
+- collections that define both or neither of `nodes` and `variants`;
+- union collections with an unsafe/missing discriminator or invalid variants;
 - invalid wizard targets;
 - invalid event and validator definitions;
 - unstable or missing identities required for state reconciliation.
@@ -404,6 +461,8 @@ All containers are handled by the same recursive walker and reducer. There are n
 ### 9.1 Collections
 
 Collections provide typed commands for add, remove, replace, duplicate, move, and sort. Constraint failures such as `min` and `max` produce a rejected command result or issue; they never report a change when nothing changed.
+
+A homogeneous collection repeats its direct `nodes` for every row. A union collection selects one entry from `variants` using its configured discriminator. Adding a union entry requires a variant key, and the engine writes the corresponding discriminator value into the new domain object.
 
 Row identity is metadata, not injected into domain data. The default strategy preserves keys by accepted array position. Applications that reorder or replace items externally should provide `itemKey`. Duplicate keys are a schema/runtime diagnostic.
 
@@ -1163,40 +1222,38 @@ const schema = {
       id: "members",
       min: 1,
       max: 5,
-      item: {
-        nodes: [
-          {
-            kind: "field",
-            id: "name",
-            type: "text",
-            props: {
-              label: "Name",
-              autoComplete: "name",
-            },
-            transforms: [trimOnBlur],
-            validators: [
-              required("member.name.required", "Enter the member's name."),
-            ],
+      nodes: [
+        {
+          kind: "field",
+          id: "name",
+          type: "text",
+          props: {
+            label: "Name",
+            autoComplete: "name",
           },
-          {
-            kind: "field",
-            id: "email",
-            type: "text",
-            props: {
-              label: "Email",
-              inputType: "email",
-              autoComplete: "email",
-            },
-            transforms: [trimOnBlur],
-            validators: [
-              required(
-                "member.email.required",
-                "Enter the member's email address.",
-              ),
-            ],
+          transforms: [trimOnBlur],
+          validators: [
+            required("member.name.required", "Enter the member's name."),
+          ],
+        },
+        {
+          kind: "field",
+          id: "email",
+          type: "text",
+          props: {
+            label: "Email",
+            inputType: "email",
+            autoComplete: "email",
           },
-        ],
-      },
+          transforms: [trimOnBlur],
+          validators: [
+            required(
+              "member.email.required",
+              "Enter the member's email address.",
+            ),
+          ],
+        },
+      ],
     },
   ],
 } as const satisfies StagesSchema<TeamValue, typeof fields>;
