@@ -277,13 +277,14 @@ The registry is passed to `stages()`. Its keys form the allowed `type` union in 
 A rendered field snapshot keeps engine state and user props separate:
 
 ```ts
-interface FieldSnapshot<TValue> {
+interface FieldSnapshot<TFieldValue = unknown, TView = unknown> {
   kind: "field";
   type: string;
+  view: TView;
   path: DataPath;
   address: NodeAddress;
-  value: unknown;
-  initialValue: unknown;
+  value: TFieldValue;
+  initialValue: TFieldValue;
   props: Readonly<Record<string, unknown>>;
   state: {
     disabled: boolean;
@@ -293,6 +294,7 @@ interface FieldSnapshot<TValue> {
     dirty: boolean;
     validating: boolean;
     issues: readonly ValidationIssue[];
+    visibleIssues: readonly ValidationIssue[];
   };
 }
 ```
@@ -671,3 +673,361 @@ The plan recommends the following; changing one later would be expensive:
 10. Decide whether v1 is ESM-only and whether the package remains `react-stages` or moves to a framework-neutral name before publishing the first release candidate.
 
 Implementation should begin with the Phase 0 fixtures only after items 1–9 are accepted or amended. Package naming and module-format decisions must be fixed before public prereleases.
+
+## 19. Full React usage example
+
+This example makes the proposed React integration concrete. It is intentionally a complete controlled form rather than isolated configuration fragments.
+
+It assumes the React adapter exposes two thin utilities:
+
+- `useStages(factory, { value, context? })` creates and subscribes to the core controller, synchronizes the latest controlled inputs through `controller.update()`, and destroys the controller on unmount;
+- `StagesFields` recursively renders snapshot nodes using each registered React `view` and wires its typed `emit` function to `controller.dispatch()`.
+
+Neither utility owns form data or behavior. The only engine constructor remains the core `stages()` function. The exact adapter names are part of the Phase 0 API spike and should be compile-tested before they are frozen.
+
+```tsx
+// ApplicationForm.tsx
+import { useState, type FormEvent, type HTMLInputTypeAttribute } from "react";
+import {
+  stages,
+  type StagesSchema,
+  type TransformConfig,
+  type ValidationIssue,
+} from "@stages/core";
+import {
+  StagesFields,
+  useStages,
+  type ReactFieldProps,
+  type ReactFieldRegistry,
+} from "@stages/react";
+
+type ApplicationValue = {
+  name: string;
+  email: string;
+  acceptTerms: boolean;
+};
+
+type TextFieldConfig = {
+  label: string;
+  inputType?: HTMLInputTypeAttribute;
+  autoComplete?: string;
+};
+
+type CheckboxFieldConfig = {
+  label: string;
+};
+
+function VisibleIssues({
+  id,
+  issues,
+}: {
+  id: string;
+  issues: readonly ValidationIssue[];
+}) {
+  if (issues.length === 0) return null;
+
+  return (
+    <ul id={id} role="alert">
+      {issues.map((issue) => (
+        <li key={issue.id}>{issue.message ?? issue.code}</li>
+      ))}
+    </ul>
+  );
+}
+
+function TextField({
+  id,
+  field,
+  props,
+  emit,
+}: ReactFieldProps<string, TextFieldConfig>) {
+  const errorsId = `${id}-errors`;
+  const hasVisibleErrors = field.state.visibleIssues.length > 0;
+
+  return (
+    <div>
+      <label htmlFor={id}>{props.label}</label>
+      <input
+        id={id}
+        type={props.inputType ?? "text"}
+        autoComplete={props.autoComplete}
+        value={field.value}
+        disabled={field.state.disabled}
+        aria-invalid={hasVisibleErrors}
+        aria-describedby={hasVisibleErrors ? errorsId : undefined}
+        onChange={(event) => emit("input", event.currentTarget.value)}
+        onFocus={() => emit("focus")}
+        onBlur={() => emit("blur")}
+      />
+      <VisibleIssues id={errorsId} issues={field.state.visibleIssues} />
+    </div>
+  );
+}
+
+function CheckboxField({
+  id,
+  field,
+  props,
+  emit,
+}: ReactFieldProps<boolean, CheckboxFieldConfig>) {
+  const errorsId = `${id}-errors`;
+  const hasVisibleErrors = field.state.visibleIssues.length > 0;
+
+  return (
+    <div>
+      <label>
+        <input
+          id={id}
+          type="checkbox"
+          checked={field.value}
+          disabled={field.state.disabled}
+          aria-invalid={hasVisibleErrors}
+          aria-describedby={hasVisibleErrors ? errorsId : undefined}
+          onChange={(event) => emit("input", event.currentTarget.checked)}
+          onFocus={() => emit("focus")}
+          onBlur={() => emit("blur")}
+        />
+        {props.label}
+      </label>
+      <VisibleIssues id={errorsId} issues={field.state.visibleIssues} />
+    </div>
+  );
+}
+
+const fields = {
+  text: {
+    view: TextField,
+    initialValue: "",
+    reduce({ event }) {
+      if (event.name !== "input" || typeof event.payload !== "string") {
+        return undefined;
+      }
+
+      return { value: event.payload };
+    },
+  },
+  checkbox: {
+    view: CheckboxField,
+    initialValue: false,
+    reduce({ event }) {
+      if (event.name !== "input" || typeof event.payload !== "boolean") {
+        return undefined;
+      }
+
+      return { value: event.payload };
+    },
+  },
+} as const satisfies ReactFieldRegistry;
+
+const trimOnBlur = {
+  on: "blur",
+  apply({ path, fieldValue }) {
+    if (typeof fieldValue !== "string") return [];
+
+    const trimmedValue = fieldValue.trim();
+    if (trimmedValue === fieldValue) return [];
+
+    return [{ op: "set", path, value: trimmedValue }];
+  },
+} satisfies TransformConfig<ApplicationValue>;
+
+const schema = {
+  id: "contact-form",
+  version: 1,
+  nodes: [
+    {
+      kind: "field",
+      id: "name",
+      type: "text",
+      props: {
+        label: "Name",
+        autoComplete: "name",
+      },
+      transforms: [trimOnBlur],
+      validators: [
+        {
+          id: "name.required",
+          on: ["init", "input", "blur", "submit"],
+          revealOn: ["blur", "submit"],
+          validate({ fieldValue, path }) {
+            return typeof fieldValue === "string" && fieldValue.trim() !== ""
+              ? []
+              : [
+                  {
+                    id: "name.required",
+                    code: "required",
+                    path,
+                    severity: "error",
+                    message: "Enter your name.",
+                  },
+                ];
+          },
+        },
+      ],
+    },
+    {
+      kind: "field",
+      id: "email",
+      type: "text",
+      props: {
+        label: "Email",
+        inputType: "email",
+        autoComplete: "email",
+      },
+      transforms: [trimOnBlur],
+      validators: [
+        {
+          id: "email.required",
+          on: ["init", "input", "blur", "submit"],
+          revealOn: ["blur", "submit"],
+          validate({ fieldValue, path }) {
+            return typeof fieldValue === "string" && fieldValue.trim() !== ""
+              ? []
+              : [
+                  {
+                    id: "email.required",
+                    code: "required",
+                    path,
+                    severity: "error",
+                    message: "Enter your email address.",
+                  },
+                ];
+          },
+        },
+        {
+          id: "email.format",
+          on: ["init", "input", "blur", "submit"],
+          revealOn: ["blur", "submit"],
+          validate({ fieldValue, path }) {
+            const isEmpty =
+              typeof fieldValue !== "string" || fieldValue.trim() === "";
+            const hasValidShape =
+              typeof fieldValue === "string" &&
+              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fieldValue);
+
+            return isEmpty || hasValidShape
+              ? []
+              : [
+                  {
+                    id: "email.format",
+                    code: "email",
+                    path,
+                    severity: "error",
+                    message: "Enter a valid email address.",
+                  },
+                ];
+          },
+        },
+      ],
+    },
+    {
+      kind: "field",
+      id: "acceptTerms",
+      type: "checkbox",
+      props: {
+        label: "I accept the terms.",
+      },
+      validators: [
+        {
+          id: "acceptTerms.required",
+          on: ["init", "input", "submit"],
+          revealOn: ["submit"],
+          validate({ fieldValue, path }) {
+            return fieldValue === true
+              ? []
+              : [
+                  {
+                    id: "acceptTerms.required",
+                    code: "required",
+                    path,
+                    severity: "error",
+                    message: "Accept the terms before submitting.",
+                  },
+                ];
+          },
+        },
+      ],
+    },
+  ],
+} as const satisfies StagesSchema<ApplicationValue, typeof fields>;
+
+const initialValue: ApplicationValue = {
+  name: "",
+  email: "",
+  acceptTerms: false,
+};
+
+export function ApplicationForm() {
+  const [value, setValue] = useState<ApplicationValue>(initialValue);
+  const [submittedValue, setSubmittedValue] = useState<string>();
+
+  const { controller, snapshot } = useStages(
+    () =>
+      stages<ApplicationValue, typeof fields>({
+        schema,
+        fields,
+        value: initialValue,
+        onChange({ value: proposedValue }) {
+          // Accept the proposal. The hook supplies this value back to the
+          // controller on the next render, completing the controlled cycle.
+          setValue(proposedValue);
+        },
+      }),
+    { value },
+  );
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmittedValue(undefined);
+
+    const validation = await controller.validate({
+      scope: "form",
+      event: "submit",
+      reveal: true,
+    });
+
+    if (!validation.isValid) return;
+
+    // Submit the latest externally accepted value, not an event payload or
+    // a second internal copy owned by Stages.
+    setSubmittedValue(
+      JSON.stringify(controller.getSnapshot().value, null, 2),
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate>
+      <StagesFields controller={controller} nodes={snapshot.nodes} />
+
+      <p aria-live="polite">
+        Full form status: {snapshot.validation.status}
+      </p>
+
+      <button
+        type="submit"
+        disabled={snapshot.validation.status === "pending"}
+      >
+        Submit
+      </button>
+
+      {submittedValue !== undefined && (
+        <output>
+          <strong>Submitted value</strong>
+          <pre>{submittedValue}</pre>
+        </output>
+      )}
+    </form>
+  );
+}
+```
+
+The controlled lifecycle is:
+
+1. A field component emits `input`, `focus`, or `blur`; it never changes form state directly.
+2. The controller reduces the event, applies matching transforms and validation, and batches a proposed value.
+3. `onChange` gives that proposal to React state.
+4. `useStages(..., { value })` supplies the accepted React value back to the controller.
+5. `StagesFields` rerenders only the field snapshots selected by the React adapter.
+6. Submission asks for definitive full-form validation, reveals submit issues, and reads the latest accepted controlled value.
+
+This intentionally leaves HTML structure and styling in React while field behavior, transforms, validation, aggregate validity, batching, and form state remain in the framework-neutral controller.
