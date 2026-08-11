@@ -1063,3 +1063,279 @@ The controlled lifecycle is:
 6. Submission asks for definitive full-form validation, reveals submit issues, and reads the latest accepted controlled value.
 
 The `<header>`, `<section>`, help text, `<aside>`, `<footer>`, and ordering are entirely application-owned React layout. `StagesField` only renders the one registered field placed at that exact position. An application needing even more control can replace it with `useStagesField()` and render the returned binding through its own component composition. Field behavior, transforms, validation, aggregate validity, batching, and form state remain in the framework-neutral controller.
+
+## 20. React collection management example
+
+Collections use the same manual layout model. The React adapter's `useStagesCollection(controller, path)` hook selects one collection and returns typed row bindings and commands:
+
+```ts
+interface ReactCollectionBinding<TItem> {
+  items: readonly ReactCollectionItemBinding<TItem>[];
+  canAdd: boolean;
+  add(value: TItem): void;
+}
+
+interface ReactCollectionItemBinding<TItem> {
+  key: string;
+  index: number;
+  value: Readonly<TItem>;
+  address: NodeAddress;
+  canRemove: boolean;
+  canMovePrevious: boolean;
+  canMoveNext: boolean;
+  fieldPath(field: keyof TItem): DataPath;
+  remove(): void;
+  moveTo(index: number): void;
+}
+```
+
+`key` and `address` use the controller's stable collection-row identity. The current numeric index appears only in the data path. Moving a row therefore preserves its touched state, validation exposure, async request identity, and React component identity.
+
+The following example reuses the `text` field definition from the preceding example through a shared `fields` module. Everything specific to the collection is included here.
+
+```tsx
+// TeamForm.tsx
+import { useState, type FormEvent } from "react";
+import {
+  stages,
+  type StagesSchema,
+  type TransformConfig,
+  type ValidatorConfig,
+} from "@stages/core";
+import {
+  StagesField,
+  useStages,
+  useStagesCollection,
+} from "@stages/react";
+import { fields } from "./fields";
+
+type TeamMember = {
+  name: string;
+  email: string;
+};
+
+type TeamValue = {
+  members: TeamMember[];
+};
+
+function required(
+  id: string,
+  message: string,
+): ValidatorConfig<TeamValue> {
+  return {
+    id,
+    on: ["init", "input", "blur", "submit"],
+    revealOn: ["blur", "submit"],
+    validate({ fieldValue, path }) {
+      return typeof fieldValue === "string" && fieldValue.trim() !== ""
+        ? []
+        : [
+            {
+              id,
+              code: "required",
+              path,
+              severity: "error",
+              message,
+            },
+          ];
+    },
+  };
+}
+
+const trimOnBlur = {
+  on: "blur",
+  apply({ path, fieldValue }) {
+    if (typeof fieldValue !== "string") return [];
+
+    const trimmedValue = fieldValue.trim();
+    return trimmedValue === fieldValue
+      ? []
+      : [{ op: "set", path, value: trimmedValue }];
+  },
+} satisfies TransformConfig<TeamValue>;
+
+const schema = {
+  id: "team-form",
+  version: 1,
+  nodes: [
+    {
+      kind: "collection",
+      id: "members",
+      min: 1,
+      max: 5,
+      item: {
+        nodes: [
+          {
+            kind: "field",
+            id: "name",
+            type: "text",
+            props: {
+              label: "Name",
+              autoComplete: "name",
+            },
+            transforms: [trimOnBlur],
+            validators: [
+              required("member.name.required", "Enter the member's name."),
+            ],
+          },
+          {
+            kind: "field",
+            id: "email",
+            type: "text",
+            props: {
+              label: "Email",
+              inputType: "email",
+              autoComplete: "email",
+            },
+            transforms: [trimOnBlur],
+            validators: [
+              required(
+                "member.email.required",
+                "Enter the member's email address.",
+              ),
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as const satisfies StagesSchema<TeamValue, typeof fields>;
+
+const initialValue: TeamValue = {
+  members: [
+    {
+      name: "",
+      email: "",
+    },
+  ],
+};
+
+const membersPath = ["members"] as const;
+
+export function TeamForm() {
+  const [value, setValue] = useState<TeamValue>(initialValue);
+  const [submittedValue, setSubmittedValue] = useState<string>();
+
+  const { controller, snapshot } = useStages(
+    () =>
+      stages<TeamValue, typeof fields>({
+        schema,
+        fields,
+        value: initialValue,
+        onChange({ value: proposedValue }) {
+          setValue(proposedValue);
+        },
+      }),
+    { value },
+  );
+
+  const members = useStagesCollection(controller, membersPath);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmittedValue(undefined);
+
+    const validation = await controller.validate({
+      scope: "form",
+      event: "submit",
+      reveal: true,
+    });
+
+    if (!validation.isValid) return;
+
+    setSubmittedValue(
+      JSON.stringify(controller.getSnapshot().value, null, 2),
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate>
+      <header>
+        <h1>Team members</h1>
+        <p>Add between one and five people and arrange their order.</p>
+      </header>
+
+      <div className="member-list">
+        {members.items.map((member) => (
+          <fieldset className="member-card" key={member.key}>
+            <legend>Member {member.index + 1}</legend>
+
+            <div className="member-card__fields">
+              <StagesField
+                controller={controller}
+                path={member.fieldPath("name")}
+              />
+              <StagesField
+                controller={controller}
+                path={member.fieldPath("email")}
+              />
+            </div>
+
+            <div className="member-card__actions">
+              <button
+                type="button"
+                disabled={!member.canMovePrevious}
+                onClick={() => member.moveTo(member.index - 1)}
+              >
+                Move up
+              </button>
+              <button
+                type="button"
+                disabled={!member.canMoveNext}
+                onClick={() => member.moveTo(member.index + 1)}
+              >
+                Move down
+              </button>
+              <button
+                type="button"
+                disabled={!member.canRemove}
+                onClick={() => member.remove()}
+              >
+                Remove
+              </button>
+            </div>
+          </fieldset>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        disabled={!members.canAdd}
+        onClick={() => members.add({ name: "", email: "" })}
+      >
+        Add member
+      </button>
+
+      <footer className="form-actions">
+        <p aria-live="polite">
+          {members.items.length} of 5 members · Full form status:{" "}
+          {snapshot.validation.status}
+        </p>
+        <button
+          type="submit"
+          disabled={snapshot.validation.status === "pending"}
+        >
+          Submit team
+        </button>
+      </footer>
+
+      {submittedValue !== undefined && (
+        <output>
+          <strong>Submitted value</strong>
+          <pre>{submittedValue}</pre>
+        </output>
+      )}
+    </form>
+  );
+}
+```
+
+The collection commands are ordinary controller events hidden behind typed React bindings:
+
+- `members.add()` dispatches `collection:add` and respects `max`;
+- `member.remove()` targets the stable row address and respects `min`;
+- `member.moveTo()` targets the stable row address, so a move does not reset field interaction state;
+- the controller applies the array update immutably and emits one controlled-value proposal;
+- every row and action is still placed in application-owned React markup.
+
+An application can dispatch the corresponding collection events directly when it does not want React adapter helpers. The helpers provide typed paths, stable identity, capability flags, and narrow subscriptions; they do not add collection behavior outside the core.
