@@ -5,7 +5,6 @@ import _ from "lodash";
 import Sugar from "sugar";
 import { DndContext } from '@dnd-kit/core';
 import { ContextMenu } from 'primereact/contextmenu';
-import { Button } from 'primereact/button';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import { Toast } from 'primereact/toast';
 import {
@@ -30,15 +29,12 @@ import {
     Braces,
     Unplug
 } from 'lucide-react';
-import { Form } from "react-stages";
 import StagesIcon from './StagesIcon';
-import primeFields from './primeFields';
 import useStagesStore from './store';
 import { initNewCollections, removeEmptyElements } from "./helpers";
 
-import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig, arrayMove } from './helpers';
-import { FieldRenderer } from './FieldRenderer';
-import StudioV1Preview from './v1/StudioV1Preview';
+import { getConfigPathFromDataPath, createNewFieldID, arrayMove } from './helpers';
+import StudioV1Preview, { StudioV1Form } from './v1/StudioV1Preview';
 
 import initialConfig from './configTemplates/initialConfig';
 import kitchensinkConfig from './configTemplates/kitchensinkConfig';
@@ -50,7 +46,6 @@ const Workspace = () => {
     const toast = useRef(null);
     const contextMenuRef = useRef(null);
     const store = useStagesStore();
-    const [formCounter, setFormCounter] = useState(1);
     const [formTitle, setFormTitle] = useState(store.generalConfig.title || "Form");
 
     const handleEditFormTitle = useCallback(evt => {
@@ -182,7 +177,6 @@ const Workspace = () => {
     const handleInitConfig = (config) => {
         console.log("--> handleClearConfig <--");
         store.setData({});
-        setFormCounter(formCounter => formCounter + 1);
         store.updateCurrentConfig(config);
         store.setSelectedElement("");
         contextMenuRef?.current?.hide();
@@ -283,7 +277,6 @@ const Workspace = () => {
         _.set(newConfig, realPath, newFieldConfig);
         store.updateCurrentConfig(newConfig);
         contextMenuRef?.current?.hide();
-        setFormCounter(formCounter => formCounter + 1);
     };
 
     const handleConvertToWizard = (path) => {
@@ -957,35 +950,6 @@ const Workspace = () => {
         contextMenuRef?.current?.hide();
     };
 
-    const createFieldsets = () => {
-        const fieldSets = {};
-        store.fieldsets.forEach(fieldset => {
-            fieldSets[fieldset.id] = {
-                params: {},
-                config: () => {
-                    return fieldset.config;
-                },
-                render: ({ fieldProps }) => {
-                    return (
-                        <FieldRenderer
-                            handleEditCollection={handleEditCollection}
-                            handleEditGroup={handleEditGroup}
-                            parent=""
-                            setActiveContextMenuInput={store.setActiveContextMenuInput}
-                            contextMenuRef={contextMenuRef}
-                            isEditMode={store.isEditMode}
-                            selectedElement={store.selectedElement}
-                            fieldProps={fieldProps}
-                            fields={fieldProps.fields}
-                            fieldsetId={fieldset.id}
-                        />
-                    );
-                }
-            }
-        });
-        return fieldSets;
-    };
-
     const handleDragEnd = (event) => {
         console.log("--> handleDragEnd <--", { event });
         if (event?.active?.id && event?.over?.id) {
@@ -1082,52 +1046,24 @@ const Workspace = () => {
                     />
                 ) : null}
                 {!store.isEditMode ? <div><br /></div> : null}
-                {store.isEditMode ? <Form
-                    key={`form${formCounter}`}
-                    id="myForm"
-                    data={store.data}
-                    fields={primeFields}
-                    config={{
-                        fields: () => {
-                            return parseJSONConfig(store.currentConfig, store.data);
-                        }
-                    }}
-                    render={({ actionProps, fieldProps }) => {
-                        return (
-                            <>
-                                <form>
-                                    <div style={{ position: "relative", maxWidth: store.previewSize === "mobile" ? "480px" : store.previewSize === "tablet" ? "640px" : "960px", margin: "0 auto", paddingBottom: "64px" }}>
-                                        <DndContext onDragEnd={handleDragEnd}>
-                                            <FieldRenderer
-                                                handleEditCollection={handleEditCollection}
-                                                handleEditGroup={handleEditGroup}
-                                                setFormCounter={setFormCounter}
-                                                parent=""
-                                                setActiveContextMenuInput={store.setActiveContextMenuInput}
-                                                contextMenuRef={contextMenuRef}
-                                                isEditMode={store.isEditMode}
-                                                selectedElement={store.selectedElement}
-                                                fieldProps={fieldProps}
-                                                fields={fieldProps.fields}
-                                            />
-                                        </DndContext>
-                                        <br />
-                                        <Button
-                                            type="button"
-                                            onClick={() => actionProps.handleActionClick(payload => console.log("onSubmit:", payload), true)}
-                                        >
-                                            Submit
-                                        </Button>
-                                    </div>
-                                </form>
-                            </>
-                        );
-                    }}
-                    onChange={payload => {
-                        store.setData(payload);
-                    }}
-                    fieldsets={createFieldsets()}
-                /> : (
+                {store.isEditMode ? (
+                    <DndContext onDragEnd={handleDragEnd}>
+                        <StudioV1Form
+                            config={store.currentConfig}
+                            fieldsets={store.fieldsets}
+                            value={store.data}
+                            onChange={store.setData}
+                            previewSize={store.previewSize}
+                            editor
+                            selectedElement={store.selectedElement}
+                            contextMenuRef={contextMenuRef}
+                            handleEditCollection={handleEditCollection}
+                            handleEditGroup={handleEditGroup}
+                            showCompatibilityDiagnostics
+                            showSubmit
+                        />
+                    </DndContext>
+                ) : (
                     <StudioV1Preview
                         config={store.currentConfig}
                         fieldsets={store.fieldsets}

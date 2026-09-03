@@ -33,7 +33,7 @@ function addressKey(address) {
 
 function presentationFor(item) {
   return Object.fromEntries(
-    ["label", "secondaryText", "blockWidth"].flatMap((key) =>
+    ["label", "secondaryText", "blockWidth", "blockBorder"].flatMap((key) =>
       item[key] === undefined ? [] : [[key, clone(item[key])]],
     ),
   );
@@ -196,7 +196,7 @@ function normalizeFieldsetNodes(item, fieldset) {
   return nodes;
 }
 
-function convertNodes(items, context, parentPath = [], parentAddress = [], parentPattern = []) {
+function convertNodes(items, context, parentPath = [], parentAddress = [], parentPattern = [], fieldsetId) {
   if (!Array.isArray(items)) return [];
   return items.flatMap((item, index) => {
     if (item === null || typeof item !== "object") {
@@ -213,6 +213,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
     const address = [...parentAddress, { kind: "node", id }];
     const pattern = [...parentPattern, { id, collection: item.type === "collection" }];
     const presentation = presentationFor(item);
+    if (fieldsetId !== undefined) presentation.fieldsetId = fieldsetId;
     if (Object.keys(presentation).length > 0) context.presentation[addressKey(address)] = presentation;
 
     const behavior = {};
@@ -226,7 +227,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
         kind: "group",
         id,
         ...behavior,
-        nodes: convertNodes(item.fields, context, path, address, pattern),
+        nodes: convertNodes(item.fields, context, path, address, pattern, fieldsetId),
       }];
     }
 
@@ -240,7 +241,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
       };
       if (item.fields !== null && typeof item.fields === "object" && !Array.isArray(item.fields)) {
         const variants = Object.fromEntries(Object.entries(item.fields).map(([variant, fields]) => [variant, {
-          nodes: convertNodes(fields, context, path, address, pattern),
+          nodes: convertNodes(fields, context, path, address, pattern, fieldsetId),
         }]));
         collection.discriminator = "__typename";
         collection.variants = variants;
@@ -249,7 +250,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
           variants: Object.keys(variants),
         };
       } else {
-        collection.nodes = convertNodes(item.fields, context, path, address, pattern);
+        collection.nodes = convertNodes(item.fields, context, path, address, pattern, fieldsetId);
       }
       return [collection];
     }
@@ -268,6 +269,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
           const stagePath = [...path, stageId];
           const stageAddress = [...address, { kind: "node", id: stageId }];
           const stagePresentation = presentationFor(stage || {});
+          if (fieldsetId !== undefined) stagePresentation.fieldsetId = fieldsetId;
           if (Object.keys(stagePresentation).length > 0) {
             context.presentation[addressKey(stageAddress)] = stagePresentation;
           }
@@ -279,6 +281,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
               stagePath,
               stageAddress,
               [...pattern, { id: stageId, collection: false }],
+              fieldsetId,
             ),
           };
         }),
@@ -294,11 +297,15 @@ function convertNodes(items, context, parentPath = [], parentAddress = [], paren
           path,
         });
       }
+      context.presentation[addressKey(address)] = {
+        ...(context.presentation[addressKey(address)] || {}),
+        fieldsetId: item.fieldset,
+      };
       return [{
         kind: "group",
         id,
         ...behavior,
-        nodes: convertNodes(normalizeFieldsetNodes(item, fieldset), context, path, address, pattern),
+        nodes: convertNodes(normalizeFieldsetNodes(item, fieldset), context, path, address, pattern, item.fieldset),
       }];
     }
 

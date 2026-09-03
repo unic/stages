@@ -49,6 +49,8 @@ test("expands fieldsets and removes the duplicated root group", () => {
   );
   assert.equal(result.schema.nodes[0].id, "billing");
   assert.deepEqual(result.schema.nodes[0].nodes.map((node) => node.id), ["city"]);
+  assert.equal(result.presentation["node:billing"].fieldsetId, "address");
+  assert.equal(result.presentation["node:billing/node:city"].fieldsetId, "address");
 });
 
 test("reports invalid compatibility expressions and retains supported visibility expressions", () => {

@@ -86,7 +86,7 @@ the entire gate.
 ## Stable v1 promotion
 
 Promote `1.0.0` only when the architecture acceptance criteria are satisfied,
-the remaining demo/Studio-editor migration decision is recorded, accessibility
+the remaining legacy demo migration decision is recorded, accessibility
 coverage is accepted, and at least one release candidate has been exercised by
 real consumers. Update the API and migration documents whenever a public
 contract changes during prerelease feedback.

@@ -1,8 +1,13 @@
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { stages } from "@stages/core";
 import { StagesField, useStages } from "@stages/react";
 import { Button } from "primereact/button";
 import primeFields from "../primeFields";
+import EditableBlock from "../EditableBlock";
+import GroupContainer from "../GroupContainer";
+import CollectionContainer from "../CollectionContainer";
+import StageContainer from "../StageContainer";
+import InsertBlock from "../InsertBlock";
 import { convertLegacyConfig, prepareStudioValue, studioPresentationKey } from "./legacyConfig.mjs";
 
 const ARRAY_FIELDS = new Set(["chips", "multiselect"]);
@@ -80,6 +85,161 @@ function nodeEvent(controller, node, name, payload) {
     target: { kind: "node", address: node.address },
     ...(payload === undefined ? {} : { payload }),
     source: "adapter",
+  });
+}
+
+function studioPath(path) {
+  return path.reduce((output, segment) => typeof segment === "number"
+    ? `${output}[${segment}]`
+    : output === "" ? segment : `${output}.${segment}`, "");
+}
+
+function editorWidth(node, meta, previewSize) {
+  const widths = node.kind === "field" ? node.props?.blockWidth : meta.blockWidth;
+  return widths?.[previewSize] || "large";
+}
+
+function EditorRow({ controller, node, index, size, canRemove, presentation, previewSize, editorProps }) {
+  return (
+    <div style={{ position: "relative", display: "flex", flexWrap: "wrap", width: "calc(100% - 16px)", margin: "4px 8px 12px", padding: "8px 92px 8px 0", border: "1px dashed #ddd", borderRadius: "3px" }}>
+      <EditorNodes
+        controller={controller}
+        nodes={node.nodes}
+        presentation={presentation}
+        previewSize={previewSize}
+        parentKind="row"
+        {...editorProps}
+      />
+      <div style={{ position: "absolute", top: "10px", right: "10px", display: "flex", gap: "4px" }}>
+        <button type="button" disabled={index === 0} aria-label={`Move ${node.id} up`} onClick={() => nodeEvent(controller, node, "collection:move", { to: index - 1 })}>↑</button>
+        <button type="button" disabled={index === size - 1} aria-label={`Move ${node.id} down`} onClick={() => nodeEvent(controller, node, "collection:move", { to: index + 1 })}>↓</button>
+        <button type="button" disabled={!canRemove} aria-label={`Remove ${node.id}`} onClick={() => nodeEvent(controller, node, "collection:remove")}>−</button>
+      </div>
+    </div>
+  );
+}
+
+function EditorNode({ controller, node, presentation, previewSize, parentKind, editorProps }) {
+  if (node.state.visible === false) return null;
+  const meta = presentationFor(node, presentation);
+  const path = studioPath(node.path);
+  const common = {
+    path,
+    selectedElement: editorProps.selectedElement,
+    contextMenuRef: editorProps.contextMenuRef,
+    fieldsetId: meta.fieldsetId,
+    isEditMode: true,
+  };
+
+  if (node.kind === "field") {
+    return (
+      <EditableBlock
+        {...common}
+        field={<StagesField controller={controller} path={node.path} />}
+        inGroup={parentKind !== "root"}
+        width={editorWidth(node, meta, previewSize)}
+      />
+    );
+  }
+
+  if (node.kind === "row") return null;
+
+  if (node.kind === "stage") {
+    return (
+      <StageContainer {...common} handleEditGroup={editorProps.handleEditGroup} label={meta.label} secondaryText={meta.secondaryText}>
+        <EditorNodes controller={controller} nodes={node.nodes} presentation={presentation} previewSize={previewSize} parentKind="stage" {...editorProps} />
+      </StageContainer>
+    );
+  }
+
+  if (node.kind === "collection") {
+    const rows = node.nodes.filter((child) => child.kind === "row");
+    return (
+      <CollectionContainer
+        {...common}
+        handleEditCollection={editorProps.handleEditCollection}
+        label={meta.label}
+        secondaryText={meta.secondaryText}
+        width={editorWidth(node, meta, previewSize)}
+        inGroup={parentKind !== "root"}
+      >
+        {rows.map((row, index) => (
+          <EditorRow
+            key={row.id}
+            controller={controller}
+            node={row}
+            index={index}
+            size={rows.length}
+            canRemove={node.canRemove}
+            presentation={presentation}
+            previewSize={previewSize}
+            editorProps={editorProps}
+          />
+        ))}
+        {Array.isArray(meta.variants) ? meta.variants.map((variant) => (
+          <button key={variant} type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add", { variant })} style={{ margin: "0 0 8px 8px" }}>add {variant}</button>
+        )) : (
+          <button type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")} style={{ margin: "0 0 8px 8px" }}>add row</button>
+        )}
+      </CollectionContainer>
+    );
+  }
+
+  return (
+    <GroupContainer
+      {...common}
+      handleEditGroup={editorProps.handleEditGroup}
+      label={meta.label}
+      secondaryText={meta.secondaryText}
+      width={editorWidth(node, meta, previewSize)}
+      inGroup={parentKind !== "root"}
+    >
+      <EditorNodes
+        controller={controller}
+        nodes={node.nodes}
+        presentation={presentation}
+        previewSize={previewSize}
+        parentKind={node.kind}
+        {...editorProps}
+      />
+    </GroupContainer>
+  );
+}
+
+function EditorNodes({ controller, nodes, presentation, previewSize, parentKind = "root", ...editorProps }) {
+  const visibleNodes = nodes.filter((node) => node.state.visible !== false && node.kind !== "row");
+  return visibleNodes.map((node, index) => {
+    const path = studioPath(node.path);
+    const meta = presentationFor(node, presentation);
+    const direction = parentKind === "root" || parentKind === "wizard" ? "row" : "column";
+    return (
+      <Fragment key={studioPresentationKey(node.address)}>
+        <InsertBlock
+          path={path}
+          direction={direction}
+          contextMenuRef={editorProps.contextMenuRef}
+          isStage={parentKind === "wizard"}
+          fieldsetId={meta.fieldsetId}
+        />
+        <EditorNode
+          controller={controller}
+          node={node}
+          presentation={presentation}
+          previewSize={previewSize}
+          parentKind={parentKind}
+          editorProps={editorProps}
+        />
+        {index === visibleNodes.length - 1 ? (
+          <InsertBlock
+            path={`${path}+`}
+            direction={direction}
+            contextMenuRef={editorProps.contextMenuRef}
+            isStage={parentKind === "wizard"}
+            fieldsetId={meta.fieldsetId}
+          />
+        ) : null}
+      </Fragment>
+    );
   });
 }
 
@@ -203,6 +363,11 @@ export function StudioV1Form({
   compact = false,
   showCompatibilityDiagnostics = true,
   showSubmit = false,
+  editor = false,
+  selectedElement,
+  contextMenuRef,
+  handleEditCollection,
+  handleEditGroup,
 }) {
   const formRef = useRef(null);
   const [message, setMessage] = useState("");
@@ -245,7 +410,20 @@ export function StudioV1Form({
             {snapshot.diagnostics.map((diagnostic, index) => <div key={`${diagnostic.code}:${index}`}>{diagnostic.message}</div>)}
           </aside>
         ) : null}
-        <Nodes controller={controller} nodes={snapshot.nodes} presentation={converted.presentation} previewSize={previewSize} />
+        {editor ? (
+          <EditorNodes
+            controller={controller}
+            nodes={snapshot.nodes}
+            presentation={converted.presentation}
+            previewSize={previewSize}
+            selectedElement={selectedElement}
+            contextMenuRef={contextMenuRef}
+            handleEditCollection={handleEditCollection}
+            handleEditGroup={handleEditGroup}
+          />
+        ) : (
+          <Nodes controller={controller} nodes={snapshot.nodes} presentation={converted.presentation} previewSize={previewSize} />
+        )}
         {showSubmit ? (
           <div style={{ flex: "0 0 100%", padding: "8px" }}>
             <Button type="submit">Submit</Button>
