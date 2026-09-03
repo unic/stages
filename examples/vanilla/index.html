@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A controlled, accessible Stages v1 wizard using the DOM adapter." />
+    <title>Stages v1 — Vanilla wizard</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">Stages v1 DOM adapter</p>
+        <h1>Create your workspace</h1>
+        <p>A framework-free controlled wizard with validation and durable state.</p>
+      </header>
+
+      <form id="wizard-form" novalidate>
+        <ol id="progress" class="progress" aria-label="Setup progress"></ol>
+        <div id="stages-root"></div>
+
+        <p id="form-status" class="status" role="status" aria-live="polite"></p>
+        <div class="actions">
+          <button id="previous" type="button">Previous</button>
+          <button id="next" type="button">Next</button>
+          <button id="submit" type="submit">Finish setup</button>
+        </div>
+      </form>
+
+      <details>
+        <summary>Controlled value and serialized state</summary>
+        <pre id="debug-value"></pre>
+      </details>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

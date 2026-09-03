@@ -1,6 +1,7 @@
 # Dependency directories
 node_modules/
 packages/*/dist/
+examples/*/dist/
 
 # Optional npm cache directory
 .npm

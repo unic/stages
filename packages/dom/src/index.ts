@@ -214,7 +214,10 @@ export function mountStages<TValue, TFields, TContext>(
     },
     focusFirstIssue(focusOptions) {
       const field = findField(controller.getSnapshot().nodes, (candidate) =>
-        !candidate.state.disabled && candidate.state.visibleIssues.some((issue) => issue.severity === "error"));
+        candidate.state.visible
+        && !candidate.state.disabled
+        && candidate.state.visibleIssues.some((issue) => issue.severity === "error")
+        && findMountedElement(elementId(candidate)) !== undefined);
       return focusField(field, focusOptions);
     },
     destroy() {

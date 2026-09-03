@@ -120,6 +120,41 @@ test("DOM adapter focuses fields and preserves focus across controller renders",
   assert.equal(mounted.focus(["first"]), false);
 });
 
+test("first-issue focus skips errors in unmounted wizard stages", async () => {
+  const dom = new JSDOM("<main id='root'></main>", { pretendToBeVisual: true });
+  const root = dom.window.document.querySelector("#root");
+  const fields = createDomFields();
+  const issue = (id) => ({
+    id,
+    on: "submit",
+    revealOn: "submit",
+    validate: ({ path }) => [{ id, code: "required", path, severity: "error" }],
+  });
+  const controller = stages({
+    schema: {
+      id: "dom-wizard-focus",
+      version: 1,
+      nodes: [{
+        kind: "wizard",
+        id: "flow",
+        initialStage: "second",
+        stages: [
+          { id: "first", nodes: [{ kind: "field", id: "hidden", type: "text", validators: [issue("hidden.required")] }] },
+          { id: "second", nodes: [{ kind: "field", id: "visible", type: "text", validators: [issue("visible.required")] }] },
+        ],
+      }],
+    },
+    fields,
+    value: { flow: { first: { hidden: "" }, second: { visible: "" } } },
+  });
+  const mounted = mountStages(root, controller);
+
+  await controller.validate({ event: "submit", reveal: true });
+  assert.equal(root.querySelectorAll("input").length, 1);
+  assert.equal(mounted.focusFirstIssue(), true);
+  assert.equal(dom.window.document.activeElement, root.querySelector("input"));
+});
+
 test("DOM view tokens can render arbitrary custom controls", () => {
   const dom = new JSDOM("<main id='root'></main>");
   const root = dom.window.document.querySelector("#root");
