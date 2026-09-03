@@ -1,0 +1,88 @@
+# React performance
+
+**For:** React developers reducing avoidable rerenders in large dynamic forms.
+
+**Prerequisites:** [Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions)
+and [React lifecycle](/adapters/react/lifecycle).
+
+Start with ownership boundaries, not memoization. One small owner can call
+`useStages`; field, collection, and wizard children can receive the stable
+controller and subscribe to the narrow snapshot they render.
+
+```tsx
+export const MeasuredNameField = memo(function MeasuredNameField({
+  controller,
+  onCommit,
+}: {
+  controller: StagesController<ReactFormValue, typeof reactFields, ReactContext>;
+  onCommit: (value: string) => void;
+}) {
+  const field = useStagesField(controller, ["name"]);
+
+  useEffect(() => {
+    onCommit(field.value as string);
+  }, [field, onCommit]);
+
+  return <output>{String(field.value)}</output>;
+});
+```
+
+This measures committed field changes rather than performing a side effect in
+render. Development Strict Mode replays effects, so use React Profiler or
+production-mode measurements for final counts.
+
+## Subscription widths
+
+| API | Rerender input |
+| --- | --- |
+| `useStages` | Complete controller snapshot |
+| `useStagesController` | Complete controller snapshot |
+| `useStagesField` | One visible `FieldSnapshot` selected by path |
+| `useStagesCollection` | One visible collection `ContainerSnapshot` |
+| `useStagesWizard` | One visible wizard `ContainerSnapshot` |
+
+Core structurally shares unchanged snapshot nodes. Selector subscriptions use
+`Object.is`, so a narrow field hook skips updates while that field snapshot is
+the same object. A changed value, interaction state, props, or issues creates a
+new field snapshot and rerenders it.
+
+`memo` prevents a stable-controller child from rerendering solely because its
+owner rerendered. Keep callback props stable with `useCallback`; keep schemas,
+registries, contexts, and extensions at stable identities as described in the
+lifecycle guide.
+
+## Avoid accidental broad work
+
+- Do not pass `snapshot` or `snapshot.value` through the entire field tree when
+  children can subscribe by path.
+- Keep literal paths stable in meaning. React hooks key their subscription by
+  `JSON.stringify(path)`, so a fresh equal array does not resubscribe, but a
+  changed serialized path does.
+- Do not memoize binding objects as if they were stable. Collection/wizard
+  bindings and command closures are derived again when their hook renders.
+- Render collection rows with `item.key`, not index. Create field paths from the
+  current row binding after every reorder.
+- If a custom component needs a projection not exposed by these hooks, build a
+  small hook around `controller.subscribeSelector()` with an intentional
+  equality function.
+
+`useStagesField()` returns the public non-path-inferred `FieldSnapshot`, whose
+value defaults to `unknown`; a design-system wrapper can centralize the safe
+field-value cast. Collection item types are inferred only when the path remains
+a literal tuple.
+
+## Measure the right boundary
+
+Record commits for representative fields, collection rows, and the owner while
+dispatching isolated and batched events. Check that unrelated fields stay
+stable, and separately measure expensive application components. The adapter
+does not virtualize rows or cache application views; add those strategies at
+the React layer when measurements justify them.
+
+## Evidence
+
+Subscription widths and path keys come from `packages/react/src/index.tsx`;
+core selector tests prove structural sharing for unaffected fields. The
+measurement wrapper is compiled from `docs/examples/react-adapter.tsx`.
+
+**Next:** Consult the exact [React API and type reference](/reference/react).

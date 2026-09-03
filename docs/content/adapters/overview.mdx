@@ -1,0 +1,29 @@
+# Adapter overview
+
+**For:** Developers choosing a renderer or deciding where integration behavior
+belongs.
+
+**Prerequisites:** [Mental model](/start/mental-model).
+
+Core owns schemas, events, controlled proposals, snapshots, validation,
+collections, wizards, and persistence envelopes. An adapter subscribes to
+snapshots, renders them, and emits events. The application owns markup policy,
+layout, focus strategy, routing, network calls, and controller acceptance.
+
+| Path | Package | Choose it when |
+| --- | --- | --- |
+| [React](/adapters/react/lifecycle) | `@stages/react` | Components and hooks own rendering |
+| [DOM](/dom) | `@stages/dom` | Native DOM rendering without a framework |
+| [Custom](/custom-adapters) | Core + `@stages/test-kit` | Binding another UI runtime |
+
+Adapters consume the same recursive snapshot and event contracts. They do not
+change controlled ownership: an emitted field event can propose a value, but
+the application accepts or replaces it through `controller.update()`.
+
+## Evidence
+
+The boundary follows the package export maps, adapter implementations, and
+shared controller tests. Each adapter guide links to its focused integration
+tests.
+
+**Next:** Follow the [React lifecycle guide](/adapters/react/lifecycle), or choose the [DOM quickstart](/start/dom-quickstart).

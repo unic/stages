@@ -1,0 +1,120 @@
+# React accessibility
+
+**For:** React teams responsible for accessible form and wizard markup.
+
+**Prerequisites:** [React field views](/adapters/react/fields),
+[validation execution](/validation/execution-and-reveal), and familiarity with
+the application's accessibility standards.
+
+`@stages/react` supplies state and events but renders no built-in markup.
+Accessibility belongs to each field view and the surrounding application.
+
+## Submit and error summary
+
+```tsx
+export function AccessibleForm({
+  controller,
+  save,
+}: {
+  controller: StagesController<ReactFormValue, typeof reactFields, ReactContext>;
+  save: (value: DeepReadonly<ReactFormValue>) => Promise<void>;
+}) {
+  const [submitted, setSubmitted] = useState(false);
+  const snapshot = useStagesController(controller);
+  const visibleIssues = snapshot.validation.visibleIssues;
+  const summaryRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (submitted && visibleIssues.length > 0) summaryRef.current?.focus();
+  }, [submitted, visibleIssues]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = await controller.validate({ event: "submit", reveal: true });
+    setSubmitted(true);
+    if (result.isValid) await save(controller.getSnapshot().value);
+  }
+
+  return <form noValidate onSubmit={submit}>
+    {submitted && visibleIssues.length > 0 && <section
+      ref={summaryRef}
+      tabIndex={-1}
+      aria-labelledby="error-summary-heading"
+    >
+      <h2 id="error-summary-heading">Check the form</h2>
+      <ul>{visibleIssues.map(issue => {
+        const id = controlId(issue);
+        return <li key={`${JSON.stringify(issue.path)}:${issue.id}`}>
+          {id
+            ? <a href={`#${id}`} onClick={() => document.getElementById(id)?.focus()}>
+                {issue.message ?? issue.code}
+              </a>
+            : issue.message ?? issue.code}
+        </li>;
+      })}</ul>
+    </section>}
+    <StagesField controller={controller} path={["name"]} id="account-name" />
+    <button type="submit" disabled={snapshot.validation.status === "pending"}>Save</button>
+  </form>;
+}
+```
+
+The form subscribes through `useStagesController`; calling `getSnapshot()`
+alone is not reactive. After validation reveals issues, the summary is mounted
+and focused. Links use explicit field IDs because generated IDs are deliberately
+opaque. The save reads a fresh accepted snapshot after asynchronous validation.
+
+Avoid announcing the same issue twice. In this pattern field-level error lists
+provide live `alert`/`status` semantics, while the summary is programmatically
+focused rather than another live region.
+
+## Field checklist
+
+- Associate every control with a visible label. Use `fieldset` and `legend`
+  for one logical field rendered by multiple controls.
+- Apply `field.state.disabled` to the native control or group.
+- Connect descriptions and every visible issue with `aria-describedby`.
+- Set `aria-invalid` only for visible error-severity issues; warnings alone do
+  not make the input invalid.
+- If using `aria-errormessage`, point it at an existing error container.
+- Emit `focus` and `blur` at the logical field boundary so touched/visited
+  metadata reflects the interaction users experience.
+- Treat schema `required` presentation as application props. Native `required`
+  or `aria-required` does not create a core validator, and a validator does not
+  automatically add native required semantics.
+
+`noValidate` in the example deliberately lets core/application validation own
+submit behavior. Remove it only if native browser validation is part of the
+chosen product behavior and is coordinated with core issues.
+
+## Collection and wizard checklist
+
+Use a grouping element and name for a collection; keep each row's controls and
+commands understandable, preserve `item.key` as the React key, and give move
+buttons explicit direction labels. Announce add/remove/reorder results when the
+visual change is not otherwise apparent.
+
+Give each wizard a heading and progress text, mark the active stage control
+with `aria-current="step"`, and use headings for stage content. If inactive
+stages remain mounted, hide them and remove descendants from the focus order.
+After successful navigation, move focus according to the application policy—
+usually the new stage heading or first invalid control.
+
+The React adapter has no imperative focus helper. Own refs or DOM focus in the
+application. Never focus a hidden, disabled, or inactive-stage control.
+
+## Async state
+
+Expose pending validation or saves with a nearby status message, prevent
+duplicate submits as appropriate, and do not remove the currently focused
+control solely to show a spinner. Preserve server error summaries until the
+user has a clear repair action.
+
+## Evidence
+
+The state used here comes from public field and validation snapshots; React's
+markup/focus responsibility follows the adapter boundary. The submit/summary
+example is compiled from `docs/examples/react-adapter.tsx`, and field semantics
+are exercised by adapter and DOM accessibility tests.
+
+**Next:** Keep large forms responsive with [narrow subscriptions and stable inputs](/adapters/react/performance).

@@ -1,5 +1,6 @@
 {
   "core": "Core",
+  "react": "React",
   "standard-events": "Standard events",
   "diagnostics": "Diagnostics",
   "serialization-errors": "Serialization errors"

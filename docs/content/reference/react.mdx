@@ -1,0 +1,247 @@
+# React API reference
+
+**For:** React and design-system developers needing exact `@stages/react`
+signatures and behavior.
+
+**Prerequisites:** [React lifecycle](/adapters/react/lifecycle) and the
+[core controller reference](/reference/core/controller).
+
+`@stages/react` is ESM, depends on the matching `@stages/core` release, and has
+React 17 or newer as a peer dependency.
+
+## Runtime exports
+
+### useStagesController
+
+```ts
+function useStagesController<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+): StagesSnapshot<TValue>;
+```
+
+Reads the snapshot for initial render, then subscribes to every controller
+publication in an effect. When `controller` changes, it reads and subscribes to
+the new instance. It never destroys an externally owned controller.
+
+### useStages
+
+```ts
+function useStages<TValue, TFields, TContext>(
+  factory: () => StagesController<TValue, TFields, TContext>,
+  input: StagesUpdate<TValue, TFields, TContext>,
+): UseStagesResult<TValue, TFields, TContext>;
+```
+
+Initializes a controller ref from `factory`, subscribes through
+`useStagesController`, and calls `controller.update(input)` after commit when
+`value`, `context`, `schema`, or `extensions` identity changes. It defers and
+guards cleanup across Strict Mode effect replay, then destroys after actual
+unmount. Factory or update exceptions are not converted by the adapter.
+
+### useStagesField
+
+```ts
+function useStagesField<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: DataPath,
+): FieldSnapshot;
+```
+
+Selects one visible field recursively and subscribes with `Object.is`. The
+subscription is replaced when the controller or `JSON.stringify(path)` changes.
+Throws `Error("Stages field does not exist at …")` when no visible field exists
+at the path, including when the path names another node kind.
+
+### useStagesCollection
+
+```ts
+function useStagesCollection<
+  TValue,
+  TFields,
+  TContext,
+  TPath extends DataPath,
+>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: TPath,
+): ReactCollectionBinding<CollectionItemAtPath<TValue, TPath>>;
+```
+
+Selects one visible collection and returns row values plus adapter-source add,
+remove, and move commands. A literal tuple path infers the array item type;
+otherwise it falls back to `unknown`. Throws
+`Error("Stages collection does not exist at …")` for a hidden, missing, or
+wrong-kind path.
+
+`CollectionItemAtPath` and its recursive `ValueAtPath` helper are internal
+types, not package exports.
+
+### useStagesWizard
+
+```ts
+function useStagesWizard<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: DataPath,
+): ReactWizardBinding;
+```
+
+Selects one visible wizard and returns visible stage state plus adapter-source
+navigation commands. Throws `Error("Stages wizard does not exist at …")` for a
+hidden, missing, or wrong-kind path.
+
+### StagesField
+
+```ts
+function StagesField<TValue, TFields, TContext>(
+  props: StagesFieldProps<TValue, TFields, TContext>,
+): ReactElement;
+```
+
+Uses `useStagesField`, requires a non-null/undefined registry view, and renders
+that view with an explicit or generated ID. Emits target the field's current
+path with `source: "adapter"`. Missing paths use the hook error above; a missing
+view throws `Error("Stages field view is missing at …")`.
+
+## Field types
+
+### ReactFieldProps
+
+```ts
+interface ReactFieldProps<
+  TValue = unknown,
+  TProps = Readonly<Record<string, unknown>>,
+> {
+  readonly id: string;
+  readonly field: FieldSnapshot<TValue, unknown>;
+  readonly props: TProps;
+  readonly emit: (name: string, payload?: unknown) => void;
+}
+```
+
+`id` labels the rendered control. `field` is the current snapshot. `props`
+contains resolved schema props with the view's declared type. `emit` sends one
+named event and optional payload through the controller.
+
+### ReactFieldView
+
+```ts
+type ReactFieldView<
+  TValue = unknown,
+  TProps = Readonly<Record<string, unknown>>,
+> = ComponentType<ReactFieldProps<TValue, TProps>>;
+```
+
+Both function and class components are accepted by React's `ComponentType`.
+
+### StagesFieldProps
+
+```ts
+interface StagesFieldProps<TValue, TFields, TContext> {
+  readonly controller: StagesController<TValue, TFields, TContext>;
+  readonly path: DataPath;
+  readonly id?: string;
+}
+```
+
+`controller` is borrowed, `path` must name a visible field, and optional `id`
+overrides address-based generation.
+
+## Lifecycle result
+
+### UseStagesResult
+
+```ts
+interface UseStagesResult<TValue, TFields, TContext> {
+  readonly controller: StagesController<TValue, TFields, TContext>;
+  readonly snapshot: StagesSnapshot<TValue>;
+}
+```
+
+`controller` remains stable for the mounted hook instance. `snapshot` is the
+latest full snapshot and causes the owning component to rerender on every
+controller publication.
+
+## Collection types
+
+### ReactCollectionBinding
+
+```ts
+interface ReactCollectionBinding<TItem> {
+  readonly items: readonly ReactCollectionItemBinding<TItem>[];
+  readonly canAdd: boolean;
+  add(value: TItem): void;
+}
+```
+
+`items` is current row order. `canAdd` reflects disabled/max state. `add`
+dispatches a supplied item; it does not construct union defaults.
+
+### ReactCollectionItemBinding
+
+```ts
+interface ReactCollectionItemBinding<TItem> {
+  readonly key: string;
+  readonly index: number;
+  readonly value: DeepReadonly<TItem>;
+  readonly address: NodeAddress;
+  readonly canRemove: boolean;
+  readonly canMovePrevious: boolean;
+  readonly canMoveNext: boolean;
+  fieldPath(field: Extract<keyof TItem, string | number>): DataPath;
+  remove(): void;
+  moveTo(index: number): void;
+}
+```
+
+`key`/`address` are stable row identity; `index` and `fieldPath` are current
+position. `value` is readonly. `canRemove` reflects collection disabled/min
+state; `canMovePrevious` and `canMoveNext` reflect disabled state and array boundaries.
+`remove` and `moveTo` target the stable row address.
+
+## Wizard types
+
+### ReactWizardBinding
+
+```ts
+interface ReactWizardBinding {
+  readonly activeStage: string | undefined;
+  readonly stages: readonly ReactWizardStageBinding[];
+  readonly canPrevious: boolean;
+  readonly canNext: boolean;
+  readonly canGo: boolean;
+  previous(): void;
+  next(): void;
+  go(stage: string): void;
+}
+```
+
+`activeStage` identifies the current stage and `stages` contains visible stages.
+`canPrevious`, `canNext`, and `canGo` reflect disabled/position and non-linear
+configuration, not validation or guards. `previous`, `next`, and `go` target
+the wizard address and can still be rejected by core.
+
+### ReactWizardStageBinding
+
+```ts
+interface ReactWizardStageBinding {
+  readonly id: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly active: boolean;
+  readonly disabled: boolean;
+  readonly validation: ValidationSnapshot | undefined;
+}
+```
+
+`id` is the stage ID; `path` is its current data path; `address` is stable.
+`active` and `disabled` are current state. `validation` is scoped stage
+validation when present. Stage `disabled` describes inherited content state;
+core does not automatically exclude that stage as a navigation target.
+
+## Evidence
+
+All six runtime signatures and eight exported types are derived from
+`packages/react/src/index.tsx`. The docs gate compares every exported interface
+member with this page; focused field, collection, wizard, and Strict Mode tests
+cover runtime behavior.
+
+**Next:** Return to the [React performance guide](/adapters/react/performance) or inspect [core events](/reference/standard-events).

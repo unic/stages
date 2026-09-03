@@ -1,0 +1,105 @@
+# React wizard bindings
+
+**For:** React developers rendering stage navigation, progress, and active
+content.
+
+**Prerequisites:** [Wizard validation and guards](/structures/wizard-validation-and-guards)
+and [React lifecycle](/adapters/react/lifecycle).
+
+`useStagesWizard(controller, path)` selects one visible wizard and exposes all
+visible stage bindings plus address-based navigation commands.
+
+```tsx
+export function CheckoutWizard({
+  controller,
+}: {
+  controller: StagesController<ReactFormValue, typeof reactFields, ReactContext>;
+}) {
+  const wizard = useStagesWizard(controller, ["checkout"]);
+  const activeIndex = wizard.stages.findIndex(stage => stage.active);
+  const activeStage = wizard.stages[activeIndex];
+
+  return <section aria-labelledby="checkout-heading">
+    <h2 id="checkout-heading">Checkout</h2>
+    <p>Step {activeIndex + 1} of {wizard.stages.length}</p>
+    <ol>
+      {wizard.stages.map(stage => <li key={stage.id}>
+        <button
+          type="button"
+          aria-current={stage.active ? "step" : undefined}
+          disabled={!wizard.canGo || stage.disabled}
+          onClick={() => wizard.go(stage.id)}
+        >
+          {stage.id}
+        </button>
+      </li>)}
+    </ol>
+
+    {activeStage?.id === "details" && <div role="group" aria-labelledby="details-heading">
+      <h3 id="details-heading">Delivery details</h3>
+      <StagesField controller={controller} path={["checkout", "details", "deliveryNote"]} />
+    </div>}
+    {activeStage?.id === "review" && <div role="group" aria-labelledby="review-heading">
+      <h3 id="review-heading">Review</h3>
+    </div>}
+
+    <button type="button" disabled={!wizard.canPrevious} onClick={wizard.previous}>Previous</button>
+    <button type="button" disabled={!wizard.canNext} onClick={wizard.next}>Next</button>
+  </section>;
+}
+```
+
+The binding lists visible stages in schema order. React decides whether to
+mount only the active stage, as above, or retain inactive content. If inactive
+content remains mounted, hide it accessibly and prevent its controls from
+participating in focus order.
+
+## Wizard members
+
+| Member | Meaning |
+| --- | --- |
+| `activeStage` | Active visible stage ID, or `undefined` when none exists |
+| `stages` | Visible stage bindings, including active and inactive stages |
+| `canPrevious`, `canNext` | Wizard enabled state plus positional boundary |
+| `canGo` | Wizard enabled state and `navigation.nonLinear === true` |
+| `previous()`, `next()` | Emit the corresponding adapter-source event |
+| `go(stage)` | Emits `wizard:go` with the stage ID as payload |
+
+Each stage exposes `id`, data `path`, stable `address`, `active`, `disabled`,
+and its scoped `validation`. The public type allows `validation` to be
+`undefined`; current core stage snapshots provide it, but consumers should
+still narrow the declared type.
+
+Capability flags describe disabled state and position/non-linear configuration.
+They do not pre-run `validateCurrent` or `guard`. A command can therefore be
+rejected even when `canNext` or `canGo` is true. The active stage remains
+unchanged and core reports `wizard.navigation-rejected`. Combine the active
+stage's validation with product UI, but let dispatch remain authoritative.
+
+A stage's `disabled` flag disables its inherited field content; it does not by
+itself remove the stage or make it an invalid navigation target. The example
+uses it to disable direct stage buttons. Apply the same product rule to
+previous/next controls if disabled stages should be skipped or blocked.
+
+## Forms and validation
+
+Use `type="button"` on navigation controls so they do not submit an enclosing
+form. A final form submit should call
+`controller.validate({ event: "submit", reveal: true })` and save only a valid
+accepted snapshot. Navigation and submission are separate application actions.
+
+## Missing wizard behavior
+
+The hook throws during render when its path is hidden, missing, or belongs to a
+different container kind. Conditional parents should mount the wizard only
+while it exists in the render snapshot. Binding objects/functions are recreated
+on render; use stage IDs and addresses—not function identity—as stable keys.
+
+## Evidence
+
+Visible-stage mapping, capability flags, adapter-source commands, and thrown
+behavior come from `packages/react/src/index.tsx`. The React wizard test covers
+stage output and navigation. The example is compiled from
+`docs/examples/react-adapter.tsx`.
+
+**Next:** Apply the complete [React accessibility checklist](/adapters/react/accessibility).

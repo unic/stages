@@ -1,0 +1,159 @@
+# React field views
+
+**For:** Design-system authors and React developers mapping field definitions to
+accessible controls.
+
+**Prerequisites:** [Field registry](/core-concepts/field-registry) and
+[React lifecycle](/adapters/react/lifecycle).
+
+A registry view is an opaque React `ComponentType`. `StagesField` locates one
+visible field by data path, subscribes narrowly, resolves its view, and renders
+that component with `ReactFieldProps<TValue, TProps>`.
+
+## Typed views
+
+```tsx
+export function TextView({ id, field, props, emit }: ReactFieldProps<string, LabelProps>) {
+  const hasError = field.state.visibleIssues.some(issue => issue.severity === "error");
+  return <div>
+    <label htmlFor={id}>{props.label}</label>
+    {props.description && <p id={`${id}-description`}>{props.description}</p>}
+    <input
+      id={id}
+      value={field.value}
+      disabled={field.state.disabled}
+      aria-invalid={hasError || undefined}
+      aria-errormessage={hasError ? `${id}-issues` : undefined}
+      aria-describedby={describedBy(id, props, field.state.visibleIssues.length)}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", event.currentTarget.value)}
+    />
+    <IssueList id={`${id}-issues`} issues={field.state.visibleIssues} />
+  </div>;
+}
+
+export function NumberView({ id, field, props, emit }: ReactFieldProps<number, LabelProps>) {
+  return <label htmlFor={id}>
+    {props.label}
+    <input
+      id={id}
+      type="number"
+      value={field.value}
+      disabled={field.state.disabled}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", event.currentTarget.valueAsNumber)}
+    />
+  </label>;
+}
+
+export function CheckboxView({ id, field, props, emit }: ReactFieldProps<boolean, LabelProps>) {
+  return <label htmlFor={id}>
+    <input
+      id={id}
+      type="checkbox"
+      checked={field.value}
+      disabled={field.state.disabled}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", event.currentTarget.checked)}
+    />
+    {props.label}
+  </label>;
+}
+
+export function SelectView({ id, field, props, emit }: ReactFieldProps<Plan, SelectProps>) {
+  return <label htmlFor={id}>
+    {props.label}
+    <select
+      id={id}
+      value={field.value}
+      disabled={field.state.disabled}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", event.currentTarget.value)}
+    >
+      {props.options.map(option =>
+        <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select>
+  </label>;
+}
+
+export function CoordinatesView({ id, field, props, emit }: ReactFieldProps<Coordinates, LabelProps>) {
+  return <fieldset disabled={field.state.disabled}>
+    <legend>{props.label}</legend>
+    <label htmlFor={`${id}-latitude`}>Latitude</label>
+    <input
+      id={`${id}-latitude`}
+      type="number"
+      value={field.value.latitude}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", {
+        ...field.value,
+        latitude: event.currentTarget.valueAsNumber,
+      })}
+    />
+    <label htmlFor={`${id}-longitude`}>Longitude</label>
+    <input
+      id={`${id}-longitude`}
+      type="number"
+      value={field.value.longitude}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", {
+        ...field.value,
+        longitude: event.currentTarget.valueAsNumber,
+      })}
+    />
+  </fieldset>;
+}
+```
+
+Reducers still own payload validation and domain conversion. The number and
+coordinates definitions reject non-finite `valueAsNumber`; the select reducer
+accepts only declared domain values. An ignored payload produces no proposal.
+
+For a compound control, emit one complete object value and deliberately choose
+focus/blur semantics. The coordinates example marks the shared field focused
+for either inner input; a production view may track related-target transitions
+to avoid touching the field while focus moves within the group.
+
+## Prop contract and event source
+
+| Prop | Meaning |
+| --- | --- |
+| `id` | Explicit `StagesField.id`, or a generated collision-safe address ID |
+| `field` | Current `FieldSnapshot`, including value, state, issues, path, and address |
+| `props` | Static plus derived schema props, typed by the view |
+| `emit(name, payload?)` | Dispatches a field-path event with `source: "adapter"` |
+
+The generated ID encodes every node/row address segment, including segment
+kind, length, and code points. It stays collision-safe for nested collection
+rows, but applications should treat its textual format as internal. Supply an
+explicit stable `id` when an error summary, test, or external label needs to
+reference the control.
+
+`emit` does not mutate canonical value. It enters the normal reducer,
+transform, validation, and controlled-acceptance pipeline. Always render from
+`field.value`, never from a second local canonical state.
+
+## Missing fields and views
+
+`useStagesField()` and therefore `StagesField` throw during render when no
+visible field exists at the path. A hidden field is absent from the render
+snapshot; a group/collection/wizard at the path is also not a field. Conditional
+layouts should conditionally mount `StagesField` from the parent snapshot
+instead of catching the error.
+
+`StagesField` throws if the resolved registry view is `null` or `undefined`.
+Other invalid React component values are reported by React itself.
+
+## Evidence
+
+Props, ID generation, narrow selection, adapter event source, and thrown cases
+come from `packages/react/src/index.tsx` and the field binding test. All five
+view examples are compiled from `docs/examples/react-adapter.tsx`.
+
+**Next:** Render repeated rows with the [React collection binding](/adapters/react/collections).

@@ -1,0 +1,88 @@
+# React lifecycle and controlled ownership
+
+**For:** React developers creating and owning a Stages controller inside a
+component tree.
+
+**Prerequisites:** [React quickstart](/start/react-quickstart) and
+[controlled values](/core-concepts/controlled-values).
+
+`useStages(factory, input)` constructs a controller for the mounted component
+instance, subscribes to its complete snapshot, sends controlled inputs after
+commit, and destroys the controller after a real unmount.
+
+```tsx
+export function ReactControllerOwner({
+  value,
+  locale,
+  onAccept,
+}: {
+  value: ReactFormValue;
+  locale: ReactContext["locale"];
+  onAccept: (value: ReactFormValue) => void;
+}) {
+  const onAcceptRef = useRef(onAccept);
+  onAcceptRef.current = onAccept;
+  const context = useMemo<ReactContext>(() => ({ locale }), [locale]);
+
+  const { controller, snapshot } = useStages(
+    () => stages({
+      schema: reactSchema,
+      fields: reactFields,
+      value,
+      context,
+      onChange: change => onAcceptRef.current(change.value),
+    }),
+    { value, context, schema: reactSchema },
+  );
+
+  return <section data-revision={snapshot.revision}>
+    <StagesField controller={controller} path={["name"]} id="account-name" />
+  </section>;
+}
+```
+
+The factory initializes an internal ref during render. Keep it limited to
+constructing an isolated controller; do not start requests, write storage, or
+record analytics there. A real remount creates a new controller.
+
+`input` is a `StagesUpdate`: `value`, `context`, `schema`, and `extensions` are
+the only updateable controller inputs. The hook compares those four dependency
+identities and calls `controller.update(input)` in an effect. Registry entries,
+callbacks, codecs, migrations, and other creation options are fixed; recreate
+the controller if they must change.
+
+The callback stored in the controller is also fixed. The example uses a ref so
+it always calls the latest `onAccept` prop. The parent remains the canonical
+owner: `onChange` proposes, state update accepts, then the hook forwards the
+new `value` to the controller after commit.
+
+## Referential stability
+
+Put static schemas and registries at module scope. Memoize semantic context,
+extension, and dynamic schema objects instead of rebuilding them on every
+render. A fresh object identity triggers a controller update and full dynamic
+reevaluation even when its contents are equal.
+
+The top-level component calling `useStages` receives `snapshot`, so it rerenders
+for every controller publication. Split large forms into children using narrow
+hooks and memoization; do not thread the full snapshot through every field.
+
+## Strict Mode and teardown
+
+React Strict Mode replays effects in development. Cleanup is deferred by one
+microtask and guarded by a lifecycle token, so an effect replay does not destroy
+the active controller. A real unmount with no replacement effect destroys it;
+subsequent controller dispatches become inert. This is the guarantee exercised
+by the repository Strict Mode test.
+
+Explicitly created controllers passed to `useStagesController()` are not owned
+or destroyed by that hook. Their creator must call `destroy()`.
+
+## Evidence
+
+Factory/ref lifetime, dependency list, full subscription, microtask cleanup,
+and ownership come from `packages/react/src/index.tsx`. The exact example is
+compiled from `docs/examples/react-adapter.tsx`; Strict Mode behavior is covered
+by the executable React application test.
+
+**Next:** Build typed, accessible [React field views](/adapters/react/fields).

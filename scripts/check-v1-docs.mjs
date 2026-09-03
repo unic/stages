@@ -124,6 +124,13 @@ const completePagePaths = [
   "diagnostics/recovery.mdx",
   "diagnostics/safety.mdx",
   "diagnostics/observability-and-troubleshooting.mdx",
+  "adapters/overview.mdx",
+  "adapters/react/lifecycle.mdx",
+  "adapters/react/fields.mdx",
+  "adapters/react/collections.mdx",
+  "adapters/react/wizards.mdx",
+  "adapters/react/accessibility.mdx",
+  "adapters/react/performance.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
@@ -136,6 +143,7 @@ const completePagePaths = [
   "reference/core/collection-utilities.mdx",
   "reference/core/serialization-utilities.mdx",
   "reference/core/schema-utilities.mdx",
+  "reference/react.mdx",
   "reference/standard-events.mdx",
   "reference/diagnostics.mdx",
   "reference/serialization-errors.mdx",
@@ -256,6 +264,21 @@ for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts
   for (const member of expectedMembers) {
     assert.ok(persistenceReference.includes(`\`${member}\``), `persistence reference is missing ${interfaceName}.${member}`);
   }
+}
+
+const reactSource = await readRoot("packages/react/src/index.tsx");
+const reactReference = guideEntries.find(({ relativePath }) => relativePath === "reference/react.mdx")?.source;
+assert.ok(reactReference, "missing React API reference");
+for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts.reactMembers)) {
+  assertSameInventory(publicInterfaceMembers(reactSource, interfaceName), expectedMembers, `${interfaceName} React members`);
+  for (const member of expectedMembers) {
+    assert.ok(reactReference.includes(`\`${member}\``), `React reference is missing ${interfaceName}.${member}`);
+  }
+}
+const reactPackage = manifest.packages.find(({ package: packageName }) => packageName === "@stages/react");
+assert.ok(reactPackage, "missing React package coverage record");
+for (const { symbol } of reactPackage.exports) {
+  assert.ok(reactReference.includes(symbol), `React reference is missing export ${symbol}`);
 }
 
 const [controllerSource, schemaSource, collectionSource, serializationSource] = await Promise.all([
@@ -429,6 +452,12 @@ const checkedRegions = [
   { fixture: "docs/examples/diagnostics.ts", region: "last-valid-recovery", page: "diagnostics/recovery.mdx" },
   { fixture: "docs/examples/diagnostics.ts", region: "safe-path-boundary", page: "diagnostics/safety.mdx" },
   { fixture: "docs/examples/diagnostics.ts", region: "diagnostic-troubleshooting", page: "diagnostics/observability-and-troubleshooting.mdx" },
+  { fixture: "docs/examples/react-adapter.tsx", region: "react-lifecycle", page: "adapters/react/lifecycle.mdx" },
+  { fixture: "docs/examples/react-adapter.tsx", region: "react-field-views", page: "adapters/react/fields.mdx" },
+  { fixture: "docs/examples/react-adapter.tsx", region: "react-collection", page: "adapters/react/collections.mdx" },
+  { fixture: "docs/examples/react-adapter.tsx", region: "react-wizard", page: "adapters/react/wizards.mdx" },
+  { fixture: "docs/examples/react-adapter.tsx", region: "react-accessibility", page: "adapters/react/accessibility.mdx" },
+  { fixture: "docs/examples/react-adapter.tsx", region: "react-performance", page: "adapters/react/performance.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);
@@ -518,6 +547,8 @@ const validationMemberCount = Object.values(manifest.contracts.validationMembers
   .reduce((count, members) => count + members.length, 0);
 const persistenceMemberCount = Object.values(manifest.contracts.persistenceMembers)
   .reduce((count, members) => count + members.length, 0);
+const reactMemberCount = Object.values(manifest.contracts.reactMembers)
+  .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${reactMemberCount} React members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

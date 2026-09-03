@@ -1,0 +1,105 @@
+# React collection bindings
+
+**For:** React developers rendering collection rows with stable keys and core
+commands.
+
+**Prerequisites:** [Collection identity](/structures/collection-identity) and
+[React field views](/adapters/react/fields).
+
+`useStagesCollection(controller, path)` selects a visible collection container
+and derives typed row bindings. Use a literal tuple path with `as const` so
+`TItem` can be inferred from the controller value.
+
+```tsx
+export function ContactList({
+  controller,
+}: {
+  controller: StagesController<ReactFormValue, typeof reactFields, ReactContext>;
+}) {
+  const collection = useStagesCollection(controller, ["contacts"] as const);
+  const nextId = useRef(1);
+
+  return <fieldset>
+    <legend>Contacts</legend>
+    {collection.items.map(item => <div key={item.key}>
+      <StagesField
+        controller={controller}
+        path={item.fieldPath("email")}
+        id={`contact-${item.key}-email`}
+      />
+      <button type="button" disabled={!item.canMovePrevious} onClick={() => item.moveTo(item.index - 1)}>
+        Move up
+      </button>
+      <button type="button" disabled={!item.canMoveNext} onClick={() => item.moveTo(item.index + 1)}>
+        Move down
+      </button>
+      <button type="button" disabled={!item.canRemove} onClick={item.remove}>Remove</button>
+    </div>)}
+    <button
+      type="button"
+      disabled={!collection.canAdd}
+      onClick={() => collection.add({ id: `draft-${nextId.current++}`, email: "" })}
+    >
+      Add contact
+    </button>
+  </fieldset>;
+}
+```
+
+## Collection binding
+
+`items` follows current rendered row order. `canAdd` reflects collection
+disabled state and `max`. `add(value)` emits `collection:add` to the collection
+address with `{ value }` and `source: "adapter"`; the supplied value must
+already contain a valid discriminator for a union collection.
+
+The hook intentionally provides add, remove, and move operations only.
+Replace, duplicate, and sort remain available by dispatching the standard core
+collection events documented in [collection commands](/structures/collections).
+
+## Row binding
+
+| Member | Meaning |
+| --- | --- |
+| `key` | Stable engine or application row key; use as React `key` |
+| `index` | Current array position for this render |
+| `value` | Deeply readonly current row value |
+| `address` | Stable row address used by row commands |
+| `canRemove` | Collection-level remove capability at this revision |
+| `canMovePrevious`, `canMoveNext` | Disabled/boundary-aware positional capabilities |
+| `fieldPath(field)` | Current data path for one direct row property |
+| `remove()` | Emits `collection:remove` to this row address |
+| `moveTo(index)` | Emits `collection:move` to this row address with destination |
+
+Binding objects and functions are recreated when the hook renders; do not use
+their reference identity as state. A saved row binding remains semantically
+address-based across a move, which is why a saved `remove()` still targets the
+same logical row after reordering. Once that row is removed, an old command
+targets nothing and produces `event.target-missing`.
+
+`fieldPath()` includes the row's current numeric index. Use it during the same
+render to mount a field; do not cache it across reorders. `key` and `address`
+are the stable identities.
+
+## Subscription and failure behavior
+
+The hook subscribes to the collection `ContainerSnapshot`, then reads row
+values from the latest controller snapshot when rendering. Normal nested field
+changes alter child snapshots and rerender the binding. If an opaque row has no
+rendered children, select the required domain value separately rather than
+assuming its container snapshot changes for every property.
+
+The hook throws during render when the path is hidden, missing, or resolves to
+a non-collection container. Mount it only while the collection appears in the
+parent render snapshot. Core—not the hook—validates indexes, constraints,
+disabled state, and controlled acceptance; rejected commands report the normal
+diagnostics and do not update canonical value.
+
+## Evidence
+
+Inference, item members, address-based commands, and thrown behavior come from
+`packages/react/src/index.tsx`. The row-move test proves a saved binding follows
+identity across reordering. The example is compiled from
+`docs/examples/react-adapter.tsx`.
+
+**Next:** Render staged flows with the [React wizard binding](/adapters/react/wizards).

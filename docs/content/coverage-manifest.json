@@ -99,22 +99,22 @@
       "package": "@stages/react",
       "entrypoint": "packages/react/src/index.tsx",
       "tests": ["packages/react/test/react.test.mjs", "examples/react/test/strict-mode.test.mjs"],
-      "defaultReference": "/react",
+      "defaultReference": "/reference/react",
       "exports": [
-        { "symbol": "StagesField", "kind": "runtime", "status": "partial" },
-        { "symbol": "useStages", "kind": "runtime", "guide": "/start/react-quickstart", "status": "partial" },
-        { "symbol": "useStagesCollection", "kind": "runtime", "status": "partial" },
-        { "symbol": "useStagesController", "kind": "runtime", "status": "partial" },
-        { "symbol": "useStagesField", "kind": "runtime", "status": "partial" },
-        { "symbol": "useStagesWizard", "kind": "runtime", "status": "partial" },
-        { "symbol": "ReactCollectionBinding", "kind": "type", "status": "partial" },
-        { "symbol": "ReactCollectionItemBinding", "kind": "type", "status": "partial" },
-        { "symbol": "ReactFieldProps", "kind": "type", "status": "partial" },
-        { "symbol": "ReactFieldView", "kind": "type", "status": "partial" },
-        { "symbol": "ReactWizardBinding", "kind": "type", "status": "partial" },
-        { "symbol": "ReactWizardStageBinding", "kind": "type", "status": "partial" },
-        { "symbol": "StagesFieldProps", "kind": "type", "status": "partial" },
-        { "symbol": "UseStagesResult", "kind": "type", "status": "partial" }
+        { "symbol": "StagesField", "kind": "runtime", "guide": "/adapters/react/fields", "reference": "/reference/react#stagesfield", "examples": ["react-field-views"], "status": "complete" },
+        { "symbol": "useStages", "kind": "runtime", "guide": "/adapters/react/lifecycle", "reference": "/reference/react#usestages", "examples": ["react-lifecycle"], "status": "complete" },
+        { "symbol": "useStagesCollection", "kind": "runtime", "guide": "/adapters/react/collections", "reference": "/reference/react#usestagescollection", "examples": ["react-collection"], "status": "complete" },
+        { "symbol": "useStagesController", "kind": "runtime", "guide": "/adapters/react/accessibility", "reference": "/reference/react#usestagescontroller", "examples": ["react-accessibility"], "status": "complete" },
+        { "symbol": "useStagesField", "kind": "runtime", "guide": "/adapters/react/performance", "reference": "/reference/react#usestagesfield", "examples": ["react-performance"], "status": "complete" },
+        { "symbol": "useStagesWizard", "kind": "runtime", "guide": "/adapters/react/wizards", "reference": "/reference/react#usestageswizard", "examples": ["react-wizard"], "status": "complete" },
+        { "symbol": "ReactCollectionBinding", "kind": "type", "guide": "/adapters/react/collections", "reference": "/reference/react#reactcollectionbinding", "examples": ["react-collection"], "status": "complete" },
+        { "symbol": "ReactCollectionItemBinding", "kind": "type", "guide": "/adapters/react/collections", "reference": "/reference/react#reactcollectionitembinding", "examples": ["react-collection"], "status": "complete" },
+        { "symbol": "ReactFieldProps", "kind": "type", "guide": "/adapters/react/fields", "reference": "/reference/react#reactfieldprops", "examples": ["react-field-views"], "status": "complete" },
+        { "symbol": "ReactFieldView", "kind": "type", "guide": "/adapters/react/fields", "reference": "/reference/react#reactfieldview", "examples": ["react-field-views"], "status": "complete" },
+        { "symbol": "ReactWizardBinding", "kind": "type", "guide": "/adapters/react/wizards", "reference": "/reference/react#reactwizardbinding", "examples": ["react-wizard"], "status": "complete" },
+        { "symbol": "ReactWizardStageBinding", "kind": "type", "guide": "/adapters/react/wizards", "reference": "/reference/react#reactwizardstagebinding", "examples": ["react-wizard"], "status": "complete" },
+        { "symbol": "StagesFieldProps", "kind": "type", "guide": "/adapters/react/fields", "reference": "/reference/react#stagesfieldprops", "examples": ["react-lifecycle"], "status": "complete" },
+        { "symbol": "UseStagesResult", "kind": "type", "guide": "/adapters/react/lifecycle", "reference": "/reference/react#usestagesresult", "examples": ["react-lifecycle"], "status": "complete" }
       ]
     },
     {
@@ -187,6 +187,15 @@
     "serializedMetaMembers": ["touched", "visited", "revealedValidation", "activeWizards", "collectionKeys", "extensions"],
     "diagnosticMembers": ["code", "message", "severity", "path", "address"],
     "diagnosticSeverity": "error",
+    "reactMembers": {
+      "ReactFieldProps": ["id", "field", "props", "emit"],
+      "UseStagesResult": ["controller", "snapshot"],
+      "ReactCollectionItemBinding": ["key", "index", "value", "address", "canRemove", "canMovePrevious", "canMoveNext", "fieldPath", "remove", "moveTo"],
+      "ReactCollectionBinding": ["items", "canAdd", "add"],
+      "ReactWizardStageBinding": ["id", "path", "address", "active", "disabled", "validation"],
+      "ReactWizardBinding": ["activeStage", "stages", "canPrevious", "canNext", "canGo", "previous", "next", "go"],
+      "StagesFieldProps": ["controller", "path", "id"]
+    },
     "events": [
       { "symbol": "focus", "interpretation": "core interaction metadata" },
       { "symbol": "blur", "interpretation": "core interaction metadata" },
