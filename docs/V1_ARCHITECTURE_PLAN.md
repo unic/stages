@@ -83,6 +83,9 @@ Release verification now packs all four v1 packages, validates their tarball
 contents and export maps, installs them offline into an isolated consumer, and
 checks runtime imports, declaration consumption, controlled updates, adapter
 notifications, serialization, and recreation against the packed artifacts.
+Seeded property tests now cover 500 recursively generated immutable path
+updates and 4,000 mixed collection commands against an independent mutable
+model, with deterministic seeds and failure coordinates for reproduction.
 
 ## 1. Outcome
 
@@ -1766,14 +1769,14 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase | State | Implemented | Remaining |
 | --- | --- | --- | --- |
 | Phase 0 — Contract fixtures and API spike | Implemented | Strict public TypeScript contracts and a compile-tested fixture cover controlled fields, recursive groups/collections/wizards, discriminated collections, custom view tokens, dynamic schemas, transforms, validation, serialization, and batching. | Continue refining types when remaining runtime features are added; freeze the public API only after packed-artifact testing. |
-| Phase 1 — Pure schema and value core | Implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, incompatible-identity diagnostics and state removal, malformed-structure guards, and last-valid-tree recovery are implemented. | Broader reducer/property and fuzz coverage remains part of Phase 8 hardening. |
+| Phase 1 — Pure schema and value core | Implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, incompatible-identity diagnostics and state removal, malformed-structure guards, last-valid-tree recovery, and seeded path/collection properties are implemented. | Broaden property generation to controller transaction and schema-normalization sequences during Phase 8 hardening. |
 | Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous owner acceptance, rejected proposals, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, teardown, and a packed-consumer controlled handshake are implemented. | Finalize callback-order documentation. |
 | Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
 | Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. | Add exhaustive tests for every permitted container nesting permutation. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, registered namespaced extension codecs, and packed-artifact recreation are implemented. | Extend the packed release-candidate matrix to migrations and custom codecs. |
 | Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. | Migrate the existing demo applications to v1 and broaden adapter accessibility testing. |
-| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, notification-count performance tests, tarball allowlist/export checks, offline packed installation, runtime import smoke tests, packed declaration consumption, and packed recreation exist. | Add property/fuzz tests, formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
+| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, notification-count performance tests, seeded immutable-path and collection-command properties, tarball allowlist/export checks, offline packed installation, runtime import smoke tests, packed declaration consumption, and packed recreation exist. | Broaden controller/schema fuzzing, add formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
 
 ### Current packages
 
@@ -1799,7 +1802,7 @@ currently an alpha foundation, not a release-ready v1 build.
   vanilla and React examples, and builds the packages' ESM declaration/output
   artifacts. It then runs `npm run verify:packages:v1`, which checks all four
   package tarballs and an isolated offline runtime/type consumer.
-- `npm run test:v1` builds the packages and currently runs 69 passing executable
+- `npm run test:v1` builds the packages and currently runs 71 passing executable
   tests across core, DOM, React 17, and the adapter test kit. The React example's
   own `npm test` adds a passing React 19 Strict Mode lifecycle test.
 - Generated package `dist/` directories are build artifacts and are not tracked.
