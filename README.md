@@ -58,6 +58,7 @@ controller = stages({
 
 - [v1 API](docs/V1_API.md)
 - [Architecture plan and implementation state](docs/V1_ARCHITECTURE_PLAN.md)
+- [v1 acceptance review](docs/V1_ACCEPTANCE_REVIEW.md)
 - [Migrating from 0.x](docs/MIGRATING_TO_V1.md)
 - [Release-candidate checklist](docs/V1_RELEASE_CHECKLIST.md)
 - [Historical 0.x API inventory](docs/CURRENT_IMPLEMENTATION_API.md)

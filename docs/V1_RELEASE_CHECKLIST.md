@@ -39,19 +39,20 @@ The release gate performs:
 
 1. migration/API documentation inventory checks;
 2. active-application boundary and legacy-retirement checks;
-3. strict package and example type checks;
-4. ESM and declaration builds;
-5. four real `npm pack` operations using an isolated cache;
-6. manifest, license, export-map, source-map, and tarball allowlist checks;
-7. offline installation into an isolated consumer;
-8. packed runtime/type checks, including controlled changes, adapters,
+3. architecture acceptance-criterion evidence checks;
+4. strict package and example type checks;
+5. ESM and declaration builds;
+6. four real `npm pack` operations using an isolated cache;
+7. manifest, license, export-map, source-map, and tarball allowlist checks;
+8. offline installation into an isolated consumer;
+9. packed runtime/type checks, including controlled changes, adapters,
    serialization, a custom value codec, migration, and recreation;
-9. structural and elapsed-time performance budgets;
-10. the complete core/DOM/React/test-kit test suite;
-11. Studio compatibility-converter tests and a production Studio build;
-12. a production build of the v1 documentation application;
-13. production builds of the vanilla and React examples; and
-14. the React 19 Strict Mode lifecycle test.
+10. structural and elapsed-time performance budgets;
+11. the complete core/DOM/React/test-kit test suite;
+12. Studio compatibility-converter tests and a production Studio build;
+13. a production build of the v1 documentation application;
+14. production builds of the vanilla and React examples; and
+15. the React 19 Strict Mode lifecycle test.
 
 Any failure blocks the candidate.
 
@@ -93,3 +94,7 @@ the active applications remain on the v1 boundary, accessibility coverage is
 accepted, and at least one release candidate has been exercised by real
 consumers. Update the API and migration documents whenever a public contract
 changes during prerelease feedback.
+
+Use `V1_ACCEPTANCE_REVIEW.md` as the criterion ledger. The automated state in
+that document does not replace the external-consumer exercise or maintainer
+approval.
