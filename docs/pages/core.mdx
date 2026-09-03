@@ -1,0 +1,47 @@
+# Core API
+
+Create a controller with `stages({ schema, fields, value, onChange })`.
+
+The controller exposes:
+
+- `getSnapshot()` for the current immutable render and validation state;
+- `subscribe()` and `subscribeSelector()` for updates;
+- `update()` for controlled value, context, schema, and extension updates;
+- `dispatch()` and `batch()` for named events;
+- `validate()` for explicit scoped validation;
+- `serialize()` for durable interaction state;
+- `destroy()` for lifecycle cleanup.
+
+## Events
+
+```ts
+import { fieldEvent, formEvent, nodeEvent } from "@stages/core";
+
+controller.dispatch(fieldEvent("input", ["profile", "name"], "Ada"));
+controller.dispatch(formEvent("submit"));
+controller.dispatch(nodeEvent("wizard:next", wizardAddress));
+```
+
+The helpers provide typed targets and payload inference. Application-defined
+event names use the same dispatch contract.
+
+## Validation
+
+```ts
+const required = {
+  id: "name.required",
+  on: ["input", "submit"],
+  revealOn: ["blur", "submit"],
+  validate({ fieldValue, path }) {
+    return fieldValue
+      ? []
+      : [{ id: "name.required", code: "required", path, severity: "error" }];
+  },
+};
+
+await controller.validate({ scope: "form", event: "submit", reveal: true });
+```
+
+See the repository [v1 API reference](https://github.com/unic/stages/blob/master/docs/V1_API.md)
+for the full schema, event, validation, collection, serialization, codec, and
+migration contracts.

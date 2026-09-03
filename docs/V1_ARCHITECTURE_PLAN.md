@@ -1817,7 +1817,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 4 — Validation | Implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; durable reveal state; constrained failure-issue presentation customization; and an unknown/pending/invalid/warning/hidden-stage navigation matrix are implemented. | Continue expanding validator and navigation regression cases when policies change. |
 | Phase 5 — Collections and nested wizards | Implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. An exhaustive 84-case structural permutation matrix plus a 32-level mixed tree verifies paths, stable identity, events, scoped validation, and recreation. | Continue expanding regression cases when structural capabilities change. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, registered namespaced extension codecs, and packed-artifact recreation are implemented. Packed release-candidate verification exercises a custom value codec and schema migration. | Continue adding regression fixtures for future codecs and migrations. |
-| Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe collection IDs, associated labels/descriptions, severity-aware issue relationships, native required/autocomplete semantics, focus preservation, path-based focus, and first-visible-error navigation that excludes hidden/disabled controls. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. All Stages Studio form surfaces now use `@stages/core` and `@stages/react` through a tested persisted-configuration boundary: preview, general configuration, field inspectors, and the draggable edit canvas. The canvas maps v1 snapshots onto Studio-owned selection, context-menu, insertion, responsive-width, fieldset, collection-row, and drag-and-drop chrome. | Migrate or retire the remaining legacy demo and documentation applications. |
+| Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe collection IDs, associated labels/descriptions, severity-aware issue relationships, native required/autocomplete semantics, focus preservation, path-based focus, and first-visible-error navigation that excludes hidden/disabled controls. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. All Stages Studio form surfaces now use `@stages/core` and `@stages/react` through a tested persisted-configuration boundary. The documentation application now presents the implemented v1 packages and retires its hidden 0.x routes; its production build is release-gated. | Migrate or retire the remaining legacy demo application. |
 | Phase 8 — Hardening and v1 release | Mostly implemented | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, seeded immutable-path, collection-command, mixed controller transaction, and malformed-schema properties, formal initialization/batch/selector performance budgets, implementation-accurate API and migration documentation, package READMEs and licenses, complete publish metadata, navigable source maps, tarball allowlist/export checks, offline packed installation, runtime and declaration consumption, packed codec/migration/recreation, production example builds, and a repeatable full release-candidate gate exist. | Exercise a selected RC version with external consumers and complete final acceptance review before publication. |
 
 ### Current packages
@@ -1859,6 +1859,17 @@ currently an alpha foundation, not a release-ready v1 build.
   group, collection, wizard-stage, and insertion components. Collection rows
   use stable v1 row addresses for add, remove, and move commands.
 
+### Current documentation application
+
+- The Nextra application now documents the implemented v1 architecture,
+  installation model, core, React and DOM adapters, internationalization, and
+  the 0.x migration strategy.
+- Thirty-six stale 0.x form, field, and wizard documentation routes were
+  retired. Their historical content remains available through Git history and
+  the explicit `CURRENT_IMPLEMENTATION_API.md` inventory.
+- `npm --prefix docs run build` generates only the v1 documentation routes and
+  is part of the release-candidate gate.
+
 ### Verification baseline
 
 - `npm run check:v1` first verifies the API/migration documentation inventory,
@@ -1872,9 +1883,9 @@ currently an alpha foundation, not a release-ready v1 build.
   tests across core, DOM, React 17, and the adapter test kit. The React example's
   own `npm test` adds a passing React 19 Strict Mode lifecycle test.
 - `npm run release:check:v1` composes the strict checks, package tests, Studio
-  compatibility tests and production build, vanilla and React production
-  builds, and React 19 lifecycle test into the documented release-candidate
-  gate in `V1_RELEASE_CHECKLIST.md`.
+  compatibility tests and production build, the documentation production
+  build, vanilla and React production builds, and the React 19 lifecycle test
+  into the documented release-candidate gate in `V1_RELEASE_CHECKLIST.md`.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 
 ### Performance budgets
@@ -1893,8 +1904,9 @@ hardware.
 
 ### Work not yet migrated
 
-The existing root 0.x package, `demo/`, and `docs/` application still use the
-legacy implementation. Studio has migrated all form runtime surfaces to v1;
-some Studio-owned presentation components retain their historical names while
-receiving v1 snapshots and commands. The standalone vanilla v1 example is not
-yet integrated into the remaining legacy applications.
+The existing root 0.x package and `demo/` application still use the legacy
+implementation. Studio has migrated all form runtime surfaces to v1, and the
+documentation application now targets v1 exclusively. Some Studio-owned
+presentation components retain their historical names while receiving v1
+snapshots and commands. The remaining demo migration/retirement decision is the
+last application-level Phase 7 task.

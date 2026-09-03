@@ -1,0 +1,33 @@
+# DOM adapter
+
+`@stages/dom` is a dependency-free reference adapter with accessible native
+text, number, and checkbox fields.
+
+```ts
+import { stages } from "@stages/core";
+import { createDomFields, mountStages } from "@stages/dom";
+
+const fields = createDomFields();
+let value = { name: "" };
+let controller;
+
+controller = stages({
+  schema,
+  fields,
+  value,
+  onChange: ({ value: proposed }) => {
+    value = proposed;
+    controller.update({ value });
+  },
+});
+
+const mounted = mountStages(document.querySelector("#form"), controller);
+```
+
+The adapter associates labels and descriptions, exposes validation issues with
+severity-aware ARIA relationships, preserves focus across renders, creates
+collision-safe IDs for collection rows, and can focus a path or the first
+visible validation error.
+
+Custom DOM views implement the small `DomFieldView` render contract. Call both
+`mounted.destroy()` and `controller.destroy()` when the host is removed.

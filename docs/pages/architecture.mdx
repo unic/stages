@@ -1,36 +1,60 @@
-import Callout from 'nextra-theme-docs/callout'
-import Image from 'next/image'
-
 # Architecture
 
-Stages consists of two main components, `Stages` and `Form`. The philosophy of Stages is to not 
-render any markup, that is your job. Stages handles all the complicated stuff like validation for you, 
-but you have to bring your own markup and styles and field components. This assures 100% flexibility, 
-but it takes a little bit more effort initially when setting up your project.
+Stages v1 separates form semantics from rendering and framework lifecycle.
 
-Stages has been highly inspired by libraries like [Radix](https://www.radix-ui.com/) and [Beautiful-DnD](https://github.com/atlassian/react-beautiful-dnd) 
-and uses render props and component composition for maximum flexibility. It originated from a wizard we've built at [Unic](https://www.unic.com/) for a big 
-client project, a wizard which was highly dynamic and demanded high flexibility from the wizard setup.
+```text
+immutable schema + controlled value + field registry
+                         │
+                         ▼
+                  @stages/core
+                         │
+               snapshot + named events
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+    @stages/dom    @stages/react   custom adapter
+```
 
-## Design Goals
+## Core responsibilities
 
-To summarizy the design goals:
+The core normalizes and evaluates recursive schemas, assigns stable node and
+row addresses, reduces named events into immutable patches, coordinates
+validation, and exposes subscribable snapshots. It contains no React, DOM,
+browser-global, or styling code.
 
-- The two main components, Stages and Form, don't render anything, they just give you render props
-- Configuration and rendering is always separated
-- Configuration is always dynamic, not static
-- Everything can be ovrwritten per field if needed, like validation, error rendering, visibility etc.
-- No component framework lockin, you can bring your own UI/Form components
-- Define the resulting data structure however you want, with deep nesting and custom typecasting
+The application remains the domain-value owner. A controller transaction emits
+one proposed value and one notification; delayed acceptance and rejected
+proposals are valid controlled workflows.
 
-## API best practices followed:
+## Recursive schema
 
-- Named parameters pattern (one object in callbacks)
-- Consistency (same properties on similar fields, options for select, radio group, …)
-- Fluid API (accept strings, arrays, callbacks for example in casting props)
+Every structural feature is a node:
 
-## Basic Component Structure
+- fields bind a registry definition to a data path;
+- groups add object scope;
+- collections add homogeneous or discriminated row scope;
+- wizards add explicit stage scope and navigation metadata.
 
-<Image src="/architecture.png" alt="Architecture" width="830" height="590" />
+These nodes can be nested in any order. Paths are segment arrays, while node
+addresses also carry stable collection-row identity.
 
-You can use the Form component without the Stages component.
+## Events and transforms
+
+Adapters send named field, node, or form events. Field reducers handle local
+input semantics. Node and root transforms return explicit set/remove patches,
+executed from target to root with deterministic ordering. Collection and wizard
+commands use the same event channel.
+
+## Validation
+
+Validators declare execution events separately from reveal events. They may be
+synchronous or asynchronous, depend on other paths, opt into disabled values,
+and participate in form, node, or wizard-stage scopes. Superseded asynchronous
+work is cancelled and cannot publish stale results.
+
+## Adapters
+
+Adapters render opaque field views and translate UI interactions into events.
+They do not reimplement schema, collection, wizard, or validation behavior.
+The DOM adapter is the accessibility reference; React provides lifecycle and
+narrow subscription bindings without prescribing layout.

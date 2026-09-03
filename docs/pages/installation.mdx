@@ -1,28 +1,61 @@
 # Installation
 
-`npm i react-stages --save`
+Install the framework-neutral core and only the adapter you use:
 
-or
-
-`yarn add react-stages`
-
-And than import the components:
-
-```
-import { Stages, Form } from "react-stages";
+```sh
+npm install @stages/core
+npm install @stages/react
 ```
 
-Stages comes with a bunch of example components which can be useful if you try it out first time. The imports 
-than look like this:
+For a framework-free application:
 
+```sh
+npm install @stages/core @stages/dom
 ```
-import {
-    Stages, // This is the main wizard component
-    Form, // The main form component, usually used in wizard steps
-    Actions, // The form actions, like next, prev and submit
-    Navigation, // An example wizard navigation
-    Progression, // An example wizard progression
-    HashRouter, // The default hash router for the wizard
-    plainFields as fields // Very basic plain form fields
-} from "react-stages";
+
+React is a peer dependency of `@stages/react` and must be version 17 or newer.
+All v1 packages are ESM-only and use the same release version.
+
+## Minimal controller
+
+```ts
+import { stages, type StagesSchema } from "@stages/core";
+
+const fields = {
+  text: {
+    view: "text",
+    initialValue: "",
+    reduce: ({ event }) => event.name === "input"
+      ? { value: event.payload }
+      : undefined,
+  },
+} as const;
+
+const schema = {
+  id: "profile",
+  version: 1,
+  nodes: [{ kind: "field", id: "name", type: "text" }],
+} as const satisfies StagesSchema<{ name: string }, typeof fields>;
+
+let value = { name: "" };
+let controller;
+controller = stages({
+  schema,
+  fields,
+  value,
+  onChange(change) {
+    value = change.value;
+    controller.update({ value });
+  },
+});
 ```
+
+`onChange` proposes a value; it does not silently make the controller the
+owner. The application accepts a proposal by passing it back through
+`controller.update()` or through its adapter's controlled lifecycle.
+
+## Repository development
+
+Until a candidate is published, the repository examples link the packages
+locally. Run `npm run release:check:v1` from the repository root to build,
+typecheck, pack, install, and exercise the complete release candidate.

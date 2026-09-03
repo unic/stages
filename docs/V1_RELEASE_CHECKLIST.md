@@ -29,6 +29,7 @@ Use the repository's Node version, install the locked dependencies, and run:
 nvm use
 npm ci
 npm --prefix studio ci
+npm --prefix docs ci
 npm --prefix examples/vanilla ci
 npm --prefix examples/react ci
 npm run release:check:v1
@@ -47,8 +48,9 @@ The release gate performs:
 8. structural and elapsed-time performance budgets;
 9. the complete core/DOM/React/test-kit test suite;
 10. Studio compatibility-converter tests and a production Studio build;
-11. production builds of the vanilla and React examples; and
-12. the React 19 Strict Mode lifecycle test.
+11. a production build of the v1 documentation application;
+12. production builds of the vanilla and React examples; and
+13. the React 19 Strict Mode lifecycle test.
 
 Any failure blocks the candidate.
 

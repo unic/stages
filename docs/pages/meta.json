@@ -1,9 +1,10 @@
 {
-    "index": "Introduction",
-    "architecture": "Architecture",
-    "installation": "Installation",
-    "form": "Form Component",
-    "fields": "Field Components",
-    "stages": "Stages Component",
-    "i18n": "Internationalization (i18n)"
+  "index": "Introduction",
+  "installation": "Installation",
+  "architecture": "Architecture",
+  "core": "Core API",
+  "react": "React adapter",
+  "dom": "DOM adapter",
+  "i18n": "Internationalization",
+  "migration": "Migrating from 0.x"
 }
