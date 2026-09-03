@@ -28,6 +28,7 @@ Use the repository's Node version, install the locked dependencies, and run:
 ```sh
 nvm use
 npm ci
+npm --prefix studio ci
 npm --prefix examples/vanilla ci
 npm --prefix examples/react ci
 npm run release:check:v1
@@ -45,8 +46,9 @@ The release gate performs:
    serialization, a custom value codec, migration, and recreation;
 8. structural and elapsed-time performance budgets;
 9. the complete core/DOM/React/test-kit test suite;
-10. production builds of the vanilla and React examples; and
-11. the React 19 Strict Mode lifecycle test.
+10. Studio compatibility-converter tests and a production Studio build;
+11. production builds of the vanilla and React examples; and
+12. the React 19 Strict Mode lifecycle test.
 
 Any failure blocks the candidate.
 
@@ -84,7 +86,7 @@ the entire gate.
 ## Stable v1 promotion
 
 Promote `1.0.0` only when the architecture acceptance criteria are satisfied,
-the remaining demo/studio migration decision is recorded, accessibility
+the remaining demo/Studio-editor migration decision is recorded, accessibility
 coverage is accepted, and at least one release candidate has been exercised by
 real consumers. Update the API and migration documents whenever a public
 contract changes during prerelease feedback.

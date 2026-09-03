@@ -33,7 +33,7 @@
     "check:docs:v1": "node scripts/check-v1-docs.mjs",
     "performance:v1": "node scripts/check-v1-performance.mjs",
     "verify:packages:v1": "node scripts/verify-v1-packages.mjs",
-    "release:check:v1": "npm run check:v1 && npm run test:v1 && npm --prefix examples/vanilla run build && npm --prefix examples/react run build && npm --prefix examples/react test",
+    "release:check:v1": "npm run check:v1 && npm run test:v1 && npm --prefix studio run test:v1 && npm --prefix studio run build && npm --prefix examples/vanilla run build && npm --prefix examples/react run build && npm --prefix examples/react test",
     "test:v1": "npm run build:v1 && node --test packages/core/test/*.test.mjs packages/dom/test/*.test.mjs packages/react/test/*.test.mjs packages/test-kit/test/*.test.mjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

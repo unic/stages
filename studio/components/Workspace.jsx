@@ -38,6 +38,7 @@ import { initNewCollections, removeEmptyElements } from "./helpers";
 
 import { getConfigPathFromDataPath, createNewFieldID, parseJSONConfig, arrayMove } from './helpers';
 import { FieldRenderer } from './FieldRenderer';
+import StudioV1Preview from './v1/StudioV1Preview';
 
 import initialConfig from './configTemplates/initialConfig';
 import kitchensinkConfig from './configTemplates/kitchensinkConfig';
@@ -51,8 +52,6 @@ const Workspace = () => {
     const store = useStagesStore();
     const [formCounter, setFormCounter] = useState(1);
     const [formTitle, setFormTitle] = useState(store.generalConfig.title || "Form");
-
-    console.log({store});
 
     const handleEditFormTitle = useCallback(evt => {
         const sanitizeConf = {
@@ -1083,7 +1082,7 @@ const Workspace = () => {
                     />
                 ) : null}
                 {!store.isEditMode ? <div><br /></div> : null}
-                <Form
+                {store.isEditMode ? <Form
                     key={`form${formCounter}`}
                     id="myForm"
                     data={store.data}
@@ -1128,7 +1127,15 @@ const Workspace = () => {
                         store.setData(payload);
                     }}
                     fieldsets={createFieldsets()}
-                />
+                /> : (
+                    <StudioV1Preview
+                        config={store.currentConfig}
+                        fieldsets={store.fieldsets}
+                        value={store.data}
+                        onChange={store.setData}
+                        previewSize={store.previewSize}
+                    />
+                )}
             </div>
         </ScrollPanel>
     );
