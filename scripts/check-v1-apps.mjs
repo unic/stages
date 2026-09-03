@@ -7,7 +7,8 @@ const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".ts", ".tsx", ".mdx"])
 const activeRoots = [
   "studio/components",
   "studio/pages",
-  "docs/pages",
+  "docs/app",
+  "docs/content",
   "examples/react/src",
   "examples/vanilla/src",
 ];
@@ -17,6 +18,7 @@ const activeManifests = [
   "examples/react/package.json",
   "examples/vanilla/package.json",
 ];
+const activeStandaloneFiles = ["docs/mdx-components.jsx", "docs/next.config.mjs"];
 const failures = [];
 
 async function sourceFiles(directory) {
@@ -36,6 +38,13 @@ for (const relativeRoot of activeRoots) {
     if (/from\s+["']react-stages["']|require\(["']react-stages["']\)/.test(source)) {
       failures.push(`${path.relative(root, file)} imports the retired 0.x package.`);
     }
+  }
+}
+
+for (const relativeFile of activeStandaloneFiles) {
+  const source = await readFile(path.join(root, relativeFile), "utf8");
+  if (/from\s+["']react-stages["']|require\(["']react-stages["']\)/.test(source)) {
+    failures.push(`${relativeFile} imports the retired 0.x package.`);
   }
 }
 
@@ -76,7 +85,14 @@ if (JSON.stringify(retiredDemoFiles) !== JSON.stringify(allowedDemoFiles)) {
   failures.push(`demo/ must remain retired; found: ${retiredDemoFiles.join(", ")}.`);
 }
 
-for (const retiredDirectory of ["docs/pages/fields", "docs/pages/form", "docs/pages/stages"]) {
+for (const retiredDirectory of [
+  "docs/pages/fields",
+  "docs/pages/form",
+  "docs/pages/stages",
+  "docs/content/fields",
+  "docs/content/form",
+  "docs/content/stages",
+]) {
   try {
     await readdir(path.join(root, retiredDirectory));
     failures.push(`${retiredDirectory} must not be restored as active 0.x routes.`);

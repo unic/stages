@@ -1,4 +1,4 @@
-import { Message } from "primereact/message";
+import { Message } from "./primeCompat";
 import InspectorSpacer from "./InspectorSpacer";
 import useStagesStore from "./store";
 import { truncateString } from "./helpers";

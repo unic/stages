@@ -1,4 +1,4 @@
-import { Checkbox } from 'primereact/checkbox';
+import { Checkbox } from '../components/primeCompat';
 export default function Page() {
     return (
         <>

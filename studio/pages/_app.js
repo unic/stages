@@ -1,16 +1,14 @@
-import { PrimeReactProvider } from "primereact/api";
+import { PrimeReactProvider } from "@primereact/core";
+import Aura from "@primeuix/themes/aura";
 import App from "../components/App";
 import "../styles/globals.css";
 
-import "../node_modules/primereact/resources/themes/lara-light-cyan/theme.css";
-import "../node_modules/primeflex/primeflex.css";
-import "../node_modules/primeflex/themes/primeone-light.css";
+import "primeflex/primeflex.css";
+import "primeflex/themes/primeone-light.css";
 
 const MyApp = ({ Component, pageProps }) => {
-  const value = {};
-
   return (
-    <PrimeReactProvider value={value}>
+    <PrimeReactProvider theme={{ preset: Aura }}>
       <App>
         <Component {...pageProps} />
       </App>

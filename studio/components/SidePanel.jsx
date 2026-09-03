@@ -1,12 +1,10 @@
 import _ from "lodash";
-import { Button } from "primereact/button";
+import { Button, ScrollPanel, TabMenu } from "./primeCompat";
 import GeneralConfig from "./GeneralConfig";
 import DataInspector from "./DataInspector";
 import InspectorHeader from "./InspectorHeader";
 import { GitFork } from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
-import { TabMenu } from "primereact/tabmenu";
-import { ScrollPanel } from "primereact/scrollpanel";
 import useStagesStore from "./store";
 import { getConfigPathFromDataPath, downloadFile } from "./helpers";
 

@@ -1,17 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
-    "moduleResolution": "Node",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "lib": ["ES2020", "DOM"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@stages/core": ["../../packages/core/dist/index.d.ts"],
-      "@stages/dom": ["../../packages/dom/dist/index.d.ts"]
+      "@stages/core": ["./../../packages/core/dist/index.d.ts"],
+      "@stages/dom": ["./../../packages/dom/dist/index.d.ts"]
     },
     "skipLibCheck": true
   },

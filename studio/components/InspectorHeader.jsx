@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import useStagesStore from "./store";
-import { Button } from "primereact/button";
+import { Button } from "./primeCompat";
 import { Search } from "lucide-react";
 import { Filter } from "lucide-react";
-import { AutoComplete } from "primereact/autocomplete";
+import { AutoComplete } from "./primeCompat";
 import { getAllPaths } from "./helpers";
 
 const GeneralConfig = () => {

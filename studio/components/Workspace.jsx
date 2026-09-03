@@ -4,9 +4,7 @@ import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
 import Sugar from "sugar";
 import { DndContext } from '@dnd-kit/core';
-import { ContextMenu } from 'primereact/contextmenu';
-import { ScrollPanel } from 'primereact/scrollpanel';
-import { Toast } from 'primereact/toast';
+import { ContextMenu, ScrollPanel, Toast } from './primeCompat';
 import {
     Undo,
     Redo,

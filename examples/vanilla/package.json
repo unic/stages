@@ -12,7 +12,7 @@
     "@stages/dom": "file:../../packages/dom"
   },
   "devDependencies": {
-    "typescript": "^5.9.2",
-    "vite": "^7.1.3"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
   }
 }

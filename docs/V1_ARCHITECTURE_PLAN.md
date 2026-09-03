@@ -1864,6 +1864,10 @@ currently an alpha foundation, not a release-ready v1 build.
 - The Nextra application now documents the implemented v1 architecture,
   installation model, core, React and DOM adapters, internationalization, and
   the 0.x migration strategy.
+- The application has been migrated to the Nextra 4 content-directory and
+  Next.js App Router model. It builds on Next.js 16 and React 19; TypeScript 6
+  is retained here because it is the newest stable major accepted by Nextra's
+  current Twoslash integration.
 - Thirty-six stale 0.x form, field, and wizard documentation routes were
   retired. Their historical content remains available through Git history and
   the explicit `CURRENT_IMPLEMENTATION_API.md` inventory.
@@ -1882,6 +1886,14 @@ currently an alpha foundation, not a release-ready v1 build.
 
 ### Verification baseline
 
+- Repository development and release verification use Node.js 24.15.0, pinned
+  consistently in the root, Studio, and documentation `.nvmrc` files.
+- Direct dependencies across the root package, Studio, documentation, and both
+  examples were refreshed to their latest compatible stable releases. The old
+  Create React App/Microbundle/Babel build stack was replaced by Vite 8, Studio
+  was adapted to PrimeReact 11, and abandoned runtime dependencies were removed.
+- Clean `npm ci` installs and zero-vulnerability `npm audit` results are part of
+  the dependency-upgrade verification performed alongside the release gate.
 - `npm run check:v1` first verifies the API/migration documentation inventory,
   including every legacy root export and the major public runtime concepts, and
   checks the active-application v1 boundary. It then performs strict type

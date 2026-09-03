@@ -20,11 +20,10 @@ Optional:
 
 */
 
-const Select = ({
+const Input = ({
     id,
     label,
     value,
-    options,
     onChange,
     onBlur,
     onFocus,
@@ -33,9 +32,11 @@ const Select = ({
     isRequired,
     isDisabled,
     isValidating,
+    hasFocus,
     prefix,
     suffix,
     secondaryText,
+    type,
     errorRenderer,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
@@ -44,25 +45,25 @@ const Select = ({
             {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
-                <select
+                <input
                     id={id}
                     name={id}
-                    value={typeof value === "undefined" ? "" : value}
+                    value={typeof value !== "undefined" ? value : type === "number" ? 0 : ""}
                     placeholder={placeholder}
+                    type={type || "text"}
                     disabled={!!isDisabled}
                     required={!!isRequired}
+                    autoComplete={type === "password" ? "current-password" : "off"}
                     onChange={e => {
                         if (typeof onChange === "function") onChange(e.target.value);
-                    }}
-                    onBlur={e => {
-                        if (typeof onBlur === "function") onBlur();
                     }}
                     onFocus={e => {
                         if (typeof onFocus === "function") onFocus();
                     }}
-                >
-                    {options.map(option => <option value={option.value} key={option.value} disabled={option.disabled ? true : null}>{option.text}</option>)}
-                </select>
+                    onBlur={e => {
+                        if (typeof onBlur === "function") onBlur();
+                    }}
+                />
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
@@ -79,4 +80,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default Select;
+export default Input;

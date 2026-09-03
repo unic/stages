@@ -20,7 +20,7 @@ Optional:
 
 */
 
-const Input = ({
+const CheckBox = ({
     id,
     label,
     value,
@@ -32,7 +32,6 @@ const Input = ({
     isRequired,
     isDisabled,
     isValidating,
-    hasFocus,
     prefix,
     suffix,
     secondaryText,
@@ -48,20 +47,21 @@ const Input = ({
                 <input
                     id={id}
                     name={id}
-                    value={typeof value !== "undefined" ? value : type === "number" ? 0 : ""}
+                    value="1"
                     placeholder={placeholder}
-                    type={type || "text"}
+                    type={type}
                     disabled={!!isDisabled}
                     required={!!isRequired}
-                    autoComplete={type === "password" ? "current-password" : "off"}
-                    onChange={e => {
-                        if (typeof onChange === "function") onChange(e.target.value);
-                    }}
-                    onFocus={e => {
-                        if (typeof onFocus === "function") onFocus();
+                    checked={!!value}
+                    onChange={() => {/* to make React and IE happy */}}
+                    onClick={e => {
+                        if (typeof onChange === "function") onChange(e.target.checked ? true : false);
                     }}
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();
+                    }}
+                    onFocus={e => {
+                        if (typeof onFocus === "function") onFocus();
                     }}
                 />
                 {suffix ? <span>{suffix}</span> : null}
@@ -80,4 +80,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default Input;
+export default CheckBox;

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Splitter, SplitterPanel } from 'primereact/splitter';
+import { Splitter, SplitterPanel } from '../../../../components/primeCompat';
 import useStagesStore from '../../../../components/store';
 import SidePanel from '../../../../components/SidePanel';
 import Workspace from '../../../../components/Workspace';

@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { JSDOM } from "jsdom";
-import React, { createElement } from "react";
-import ReactDOM from "react-dom";
-import { act } from "react-dom/test-utils.js";
+import React, { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
 import { stages } from "../../core/dist/index.js";
 import { StagesField, useStagesCollection, useStagesWizard } from "../dist/index.js";
 
@@ -11,20 +10,22 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 test("React field binding renders an opaque view and emits through the core controller", async (context) => {
   const dom = new JSDOM("<main id='root'></main>");
-  const globals = ["window", "document", "navigator"];
+  const globals = ["window", "document", "navigator", "IS_REACT_ACT_ENVIRONMENT"];
   const previousGlobals = new Map(globals.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   Object.defineProperty(globalThis, "window", { configurable: true, value: dom.window });
   Object.defineProperty(globalThis, "document", { configurable: true, value: dom.window.document });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
-  context.after(() => {
-    ReactDOM.unmountComponentAtNode(root);
+  Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
+  const root = dom.window.document.querySelector("#root");
+  const reactRoot = createRoot(root);
+  context.after(async () => {
+    await act(async () => reactRoot.unmount());
     for (const name of globals) {
       const descriptor = previousGlobals.get(name);
       if (descriptor === undefined) delete globalThis[name];
       else Object.defineProperty(globalThis, name, descriptor);
     }
   });
-  const root = dom.window.document.querySelector("#root");
   let emitInput;
   function TextView({ field, props, emit }) {
     emitInput = (value) => emit("input", value);
@@ -52,7 +53,7 @@ test("React field binding renders an opaque view and emits through the core cont
   });
 
   await act(async () => {
-    ReactDOM.render(createElement(StagesField, { controller, path: ["name"] }), root);
+    reactRoot.render(createElement(StagesField, { controller, path: ["name"] }));
   });
   assert.equal(root.querySelector("input").value, "Ada");
   await act(async () => {
@@ -65,14 +66,16 @@ test("React field binding renders an opaque view and emits through the core cont
 
 test("React collection binding keeps stable row commands across moves", async (context) => {
   const dom = new JSDOM("<main id='root'></main>");
-  const globals = ["window", "document", "navigator"];
+  const globals = ["window", "document", "navigator", "IS_REACT_ACT_ENVIRONMENT"];
   const previousGlobals = new Map(globals.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   Object.defineProperty(globalThis, "window", { configurable: true, value: dom.window });
   Object.defineProperty(globalThis, "document", { configurable: true, value: dom.window.document });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
+  Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
   const root = dom.window.document.querySelector("#root");
-  context.after(() => {
-    ReactDOM.unmountComponentAtNode(root);
+  const reactRoot = createRoot(root);
+  context.after(async () => {
+    await act(async () => reactRoot.unmount());
     for (const name of globals) {
       const descriptor = previousGlobals.get(name);
       if (descriptor === undefined) delete globalThis[name];
@@ -99,7 +102,7 @@ test("React collection binding keeps stable row commands across moves", async (c
   }
 
   await act(async () => {
-    ReactDOM.render(createElement(List), root);
+    reactRoot.render(createElement(List));
   });
   const savedFirst = binding.items[0];
   assert.deepEqual([...root.querySelectorAll("li")].map((item) => item.textContent), ["a", "b"]);
@@ -125,14 +128,16 @@ test("React collection binding keeps stable row commands across moves", async (c
 
 test("React wizard binding exposes stages and guarded navigation capabilities", async (context) => {
   const dom = new JSDOM("<main id='root'></main>");
-  const globals = ["window", "document", "navigator"];
+  const globals = ["window", "document", "navigator", "IS_REACT_ACT_ENVIRONMENT"];
   const previousGlobals = new Map(globals.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   Object.defineProperty(globalThis, "window", { configurable: true, value: dom.window });
   Object.defineProperty(globalThis, "document", { configurable: true, value: dom.window.document });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
+  Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
   const root = dom.window.document.querySelector("#root");
-  context.after(() => {
-    ReactDOM.unmountComponentAtNode(root);
+  const reactRoot = createRoot(root);
+  context.after(async () => {
+    await act(async () => reactRoot.unmount());
     for (const name of globals) {
       const descriptor = previousGlobals.get(name);
       if (descriptor === undefined) delete globalThis[name];
@@ -165,7 +170,7 @@ test("React wizard binding exposes stages and guarded navigation capabilities", 
   }
 
   await act(async () => {
-    ReactDOM.render(createElement(Wizard), root);
+    reactRoot.render(createElement(Wizard));
   });
   assert.equal(root.textContent, "first:first,second,third");
   assert.equal(binding.canPrevious, false);

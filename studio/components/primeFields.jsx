@@ -1,25 +1,27 @@
 import React, { useState, useEffect, useCallback } from "react";
 import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
-import { InputText } from "primereact/inputtext";
-import { InputTextarea } from "primereact/inputtextarea";
-import { Dropdown } from "primereact/dropdown";
-import { Calendar } from "primereact/calendar";
-import { Checkbox } from "primereact/checkbox";
-import { InputSwitch } from "primereact/inputswitch";
-import { InputNumber } from "primereact/inputnumber";
-import { Rating } from "primereact/rating";
-import { SelectButton } from "primereact/selectbutton";
-import { Slider } from "primereact/slider";
-import { ToggleButton } from "primereact/togglebutton";
-import { Editor } from "primereact/editor";
-import { Chips } from "primereact/chips";
-import { ColorPicker } from "primereact/colorpicker";
-import { InputMask } from "primereact/inputmask";
-import { Password } from "primereact/password";
-import { Divider } from "primereact/divider";
-import { MultiSelect } from "primereact/multiselect";
-import { Message } from "primereact/message";
+import {
+  Calendar,
+  Checkbox,
+  Chips,
+  ColorPicker,
+  Divider,
+  Dropdown,
+  Editor,
+  InputMask,
+  InputNumber,
+  InputSwitch,
+  InputText,
+  InputTextarea,
+  Message,
+  MultiSelect,
+  Password,
+  Rating,
+  SelectButton,
+  Slider,
+  ToggleButton,
+} from "./primeCompat";
 import useStagesStore from "./store";
 import { parseTemplateLiterals, textHasTemplateLiterals } from "./helpers";
 

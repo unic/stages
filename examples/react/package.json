@@ -11,14 +11,14 @@
   "dependencies": {
     "@stages/core": "file:../../packages/core",
     "@stages/react": "file:../../packages/react",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
-    "jsdom": "^26.1.0",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.3"
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
   }
 }

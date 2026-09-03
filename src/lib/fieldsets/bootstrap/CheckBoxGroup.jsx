@@ -21,7 +21,7 @@ Optional:
 
 */
 
-const RadioGroup = ({
+const CheckBoxGroup = ({
     id,
     label,
     value,
@@ -38,23 +38,32 @@ const RadioGroup = ({
 }) => {
     return (
         <Form.Group className="mb-3" controlId={id}>
+            {prefix ? <span>{prefix}</span> : null}
             {label ? <Form.Label>{label}{isRequired ? " *" : ""}</Form.Label> : null}
             <br /><br />
-            {prefix ? <span>{prefix}</span> : null}
             <div key={`inline-${type}`} className="mb-3">
                 {options.map(option => {
                         return (
                             <Fragment key={`${id}-${option.value}`}>
                                 <Form.Check 
-                                    type="radio"
+                                    type="checkbox"
                                     id={`default-checkbox`}
                                     label={`${option.text}${isRequired ? " *" : ""}`}
                                     disabled={!!isDisabled}
                                     value={option.value}
-                                    checked={value === option.value}
+                                    checked={value && value.indexOf(option.value) > -1}
                                     onChange={() => {/* to make React and IE happy */}}
                                     onClick={e => {
-                                        if (typeof onChange === "function") onChange(option.value);
+                                        if (typeof onChange === "function") {
+                                            let newValue = value;
+                                            if (!newValue || !Array.isArray(newValue)) newValue = [];
+                                            if (newValue.indexOf(option.value) === -1) {
+                                                newValue.push(option.value);
+                                            } else {
+                                                newValue.splice(newValue.indexOf(option.value), 1);
+                                            }
+                                            onChange(newValue);
+                                        }
                                     }}
                                 />
                             </Fragment>
@@ -76,4 +85,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default RadioGroup;
+export default CheckBoxGroup;

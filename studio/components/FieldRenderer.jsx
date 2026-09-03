@@ -1,8 +1,14 @@
 // @ts-nocheck
 import React, { Fragment, useEffect } from "react";
 import { isValidElement } from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { Dropdown } from "primereact/dropdown";
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Dropdown } from "./primeCompat";
 import _ from "lodash";
 import EditableBlock from "./EditableBlock";
 import InsertBlock from "./InsertBlock";
@@ -10,6 +16,31 @@ import GroupContainer from "./GroupContainer";
 import StageContainer from "./StageContainer";
 import WizardContainer from "./WizardContainer";
 import CollectionContainer from "./CollectionContainer";
+
+const SortableRow = ({ id, children, getItemStyle, isFieldConfigEditor }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={getItemStyle(isDragging, {
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }, isFieldConfigEditor)}
+    >
+      {children}
+    </div>
+  );
+};
 import useStagesStore from "./store";
 import BlockPathLabel from "./BlockPathLabel";
 import { getConfigPathFromDataPath } from "./helpers";
@@ -61,18 +92,12 @@ export const FieldRenderer = ({
       : "rgba(255, 255, 255, 0.2)",
     ...draggableStyle,
   });
-  const onDragEnd = (key, result) => {
-    // dropped outside the list
-    if (!result.destination) {
-      return;
-    }
-
-    fieldProps.onCollectionAction(
-      key,
-      "move",
-      result.source.index,
-      result.destination.index
-    );
+  const onDragEnd = (key, entries, result) => {
+    if (!result.over || result.active.id === result.over.id) return;
+    const sourceIndex = entries.indexOf(result.active.id);
+    const destinationIndex = entries.indexOf(result.over.id);
+    if (sourceIndex < 0 || destinationIndex < 0) return;
+    fieldProps.onCollectionAction(key, "move", sourceIndex, destinationIndex);
   };
 
   const getConfigFromFieldset = (thisPath, fieldsetId) => {
@@ -199,33 +224,26 @@ export const FieldRenderer = ({
                   inGroup={type === "group"}
                   width={width}
                 >
-                  <DragDropContext
-                    onDragEnd={(result) => onDragEnd(key, result)}
+                  <DndContext
+                    collisionDetection={closestCenter}
+                    onDragEnd={(result) => onDragEnd(
+                      key,
+                      field.map((_, index) => `field-${key}-${index}`),
+                      result,
+                    )}
                   >
-                    <Droppable droppableId="droppable">
-                      {(provided, snapshot) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          style={getListStyle(snapshot.isDraggingOver)}
-                        >
+                    <SortableContext
+                      items={field.map((_, index) => `field-${key}-${index}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                        <div style={getListStyle(false)}>
                           {field.map((entry, index) => (
-                            <Draggable
+                            <SortableRow
                               key={`field-${key}-${index}`}
-                              draggableId={`field-${key}-${index}`}
-                              index={index}
+                              id={`field-${key}-${index}`}
+                              getItemStyle={getItemStyle}
+                              isFieldConfigEditor={isFieldConfigEditor}
                             >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  style={getItemStyle(
-                                    snapshot.isDragging,
-                                    provided.draggableProps.style,
-                                    isFieldConfigEditor
-                                  )}
-                                >
                                   <div
                                     className="flex"
                                     style={{
@@ -294,15 +312,11 @@ export const FieldRenderer = ({
                                       </button>
                                     </div>
                                   </div>
-                                </div>
-                              )}
-                            </Draggable>
+                            </SortableRow>
                           ))}
-                          {provided.placeholder}
                         </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
+                    </SortableContext>
+                  </DndContext>
                   <button
                     type="button"
                     style={{

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Message } from "primereact/message";
+import { Message } from "./primeCompat";
 import { Waypoints } from "lucide-react";
 import fieldProps from "./fieldProps";
 import FormattedPath from "./FormattedPath";

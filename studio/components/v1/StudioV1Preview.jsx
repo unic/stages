@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useRef, useState } from "react";
 import { stages } from "@stages/core";
 import { StagesField, useStages } from "@stages/react";
-import { Button } from "primereact/button";
+import { Button } from "../primeCompat";
 import primeFields from "../primeFields";
 import EditableBlock from "../EditableBlock";
 import GroupContainer from "../GroupContainer";

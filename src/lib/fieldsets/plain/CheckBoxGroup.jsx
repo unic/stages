@@ -20,7 +20,7 @@ Optional:
 
 */
 
-const RadioGroup = ({
+const CheckBoxGroup = ({
     id,
     label,
     value,
@@ -47,15 +47,23 @@ const RadioGroup = ({
                     return (
                         <Fragment key={`${id}-${option.value}`}>
                             <input
-                                type="radio"
+                                type="checkbox"
                                 name={id}
                                 id={`${id}-${option.value}`}
                                 value={option.value}
-                                checked={value === option.value}
+                                checked={Array.isArray(value) && value.indexOf(option.value) !== -1}
                                 disabled={!!isDisabled}
                                 onChange={() => {/* to make React and IE happy */}}
                                 onClick={e => {
-                                    if (typeof onChange === "function") onChange(option.value);
+                                    if (typeof onChange === "function") {
+                                        const newValues = Array.isArray(value) ? [...value] : [];
+                                        if (newValues.indexOf(option.value) === -1) {
+                                            newValues.push(option.value);
+                                        } else {
+                                            newValues.splice(newValues.indexOf(option.value), 1);
+                                        }
+                                        onChange(newValues);
+                                    }
                                 }}
                                 onBlur={e => {
                                     if (typeof onBlur === "function") onBlur();
@@ -85,4 +93,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default RadioGroup;
+export default CheckBoxGroup;

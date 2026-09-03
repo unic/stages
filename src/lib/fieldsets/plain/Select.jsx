@@ -20,10 +20,11 @@ Optional:
 
 */
 
-const CheckBox = ({
+const Select = ({
     id,
     label,
     value,
+    options,
     onChange,
     onBlur,
     onFocus,
@@ -35,7 +36,6 @@ const CheckBox = ({
     prefix,
     suffix,
     secondaryText,
-    type,
     errorRenderer,
     ...props // this will give you all other props, things like validateOn, the computedValue function etc. or custom props
 }) => {
@@ -44,18 +44,15 @@ const CheckBox = ({
             {label ? <label htmlFor={id}>{label}{isRequired ? " *" : ""}</label> : null}
             <div>
                 {prefix ? <span>{prefix}</span> : null}
-                <input
+                <select
                     id={id}
                     name={id}
-                    value="1"
+                    value={typeof value === "undefined" ? "" : value}
                     placeholder={placeholder}
-                    type={type}
                     disabled={!!isDisabled}
                     required={!!isRequired}
-                    checked={!!value}
-                    onChange={() => {/* to make React and IE happy */}}
-                    onClick={e => {
-                        if (typeof onChange === "function") onChange(e.target.checked ? true : false);
+                    onChange={e => {
+                        if (typeof onChange === "function") onChange(e.target.value);
                     }}
                     onBlur={e => {
                         if (typeof onBlur === "function") onBlur();
@@ -63,7 +60,9 @@ const CheckBox = ({
                     onFocus={e => {
                         if (typeof onFocus === "function") onFocus();
                     }}
-                />
+                >
+                    {options.map(option => <option value={option.value} key={option.value} disabled={option.disabled ? true : null}>{option.text}</option>)}
+                </select>
                 {suffix ? <span>{suffix}</span> : null}
             </div>
             {secondaryText ? <div>{secondaryText}</div> : null}
@@ -80,4 +79,4 @@ export const isValid = (value, config) => {
     return true;
 };
 
-export default CheckBox;
+export default Select;
