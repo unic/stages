@@ -16,6 +16,7 @@ import type {
   StagesController,
   StagesSnapshot,
   StagesUpdate,
+  ValidationSnapshot,
 } from "@stages/core";
 
 export interface ReactFieldProps<TValue = unknown, TProps = Readonly<Record<string, unknown>>> {
@@ -107,6 +108,26 @@ export interface ReactCollectionBinding<TItem> {
   readonly items: readonly ReactCollectionItemBinding<TItem>[];
   readonly canAdd: boolean;
   add(value: TItem): void;
+}
+
+export interface ReactWizardStageBinding {
+  readonly id: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly active: boolean;
+  readonly disabled: boolean;
+  readonly validation: ValidationSnapshot | undefined;
+}
+
+export interface ReactWizardBinding {
+  readonly activeStage: string | undefined;
+  readonly stages: readonly ReactWizardStageBinding[];
+  readonly canPrevious: boolean;
+  readonly canNext: boolean;
+  readonly canGo: boolean;
+  previous(): void;
+  next(): void;
+  go(stage: string): void;
 }
 
 export function useStagesController<TValue, TFields, TContext>(
@@ -201,6 +222,55 @@ export function useStagesCollection<TValue, TFields, TContext, TPath extends Dat
         });
       },
     })),
+  };
+}
+
+export function useStagesWizard<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: DataPath,
+): ReactWizardBinding {
+  const select = (snapshot: StagesSnapshot<TValue>): ContainerSnapshot | undefined =>
+    findContainer(snapshot.nodes, path, "wizard");
+  const [wizard, setWizard] = useState(() => select(controller.getSnapshot()));
+  const pathKey = JSON.stringify(path);
+  useEffect(() => {
+    setWizard(select(controller.getSnapshot()));
+    return controller.subscribeSelector(select, (selection) => setWizard(selection));
+  }, [controller, pathKey]);
+  if (wizard === undefined) throw new Error(`Stages wizard does not exist at ${JSON.stringify(path)}.`);
+
+  const dispatch = (name: "wizard:previous" | "wizard:next" | "wizard:go", payload?: unknown): void => {
+    controller.dispatch({
+      name,
+      target: { kind: "node", address: wizard.address },
+      ...(payload === undefined ? {} : { payload }),
+      source: "adapter",
+    });
+  };
+  return {
+    activeStage: wizard.activeStage,
+    stages: wizard.nodes
+      .filter((stage): stage is ContainerSnapshot => stage.kind === "stage")
+      .map((stage) => ({
+        id: stage.id,
+        path: stage.path,
+        address: stage.address,
+        active: stage.active === true,
+        disabled: stage.state.disabled,
+        validation: stage.validation,
+      })),
+    canPrevious: wizard.canPrevious === true,
+    canNext: wizard.canNext === true,
+    canGo: wizard.canGo === true,
+    previous() {
+      dispatch("wizard:previous");
+    },
+    next() {
+      dispatch("wizard:next");
+    },
+    go(stage) {
+      dispatch("wizard:go", stage);
+    },
   };
 }
 

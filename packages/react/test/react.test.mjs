@@ -5,7 +5,7 @@ import React, { createElement } from "react";
 import ReactDOM from "react-dom";
 import { act } from "react-dom/test-utils.js";
 import { stages } from "../../core/dist/index.js";
-import { StagesField, useStagesCollection } from "../dist/index.js";
+import { StagesField, useStagesCollection, useStagesWizard } from "../dist/index.js";
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -121,4 +121,70 @@ test("React collection binding keeps stable row commands across moves", async (c
     await tick();
   });
   assert.deepEqual([...root.querySelectorAll("li")].map((item) => item.textContent), ["b", "c"]);
+});
+
+test("React wizard binding exposes stages and guarded navigation capabilities", async (context) => {
+  const dom = new JSDOM("<main id='root'></main>");
+  const globals = ["window", "document", "navigator"];
+  const previousGlobals = new Map(globals.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
+  Object.defineProperty(globalThis, "window", { configurable: true, value: dom.window });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: dom.window.document });
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
+  const root = dom.window.document.querySelector("#root");
+  context.after(() => {
+    ReactDOM.unmountComponentAtNode(root);
+    for (const name of globals) {
+      const descriptor = previousGlobals.get(name);
+      if (descriptor === undefined) delete globalThis[name];
+      else Object.defineProperty(globalThis, name, descriptor);
+    }
+  });
+
+  const controller = stages({
+    schema: {
+      id: "react-wizard",
+      version: 1,
+      nodes: [{
+        kind: "wizard",
+        id: "flow",
+        navigation: { nonLinear: true },
+        stages: [
+          { id: "first", nodes: [] },
+          { id: "second", nodes: [] },
+          { id: "third", nodes: [] },
+        ],
+      }],
+    },
+    fields: {},
+    value: { flow: { first: {}, second: {}, third: {} } },
+  });
+  let binding;
+  function Wizard() {
+    binding = useStagesWizard(controller, ["flow"]);
+    return createElement("output", null, `${binding.activeStage}:${binding.stages.map(({ id }) => id).join(",")}`);
+  }
+
+  await act(async () => {
+    ReactDOM.render(createElement(Wizard), root);
+  });
+  assert.equal(root.textContent, "first:first,second,third");
+  assert.equal(binding.canPrevious, false);
+  assert.equal(binding.canNext, true);
+  assert.equal(binding.canGo, true);
+  assert.equal(binding.stages[0].active, true);
+  assert.equal(binding.stages[0].validation.status, "valid");
+
+  await act(async () => {
+    binding.next();
+    await tick();
+  });
+  assert.equal(root.textContent, "second:first,second,third");
+  assert.equal(binding.canPrevious, true);
+
+  await act(async () => {
+    binding.go("third");
+    await tick();
+  });
+  assert.equal(root.textContent, "third:first,second,third");
+  assert.equal(binding.canNext, false);
 });
