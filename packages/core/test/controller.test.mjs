@@ -746,3 +746,39 @@ test("invalid resolver output and unstable root identity do not replace a valid 
   assert.equal(identityController.serialize().schema.id, "stable");
   assert.equal(identityController.getSnapshot().diagnostics[0].code, "schema.identity-changed");
 });
+
+test("malformed dynamic behavior retains the last valid tree and recovers", async () => {
+  const dynamicBehaviorSchema = ({ value }) => ({
+    id: "dynamic-behavior",
+    version: 1,
+    nodes: [{
+      kind: "field",
+      id: "count",
+      type: "number",
+      props: { label: value.invalid ? "invalid revision" : "valid revision" },
+      validators: value.invalid
+        ? [
+            { id: "same", on: "submit", validate: () => [] },
+            { id: "same", on: "submit", validate: () => [] },
+          ]
+        : [],
+    }],
+  });
+  const controller = stages({
+    schema: dynamicBehaviorSchema,
+    fields,
+    value: { count: 1, invalid: false },
+  });
+
+  controller.update({ value: { count: 2, invalid: true } });
+  await tick();
+  assert.deepEqual(controller.getSnapshot().nodes[0].props, { label: "valid revision" });
+  assert.equal(controller.getSnapshot().nodes[0].value, 2);
+  assert.equal(controller.getSnapshot().diagnostics[0].code, "schema.invalid-validator");
+
+  controller.update({ value: { count: 3, invalid: false } });
+  await tick();
+  assert.deepEqual(controller.getSnapshot().nodes[0].props, { label: "valid revision" });
+  assert.equal(controller.getSnapshot().nodes[0].value, 3);
+  assert.deepEqual(controller.getSnapshot().diagnostics, []);
+});

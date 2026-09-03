@@ -44,6 +44,9 @@ execution model as node validators, `init` policies run at controller creation,
 and form reset is a controlled baseline proposal with reset transaction
 provenance and cleared interaction metadata. Reducer and transform failures are
 now isolated as rejected value transactions with structured diagnostics.
+Normalization rejects malformed transform and validator policies, duplicate
+validator identities, unsafe dependency paths, and non-object resolver props;
+dynamic failures retain the previous valid tree until recovery.
 
 ## 1. Outcome
 

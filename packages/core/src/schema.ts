@@ -84,7 +84,66 @@ function resolveBoolean<TValue, TContext>(
   context: NodeResolverContext<TValue, TContext>,
   fallback: boolean,
 ): boolean {
-  return typeof resolver === "function" ? resolver(context) : resolver ?? fallback;
+  const resolved = typeof resolver === "function" ? resolver(context) : resolver;
+  if (resolved === undefined) return fallback;
+  if (typeof resolved !== "boolean") throw new TypeError("Predicate must return a boolean.");
+  return resolved;
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validEventPolicy(value: unknown): boolean {
+  return typeof value === "string"
+    ? value.length > 0
+    : Array.isArray(value) && value.length > 0 && value.every((name) => typeof name === "string" && name.length > 0);
+}
+
+function validTransforms(value: unknown): boolean {
+  return value === undefined || Array.isArray(value) && value.every((candidate) => {
+    if (!isRecord(candidate) || !validEventPolicy(candidate["on"]) || typeof candidate["apply"] !== "function") return false;
+    return candidate["when"] === undefined || typeof candidate["when"] === "function";
+  });
+}
+
+function validValidators(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!Array.isArray(value)) return false;
+  const ids = new Set<string>();
+  return value.every((candidate) => {
+    if (!isRecord(candidate)) return false;
+    const id = candidate["id"];
+    if (typeof id !== "string" || id.length === 0 || ids.has(id)) return false;
+    ids.add(id);
+    if (!validEventPolicy(candidate["on"]) || typeof candidate["validate"] !== "function") return false;
+    if (candidate["revealOn"] !== undefined && !validEventPolicy(candidate["revealOn"])) return false;
+    if (candidate["when"] !== undefined && typeof candidate["when"] !== "function") return false;
+    const dependencies = candidate["dependencies"];
+    return dependencies === undefined || Array.isArray(dependencies) && dependencies.every((path) =>
+      Array.isArray(path) && path.every((segment) =>
+        (typeof segment === "string" || typeof segment === "number") && isSafePathSegment(segment),
+      ),
+    );
+  });
+}
+
+function validateBehavior(
+  candidate: Readonly<Record<string, unknown>>,
+  diagnostics: Diagnostic[],
+  path: DataPath,
+  address: NodeAddress,
+): boolean {
+  let valid = true;
+  if (!validTransforms(candidate["transforms"])) {
+    diagnostics.push(diagnostic("schema.invalid-transform", "Transforms require valid event policies and apply functions.", path, address));
+    valid = false;
+  }
+  if (!validValidators(candidate["validators"])) {
+    diagnostics.push(diagnostic("schema.invalid-validator", "Validators require unique IDs, valid event policies, dependencies, and validate functions.", path, address));
+    valid = false;
+  }
+  return valid;
 }
 
 function hasField(fields: unknown, name: string): boolean {
@@ -112,6 +171,11 @@ function walkNodes<TValue, TFields, TContext>(
   const normalized: NormalizedNode<TValue, TFields, TContext>[] = [];
 
   for (const config of configs) {
+    const candidate = config as unknown;
+    if (!isRecord(candidate) || typeof candidate["id"] !== "string") {
+      walk.diagnostics.push(diagnostic("schema.invalid-node", "Schema nodes require a string id.", parentPath, parentAddress));
+      continue;
+    }
     const path = [...parentPath, config.id];
     const address: NodeAddress = [...parentAddress, { kind: "node", id: config.id }];
 
@@ -124,6 +188,11 @@ function walkNodes<TValue, TFields, TContext>(
       continue;
     }
     siblingIds.add(config.id);
+    if (!validateBehavior(candidate, walk.diagnostics, path, address)) continue;
+    if (config.kind === "field" && config.props !== undefined && !isRecord(config.props)) {
+      walk.diagnostics.push(diagnostic("schema.invalid-props", `Props for "${config.id}" must be an object.`, path, address));
+      continue;
+    }
 
     const resolverContext = nodeContext(walk.value, walk.context, walk.meta, path, address);
     let visible = true;
@@ -135,7 +204,11 @@ function walkNodes<TValue, TFields, TContext>(
       disabled = parentDisabled || resolveBoolean(config.disabled, resolverContext, false);
       if (config.kind === "field") {
         props = { ...(config.props as Readonly<Record<string, unknown>> | undefined) };
-        if (config.deriveProps !== undefined) props = { ...props, ...config.deriveProps(resolverContext) };
+        if (config.deriveProps !== undefined) {
+          const derived = config.deriveProps(resolverContext);
+          if (!isRecord(derived)) throw new TypeError("Derived props must be an object.");
+          props = { ...props, ...derived };
+        }
       }
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -296,23 +369,30 @@ export function evaluateSchema<TValue, TFields, TContext>(
     throw new TypeError(`Schema factory failed: ${detail}`);
   }
 
-  if (!isSafePathSegment(schema.id)) {
+  if (!isRecord(schema)) throw new TypeError("Schema factory must return an object.");
+  if (typeof schema.id !== "string" || !isSafePathSegment(schema.id)) {
     diagnostics.push(diagnostic("schema.unsafe-id", `Unsafe schema id \"${schema.id}\".`));
   }
   if (!Number.isSafeInteger(schema.version) || schema.version < 1) {
     diagnostics.push(diagnostic("schema.invalid-version", "Schema version must be a positive safe integer."));
   }
 
-  const nodes = walkNodes(schema.nodes, [], [], false, true, {
+  const rootBehaviorValid = validateBehavior(schema, diagnostics, [], []);
+  const nodes = Array.isArray(schema.nodes) ? walkNodes(schema.nodes, [], [], false, true, {
     value: options.value,
     context: options.context,
     meta: options.meta,
     fields: options.fields,
     diagnostics,
     collectionKeys: options.collectionKeys ?? new Map(),
-  });
+  }) : [];
+  if (!Array.isArray(schema.nodes)) diagnostics.push(diagnostic("schema.invalid-nodes", "Schema nodes must be an array."));
 
-  return { schema, nodes, diagnostics };
+  return {
+    schema: rootBehaviorValid ? schema : { ...schema, transforms: [], validators: [] },
+    nodes,
+    diagnostics,
+  };
 }
 
 export function initialFieldValue(definition: FieldDefinition<unknown, unknown, unknown>): unknown {

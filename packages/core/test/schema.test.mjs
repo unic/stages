@@ -118,3 +118,45 @@ test("normalization reports unsafe, duplicate, and unknown schema entries", () =
     "schema.unsafe-id",
   ]);
 });
+
+test("normalization rejects malformed transforms, validators, and resolver output", () => {
+  const result = evaluateSchema({
+    schema: {
+      id: "invalid-behavior",
+      version: 1,
+      transforms: [{ on: "", apply: () => [] }],
+      validators: [
+        { id: "duplicate", on: "submit", validate: () => [] },
+        { id: "duplicate", on: "submit", validate: () => [] },
+      ],
+      nodes: [
+        {
+          kind: "field",
+          id: "bad-validator",
+          type: "text",
+          validators: [{ id: "bad", on: [], validate: () => [] }],
+        },
+        {
+          kind: "field",
+          id: "bad-props",
+          type: "text",
+          deriveProps: () => [],
+        },
+      ],
+    },
+    value: { "bad-validator": "", "bad-props": "" },
+    context: {},
+    meta,
+    fields,
+  });
+
+  assert.deepEqual(result.diagnostics.map(({ code }) => code), [
+    "schema.invalid-transform",
+    "schema.invalid-validator",
+    "schema.invalid-validator",
+    "schema.resolver-failed",
+  ]);
+  assert.deepEqual(result.schema.transforms, []);
+  assert.deepEqual(result.schema.validators, []);
+  assert.deepEqual(result.nodes, []);
+});
