@@ -10,6 +10,9 @@ import {
 } from "@stages/react";
 import styles from "./stages-demo.module.css";
 
+// source:start shared
+// A field view is adapter-owned. Core supplies immutable state and an emitter;
+// this view owns HTML, accessibility attributes, and event translation.
 function DemoField({ id, field, props, emit }) {
   const issues = field.state.visibleIssues;
   const describedBy = issues.length ? `${id}-issues` : undefined;
@@ -51,6 +54,7 @@ const checkbox = {
   reduce: ({ event }) => event.name === "input" && typeof event.payload === "boolean" ? { value: event.payload } : undefined,
 };
 const fields = { text, choice, checkbox };
+// source:end shared
 
 function Frame({ title, description, value, snapshot, children }) {
   return (
@@ -65,6 +69,9 @@ function Frame({ title, description, value, snapshot, children }) {
   );
 }
 
+// source:start controlled
+// The schema combines validation, a computed slug, dynamic visibility, and
+// disabled state. None of these behaviors live in the React field component.
 const profileSchema = {
   id: "profile-demo",
   version: 1,
@@ -94,7 +101,10 @@ function ControlledDemo() {
     <button onClick={() => controller.dispatch(formEvent("submit"))}>Validate form</button>
   </Frame>;
 }
+// source:end controlled
 
+// source:start collection
+// itemKey gives every row durable identity while its numeric data path changes.
 const collectionSchema = { id: "collection-demo", version: 1, nodes: [{ kind: "collection", id: "people", min: 1, max: 4, itemKey: (item) => item.id, nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }] }] };
 function CollectionDemo() {
   const [value, setValue] = useState({ people: [{ id: "ada", name: "Ada" }, { id: "grace", name: "Grace" }] });
@@ -105,7 +115,11 @@ function CollectionDemo() {
     <button disabled={!collection.canAdd} onClick={() => collection.add({ id: crypto.randomUUID(), name: "New person" })}>Add person</button>
   </Frame>;
 }
+// source:end collection
 
+// source:start wizard
+// validateCurrent gates movement, nonLinear enables go(), and guard adds a
+// domain-specific navigation rule after validation succeeds.
 const wizardSchema = { id: "wizard-demo", version: 1, nodes: [{ kind: "wizard", id: "signup", navigation: { validateCurrent: true, nonLinear: true, guard: (_value, from, to) => !(from === "account" && to === "review") }, stages: [
   { id: "account", nodes: [{ kind: "field", id: "email", type: "text", props: { label: "Email", placeholder: "ada@example.com" }, validators: [{ id: "email.required", on: ["input", "wizard:next", "wizard:go"], revealOn: ["wizard:next", "wizard:go"], validate: ({ fieldValue, path }) => /.+@.+/.test(String(fieldValue)) ? [] : [{ id: "email.required", code: "email", message: "Enter an email address.", path, severity: "error" }] }] }] },
   { id: "profile", nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }] },
@@ -124,25 +138,33 @@ function WizardDemo() {
     <div className={styles.actions}><button disabled={!wizard.canPrevious} onClick={wizard.previous}>Previous</button><button disabled={!wizard.canNext} onClick={wizard.next}>Next</button></div>
   </Frame>;
 }
+// source:end wizard
 
+// source:start transaction
 function TransactionDemo() {
   const [value, setValue] = useState({ first: "", last: "" });
   const [changes, setChanges] = useState([]);
   const schema = useMemo(() => ({ id: "batch-demo", version: 1, nodes: [{ kind: "field", id: "first", type: "text", props: { label: "First name" } }, { kind: "field", id: "last", type: "text", props: { label: "Last name" } }] }), []);
   const { controller, snapshot } = useStages(() => stages({ schema, fields, value, onChange: (change) => { setValue(change.value); setChanges((items) => [...items.slice(-3), { transactionId: change.transactionId, events: change.events.map((event) => event.name), patches: change.patches.length }]); } }), { value, schema });
+  // Both dispatches flush as one proposal, transaction, and notification.
   const fill = () => controller.batch(() => { controller.dispatch(fieldEvent("input", ["first"], { payload: "Ada" })); controller.dispatch(fieldEvent("input", ["last"], { payload: "Lovelace" })); });
   return <Frame title="One batch, one proposal" description="Two events become one controlled transaction and one onChange call." value={value} snapshot={snapshot}><StagesField controller={controller} path={["first"]} /><StagesField controller={controller} path={["last"]} /><button onClick={fill}>Fill in one batch</button><pre>{JSON.stringify(changes, null, 2)}</pre></Frame>;
 }
+// source:end transaction
 
+// source:start persistence
 function PersistenceDemo() {
   const [value, setValue] = useState({ note: "Remember me" });
   const [serialized, setSerialized] = useState(null);
   const schema = useMemo(() => ({ id: "persistence-demo", version: 1, nodes: [{ kind: "field", id: "note", type: "text", props: { label: "Durable note" } }] }), []);
+  // Extension namespaces require explicit codecs before they can be persisted.
   const extensions = useMemo(() => ({ session: { tab: "docs" } }), []);
   const { controller, snapshot } = useStages(() => stages({ schema, fields, value, onChange: ({ value: proposal }) => setValue(proposal), extensions, extensionCodecs: { session: { encode: (item) => item, decode: (item) => item } } }), { value, schema, extensions });
   return <Frame title="Serializable state" description="The envelope contains canonical value, baseline, durable interaction metadata, and registered extensions." value={value} snapshot={snapshot}><StagesField controller={controller} path={["note"]} /><button onClick={() => setSerialized(controller.serialize())}>Serialize state</button>{serialized && <pre>{JSON.stringify(serialized, null, 2)}</pre>}</Frame>;
 }
+// source:end persistence
 
+// source:start asyncValidation
 const asyncSchema = {
   id: "async-validation-demo",
   version: 1,
@@ -155,6 +177,8 @@ const asyncSchema = {
       id: "username.available",
       on: "input",
       revealOn: "input",
+      // Resolve normally after the simulated request, but clean up immediately
+      // when a newer input event supersedes this run.
       validate: ({ fieldValue, path, signal }) => new Promise((resolve) => {
         const timer = setTimeout(() => resolve(fieldValue === "admin" ? [{
           id: "username.available",
@@ -176,7 +200,10 @@ function AsyncValidationDemo() {
   const { controller, snapshot } = useStages(() => stages({ schema: asyncSchema, fields, value, onChange: ({ value: proposal }) => setValue(proposal) }), { value });
   return <Frame title="Cancellable async validation" description="Only the newest value can publish a result; superseded work is cancelled." value={value} snapshot={snapshot}><StagesField controller={controller} path={["username"]} /><output className={styles.status}>Status: {snapshot.validation.status} · pending: {snapshot.validation.pendingCount}</output></Frame>;
 }
+// source:end asyncValidation
 
+// source:start diagnostics
+// A factory failure becomes a diagnostic; core keeps the last valid render tree.
 const diagnosticSchema = ({ context }) => {
   if (context.breakSchema) throw new Error("Simulated remote schema failure");
   return { id: "diagnostic-demo", version: 1, nodes: [{ kind: "field", id: "safe", type: "text", props: { label: "Last valid field" } }] };
@@ -188,6 +215,7 @@ function DiagnosticDemo() {
   const { controller, snapshot } = useStages(() => stages({ schema: diagnosticSchema, context, fields, value, onChange: ({ value: proposal }) => setValue(proposal) }), { value, context, schema: diagnosticSchema });
   return <Frame title="Last-valid-tree recovery" description="Break the schema factory: the field stays mounted and the failure becomes a diagnostic." value={value} snapshot={snapshot}><StagesField controller={controller} path={["safe"]} /><button onClick={() => setBreakSchema((current) => !current)}>{breakSchema ? "Recover schema" : "Break schema"}</button></Frame>;
 }
+// source:end diagnostics
 
 const examples = { controlled: ControlledDemo, collection: CollectionDemo, wizard: WizardDemo, transaction: TransactionDemo, persistence: PersistenceDemo, asyncValidation: AsyncValidationDemo, diagnostics: DiagnosticDemo };
 

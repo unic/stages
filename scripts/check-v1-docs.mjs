@@ -26,6 +26,14 @@ const demoSource = await readFile(
   new URL("../docs/components/StagesDemo.jsx", import.meta.url),
   "utf8",
 );
+const exampleSource = await readFile(
+  new URL("../docs/components/StagesExample.jsx", import.meta.url),
+  "utf8",
+);
+const mdxComponents = await readFile(
+  new URL("../docs/mdx-components.jsx", import.meta.url),
+  "utf8",
+);
 
 const documentedRuntimeExports = [
   "stages", "fieldEvent", "nodeEvent", "formEvent", "evaluateSchema",
@@ -48,7 +56,13 @@ const requiredDemos = [
 for (const name of requiredDemos) {
   assert.match(demoSource, new RegExp(`\\b${name}:`), `missing live demo ${name}`);
   assert.ok(guideCorpus.includes(`example=\"${name}\"`), `live demo ${name} is not embedded in a guide`);
+  const region = demoSource.match(new RegExp(`// source:start ${name}([\\s\\S]*?)// source:end ${name}`));
+  assert.ok(region, `live demo ${name} has no displayable source region`);
+  assert.match(region[1], /\/\//, `live demo ${name} source has no explanatory comments`);
+  assert.match(exampleSource, new RegExp(`\\b${name}: \\{ filename:`), `live demo ${name} has no source metadata`);
 }
+assert.match(demoSource, /\/\/ source:start shared[\s\S]*\/\/ source:end shared/);
+assert.match(mdxComponents, /StagesDemo: StagesExample/);
 
 const documentedFeatureContracts = [
   "controlled", "subscribeSelector", "schema factory", "deriveProps",

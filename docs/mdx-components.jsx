@@ -1,10 +1,10 @@
 import { useMDXComponents as getThemeComponents } from "nextra-theme-docs";
-import { StagesDemo } from "./components/StagesDemo";
+import { StagesExample } from "./components/StagesExample";
 
 export function useMDXComponents(components) {
   return {
     ...getThemeComponents(),
-    StagesDemo,
+    StagesDemo: StagesExample,
     ...components,
   };
 }

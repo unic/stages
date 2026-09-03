@@ -20,4 +20,22 @@
 .inspector { border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); padding: .8rem 1.1rem; font-size: .85rem; }
 .inspector summary { cursor: pointer; font-weight: 600; }
 .inspector pre, .surface pre { max-height: 20rem; overflow: auto; margin-top: .7rem; padding: .8rem; border-radius: .45rem; background: color-mix(in srgb, currentColor 8%, transparent); font-size: .75rem; }
+.example { margin: 1.75rem 0; }
+.example > .demo { margin-bottom: 0; }
+.sourcePanel { border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-top: 0; border-radius: 0 0 .8rem .8rem; background: color-mix(in srgb, var(--nextra-bg, white) 98%, #4f46e5); }
+.sourcePanel > summary { cursor: pointer; padding: .8rem 1.1rem; font-size: .9rem; font-weight: 700; }
+.sourceIntro { padding: .5rem 1.1rem 1rem; }
+.sourceIntro p, .sharedSource > p { margin: .3rem 0 0; color: color-mix(in srgb, currentColor 70%, transparent); font-size: .86rem; line-height: 1.5; }
+.sourceFile { border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+.sourceFile > header { display: flex; align-items: center; justify-content: space-between; padding: .55rem .8rem; background: color-mix(in srgb, currentColor 6%, transparent); }
+.sourceFile > header code { font-size: .78rem; font-weight: 650; }
+.copy { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: .35rem; padding: .25rem .55rem; background: var(--nextra-bg, white); cursor: pointer; font-size: .75rem; }
+.sourceCode { overflow: auto; max-height: 36rem; }
+.sourceCode :global(pre.shiki) { min-width: max-content; margin: 0; padding: 1rem; font-size: .78rem; line-height: 1.6; }
+.sourceCode :global(code) { display: block; }
+.sharedSource { border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); padding: .8rem 0 0; }
+.sharedSource > summary, .sharedSource > p { margin-inline: 1.1rem; }
+.sharedSource > summary { cursor: pointer; font-size: .85rem; font-weight: 650; }
+:global(html.dark) .sourceCode :global(pre.shiki) { background-color: var(--shiki-dark-bg) !important; }
+:global(html.dark) .sourceCode :global(.shiki span) { color: var(--shiki-dark) !important; }
 @media (max-width: 40rem) { .row { grid-template-columns: 1fr; } }
