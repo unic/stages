@@ -83,6 +83,86 @@ function compileVisibility(value, diagnostics, path) {
   }
 }
 
+function compileComputedValue(value, diagnostics, path) {
+  if (typeof value === "function") {
+    return (data, itemData) => {
+      try {
+        return { ok: true, value: value(data, itemData, {}) };
+      } catch {
+        return { ok: false };
+      }
+    };
+  }
+  if (typeof value !== "string" || value.trim() === "") return undefined;
+  try {
+    const compute = new Function(
+      "data",
+      "itemData",
+      "interfaceState",
+      `"use strict"; return (${value});`,
+    );
+    return (data, itemData) => {
+      try {
+        return { ok: true, value: compute(data, itemData, {}) };
+      } catch {
+        return { ok: false };
+      }
+    };
+  } catch {
+    diagnostics.push({
+      code: "studio.computed-value.invalid",
+      message: `Could not migrate the computed-value expression at ${path.join(".")}.`,
+      path,
+    });
+    return undefined;
+  }
+}
+
+function computedTargets(value, pattern, index = 0, path = [], itemData = value) {
+  const segment = pattern[index];
+  if (segment === undefined) return [{ path, itemData }];
+  const next = value !== null && typeof value === "object" ? value[segment.id] : undefined;
+  if (segment.collection) {
+    if (!Array.isArray(next)) return [];
+    return next.flatMap((row, rowIndex) => computedTargets(
+      row,
+      pattern,
+      index + 1,
+      [...path, segment.id, rowIndex],
+      row,
+    ));
+  }
+  return computedTargets(next, pattern, index + 1, [...path, segment.id], itemData);
+}
+
+function computedTransform(computed) {
+  return {
+    on: [
+      "init",
+      "input",
+      "collection:add",
+      "collection:remove",
+      "collection:replace",
+      "collection:duplicate",
+      "collection:move",
+      "collection:sort",
+    ],
+    apply({ value }) {
+      const patches = [];
+      let workingValue = value;
+      for (const { pattern, compute } of computed) {
+        for (const target of computedTargets(workingValue, pattern)) {
+          const result = compute(workingValue, target.itemData);
+          if (!result.ok || Object.is(valueAtPreparedPath(workingValue, target.path), result.value)) continue;
+          patches.push({ op: "set", path: target.path, value: result.value });
+          workingValue = setPreparedValue(workingValue, target.path, result.value);
+        }
+      }
+      return patches;
+    },
+  };
+}
+
 function requiredValidator(item, path) {
   const id = `${path.join(".")}.required`;
   return {
@@ -116,7 +196,7 @@ function normalizeFieldsetNodes(item, fieldset) {
   return nodes;
 }
 
-function convertNodes(items, context, parentPath = [], parentAddress = []) {
+function convertNodes(items, context, parentPath = [], parentAddress = [], parentPattern = []) {
   if (!Array.isArray(items)) return [];
   return items.flatMap((item, index) => {
     if (item === null || typeof item !== "object") {
@@ -131,6 +211,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
     const id = typeof item.id === "string" && item.id !== "" ? item.id : `field${index + 1}`;
     const path = [...parentPath, id];
     const address = [...parentAddress, { kind: "node", id }];
+    const pattern = [...parentPattern, { id, collection: item.type === "collection" }];
     const presentation = presentationFor(item);
     if (Object.keys(presentation).length > 0) context.presentation[addressKey(address)] = presentation;
 
@@ -145,7 +226,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
         kind: "group",
         id,
         ...behavior,
-        nodes: convertNodes(item.fields, context, path, address),
+        nodes: convertNodes(item.fields, context, path, address, pattern),
       }];
     }
 
@@ -159,7 +240,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
       };
       if (item.fields !== null && typeof item.fields === "object" && !Array.isArray(item.fields)) {
         const variants = Object.fromEntries(Object.entries(item.fields).map(([variant, fields]) => [variant, {
-          nodes: convertNodes(fields, context, path, address),
+          nodes: convertNodes(fields, context, path, address, pattern),
         }]));
         collection.discriminator = "__typename";
         collection.variants = variants;
@@ -168,7 +249,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
           variants: Object.keys(variants),
         };
       } else {
-        collection.nodes = convertNodes(item.fields, context, path, address);
+        collection.nodes = convertNodes(item.fields, context, path, address, pattern);
       }
       return [collection];
     }
@@ -192,7 +273,13 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
           }
           return {
             id: stageId,
-            nodes: convertNodes(stage?.fields, context, stagePath, stageAddress),
+            nodes: convertNodes(
+              stage?.fields,
+              context,
+              stagePath,
+              stageAddress,
+              [...pattern, { id: stageId, collection: false }],
+            ),
           };
         }),
       }];
@@ -211,7 +298,7 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
         kind: "group",
         id,
         ...behavior,
-        nodes: convertNodes(normalizeFieldsetNodes(item, fieldset), context, path, address),
+        nodes: convertNodes(normalizeFieldsetNodes(item, fieldset), context, path, address, pattern),
       }];
     }
 
@@ -225,11 +312,8 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
     }
 
     if (item.computedValue !== undefined) {
-      context.diagnostics.push({
-        code: "studio.computed-value.unsupported",
-        message: `Computed value at ${path.join(".")} still uses the 0.x expression runtime.`,
-        path,
-      });
+      const compute = compileComputedValue(item.computedValue, context.diagnostics, path);
+      if (compute !== undefined) context.computed.push({ pattern, compute });
     }
 
     return [{
@@ -249,6 +333,7 @@ export function convertLegacyConfig(config, options = {}) {
   const context = {
     diagnostics,
     presentation,
+    computed: [],
     fieldTypes: new Set(options.fieldTypes || []),
     fieldsets: new Map((options.fieldsets || []).map((fieldset) => [fieldset.id, fieldset])),
   };
@@ -256,6 +341,7 @@ export function convertLegacyConfig(config, options = {}) {
     id: options.schemaId || "studio-preview",
     version: 1,
     nodes: convertNodes(config, context),
+    ...(context.computed.length > 0 ? { transforms: [computedTransform(context.computed)] } : {}),
   };
   return freeze({ schema, diagnostics, presentation });
 }
@@ -299,5 +385,35 @@ function prepareNodes(nodes, input) {
 }
 
 export function prepareStudioValue(schema, value) {
-  return prepareNodes(schema.nodes, value);
+  let prepared = prepareNodes(schema.nodes, value);
+  for (const transform of schema.transforms || []) {
+    const events = Array.isArray(transform.on) ? transform.on : [transform.on];
+    if (!events.includes("init")) continue;
+    const patches = transform.apply({ value: prepared, event: { name: "init", target: { kind: "form" } } });
+    for (const patch of patches) {
+      if (patch.op !== "set") continue;
+      prepared = setPreparedValue(prepared, patch.path, patch.value);
+    }
+  }
+  return prepared;
+}
+
+function setPreparedValue(value, path, nextValue) {
+  if (path.length === 0) return nextValue;
+  const [head, ...tail] = path;
+  const source = value !== null && typeof value === "object"
+    ? value
+    : typeof head === "number" ? [] : {};
+  const output = Array.isArray(source) ? source.slice() : { ...source };
+  output[head] = setPreparedValue(source[head], tail, nextValue);
+  return output;
+}
+
+function valueAtPreparedPath(value, path) {
+  let current = value;
+  for (const segment of path) {
+    if (current === null || typeof current !== "object") return undefined;
+    current = current[segment];
+  }
+  return current;
 }

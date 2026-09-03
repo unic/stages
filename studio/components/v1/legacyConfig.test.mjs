@@ -51,19 +51,20 @@ test("expands fieldsets and removes the duplicated root group", () => {
   assert.deepEqual(result.schema.nodes[0].nodes.map((node) => node.id), ["city"]);
 });
 
-test("reports compatibility gaps and retains supported visibility expressions", () => {
+test("reports invalid compatibility expressions and retains supported visibility expressions", () => {
   const result = convertLegacyConfig([
     { id: "total", type: "number", computedValue: "data.a + data.b" },
+    { id: "broken", type: "number", computedValue: "data.}" },
     { id: "conditional", type: "text", isRendered: "data.show === true" },
     { id: "mystery", type: "missing" },
   ], { fieldTypes });
 
   assert.deepEqual(result.diagnostics.map(({ code }) => code), [
-    "studio.computed-value.unsupported",
+    "studio.computed-value.invalid",
     "studio.field-type.unknown",
   ]);
-  assert.equal(result.schema.nodes[1].when({ path: ["conditional"], fieldValue: "", value: { show: true } }), true);
-  assert.equal(result.schema.nodes[1].when({ path: ["conditional"], fieldValue: "", value: { show: false } }), false);
+  assert.equal(result.schema.nodes[2].when({ path: ["conditional"], fieldValue: "", value: { show: true } }), true);
+  assert.equal(result.schema.nodes[2].when({ path: ["conditional"], fieldValue: "", value: { show: false } }), false);
 });
 
 test("normalizes runtime row addresses for presentation lookup", () => {
@@ -109,5 +110,45 @@ test("converts and prepares discriminated legacy collection variants", () => {
   assert.deepEqual(
     prepareStudioValue(schema.schema, { validation: [{ __typename: "email" }] }),
     { validation: [{ __typename: "email", strong: "yes" }] },
+  );
+});
+
+test("migrates root and nested collection computed values to v1 transforms", () => {
+  const converted = convertLegacyConfig([
+    { id: "base", type: "number", defaultValue: 4 },
+    { id: "double", type: "number", computedValue: "data.base * 2" },
+    { id: "quadruple", type: "number", computedValue: "data.double * 2" },
+    {
+      id: "lines",
+      type: "collection",
+      fields: [
+        { id: "quantity", type: "number" },
+        { id: "price", type: "number" },
+        { id: "total", type: "number", computedValue: "itemData.quantity * itemData.price" },
+      ],
+    },
+  ], { fieldTypes });
+  const value = prepareStudioValue(converted.schema, {
+    lines: [
+      { quantity: 2, price: 3 },
+      { quantity: 4, price: 5 },
+    ],
+  });
+
+  assert.deepEqual(value, {
+    base: 4,
+    double: 8,
+    quadruple: 16,
+    lines: [
+      { quantity: 2, price: 3, total: 6 },
+      { quantity: 4, price: 5, total: 20 },
+    ],
+  });
+  assert.deepEqual(
+    converted.schema.transforms[0].apply({ value: { ...value, base: 7 } }),
+    [
+      { op: "set", path: ["double"], value: 14 },
+      { op: "set", path: ["quadruple"], value: 28 },
+    ],
   );
 });
