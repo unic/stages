@@ -491,6 +491,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   let focused = new Map<string, NodeAddress>();
   let touched = new Map<string, NodeAddress>();
   let visited = new Map<string, NodeAddress>();
+  let revealedValidation = new Map<string, NodeAddress>();
   let activeWizards = new Map<string, ActiveWizardState>();
   let collectionKeys = new Map<string, CollectionKeyState>();
   let rowKeyCounter = 0;
@@ -512,6 +513,13 @@ export function stages<TValue, TFields, TContext = unknown>(
       for (const item of serializedVisited) {
         const address = parseNodeAddress(item);
         if (address !== undefined) visited.set(addressKey(address), address);
+      }
+    }
+    const serializedRevealedValidation = restored.meta["revealedValidation"];
+    if (Array.isArray(serializedRevealedValidation)) {
+      for (const item of serializedRevealedValidation) {
+        const address = parseNodeAddress(item);
+        if (address !== undefined) revealedValidation.set(addressKey(address), address);
       }
     }
     const serializedWizards = restored.meta["activeWizards"];
@@ -734,6 +742,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     focused = retainCompatible(focused);
     touched = retainCompatible(touched);
     visited = retainCompatible(visited);
+    revealedValidation = retainCompatible(revealedValidation);
     const nextActiveWizards = new Map<string, ActiveWizardState>();
     const initializeWizards = (items: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
       for (const node of items) {
@@ -939,13 +948,15 @@ export function stages<TValue, TFields, TContext = unknown>(
         || addressStartsWith(targetAddress, node.address)
         || paths.some((path) => affectedPaths.some((affected) => pathsIntersect(path, affected)));
       if (!relevant) continue;
-      const shouldReveal = reveal || eventNames(validator.revealOn).includes(event);
+      const revealRequested = reveal || eventNames(validator.revealOn).includes(event);
+      const wasRevealed = revealedValidation.has(addressKey(node.address));
       const shouldRun = force || eventNames(validator.on).includes(event);
       const contextValue = validationContext(node, currentValue, event);
       let applicable = true;
       try {
         applicable = validator.when?.(contextValue) !== false;
       } catch (error) {
+        if (revealRequested) revealedValidation.set(addressKey(node.address), node.address);
         previous?.cancel();
         validationRecords.set(key, {
           address: node.address,
@@ -961,7 +972,7 @@ export function stages<TValue, TFields, TContext = unknown>(
             severity: "error",
             message: error instanceof Error ? error.message : String(error),
           }],
-          revealed: shouldReveal || previous?.revealed === true,
+          revealed: revealRequested || wasRevealed || previous?.revealed === true,
           token: ++validationToken,
           cancel: () => undefined,
         });
@@ -972,6 +983,8 @@ export function stages<TValue, TFields, TContext = unknown>(
         validationRecords.delete(key);
         continue;
       }
+      if (revealRequested) revealedValidation.set(addressKey(node.address), node.address);
+      const shouldReveal = revealRequested || wasRevealed;
       if (!shouldRun) {
         if (shouldReveal && previous !== undefined) validationRecords.set(key, { ...previous, revealed: true });
         continue;
@@ -1207,6 +1220,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       focused.clear();
       touched.clear();
       visited.clear();
+      revealedValidation.clear();
       activeWizards.clear();
       for (const record of validationRecords.values()) record.cancel();
       validationRecords.clear();
@@ -1448,6 +1462,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       meta: {
         touched: encodeJson([...touched.values()]),
         visited: encodeJson([...visited.values()]),
+        revealedValidation: encodeJson([...revealedValidation.values()]),
         activeWizards: encodeJson([...activeWizards.values()].map((state) => [state.address, state.stage])),
         collectionKeys: encodeJson([...collectionKeys.values()].map((state) => [state.address, state.keys])),
       },
@@ -1510,6 +1525,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       selectorListeners.clear();
       activeWizards.clear();
       collectionKeys.clear();
+      revealedValidation.clear();
       for (const record of validationRecords.values()) record.cancel();
       validationRecords.clear();
       proposal = undefined;

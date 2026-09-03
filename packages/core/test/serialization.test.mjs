@@ -63,6 +63,46 @@ test("a value codec round-trips non-JSON domain values", () => {
   assert.equal(recreated.getSnapshot().value.created.toISOString(), "2025-01-02T03:04:05.000Z");
 });
 
+test("revealed validation state survives recreation while focus remains ephemeral", async () => {
+  const fields = { text: { view: "text", initialValue: "" } };
+  const schema = {
+    id: "revealed-validation",
+    version: 1,
+    nodes: [{
+      kind: "field",
+      id: "name",
+      type: "text",
+      validators: [{
+        id: "required",
+        on: ["init", "blur"],
+        revealOn: "blur",
+        validate: ({ path }) => [{ id: "required", code: "required", path, severity: "error" }],
+      }],
+    }],
+  };
+  const original = stages({ schema, fields, value: { name: "" } });
+  assert.equal(original.getSnapshot().validation.visibleIssues.length, 0);
+
+  original.dispatch({ name: "focus", target: { kind: "field", path: ["name"] } });
+  original.dispatch({ name: "blur", target: { kind: "field", path: ["name"] } });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(original.getSnapshot().validation.visibleIssues.length, 1);
+
+  const serialized = original.serialize();
+  assert.deepEqual(serialized.meta.revealedValidation, [[{ kind: "node", id: "name" }]]);
+  const recreated = stages({ schema, fields, state: serialized });
+  assert.equal(recreated.getSnapshot().validation.status, "invalid");
+  assert.equal(recreated.getSnapshot().validation.visibleIssues.length, 1);
+  assert.equal(recreated.getSnapshot().nodes[0].state.focused, false);
+  assert.equal(recreated.getSnapshot().nodes[0].state.touched, true);
+
+  recreated.dispatch({ name: "reset", target: { kind: "form" } });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(recreated.serialize().meta.revealedValidation, []);
+  assert.equal(recreated.getSnapshot().validation.visibleIssues.length, 0);
+  assert.equal(recreated.getSnapshot().nodes[0].state.touched, false);
+});
+
 test("ordered migrations upgrade value and baseline before recreation", () => {
   const state = {
     format: "stages",

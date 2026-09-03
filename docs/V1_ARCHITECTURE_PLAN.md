@@ -49,7 +49,9 @@ validator identities, unsafe dependency paths, and non-object resolver props;
 dynamic failures retain the previous valid tree until recovery. Disabled-node
 validation is now an explicit per-validator opt-in, and malformed synchronous
 or asynchronous issue results are converted into deterministic rejection
-issues at the runtime boundary.
+issues at the runtime boundary. Validation reveal state is now durable by node
+address and round-trips through recreation without persisting validation
+results or ephemeral focus state.
 
 ## 1. Outcome
 
