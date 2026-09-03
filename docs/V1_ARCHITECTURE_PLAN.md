@@ -51,7 +51,10 @@ validation is now an explicit per-validator opt-in, and malformed synchronous
 or asynchronous issue results are converted into deterministic rejection
 issues at the runtime boundary. Validation reveal state is now durable by node
 address and round-trips through recreation without persisting validation
-results or ephemeral focus state.
+results or ephemeral focus state. Runtime normalization now also guards every
+structural boundary: unknown kinds, malformed child arrays, union variants,
+wizard stages, and invalid collection item-key results become diagnostics and
+cannot displace a previously valid dynamic tree.
 
 ## 1. Outcome
 

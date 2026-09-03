@@ -160,3 +160,52 @@ test("normalization rejects malformed transforms, validators, and resolver outpu
   assert.deepEqual(result.schema.validators, []);
   assert.deepEqual(result.nodes, []);
 });
+
+test("normalization diagnoses malformed structural node payloads without throwing", () => {
+  const result = evaluateSchema({
+    schema: {
+      id: "invalid-structure",
+      version: 1,
+      nodes: [
+        { kind: "unknown", id: "unknown" },
+        { kind: "group", id: "group", nodes: {} },
+        { kind: "collection", id: "bad-nodes", nodes: {} },
+        { kind: "collection", id: "bad-variants", discriminator: "kind", variants: null },
+        {
+          kind: "collection",
+          id: "bad-variant",
+          discriminator: "kind",
+          variants: { broken: { nodes: {} } },
+        },
+        {
+          kind: "collection",
+          id: "missing-discriminator",
+          variants: { valid: { nodes: [] } },
+        },
+        { kind: "collection", id: "empty-variants", discriminator: "kind", variants: {} },
+        { kind: "collection", id: "invalid-key-config", itemKey: "id", nodes: [] },
+        { kind: "wizard", id: "bad-wizard", stages: {} },
+        { kind: "wizard", id: "bad-stage", stages: [{ id: "stage", nodes: {} }] },
+        { kind: "collection", id: "bad-key", itemKey: () => 42, nodes: [] },
+      ],
+    },
+    value: { "bad-key": [{}] },
+    context: {},
+    meta,
+    fields,
+  });
+
+  assert.deepEqual(result.diagnostics.map(({ code }) => code), [
+    "schema.invalid-kind",
+    "schema.invalid-nodes",
+    "schema.collection-shape",
+    "schema.collection-shape",
+    "schema.invalid-variant",
+    "schema.unsafe-discriminator",
+    "schema.invalid-variant",
+    "schema.item-key",
+    "schema.invalid-wizard",
+    "schema.invalid-stage",
+    "schema.item-key-failed",
+  ]);
+});

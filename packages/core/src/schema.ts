@@ -180,6 +180,12 @@ function walkNodes<TValue, TFields, TContext>(
     const path = [...parentPath, config.id];
     const address: NodeAddress = [...parentAddress, { kind: "node", id: config.id }];
 
+    if (candidate["kind"] !== "field" && candidate["kind"] !== "group"
+      && candidate["kind"] !== "collection" && candidate["kind"] !== "wizard") {
+      walk.diagnostics.push(diagnostic("schema.invalid-kind", `Unknown node kind "${String(candidate["kind"])}".`, path, address));
+      continue;
+    }
+
     if (!isSafePathSegment(config.id)) {
       walk.diagnostics.push(diagnostic("schema.unsafe-id", `Unsafe node id \"${config.id}\".`, path, address));
       continue;
@@ -220,21 +226,36 @@ function walkNodes<TValue, TFields, TContext>(
     let children: readonly NormalizedNode<TValue, TFields, TContext>[] = [];
     let branches: readonly NormalizedBranch<TValue, TFields, TContext>[] = [];
     if (config.kind === "field") {
+      if (typeof config.type !== "string") {
+        walk.diagnostics.push(diagnostic("schema.unknown-field", `Field "${config.id}" requires a string type.`, path, address));
+        continue;
+      }
       if (!hasField(walk.fields, config.type)) {
         walk.diagnostics.push(diagnostic("schema.unknown-field", `Unknown field type \"${config.type}\".`, path, address));
         continue;
       }
     } else if (config.kind === "group") {
+      if (!Array.isArray(config.nodes)) {
+        walk.diagnostics.push(diagnostic("schema.invalid-nodes", `Group "${config.id}" nodes must be an array.`, path, address));
+        continue;
+      }
       children = walkNodes(config.nodes, path, address, disabled, visible, walk);
     } else if (config.kind === "collection") {
       const runtimeConfig = config as Readonly<{
         nodes?: readonly NodeConfig<TValue, TFields, TContext>[];
         variants?: Readonly<Record<string, { readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[] }>>;
       }>;
+      const definesNodes = candidate["nodes"] !== undefined;
+      const definesVariants = candidate["variants"] !== undefined;
       const hasNodes = Array.isArray(runtimeConfig.nodes);
-      const hasVariants = runtimeConfig.variants !== undefined;
-      if (hasNodes === hasVariants) {
+      const hasVariants = isRecord(runtimeConfig.variants);
+      if (definesNodes === definesVariants || definesNodes !== hasNodes || definesVariants !== hasVariants) {
         walk.diagnostics.push(diagnostic("schema.collection-shape", `Collection \"${config.id}\" must define exactly one of nodes or variants.`, path, address));
+        continue;
+      }
+      if (config.itemKey !== undefined && typeof config.itemKey !== "function") {
+        walk.diagnostics.push(diagnostic("schema.item-key", `Collection "${config.id}" itemKey must be a function.`, path, address));
+        continue;
       }
       if (config.min !== undefined && (!Number.isSafeInteger(config.min) || config.min < 0)) {
         walk.diagnostics.push(diagnostic("schema.collection-min", `Collection \"${config.id}\" has an invalid min.`, path, address));
@@ -249,15 +270,28 @@ function walkNodes<TValue, TFields, TContext>(
       if (collectionValue !== undefined && !Array.isArray(collectionValue)) {
         walk.diagnostics.push(diagnostic("schema.collection-value", `Collection \"${config.id}\" requires an array value.`, path, address));
       }
-      if (config.discriminator !== undefined && !isSafePathSegment(config.discriminator)) {
-        walk.diagnostics.push(diagnostic("schema.unsafe-discriminator", `Unsafe discriminator \"${config.discriminator}\".`, path, address));
-      }
-      if (config.variants !== undefined) {
-        for (const variantName of Object.keys(config.variants)) {
+      if (hasVariants) {
+        if (typeof config.discriminator !== "string" || !isSafePathSegment(config.discriminator)) {
+          walk.diagnostics.push(diagnostic("schema.unsafe-discriminator", `Invalid discriminator \"${String(config.discriminator)}\".`, path, address));
+          continue;
+        }
+        let variantsValid = true;
+        const variants = Object.entries(runtimeConfig.variants ?? {});
+        if (variants.length === 0) {
+          walk.diagnostics.push(diagnostic("schema.invalid-variant", `Collection "${config.id}" must define at least one variant.`, path, address));
+          variantsValid = false;
+        }
+        for (const [variantName, variant] of variants) {
           if (!isSafePathSegment(variantName)) {
             walk.diagnostics.push(diagnostic("schema.unsafe-variant", `Unsafe variant \"${variantName}\".`, path, address));
+            variantsValid = false;
+          }
+          if (!isRecord(variant) || !Array.isArray(variant["nodes"])) {
+            walk.diagnostics.push(diagnostic("schema.invalid-variant", `Variant \"${variantName}\" must define a nodes array.`, path, address));
+            variantsValid = false;
           }
         }
+        if (!variantsValid) continue;
       }
       const rows = Array.isArray(collectionValue) ? collectionValue : [];
       const rowKeys = new Set<string>();
@@ -268,6 +302,7 @@ function walkNodes<TValue, TFields, TContext>(
         let rowKey = storedRowKeys?.[index] ?? String(index);
         try {
           rowKey = config.itemKey?.(row, index) ?? rowKey;
+          if (typeof rowKey !== "string" || rowKey.length === 0) throw new TypeError("Item keys must be non-empty strings.");
         } catch (error) {
           const detail = error instanceof Error ? error.message : String(error);
           walk.diagnostics.push(diagnostic("schema.item-key-failed", `Item key for \"${config.id}\" failed: ${detail}`, [...path, index], address));
@@ -306,22 +341,33 @@ function walkNodes<TValue, TFields, TContext>(
       children = rowChildren;
       branches = rowBranches;
     } else {
+      if (!Array.isArray(config.stages)) {
+        walk.diagnostics.push(diagnostic("schema.invalid-wizard", `Wizard "${config.id}" stages must be an array.`, path, address));
+        continue;
+      }
       const stageIds = new Set<string>();
+      const validStages: Array<(typeof config.stages)[number]> = [];
       for (const stage of config.stages) {
+        const stageCandidate = stage as unknown;
+        if (!isRecord(stageCandidate) || typeof stageCandidate["id"] !== "string" || !Array.isArray(stageCandidate["nodes"])) {
+          walk.diagnostics.push(diagnostic("schema.invalid-stage", `Wizard "${config.id}" contains a malformed stage.`, path, address));
+          continue;
+        }
         const stagePath = [...path, stage.id];
         const stageAddress: NodeAddress = [...address, { kind: "node", id: stage.id }];
         if (!isSafePathSegment(stage.id) || stageIds.has(stage.id)) {
           walk.diagnostics.push(diagnostic("schema.invalid-stage", `Invalid or duplicate stage id \"${stage.id}\".`, stagePath, stageAddress));
+          continue;
         }
         stageIds.add(stage.id);
+        validStages.push(stage);
       }
       if (config.initialStage !== undefined && !stageIds.has(config.initialStage)) {
         walk.diagnostics.push(diagnostic("schema.wizard-target", `Unknown initial stage \"${config.initialStage}\".`, path, address));
       }
       const stageChildren: NormalizedNode<TValue, TFields, TContext>[] = [];
       const stageBranches: NormalizedBranch<TValue, TFields, TContext>[] = [];
-      for (const stage of config.stages) {
-        if (!isSafePathSegment(stage.id)) continue;
+      for (const stage of validStages) {
         const stagePath = [...path, stage.id];
         const stageAddress: NodeAddress = [...address, { kind: "node", id: stage.id }];
         const stageContext = nodeContext(walk.value, walk.context, walk.meta, stagePath, stageAddress);

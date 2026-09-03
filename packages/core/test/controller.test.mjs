@@ -782,3 +782,29 @@ test("malformed dynamic behavior retains the last valid tree and recovers", asyn
   assert.equal(controller.getSnapshot().nodes[0].value, 3);
   assert.deepEqual(controller.getSnapshot().diagnostics, []);
 });
+
+test("malformed dynamic structure cannot replace the last valid tree", async () => {
+  const controller = stages({
+    schema: ({ value }) => ({
+      id: "dynamic-structure",
+      version: 1,
+      nodes: [{
+        kind: "group",
+        id: "profile",
+        nodes: value.invalid ? {} : [{ kind: "field", id: "count", type: "number" }],
+      }],
+    }),
+    fields,
+    value: { invalid: false, profile: { count: 1 } },
+  });
+
+  controller.update({ value: { invalid: true, profile: { count: 2 } } });
+  await tick();
+  assert.equal(controller.getSnapshot().nodes[0].nodes[0].value, 2);
+  assert.equal(controller.getSnapshot().diagnostics[0].code, "schema.invalid-nodes");
+
+  controller.update({ value: { invalid: false, profile: { count: 3 } } });
+  await tick();
+  assert.equal(controller.getSnapshot().nodes[0].nodes[0].value, 3);
+  assert.deepEqual(controller.getSnapshot().diagnostics, []);
+});
