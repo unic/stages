@@ -56,7 +56,10 @@ structural boundary: unknown kinds, malformed child arrays, union variants,
 wizard stages, and invalid collection item-key results become diagnostics and
 cannot displace a previously valid dynamic tree. Registry-level field
 validators now run as reusable intrinsic validators with engine-assigned paths
-and independent identities from node-configured validators.
+and independent identities from node-configured validators. Registered
+extension namespaces can now drive dynamic configuration, update independently,
+and round-trip richer metadata through explicit codecs without opening an
+arbitrary persistence channel.
 
 ## 1. Outcome
 
@@ -793,6 +796,21 @@ It excludes focus, rendered views, callbacks, schema objects/factories, external
 `stages()` accepts either a controlled initial `value` or a serialized `state`, not both. Recreation requires the same schema object/factory, the current external context, a matching schema ID, and a compatible version. Applications can register explicit schema migrations and value codecs. The default codec rejects unsupported values such as `Date`, `File`, class instances, functions, symbols, cycles, `NaN`, and infinities with a precise path instead of silently losing them through `JSON.stringify`.
 
 Extension metadata is serialized only through a registered namespaced codec. This keeps framework state and application secrets out of persistence by default.
+
+```ts
+interface StagesExtensionCodec {
+  encode(value: unknown): JsonValue;
+  decode(value: JsonValue): unknown;
+}
+```
+
+Codecs are registered through `extensionCodecs`; initial or controlled metadata
+is supplied through `extensions` and `update({ extensions })`. Extension state
+is exposed read-only at `meta.extensions` to schema factories and resolvers.
+Only own, non-empty, safe registered namespaces are accepted. Serialization
+fails for unregistered namespaces or codec errors instead of silently dropping
+state. On recreation, each persisted namespace is decoded before the first
+schema evaluation.
 
 ## 12. Framework adapter boundary
 
@@ -1692,7 +1710,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
 | Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, and serialized identity are implemented. | Add exhaustive tests for every permitted container nesting permutation and finish higher-level adapter collection/wizard bindings. |
-| Phase 6 — Serialization | Mostly implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, and revealed validation addresses are implemented. | Add registered namespaced extension codecs and packed-artifact recreation tests. |
+| Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, and registered namespaced extension codecs are implemented. | Repeat recreation coverage against packed artifacts during Phase 8 release hardening. |
 | Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, and accessible issue relationships. React lifecycle, snapshot, selector, and field bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add focus/error navigation hooks, richer collection/wizard helpers, production examples, and migrate the demo applications to v1. |
 | Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, and notification-count performance tests exist. | Add property/fuzz tests, packed export verification, formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
 
@@ -1709,7 +1727,7 @@ currently an alpha foundation, not a release-ready v1 build.
 
 - `npm run check:v1` performs strict type checking for all four packages and
   builds their ESM declaration/output artifacts.
-- `npm run test:v1` builds the packages and currently runs 61 passing executable
+- `npm run test:v1` builds the packages and currently runs 63 passing executable
   tests across core, DOM, React, and the adapter test kit.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 

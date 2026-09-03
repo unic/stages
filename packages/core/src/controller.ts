@@ -4,6 +4,7 @@ import {
   decodeJson,
   encodeJson,
   migrateSerializedState,
+  SerializationError,
   validateSerializedState,
 } from "./serialization.js";
 import {
@@ -511,6 +512,53 @@ export function stages<TValue, TFields, TContext = unknown>(
   const baseline = restored === undefined ? options.value as TValue : decodeValue(restored.baseline);
   let context = options.context as TContext;
   let schemaInput: StagesSchemaInput<TValue, TFields, TContext> = options.schema;
+  const extensionCodecs = options.extensionCodecs ?? {};
+  const extensionCodec = (namespace: string) => Object.prototype.hasOwnProperty.call(extensionCodecs, namespace)
+    ? extensionCodecs[namespace]
+    : undefined;
+  for (const [namespace, codec] of Object.entries(extensionCodecs)) {
+    if (namespace.length === 0 || !isSafePathSegment(namespace)) {
+      throw new TypeError(`Invalid extension namespace "${namespace}".`);
+    }
+    if (codec === null || typeof codec !== "object"
+      || typeof codec.encode !== "function" || typeof codec.decode !== "function") {
+      throw new TypeError(`Extension namespace "${namespace}" requires encode and decode functions.`);
+    }
+  }
+  const extensionValues = (input: unknown): Readonly<Record<string, unknown>> => {
+    if (input === undefined) return {};
+    if (input === null || typeof input !== "object" || Array.isArray(input)) {
+      throw new TypeError("Extension state must be an object.");
+    }
+    const output: Record<string, unknown> = {};
+    for (const [namespace, extensionValue] of Object.entries(input)) {
+      if (extensionCodec(namespace) === undefined) {
+        throw new TypeError(`Extension namespace "${namespace}" is not registered.`);
+      }
+      output[namespace] = extensionValue;
+    }
+    return output;
+  };
+  let extensions = extensionValues(options.extensions);
+  const serializedExtensions = restored?.meta["extensions"];
+  if (serializedExtensions !== undefined) {
+    const encoded = extensionValues(serializedExtensions);
+    const decoded: Record<string, unknown> = { ...extensions };
+    for (const [namespace, extensionValue] of Object.entries(encoded)) {
+      const codec = extensionCodec(namespace);
+      if (codec === undefined) throw new TypeError(`Extension namespace "${namespace}" is not registered.`);
+      try {
+        decoded[namespace] = codec.decode(extensionValue as JsonValue);
+      } catch (error) {
+        throw new SerializationError(
+          "extension.decode",
+          `Extension namespace "${namespace}" failed to decode: ${error instanceof Error ? error.message : String(error)}`,
+          ["meta", "extensions", namespace],
+        );
+      }
+    }
+    extensions = decoded;
+  }
   let revision = 0;
   let transactionId = 0;
   let destroyed = false;
@@ -599,7 +647,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       touched: [...touched.values()],
       visited: [...visited.values()],
       activeWizards: new Map([...activeWizards].map(([key, state]) => [key, state.stage])),
-      extensions: {},
+      extensions: readonlyValue(extensions),
     };
   }
 
@@ -1191,7 +1239,7 @@ export function stages<TValue, TFields, TContext = unknown>(
 
   function update(input: StagesUpdate<TValue, TFields, TContext>): void {
     if (destroyed) return;
-    const invalidateAllValidation = input.context !== undefined || input.schema !== undefined;
+    const invalidateAllValidation = input.context !== undefined || input.schema !== undefined || input.extensions !== undefined;
     if (input.value !== undefined) {
       if (pendingAcceptance !== undefined) {
         if (!deepEqual(input.value, pendingAcceptance.previousValue)) {
@@ -1203,6 +1251,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       if (publishedEvaluation !== undefined) synchronizeCollectionKeys(publishedEvaluation.nodes, value);
     }
     if (input.context !== undefined) context = input.context;
+    if (input.extensions !== undefined) extensions = extensionValues(input.extensions);
     if (input.schema !== undefined) {
       schemaInput = input.schema;
       expectedSchemaIdentity = undefined;
@@ -1488,6 +1537,21 @@ export function stages<TValue, TFields, TContext = unknown>(
   function serialize(): SerializedStagesState {
     const current = snapshot();
     const evaluatedCurrent = publishedEvaluation ?? evaluated(value);
+    const encodedExtensions: Record<string, JsonValue> = {};
+    for (const [namespace, extensionValue] of Object.entries(extensions)) {
+      const codec = extensionCodec(namespace);
+      if (codec === undefined) throw new TypeError(`Extension namespace "${namespace}" is not registered.`);
+      try {
+        encodedExtensions[namespace] = encodeJson(codec.encode(readonlyValue(extensionValue)), ["meta", "extensions", namespace]);
+      } catch (error) {
+        if (error instanceof SerializationError) throw error;
+        throw new SerializationError(
+          "extension.encode",
+          `Extension namespace "${namespace}" failed to encode: ${error instanceof Error ? error.message : String(error)}`,
+          ["meta", "extensions", namespace],
+        );
+      }
+    }
     return {
       format: "stages",
       formatVersion: 1,
@@ -1500,6 +1564,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         revealedValidation: encodeJson([...revealedValidation.values()]),
         activeWizards: encodeJson([...activeWizards.values()].map((state) => [state.address, state.stage])),
         collectionKeys: encodeJson([...collectionKeys.values()].map((state) => [state.address, state.keys])),
+        extensions: encodedExtensions,
       },
     };
   }

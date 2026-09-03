@@ -1,6 +1,7 @@
 import {
   stages,
   type FieldDefinition,
+  type StagesExtensionCodec,
   type StagesSchema,
   type StagesSchemaFactory,
   type TransformConfig,
@@ -195,16 +196,28 @@ let accepted: Value = {
   nestedWizard: { inner: { note: "" } },
 };
 
+const draftExtension: StagesExtensionCodec = {
+  encode(value) {
+    return typeof value === "string" ? value : "";
+  },
+  decode(value) {
+    return typeof value === "string" ? value : "";
+  },
+};
+
 const controller = stages({
   schema: factory,
   fields,
   value: accepted,
   context: { canApprove: true, showProfile: true },
+  extensionCodecs: { draft: draftExtension },
+  extensions: { draft: "local" },
   onChange(change) {
     accepted = { ...change.value, name: change.value.name.trimStart() };
     controller.update({ value: accepted });
   },
 });
+controller.update({ extensions: { draft: "saved" } });
 
 controller.batch(() => {
   for (let index = 0; index < 100; index += 1) {
@@ -219,6 +232,7 @@ const recreated = stages({
   fields,
   state: serialized,
   context: { canApprove: true, showProfile: true },
+  extensionCodecs: { draft: draftExtension },
 });
 const status: string = controller.getSnapshot().validation.status;
 recreated.destroy();

@@ -169,3 +169,104 @@ test("migration chains reject ambiguity and invalid output versions", () => {
       && /broken migration/.test(error.message),
   );
 });
+
+test("registered extension namespaces drive dynamics and round-trip through codecs", async () => {
+  const extensionCodecs = {
+    draft: {
+      encode: (value) => ({ updatedAt: value.updatedAt.toISOString() }),
+      decode: (value) => ({ updatedAt: new Date(value.updatedAt) }),
+    },
+  };
+  const schema = {
+    id: "extension-state",
+    version: 1,
+    nodes: [{
+      kind: "field",
+      id: "name",
+      type: "text",
+      deriveProps: ({ meta }) => ({ updatedAt: meta.extensions.draft.updatedAt.toISOString() }),
+    }],
+  };
+  const fields = { text: { view: "text", initialValue: "" } };
+  const original = stages({
+    schema,
+    fields,
+    value: { name: "Ada" },
+    extensionCodecs,
+    extensions: { draft: { updatedAt: new Date("2026-01-02T03:04:05.000Z") } },
+  });
+  assert.deepEqual(original.getSnapshot().nodes[0].props, { updatedAt: "2026-01-02T03:04:05.000Z" });
+
+  original.update({ extensions: { draft: { updatedAt: new Date("2026-02-03T04:05:06.000Z") } } });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(original.getSnapshot().nodes[0].props, { updatedAt: "2026-02-03T04:05:06.000Z" });
+  const serialized = original.serialize();
+  assert.deepEqual(serialized.meta.extensions, { draft: { updatedAt: "2026-02-03T04:05:06.000Z" } });
+
+  const recreated = stages({ schema, fields, state: serialized, extensionCodecs });
+  assert.deepEqual(recreated.getSnapshot().nodes[0].props, { updatedAt: "2026-02-03T04:05:06.000Z" });
+});
+
+test("extension persistence rejects unsafe, unregistered, and failing codecs", () => {
+  assert.throws(
+    () => stages({
+      schema: emptySchema,
+      fields: {},
+      value: {},
+      extensionCodecs: { constructor: { encode: (value) => value, decode: (value) => value } },
+    }),
+    /Invalid extension namespace/,
+  );
+  assert.throws(
+    () => stages({ schema: emptySchema, fields: {}, value: {}, extensions: { rogue: true } }),
+    /is not registered/,
+  );
+  assert.throws(
+    () => stages({ schema: emptySchema, fields: {}, value: {}, extensions: { toString: true } }),
+    /is not registered/,
+  );
+
+  const failing = stages({
+    schema: emptySchema,
+    fields: {},
+    value: {},
+    extensionCodecs: {
+      draft: {
+        encode: () => { throw new Error("encode exploded"); },
+        decode: (value) => value,
+      },
+    },
+    extensions: { draft: true },
+  });
+  assert.throws(
+    () => failing.serialize(),
+    (error) => error instanceof SerializationError
+      && error.code === "extension.encode"
+      && /encode exploded/.test(error.message),
+  );
+
+  const state = {
+    format: "stages",
+    formatVersion: 1,
+    schema: { id: "persistence", version: 1 },
+    value: {},
+    baseline: {},
+    meta: { extensions: { draft: true } },
+  };
+  assert.throws(
+    () => stages({
+      schema: emptySchema,
+      fields: {},
+      state,
+      extensionCodecs: {
+        draft: {
+          encode: (value) => value,
+          decode: () => { throw new Error("decode exploded"); },
+        },
+      },
+    }),
+    (error) => error instanceof SerializationError
+      && error.code === "extension.decode"
+      && /decode exploded/.test(error.message),
+  );
+});
