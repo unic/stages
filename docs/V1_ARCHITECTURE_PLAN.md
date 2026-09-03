@@ -59,7 +59,9 @@ validators now run as reusable intrinsic validators with engine-assigned paths
 and independent identities from node-configured validators. Registered
 extension namespaces can now drive dynamic configuration, update independently,
 and round-trip richer metadata through explicit codecs without opening an
-arbitrary persistence channel.
+arbitrary persistence channel. Reusing a stable node address with an
+incompatible kind or field type now emits a transition diagnostic and discards
+all identity-bound interaction and validation state.
 
 ## 1. Outcome
 
@@ -1705,7 +1707,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase | State | Implemented | Remaining |
 | --- | --- | --- | --- |
 | Phase 0 — Contract fixtures and API spike | Implemented | Strict public TypeScript contracts and a compile-tested fixture cover controlled fields, recursive groups/collections/wizards, discriminated collections, custom view tokens, dynamic schemas, transforms, validation, serialization, and batching. | Continue refining types when remaining runtime features are added; freeze the public API only after packed-artifact testing. |
-| Phase 1 — Pure schema and value core | Mostly implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, schema diagnostics, malformed-structure guards, and last-valid-tree recovery are implemented. | Complete explicit schema-diff reporting for every incompatible identity reuse and add broader reducer/property tests. |
+| Phase 1 — Pure schema and value core | Implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, incompatible-identity diagnostics and state removal, malformed-structure guards, and last-valid-tree recovery are implemented. | Broader reducer/property and fuzz coverage remains part of Phase 8 hardening. |
 | Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous owner acceptance, rejected proposals, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, and teardown are implemented. | Add packed-package integration coverage and finalize callback-order documentation. |
 | Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
 | Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
@@ -1727,7 +1729,7 @@ currently an alpha foundation, not a release-ready v1 build.
 
 - `npm run check:v1` performs strict type checking for all four packages and
   builds their ESM declaration/output artifacts.
-- `npm run test:v1` builds the packages and currently runs 63 passing executable
+- `npm run test:v1` builds the packages and currently runs 64 passing executable
   tests across core, DOM, React, and the adapter test kit.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 

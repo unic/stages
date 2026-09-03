@@ -165,6 +165,50 @@ test("conditional nodes retain metadata while structural removals discard it", a
   assert.equal(controller.getSnapshot().nodes[0].state.touched, false);
 });
 
+test("incompatible identity reuse is diagnosed and cannot retain field state", async () => {
+  const validator = { id: "stable", on: "submit", validate: () => [] };
+  const diagnostics = [];
+  const identityFields = {
+    number: fields.number,
+    alternate: { view: "alternate", initialValue: 0 },
+  };
+  const controller = stages({
+    schema: ({ value }) => ({
+      id: "identity-reuse",
+      version: 1,
+      nodes: [{
+        kind: "field",
+        id: "count",
+        type: value.alternate ? "alternate" : "number",
+        validators: [validator],
+      }],
+    }),
+    fields: identityFields,
+    value: { count: 1, alternate: false },
+    onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+  });
+  controller.dispatch({ name: "focus", target: { kind: "field", path: ["count"] } });
+  controller.dispatch({ name: "blur", target: { kind: "field", path: ["count"] } });
+  await tick();
+  assert.equal((await controller.validate({ event: "submit" })).status, "valid");
+  assert.equal(controller.getSnapshot().nodes[0].state.touched, true);
+
+  controller.update({ value: { count: 1, alternate: true } });
+  await tick();
+  const snapshot = controller.getSnapshot();
+  assert.equal(snapshot.nodes[0].type, "alternate");
+  assert.equal(snapshot.nodes[0].state.touched, false);
+  assert.equal(snapshot.validation.status, "unknown");
+  assert.equal(snapshot.diagnostics.at(-1).code, "schema.incompatible-identity");
+  assert.deepEqual(snapshot.diagnostics.at(-1).path, ["count"]);
+  assert.deepEqual(snapshot.diagnostics.at(-1).address, [{ kind: "node", id: "count" }]);
+  assert.equal(diagnostics.filter(({ code }) => code === "schema.incompatible-identity").length, 1);
+
+  controller.update({ value: { count: 1, alternate: true, unrelated: true } });
+  await tick();
+  assert.equal(diagnostics.filter(({ code }) => code === "schema.incompatible-identity").length, 1);
+});
+
 test("external updates make pending validation results stale", async () => {
   let release;
   const delayedSchema = {

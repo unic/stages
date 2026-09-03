@@ -801,6 +801,7 @@ export function stages<TValue, TFields, TContext = unknown>(
 
   function reconcileInteraction(nodes: readonly NormalizedNode<TValue, TFields, TContext>[]): void {
     const nextIdentities = new Map<string, string>([[addressKey([]), "root"]]);
+    const nextIdentityNodes = new Map<string, Readonly<{ path: DataPath; address: NodeAddress }>>();
     const collect = (items: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
       for (const node of items) {
         const key = addressKey(node.address);
@@ -808,10 +809,24 @@ export function stages<TValue, TFields, TContext = unknown>(
           ? `field:${node.config.type}`
           : node.config.kind;
         nextIdentities.set(key, signature);
+        nextIdentityNodes.set(key, { path: node.path, address: node.address });
         collect(node.children);
       }
     };
     collect(nodes);
+
+    for (const [key, nextIdentity] of nextIdentities) {
+      const previousIdentity = knownIdentities.get(key);
+      const node = nextIdentityNodes.get(key);
+      if (previousIdentity !== undefined && previousIdentity !== nextIdentity && node !== undefined) {
+        reportRuntimeDiagnostic(
+          "schema.incompatible-identity",
+          `Node identity changed from "${previousIdentity}" to "${nextIdentity}" at the same address.`,
+          node.path,
+          node.address,
+        );
+      }
+    }
 
     const retainCompatible = (entries: Map<string, NodeAddress>): Map<string, NodeAddress> => {
       const retained = new Map<string, NodeAddress>();
