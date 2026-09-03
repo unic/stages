@@ -86,6 +86,10 @@ notifications, serialization, and recreation against the packed artifacts.
 Seeded property tests now cover 500 recursively generated immutable path
 updates and 4,000 mixed collection commands against an independent mutable
 model, with deterministic seeds and failure coordinates for reproduction.
+Formal performance budgets now gate 1,000-field initialization, 1,000-event
+controlled batches over 500 fields, and 1,000 selector subscriptions. The gate
+enforces schema/resolver work counts and notification fan-out in addition to
+conservative elapsed-time ceilings.
 
 ## 1. Outcome
 
@@ -1776,7 +1780,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. | Add exhaustive tests for every permitted container nesting permutation. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, registered namespaced extension codecs, and packed-artifact recreation are implemented. | Extend the packed release-candidate matrix to migrations and custom codecs. |
 | Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. | Migrate the existing demo applications to v1 and broaden adapter accessibility testing. |
-| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, notification-count performance tests, seeded immutable-path and collection-command properties, tarball allowlist/export checks, offline packed installation, runtime import smoke tests, packed declaration consumption, and packed recreation exist. | Broaden controller/schema fuzzing, add formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
+| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, seeded immutable-path and collection-command properties, formal initialization/batch/selector performance budgets, tarball allowlist/export checks, offline packed installation, runtime import smoke tests, packed declaration consumption, and packed recreation exist. | Broaden controller/schema fuzzing, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
 
 ### Current packages
 
@@ -1801,11 +1805,26 @@ currently an alpha foundation, not a release-ready v1 build.
 - `npm run check:v1` performs strict type checking for all four packages and the
   vanilla and React examples, and builds the packages' ESM declaration/output
   artifacts. It then runs `npm run verify:packages:v1`, which checks all four
-  package tarballs and an isolated offline runtime/type consumer.
+  package tarballs and an isolated offline runtime/type consumer, followed by
+  `npm run performance:v1`.
 - `npm run test:v1` builds the packages and currently runs 71 passing executable
   tests across core, DOM, React 17, and the adapter test kit. The React example's
   own `npm test` adds a passing React 19 Strict Mode lifecycle test.
 - Generated package `dist/` directories are build artifacts and are not tracked.
+
+### Performance budgets
+
+The budget gate fails on either excess structural work or excess elapsed time.
+Timing ceilings are deliberately wider than typical local measurements so the
+strict work-count assertions remain the primary regression signal across CI
+hardware.
+
+| Scenario | Scale | Structural budget | Time budget |
+| --- | --- | --- | --- |
+| Initialization | 1,000 fields | At most 2 schema and 2 resolver passes per field | 750 ms |
+| Controlled batch | 1,000 events over 500 fields | 1 schema pass, 1 resolver pass per field, 1 change callback, 1 notification | 1,500 ms |
+| Selector fan-out | 1,000 field selectors | 1 general notification and exactly 1 changed selector | 1,500 ms |
+| Combined gate | All scenarios | All structural budgets above | 3,000 ms |
 
 ### Work not yet migrated
 
