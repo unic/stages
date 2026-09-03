@@ -62,6 +62,10 @@ and round-trip richer metadata through explicit codecs without opening an
 arbitrary persistence channel. Reusing a stable node address with an
 incompatible kind or field type now emits a transition diagnostic and discards
 all identity-bound interaction and validation state.
+Collection mutation events can now target stable row addresses directly, and
+the React adapter exposes the documented selector-based
+`useStagesCollection()` binding with typed item values and add/remove/move
+commands.
 
 ## 1. Outcome
 
@@ -1711,9 +1715,9 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous owner acceptance, rejected proposals, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, and teardown are implemented. | Add packed-package integration coverage and finalize callback-order documentation. |
 | Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
 | Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
-| Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, and serialized identity are implemented. | Add exhaustive tests for every permitted container nesting permutation and finish higher-level adapter collection/wizard bindings. |
+| Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, and serialized identity are implemented. | Add exhaustive tests for every permitted container nesting permutation and finish higher-level wizard bindings. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, and registered namespaced extension codecs are implemented. | Repeat recreation coverage against packed artifacts during Phase 8 release hardening. |
-| Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, and accessible issue relationships. React lifecycle, snapshot, selector, and field bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add focus/error navigation hooks, richer collection/wizard helpers, production examples, and migrate the demo applications to v1. |
+| Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, and accessible issue relationships. React lifecycle, snapshot, selector, field, and typed collection bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add focus/error navigation hooks, wizard helpers, production examples, and migrate the demo applications to v1. |
 | Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, and notification-count performance tests exist. | Add property/fuzz tests, packed export verification, formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
 
 ### Current packages
@@ -1729,7 +1733,7 @@ currently an alpha foundation, not a release-ready v1 build.
 
 - `npm run check:v1` performs strict type checking for all four packages and
   builds their ESM declaration/output artifacts.
-- `npm run test:v1` builds the packages and currently runs 64 passing executable
+- `npm run test:v1` builds the packages and currently runs 66 passing executable
   tests across core, DOM, React, and the adapter test kit.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 

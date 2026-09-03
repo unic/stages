@@ -7,8 +7,11 @@ import {
   type ReactElement,
 } from "react";
 import type {
+  ContainerSnapshot,
   DataPath,
+  DeepReadonly,
   FieldSnapshot,
+  NodeAddress,
   RenderNodeSnapshot,
   StagesController,
   StagesSnapshot,
@@ -49,6 +52,63 @@ function findField(nodes: readonly RenderNodeSnapshot[], path: DataPath): FieldS
   return undefined;
 }
 
+function findContainer(
+  nodes: readonly RenderNodeSnapshot[],
+  path: DataPath,
+  kind: ContainerSnapshot["kind"],
+): ContainerSnapshot | undefined {
+  for (const node of nodes) {
+    if (node.kind !== "field") {
+      if (node.kind === kind && node.path.length === path.length
+        && node.path.every((segment, index) => segment === path[index])) return node;
+      const nested = findContainer(node.nodes, path, kind);
+      if (nested !== undefined) return nested;
+    }
+  }
+  return undefined;
+}
+
+function valueAtPath(value: unknown, path: DataPath): unknown {
+  let current = value;
+  for (const segment of path) {
+    if (current === null || typeof current !== "object") return undefined;
+    current = (current as Readonly<Record<string | number, unknown>>)[segment];
+  }
+  return current;
+}
+
+type ValueAtPath<TValue, TPath extends DataPath> = TPath extends readonly []
+  ? TValue
+  : TPath extends readonly [infer THead, ...infer TTail]
+    ? THead extends keyof TValue
+      ? TTail extends DataPath
+        ? ValueAtPath<TValue[THead], TTail>
+        : unknown
+      : unknown
+    : unknown;
+
+type CollectionItemAtPath<TValue, TPath extends DataPath> =
+  ValueAtPath<TValue, TPath> extends readonly (infer TItem)[] ? TItem : unknown;
+
+export interface ReactCollectionItemBinding<TItem> {
+  readonly key: string;
+  readonly index: number;
+  readonly value: DeepReadonly<TItem>;
+  readonly address: NodeAddress;
+  readonly canRemove: boolean;
+  readonly canMovePrevious: boolean;
+  readonly canMoveNext: boolean;
+  fieldPath(field: Extract<keyof TItem, string | number>): DataPath;
+  remove(): void;
+  moveTo(index: number): void;
+}
+
+export interface ReactCollectionBinding<TItem> {
+  readonly items: readonly ReactCollectionItemBinding<TItem>[];
+  readonly canAdd: boolean;
+  add(value: TItem): void;
+}
+
 export function useStagesController<TValue, TFields, TContext>(
   controller: StagesController<TValue, TFields, TContext>,
 ): StagesSnapshot<TValue> {
@@ -71,7 +131,7 @@ export function useStages<TValue, TFields, TContext>(
 
   useEffect(() => {
     controller.update(input);
-  }, [controller, input.value, input.context, input.schema]);
+  }, [controller, input.value, input.context, input.schema, input.extensions]);
   useEffect(() => () => controller.destroy(), [controller]);
   return { controller, snapshot };
 }
@@ -89,6 +149,59 @@ export function useStagesField<TValue, TFields, TContext>(
   }, [controller, pathKey]);
   if (field === undefined) throw new Error(`Stages field does not exist at ${JSON.stringify(path)}.`);
   return field;
+}
+
+export function useStagesCollection<TValue, TFields, TContext, TPath extends DataPath>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: TPath,
+): ReactCollectionBinding<CollectionItemAtPath<TValue, TPath>> {
+  type TItem = CollectionItemAtPath<TValue, TPath>;
+  const select = (snapshot: StagesSnapshot<TValue>): ContainerSnapshot | undefined =>
+    findContainer(snapshot.nodes, path, "collection");
+  const [collection, setCollection] = useState(() => select(controller.getSnapshot()));
+  const pathKey = JSON.stringify(path);
+  useEffect(() => {
+    setCollection(select(controller.getSnapshot()));
+    return controller.subscribeSelector(select, (selection) => setCollection(selection));
+  }, [controller, pathKey]);
+  if (collection === undefined) throw new Error(`Stages collection does not exist at ${JSON.stringify(path)}.`);
+
+  const snapshot = controller.getSnapshot();
+  const rows = collection.nodes.filter((node): node is ContainerSnapshot => node.kind === "row");
+  return {
+    canAdd: collection.canAdd === true,
+    add(value) {
+      controller.dispatch({
+        name: "collection:add",
+        target: { kind: "node", address: collection.address },
+        payload: { value },
+        source: "adapter",
+      });
+    },
+    items: rows.map((row, index) => ({
+      key: row.id,
+      index,
+      value: valueAtPath(snapshot.value, row.path) as DeepReadonly<TItem>,
+      address: row.address,
+      canRemove: collection.canRemove === true,
+      canMovePrevious: !collection.state.disabled && index > 0,
+      canMoveNext: !collection.state.disabled && index < rows.length - 1,
+      fieldPath(field) {
+        return [...row.path, field];
+      },
+      remove() {
+        controller.dispatch({ name: "collection:remove", target: { kind: "node", address: row.address }, source: "adapter" });
+      },
+      moveTo(nextIndex) {
+        controller.dispatch({
+          name: "collection:move",
+          target: { kind: "node", address: row.address },
+          payload: { to: nextIndex },
+          source: "adapter",
+        });
+      },
+    })),
+  };
 }
 
 export interface StagesFieldProps<TValue, TFields, TContext> {

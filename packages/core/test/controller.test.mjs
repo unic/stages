@@ -691,6 +691,34 @@ test("row key moves remain proposals until asynchronous controlled acceptance", 
   assert.deepEqual(controller.getSnapshot().nodes[0].nodes.map(({ id }) => id), [initialKeys[1], initialKeys[0]]);
 });
 
+test("collection commands can target a stable row address after reordering", async () => {
+  const rowSchema = {
+    id: "row-targets",
+    version: 1,
+    nodes: [{ kind: "collection", id: "items", itemKey: (item) => item.id, nodes: [] }],
+  };
+  let controller;
+  controller = stages({
+    schema: rowSchema,
+    fields: {},
+    value: { items: [{ id: "a" }, { id: "b" }, { id: "c" }] },
+    onChange: ({ value }) => controller.update({ value }),
+  });
+  const firstAddress = controller.getSnapshot().nodes[0].nodes[0].address;
+
+  controller.dispatch({
+    name: "collection:move",
+    target: { kind: "node", address: firstAddress },
+    payload: { to: 2 },
+  });
+  await tick();
+  assert.deepEqual(controller.getSnapshot().value.items.map(({ id }) => id), ["b", "c", "a"]);
+
+  controller.dispatch({ name: "collection:remove", target: { kind: "node", address: firstAddress } });
+  await tick();
+  assert.deepEqual(controller.getSnapshot().value.items.map(({ id }) => id), ["b", "c"]);
+});
+
 test("active wizard stages reconcile when dynamic stages become dormant", async () => {
   const schema = {
     id: "conditional-stages",

@@ -264,6 +264,7 @@ function parseCollectionCommand<TValue, TFields, TContext>(
   node: NormalizedNode<TValue, TFields, TContext>,
   event: StagesEvent,
   fields: TFields,
+  rowIndex?: number,
 ): ParsedCollectionCommand {
   if (node.config.kind !== "collection") return { code: "event.target-kind", message: "Collection event requires a collection target." };
   const payload = eventRecord(event.payload) ?? {};
@@ -298,25 +299,28 @@ function parseCollectionCommand<TValue, TFields, TContext>(
   }
 
   if (event.name === "collection:remove") {
-    return typeof payload["index"] === "number"
-      ? { command: { name: event.name, index: payload["index"] } }
+    const index = payload["index"] ?? rowIndex;
+    return typeof index === "number"
+      ? { command: { name: event.name, index } }
       : { code: "collection.payload", message: "Remove requires a numeric index." };
   }
   if (event.name === "collection:replace") {
-    return typeof payload["index"] === "number" && Object.prototype.hasOwnProperty.call(payload, "value")
-      ? { command: { name: event.name, index: payload["index"], item: payload["value"] } }
+    const index = payload["index"] ?? rowIndex;
+    return typeof index === "number" && Object.prototype.hasOwnProperty.call(payload, "value")
+      ? { command: { name: event.name, index, item: payload["value"] } }
       : { code: "collection.payload", message: "Replace requires an index and value." };
   }
   if (event.name === "collection:duplicate") {
-    const index = payload["index"];
+    const index = payload["index"] ?? rowIndex;
     const toIndex = payload["toIndex"];
     return typeof index === "number" && (toIndex === undefined || typeof toIndex === "number")
       ? { command: { name: event.name, index, ...(toIndex === undefined ? {} : { toIndex }) } }
       : { code: "collection.payload", message: "Duplicate requires numeric indexes." };
   }
   if (event.name === "collection:move") {
-    return typeof payload["from"] === "number" && typeof payload["to"] === "number"
-      ? { command: { name: event.name, from: payload["from"], to: payload["to"] } }
+    const from = payload["from"] ?? rowIndex;
+    return typeof from === "number" && typeof payload["to"] === "number"
+      ? { command: { name: event.name, from, to: payload["to"] } }
       : { code: "collection.payload", message: "Move requires numeric from and to indexes." };
   }
   if (event.name === "collection:sort") {
@@ -399,8 +403,8 @@ function mapSnapshotNode<TValue, TFields, TContext>(
     validation: validationByAddress.get(key) ?? emptyValidation,
     ...(node.config.kind === "collection" ? {
       size: Array.isArray(getAtPath(value, node.path)) ? (getAtPath(value, node.path) as readonly unknown[]).length : 0,
-      canAdd: node.config.max === undefined || node.branches.length < node.config.max,
-      canRemove: node.config.min === undefined || node.branches.length > node.config.min,
+      canAdd: !node.disabled && (node.config.max === undefined || node.branches.length < node.config.max),
+      canRemove: !node.disabled && (node.config.min === undefined || node.branches.length > node.config.min),
     } : {}),
     ...(node.config.kind === "wizard" ? (() => {
       const visibleStages = node.branches.filter((branch) => branch.visible);
@@ -1306,11 +1310,22 @@ export function stages<TValue, TFields, TContext = unknown>(
       }
     };
     collect(result.nodes);
-    const target = event.target.kind === "field"
+    const addressedNode = event.target.kind === "field"
       ? allNodes.find((node) => node.config.kind === "field" && pathsEqual(node.path, event.target.kind === "field" ? event.target.path : []))
       : event.target.kind === "node"
         ? allNodes.find((node) => addressKey(node.address) === addressKey(event.target.kind === "node" ? event.target.address : []))
         : undefined;
+    const eventTargetAddress = event.target.kind === "node" ? event.target.address : undefined;
+    const rowTarget = addressedNode === undefined && eventTargetAddress !== undefined && event.name.startsWith("collection:")
+      ? allNodes
+        .filter((node) => node.config.kind === "collection")
+        .map((node) => ({
+          node,
+          rowIndex: node.branches.findIndex((branch) => addressKey(branch.address) === addressKey(eventTargetAddress)),
+        }))
+        .find(({ rowIndex }) => rowIndex >= 0)
+      : undefined;
+    const target = addressedNode ?? rowTarget?.node;
     let commandRejected = false;
     const isReset = event.name === "reset" && event.target.kind === "form";
 
@@ -1375,7 +1390,7 @@ export function stages<TValue, TFields, TContext = unknown>(
           commandRejected = true;
           reportRuntimeDiagnostic("collection.value", "Collection commands require an array value.", target.path, target.address);
         } else {
-          const parsed = parseCollectionCommand(target, event, options.fields);
+          const parsed = parseCollectionCommand(target, event, options.fields, rowTarget?.rowIndex);
           if ("command" in parsed) {
             const commandResult = reduceCollectionCommand(current, parsed.command, {
               ...(target.config.min === undefined ? {} : { min: target.config.min }),
