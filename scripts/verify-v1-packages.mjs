@@ -48,11 +48,12 @@ try {
 
     const files = record.files.map(({ path }) => path);
     assert(files.includes("package.json"), `${sourceManifest.name} is missing package.json.`);
+    assert(files.includes("README.md"), `${sourceManifest.name} is missing README.md.`);
     assert(files.includes("dist/index.js"), `${sourceManifest.name} is missing its ESM entry.`);
     assert(files.includes("dist/index.d.ts"), `${sourceManifest.name} is missing its declaration entry.`);
     assert(
-      files.every((path) => path === "package.json" || path.startsWith("dist/")),
-      `${sourceManifest.name} contains files outside package.json and dist/.`,
+      files.every((path) => path === "package.json" || path === "README.md" || path.startsWith("dist/")),
+      `${sourceManifest.name} contains files outside package.json, README.md, and dist/.`,
     );
     assert.equal(sourceManifest.type, "module");
     assert.equal(sourceManifest.sideEffects, false);

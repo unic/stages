@@ -80,6 +80,52 @@ test("synchronous acceptance and validation are deterministic", async () => {
   });
 });
 
+test("controlled callbacks publish in documented change, general, selector order", async () => {
+  const synchronousOrder = [];
+  let synchronous;
+  synchronous = stages({
+    schema,
+    fields,
+    value: { count: 0 },
+    onChange: ({ value }) => {
+      synchronousOrder.push(`change:${value.count}`);
+      synchronous.update({ value });
+    },
+  });
+  synchronous.subscribe(() => synchronousOrder.push(`general:${synchronous.getSnapshot().value.count}`));
+  synchronous.subscribeSelector(
+    (snapshot) => snapshot.nodes[0],
+    (field) => synchronousOrder.push(`selector:${field.value}`),
+  );
+  synchronous.dispatch({ name: "input", target: { kind: "field", path: ["count"] }, payload: 1 });
+  await tick();
+  assert.deepEqual(synchronousOrder, ["change:1", "general:1", "selector:1"]);
+
+  const delayedOrder = [];
+  const proposals = [];
+  const delayed = stages({
+    schema,
+    fields,
+    value: { count: 0 },
+    onChange: (change) => {
+      proposals.push(change.value);
+      delayedOrder.push(`change:${change.value.count}`);
+    },
+  });
+  delayed.subscribe(() => delayedOrder.push(`general:${delayed.getSnapshot().value.count}`));
+  delayed.subscribeSelector(
+    (snapshot) => snapshot.nodes[0],
+    (field) => delayedOrder.push(`selector:${field.value}`),
+  );
+  delayed.dispatch({ name: "input", target: { kind: "field", path: ["count"] }, payload: 2 });
+  await tick();
+  assert.deepEqual(delayedOrder, ["change:2", "general:0"]);
+
+  delayed.update({ value: proposals[0] });
+  await tick();
+  assert.deepEqual(delayedOrder, ["change:2", "general:0", "general:2", "selector:2"]);
+});
+
 test("form reset proposes the baseline with reset source and clears interaction metadata", async () => {
   const changes = [];
   let controller;
