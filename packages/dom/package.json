@@ -1,0 +1,17 @@
+{
+  "name": "@stages/dom",
+  "version": "1.0.0-alpha.0",
+  "description": "Dependency-free reference DOM adapter for Stages",
+  "type": "module",
+  "sideEffects": false,
+  "dependencies": {
+    "@stages/core": "1.0.0-alpha.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"]
+}

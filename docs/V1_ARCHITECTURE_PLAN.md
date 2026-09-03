@@ -29,6 +29,11 @@ The persistence boundary now validates the versioned envelope at runtime,
 encodes JSON with precise error codes and paths, supports explicit value
 codecs for richer domain types, applies ordered schema migrations to value and
 baseline, and rejects ambiguous, cyclic, malformed, or failing migrations.
+The adapter layer now includes a dependency-free DOM reference renderer,
+native text/number/checkbox field definitions, accessible issue wiring, React
+lifecycle and selector-bound field helpers, and a reusable adapter contract
+harness. Executable Vue-style and Angular-style proofs consume the same opaque
+views, snapshots, subscriptions, and events without core changes.
 
 ## 1. Outcome
 
