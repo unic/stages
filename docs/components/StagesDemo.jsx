@@ -89,7 +89,7 @@ function ControlledDemo() {
     <StagesField controller={controller} path={["name"]} />
     <StagesField controller={controller} path={["slug"]} />
     <StagesField controller={controller} path={["plan"]} />
-    {value.plan === "business" && <StagesField controller={controller} path={["business", "company"]} />}
+    {snapshot.value.plan === "business" && <StagesField controller={controller} path={["business", "company"]} />}
     <StagesField controller={controller} path={["newsletter"]} />
     <button onClick={() => controller.dispatch(formEvent("submit"))}>Validate form</button>
   </Frame>;
