@@ -75,6 +75,10 @@ A production-style vanilla wizard now exercises the public core and DOM
 packages with controlled updates, scoped validation, accessible error focus,
 navigation, and serialization; its strict typecheck runs as part of
 `npm run check:v1`.
+A production-style React wizard exercises controlled `useStages()` lifecycle,
+typed custom fields, stable collection-row commands, wizard bindings, and
+application-owned error focus against React 19. Controller teardown is deferred
+across React Strict Mode effect replay and still completes after a real unmount.
 
 ## 1. Outcome
 
@@ -1764,7 +1768,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. | Add exhaustive tests for every permitted container nesting permutation. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, and registered namespaced extension codecs are implemented. | Repeat recreation coverage against packed artifacts during Phase 8 release hardening. |
-| Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. A production-style vanilla wizard exercises the public packages and is continuously typechecked. | Add a production React example and migrate the demo applications to v1. |
+| Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. | Migrate the existing demo applications to v1 and broaden adapter accessibility testing. |
 | Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, and notification-count performance tests exist. | Add property/fuzz tests, packed export verification, formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
 
 ### Current packages
@@ -1781,13 +1785,18 @@ currently an alpha foundation, not a release-ready v1 build.
 - `examples/vanilla`: controlled DOM wizard with staged validation, accessible
   first-error focus, navigation, serialization output, and a verified Vite
   production build.
+- `examples/react`: React 19 workspace wizard with typed custom fields, stable
+  collection rows, staged validation, Strict Mode-safe lifecycle, and a
+  verified Vite production build.
 
 ### Verification baseline
 
 - `npm run check:v1` performs strict type checking for all four packages and the
-  vanilla example, and builds the packages' ESM declaration/output artifacts.
+  vanilla and React examples, and builds the packages' ESM declaration/output
+  artifacts.
 - `npm run test:v1` builds the packages and currently runs 69 passing executable
-  tests across core, DOM, React, and the adapter test kit.
+  tests across core, DOM, React 17, and the adapter test kit. The React example's
+  own `npm test` adds a passing React 19 Strict Mode lifecycle test.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 
 ### Work not yet migrated

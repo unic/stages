@@ -29,7 +29,7 @@
     "start": "react-scripts start",
     "build": "microbundle --jsx React.createElement --jsxFragment React.Fragment --jsxImportSource react --define process.env.NODE_ENV=production --generateTypes",
     "build:v1": "tsc -p packages/core/tsconfig.build.json && tsc -p packages/dom/tsconfig.build.json && tsc -p packages/react/tsconfig.build.json && tsc -p packages/test-kit/tsconfig.build.json",
-    "check:v1": "tsc -p packages/core/tsconfig.json --noEmit && npm run build:v1 && tsc -p packages/dom/tsconfig.json --noEmit && tsc -p packages/react/tsconfig.json --noEmit && tsc -p packages/test-kit/tsconfig.json --noEmit && tsc -p examples/vanilla/tsconfig.json --noEmit",
+    "check:v1": "tsc -p packages/core/tsconfig.json --noEmit && npm run build:v1 && tsc -p packages/dom/tsconfig.json --noEmit && tsc -p packages/react/tsconfig.json --noEmit && tsc -p packages/test-kit/tsconfig.json --noEmit && tsc -p examples/vanilla/tsconfig.json --noEmit && tsc -p examples/react/tsconfig.json --noEmit",
     "test:v1": "npm run build:v1 && node --test packages/core/test/*.test.mjs packages/dom/test/*.test.mjs packages/react/test/*.test.mjs packages/test-kit/test/*.test.mjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

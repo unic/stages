@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "preserveSymlinks": true,
+    "paths": {
+      "@stages/core": ["node_modules/@stages/core/dist/index.d.ts"],
+      "@stages/react": ["node_modules/@stages/react/dist/index.d.ts"]
+    }
+  }
+}

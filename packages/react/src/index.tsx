@@ -146,6 +146,7 @@ export function useStages<TValue, TFields, TContext>(
   input: StagesUpdate<TValue, TFields, TContext>,
 ): UseStagesResult<TValue, TFields, TContext> {
   const controllerRef = useRef<StagesController<TValue, TFields, TContext> | null>(null);
+  const lifecycleRef = useRef(0);
   if (controllerRef.current === null) controllerRef.current = factory();
   const controller = controllerRef.current;
   const snapshot = useStagesController(controller);
@@ -153,7 +154,15 @@ export function useStages<TValue, TFields, TContext>(
   useEffect(() => {
     controller.update(input);
   }, [controller, input.value, input.context, input.schema, input.extensions]);
-  useEffect(() => () => controller.destroy(), [controller]);
+  useEffect(() => {
+    const lifecycle = lifecycleRef.current + 1;
+    lifecycleRef.current = lifecycle;
+    return () => {
+      queueMicrotask(() => {
+        if (lifecycleRef.current === lifecycle) controller.destroy();
+      });
+    };
+  }, [controller]);
   return { controller, snapshot };
 }
 
