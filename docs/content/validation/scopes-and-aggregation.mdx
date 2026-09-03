@@ -1,0 +1,150 @@
+---
+title: Scopes and aggregation
+description: Validate form, data-path, node-address, row, and wizard-stage scopes and interpret aggregate status.
+---
+
+# Scopes and aggregation
+
+Validation scope selects validators by the path/address of the node that owns
+them. The resulting issues may point anywhere, so owner scope and issue path
+are related but distinct concepts.
+
+**For:** applications validating sections, rows, and wizard stages independently.  
+**Prerequisites:** [Paths and addresses](/core-concepts/paths-and-addresses)
+and [Validation overview](/validation/overview).
+
+## Form, path, and address calls
+
+```ts
+export async function validateSignupScopes(
+  controller: StagesController<SignupValue, typeof fields, SignupContext>,
+  rowAddress: NodeAddress,
+): Promise<readonly ValidationSnapshot[]> {
+  const form = await controller.validate({ event: "submit" });
+  const email = await controller.validate({
+    scope: { path: ["email"] },
+    event: "submit",
+    reveal: true,
+  });
+  const member = await controller.validate({
+    scope: { address: rowAddress },
+    event: "submit",
+  });
+  return [form, email, member];
+}
+```
+
+Omitted scope and `"form"` both include every applicable validator. Path scope
+includes validators whose owner path starts with the supplied prefix. Address
+scope includes validators whose owner address starts with the supplied
+structural prefix.
+
+Use a path for fixed data subtrees. Use an address for a collection row or
+other identity that must survive accepted reorder. `[]` as path/address is
+root/form scope.
+
+## Owner scope versus issue path
+
+A root validator is owned at `[]`, even if it returns an issue at
+`["confirmation"]`. A validation call scoped to `["confirmation"]` does not
+run that root validator; form/root scope does. Once present in the form
+aggregate, the issue still appears in the confirmation field's
+`state.issues` because field presentation filters by issue path.
+
+Put a validator on the narrowest owner scope that should control execution.
+Use its returned issue paths to control presentation. Do not assume scoping by
+an issue destination pulls ancestor/root validators into the run.
+
+## Container, row, and stage snapshots
+
+Core computes a `validation` aggregate for each container address:
+
+- group: validators on/under that group;
+- collection: collection and current row descendants;
+- row: validators below that stable row address;
+- wizard: wizard and every visible stage descendant;
+- stage: validators below that stage address.
+
+This supports stage gating and row-level summaries without another controller.
+Wizard `validateCurrent` reads the current stage aggregate; it does not run
+validation itself.
+
+Hidden nodes and validators with false applicability do not contribute.
+Disabled validators contribute only with `includeDisabled: true`. A scope that
+matches no applicable validators aggregates to `valid`; `validate()` does not
+report a missing-target diagnostic, so validate known paths/addresses at
+application boundaries when that distinction matters.
+
+## Status precedence
+
+Aggregation traverses current validators and collects their records:
+
+1. any error issue → `invalid`;
+2. otherwise any pending validator → `pending`;
+3. otherwise any validator without a current record → `unknown`;
+4. otherwise → `valid`.
+
+The counters are not erased by higher-precedence status. An invalid scope can
+also report `pendingCount: 2` and `unknownCount: 1`. Warning issues do not
+change valid status.
+
+| Snapshot field | Exact interpretation |
+| --- | --- |
+| `status` | Highest-precedence current aggregate state. |
+| `isValid` | Exactly `status === "valid"`. |
+| `issues` | Current issue arrays in validator traversal/declaration order. |
+| `visibleIssues` | Issues from revealed records only. |
+| `pendingCount` | Applicable current async validator records still running. |
+| `unknownCount` | Applicable validators without a current valid record. |
+
+An issue-free `pending` or `unknown` scope is not valid. A warning-only scope
+can be valid with a non-empty `issues` array.
+
+## Explicit result versus form snapshot
+
+`await controller.validate({ scope })` returns the aggregate for that requested
+scope. The controller's root `getSnapshot().validation` remains the whole-form
+aggregate. After validating one stage, the result may be valid while the form
+snapshot stays unknown because another stage's validators have never run.
+
+Async completion publishes revisions/snapshots. Subscribe to container/field
+branches or selected validation fields when UI must update narrowly.
+
+## Real-world row and stage flow
+
+For a collection row, save its stable row address from the snapshot and:
+
+```ts
+const rowResult = await controller.validate({
+  scope: { address: row.address },
+  event: "submit",
+  reveal: true,
+});
+```
+
+For a wizard, append its stage node segment to the wizard address. Validate and
+await that stage before dispatching `wizard:next`. If a row/stage disappears
+during async work, reconciliation cancels its validator records and stale
+completion cannot republish them.
+
+## What to test
+
+- Compare whole-form and scoped results after validating only one branch.
+- Verify root-owned issues render at their issue paths but do not run in a
+  descendant-only scope.
+- Move a row, reuse its address, and validate the same logical record.
+- Cover no-validator, warning-only, unknown, pending, and error precedence.
+- Assert counts remain informative under invalid status.
+- Toggle visibility/disabled applicability and inspect container aggregates.
+
+Next: declare cross-field invalidation in [Dependencies](/validation/dependencies),
+or apply stage scope in
+[Wizard validation and guards](/structures/wizard-validation-and-guards).
+
+## Evidence
+
+Scope matching and aggregate derivation come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+The checked calls are in `docs/examples/validation.ts`. Validation, wizard,
+nesting, and controller tests cover form/path/address scopes, stage status,
+error precedence, pending/unknown counts, warnings, and row identity.

@@ -172,9 +172,12 @@ validate(options?: ValidateOptions): Promise<ValidationSnapshot>;
 ```
 
 Defaults: form scope, `event: "validate"`, and `reveal: false`. The result
-describes the requested scope. Validation failures become deterministic engine
-issues; superseded work is cancelled when possible and stale results are
-ignored.
+describes the requested scope. An explicit call force-runs every applicable
+validator in scope regardless of its configured `on`; `event` still supplies
+callback context and can match `revealOn`. Validation failures become
+deterministic engine issues; superseded work is cancelled when possible and
+stale results are ignored. See the [validation overview](/validation/overview)
+and [validation type reference](/reference/core/validation-types).
 
 ### `serialize()`
 
@@ -216,7 +219,7 @@ proposal, the first publication retains the canonical value; a later accepted
 `update()` creates a second publication.
 
 Next: [Controlled-value recipes](/core-concepts/controlled-values),
-[Validation](/validation), or [Persistence](/persistence).
+[Validation](/validation/overview), or [Persistence](/persistence).
 
 ## Evidence
 

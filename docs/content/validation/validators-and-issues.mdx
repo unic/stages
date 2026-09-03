@@ -1,0 +1,190 @@
+---
+title: Validators and issues
+description: Choose intrinsic, node, or root validators and produce stable well-formed issues.
+---
+
+# Validators and issues
+
+Use intrinsic validators for reusable field-type invariants and configured
+validators for form-aware policy. Both contribute the same validated issue
+shape and aggregate in deterministic declaration/tree order.
+
+**For:** field-library authors and schema authors defining validation rules.  
+**Prerequisites:** [Validation overview](/validation/overview) and the
+[field registry](/core-concepts/field-registry).
+
+## All three kinds
+
+```ts
+export const requiredText = {
+  id: "required",
+  validate(value, props): readonly FieldValidationIssue[] {
+    return value.trim() === ""
+      ? [{ id: "required", code: "required", severity: "error", message: props.requiredMessage }]
+      : [];
+  },
+} satisfies FieldValidator<string, TextProps>;
+
+export const text = {
+  view: "text",
+  initialValue: "",
+  reduce: ({ event }) => event.name === "input" && typeof event.payload === "string"
+    ? { value: event.payload }
+    : undefined,
+  validators: [requiredText],
+} satisfies FieldDefinition<string, TextProps, "text">;
+
+export const fields = { text } as const;
+
+export const signupSchema = {
+  id: "signup",
+  version: 1,
+  validators: [{
+    id: "passwords.match",
+    on: "submit",
+    validate: ({ value }) => value.password === value.confirmation
+      ? []
+      : [{
+          id: "passwords.match",
+          code: "passwords-differ",
+          path: ["confirmation"],
+          severity: "error",
+        }],
+  }],
+  nodes: [{
+    kind: "field",
+    id: "email",
+    type: "text",
+    props: { label: "Email", requiredMessage: "Enter an email address" },
+    validators: [{
+      id: "email.format",
+      on: ["input", "submit"],
+      validate: ({ fieldValue, path }) => typeof fieldValue === "string" && fieldValue.includes("@")
+        ? []
+        : [{ id: "email.format", code: "email", path, severity: "error" }],
+    }],
+  }],
+} as const satisfies StagesSchema<SignupValue, typeof fields, SignupContext>;
+```
+
+The registry rule runs for every `text` field and receives resolved props.
+Core supplies its current field path. The configured field rule receives full
+validation context. The root rule owns path/address `[]` but may deliberately
+return an issue at `["confirmation"]`.
+
+## Intrinsic `FieldValidator`
+
+```ts
+interface FieldValidator<TValue, TProps> {
+  readonly id: string;
+  readonly validate: (
+    value: DeepReadonly<TValue>,
+    props: DeepReadonly<TProps>,
+  ) => readonly FieldValidationIssue[];
+}
+```
+
+Intrinsic rules are synchronous. They have no `on`, `revealOn`, dependencies,
+context, condition, disabled opt-in, or cancellation signal. Core runs them at
+creation, on relevant successful field events, and during explicit validation.
+Disabled/hidden fields exclude them. Their issue shape omits `path`; core adds
+the current field path.
+
+## Configured `ValidatorConfig`
+
+Attach these to schema root or any full schema node. Every configuration has:
+
+- stable non-empty `id`, unique within that validator array;
+- non-empty `on` string/list;
+- optional non-empty `revealOn` string/list;
+- optional Boolean `includeDisabled`;
+- optional synchronous `when(context)`;
+- optional absolute `dependencies` data paths; and
+- sync/async `validate(context)` returning an issue array.
+
+Root validators have owner path/address `[]`. Group, collection, wizard, and
+field validators own that node's current path/address. A stage is a structural
+branch rather than a full `NodeBehavior`, so attach validation below it or to
+the wizard/root.
+
+Malformed/duplicate config IDs, empty event policies, unsafe dependency paths,
+or non-functions report `schema.invalid-validator`. That behavior entry is
+discarded; an invalid node behavior can prevent the node from normalizing, and
+invalid root behavior produces empty root validator/transform arrays.
+
+## `ValidationContext`
+
+Configured callbacks receive:
+
+| Member | Meaning |
+| --- | --- |
+| `value` | Deeply readonly root draft/canonical value for this run. |
+| `context` | Deeply readonly current application context. |
+| `meta` | Revision, dirty state, touched/visited addresses, active wizards, and registered extensions. |
+| `path` / `address` | Validator owner's current data location and stable identity. |
+| `fieldValue` | Value at owner path; for root, the root value. |
+| `parentValue` | Value one path segment above; for root, also the root value. |
+| `event` | Trigger string such as `init`, `input`, `submit`, `validate`, or internal applicability check `status`. |
+| `fieldState` | Owner disabled, focused, touched, and visited flags. The name applies to container/root owners too. |
+| `signal` | Cooperative cancellation signal for this validator run. |
+
+Callbacks receive compile-time readonly views, not runtime-frozen clones. Keep
+them deterministic and do not mutate owner data.
+
+## `ValidationIssue`
+
+Each returned issue requires non-empty `id` and `code`, a safe `path`, and
+`severity: "error" | "warning"`. `message` must be a string when present;
+`meta` must be a non-null non-array object.
+
+`id` identifies a particular issue instance and should be stable across runs.
+`code` identifies the rule for localization/analytics. For repeated rows,
+include a stable domain key in the issue ID rather than only an array index.
+The issue path is independent from the validator owner's path and may point to
+a related field, row, group, or root.
+
+Errors make an aggregate invalid. Warnings remain in `issues` and can be
+revealed without invalidating. Core preserves validator traversal order and
+each validator's returned array order even when async validators finish out of
+order.
+
+Malformed sync/async results become deterministic validation failure issues;
+they are not silently discarded. Extra object fields are not part of the
+public contract and should not be relied on.
+
+## Identity and cache behavior
+
+Configured records are keyed by owner address plus config ID; intrinsic rules
+use a separate namespace, so equal IDs across those categories do not collide.
+The validator object reference is also part of cache currency. Reuse stable
+validator objects—especially from dynamic schema factories—when cached results
+should survive reevaluation.
+
+Issue IDs are not used as validator cache keys and runtime does not enforce
+their uniqueness. Treat stable uniqueness within rendered issue collections as
+an application invariant for UI keys and announcements.
+
+## What to test
+
+- Reuse one intrinsic validator across fields with different resolved props.
+- Assert root/node/intrinsic issue paths and deterministic order.
+- Cover error and warning aggregation.
+- Feed malformed results through a JavaScript boundary and assert fallback
+  issues.
+- Reevaluate a dynamic schema with stable versus recreated validator objects.
+- Verify messages/metadata do not expose secrets.
+
+Next: configure [Execution and reveal](/validation/execution-and-reveal), or
+look up every signature in the
+[validation type reference](/reference/core/validation-types).
+
+## Evidence
+
+Types and schema configuration checks come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+Traversal, issue validation, and caching come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+The checked example is `docs/examples/validation.ts`; type-contract, schema,
+and validation tests cover inference, all validator kinds, malformed inputs,
+paths, namespaces, and ordering.

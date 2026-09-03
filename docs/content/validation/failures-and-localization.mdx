@@ -1,0 +1,148 @@
+---
+title: Validation failures and localization
+description: Convert validator failures into deterministic safe issues and localize domain feedback.
+---
+
+# Validation failures and localization
+
+Domain invalidity is a normal validator result. A thrown condition, thrown or
+rejected validator, or malformed result is an engine failure and becomes a
+deterministic error issue so validation cannot accidentally pass.
+
+**For:** applications localizing validation and integrating unreliable rule services.  
+**Prerequisites:** [Validators and issues](/validation/validators-and-issues)
+and [async validation](/validation/async-and-cancellation).
+
+## Localize ordinary and engine issues
+
+```ts
+export function localizedFailureIssues(
+  messages: FailureMessages,
+): ValidationFailureIssueFactory {
+  return (failure: ValidationFailureContext) => ({
+    code: failure.kind === "when" ? "validation-condition-failed" : "validation-service-failed",
+    message: messages.validationFailed,
+    meta: { validatorId: failure.validatorId, event: failure.event },
+  });
+}
+
+export const localizedEmailPolicy = {
+  ...emailPolicy,
+  validate: ({ fieldValue, path, context }) => String(fieldValue).includes("@")
+    ? []
+    : [{
+        id: "email.format",
+        code: "email",
+        path,
+        severity: "error",
+        message: context.messages.invalidEmail,
+      }],
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+```
+
+Ordinary rules read the current readonly context and return localized messages
+with stable codes. `validationFailureIssue` is a controller-creation option
+for unexpected failures; this checked factory closes over the selected message
+catalog.
+
+## Deterministic fallback issues
+
+| Failure kind | Engine-owned ID | Default code |
+| --- | --- | --- |
+| `when` throws | `${validatorId}.when-failed` | `validator-when-failed` |
+| `validate` throws/rejects or returns malformed output | `${validatorId}.rejected` | `validator-rejected` |
+
+Both use the validator owner's path, severity `error`, and the thrown value's
+message/string. Sync and async validation output pass the same shape checks, so
+malformed results cannot weaken form validity.
+
+Malformed means the result is not an array, an issue is not an object, required
+strings are empty/missing, severity is not error/warning, path is absent or
+unsafe, message is not a string, or metadata is not an object. A bad issue in
+an array rejects that validator's whole returned result and produces one
+fallback failure issue.
+
+## `ValidationFailureContext`
+
+The customization callback receives:
+
+| Member | Meaning |
+| --- | --- |
+| `kind` | `"when"` or `"validate"`. |
+| `validatorId` | Config/intrinsic validator ID that failed. |
+| `event` | Current trigger string. |
+| `path` / `address` | Validator owner's location. |
+| `error` | Original thrown/rejected/shape-check error. Treat as untrusted. |
+
+Return optional `code`, `message`, and `meta`. Core always owns failure issue
+`id`, owner `path`, and `severity: "error"`; customization cannot turn an
+engine failure into a warning or move it elsewhere.
+
+The presentation must be an object. Code must be a non-empty string, message a
+string, and metadata a non-null non-array object. If the hook throws or returns
+malformed presentation, core uses the default fallback and emits runtime
+diagnostic `validation.failure-issue-failed` at the owner location.
+
+## Localization strategy
+
+Keep `code` stable across locales and translate `message` from application
+context. Derived field props can use the same context for labels/descriptions.
+Calling `controller.update({ context: nextLocale })` invalidates every cached
+validation record; run validation again to produce messages in the new locale.
+
+`validationFailureIssue` itself is fixed for controller lifetime. To switch its
+catalog dynamically, have the closure read a current application i18n service,
+or recreate the controller from serialized state with a new factory. Do not
+capture a locale value that can become stale unnoticed.
+
+Metadata is useful for safe formatting tokens such as a minimum length or
+duplicate index. Avoid putting raw passwords, tokens, email addresses, server
+responses, stack traces, or other personal data in messages/meta because
+issues can reach UI snapshots, tests, and observability.
+
+## Failure versus diagnostic
+
+- Invalid domain data: normal `ValidationIssue` returned by application rule.
+- Rule execution failure: engine-owned validation issue, optionally localized.
+- Failure-localizer failure: fallback validation issue plus
+  `validation.failure-issue-failed` diagnostic.
+- Malformed validator configuration: schema diagnostic
+  `schema.invalid-validator`; the invalid configuration does not execute.
+
+Diagnostics are developer-facing and accumulate separately from user-facing
+validation. Do not render diagnostic messages directly to end users.
+
+## Resilient remote rule recipe
+
+Classify expected responses inside the validator:
+
+- available → `[]`;
+- taken → ordinary localized `email.taken` error;
+- rate limited/offline → intentionally chosen warning or safe error; and
+- unexpected exception/malformed response → throw and let deterministic
+  failure policy prevent accidental success.
+
+Keep detailed monitoring outside returned issues. Redact the failure context
+before sending it to telemetry.
+
+## What to test
+
+- Throw from `when`, throw synchronously, reject asynchronously, and return
+  malformed sync/async arrays.
+- Assert fallback IDs, codes, owner paths, and error severity.
+- Customize code/message/meta and prove ID/path/severity cannot change.
+- Break the customization hook and assert both fallback issue and diagnostic.
+- Switch locale context, rerun validation, and assert stable codes with changed
+  labels/messages.
+- Audit issue and diagnostic telemetry for sensitive data.
+
+Next: use the exact [validation type reference](/reference/core/validation-types),
+or connect presentation to the current [DOM accessibility guide](/dom).
+
+## Evidence
+
+Issue shape checking and failure construction come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+The checked localization patterns are in `docs/examples/validation.ts`.
+Validation tests cover condition/sync/async failures, malformed results,
+customized presentation, broken hooks, fallback diagnostics, and stable order.

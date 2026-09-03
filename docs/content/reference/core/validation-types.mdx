@@ -1,0 +1,276 @@
+---
+title: Validation types
+description: Exact intrinsic/configured validator, issue, cancellation, failure, snapshot, and validation option contracts.
+---
+
+# Validation types
+
+These types define reusable field rules, configured validation policy,
+execution context, cancellation, issue/failure output, aggregate state, and
+explicit validation calls.
+
+**For:** schema authors, field-library authors, adapter authors, and validation tooling.  
+**Prerequisites:** [Validation overview](/validation/overview) and
+[Validators and issues](/validation/validators-and-issues).
+
+Last reviewed against `packages/core/src/types.ts` and `controller.ts`:
+**2026-09-03**.
+
+## `FieldValidator` and `FieldValidationIssue`
+
+```ts
+interface FieldValidator<TValue, TProps> {
+  readonly id: string;
+  readonly validate: (
+    value: DeepReadonly<TValue>,
+    props: DeepReadonly<TProps>,
+  ) => readonly FieldValidationIssue[];
+}
+
+type FieldValidationIssue = Omit<ValidationIssue, "path">;
+```
+
+| Member | Contract |
+| --- | --- |
+| `id` | Non-empty, unique within one field definition's validator array. |
+| `validate` | Synchronous reusable rule receiving typed readonly field value and resolved props. |
+
+`FieldValidationIssue` owns `id`, `code`, `severity`, optional `message`, and
+optional `meta`; core adds the field's current path. Intrinsic rules run at
+creation, on relevant field events, and in explicit validation. They have no
+configured event, reveal, dependency, condition, disabled-inclusion, context,
+or cancellation properties.
+
+## `FieldInteractionState`
+
+```ts
+interface FieldInteractionState {
+  readonly disabled: boolean;
+  readonly focused: boolean;
+  readonly touched: boolean;
+  readonly visited: boolean;
+}
+```
+
+| Member | Contract |
+| --- | --- |
+| `disabled` | Resolved/inherited disabled state of the validator owner. |
+| `focused` | Owner received focus without a later blur. |
+| `touched` | Owner received blur. |
+| `visited` | Owner received focus at least once. |
+
+This object is exposed as `ValidationContext.fieldState`. The name remains
+`fieldState` for configured validators on containers and the root.
+
+## `ValidationContext`
+
+```ts
+interface ValidationContext<TValue, TContext = unknown>
+  extends NodeResolverContext<TValue, TContext> {
+  readonly event: string;
+  readonly fieldState: Readonly<FieldInteractionState>;
+  readonly signal: ValidationCancellationSignal;
+}
+```
+
+Inherited `NodeResolverContext` members are `value`, `context`, `meta`, `path`,
+`address`, `fieldValue`, and `parentValue`. Validation adds:
+
+| Member | Contract |
+| --- | --- |
+| `event` | Current trigger string. Explicit validation defaults it to `validate`; applicability snapshots use internal `status`. |
+| `fieldState` | Current owner interaction/disabled flags. |
+| `signal` | Passive signal for `when`; per-run cooperative signal for `validate`. |
+
+All value/context/meta projections are deeply readonly at the type level but
+not runtime-frozen.
+
+## `ValidationCancellationSignal`
+
+```ts
+interface ValidationCancellationSignal {
+  readonly aborted: boolean;
+  onCancel(listener: () => void): () => void;
+}
+```
+
+`aborted` changes from false to true at most once. `onCancel` registers a
+listener and returns an unsubscribe function. Registering after abortion calls
+the listener immediately. Connect this signal to the cancellation primitive of
+the async API; it is not a DOM `AbortSignal`.
+
+## `ValidationIssue`
+
+```ts
+interface ValidationIssue {
+  readonly id: string;
+  readonly code: string;
+  readonly path: DataPath;
+  readonly severity: "error" | "warning";
+  readonly message?: string;
+  readonly meta?: Readonly<Record<string, unknown>>;
+}
+```
+
+| Member | Required | Contract |
+| --- | --- | --- |
+| `id` | Yes | Non-empty stable issue identity; uniqueness is an application convention, not runtime-enforced. |
+| `code` | Yes | Non-empty machine-readable rule code. |
+| `path` | Yes | Safe root-relative data path for presentation. It may differ from validator owner path. |
+| `severity` | Yes | `error` invalidates; `warning` does not. |
+| `message` | No | User-facing/localized string. |
+| `meta` | No | Non-null non-array readonly object for safe structured presentation data. |
+
+Validator output must be an array and every issue is checked. One malformed
+issue converts that validator's whole result into a deterministic failure
+issue.
+
+## Validation failure types
+
+```ts
+interface ValidationFailureContext {
+  readonly kind: "when" | "validate";
+  readonly validatorId: string;
+  readonly event: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly error: unknown;
+}
+
+interface ValidationFailureIssuePresentation {
+  readonly code?: string;
+  readonly message?: string;
+  readonly meta?: Readonly<Record<string, unknown>>;
+}
+
+type ValidationFailureIssueFactory = (
+  context: ValidationFailureContext,
+) => ValidationFailureIssuePresentation;
+```
+
+| Context member | Contract |
+| --- | --- |
+| `kind` | Whether `when` or `validate` execution/output failed. |
+| `validatorId` | ID of the failing configured or intrinsic validator. |
+| `event` | Trigger string for the attempted run. |
+| `path` | Validator owner data path. |
+| `address` | Validator owner node address. |
+| `error` | Original unknown thrown/rejected/shape-check value. |
+
+`ValidationFailureContext` identifies whether `when` or validation execution/
+output failed, the validator/event, owner location, and original unknown error.
+Treat `error` as untrusted.
+
+The factory can override only `code`, `message`, and `meta`. Core fixes the
+fallback issue's ID, owner path, and error severity. Malformed/throwing
+factories emit `validation.failure-issue-failed` and use the default issue.
+
+## `ValidatorConfig`
+
+```ts
+interface ValidatorConfig<TValue, TContext = unknown> {
+  readonly id: string;
+  readonly on: string | readonly string[];
+  readonly revealOn?: string | readonly string[];
+  readonly includeDisabled?: boolean;
+  readonly when?: (context: ValidationContext<TValue, TContext>) => boolean;
+  readonly dependencies?: readonly DataPath[];
+  readonly validate: (
+    context: ValidationContext<TValue, TContext>,
+  ) => readonly ValidationIssue[] | Promise<readonly ValidationIssue[]>;
+}
+```
+
+| Member | Required | Default/behavior |
+| --- | --- | --- |
+| `id` | Yes | Non-empty and unique within its root/node validator array. |
+| `on` | Yes | Non-empty event name/list for dispatched-event execution. Forced `validate()` ignores this filter. |
+| `revealOn` | No | No event-driven reveal. Non-empty name/list when supplied. |
+| `includeDisabled` | No | `false`; disabled owners are excluded. Hidden owners remain excluded either way. |
+| `when` | No | Applicable; exact false excludes/deletes its record. Must be synchronous by type. |
+| `dependencies` | No | Only implicit owner path. Additional paths are absolute, safe, and de-duplicated against owner path. |
+| `validate` | Yes | Sync issue array or promise of one; output/failure is normalized by core. |
+
+Validator records also depend on validator object identity and current context
+identity. See [Dependencies](/validation/dependencies) and
+[Disabled and conditional validation](/validation/disabled-and-conditional).
+
+## `ValidationSnapshot`
+
+```ts
+interface ValidationSnapshot {
+  readonly status: "valid" | "invalid" | "pending" | "unknown";
+  readonly isValid: boolean;
+  readonly issues: readonly ValidationIssue[];
+  readonly visibleIssues: readonly ValidationIssue[];
+  readonly pendingCount: number;
+  readonly unknownCount: number;
+}
+```
+
+| Member | Contract |
+| --- | --- |
+| `status` | Error → invalid; otherwise pending; otherwise unknown; otherwise valid. |
+| `isValid` | True only for `valid`. |
+| `issues` | All current error/warning results in validator traversal order. |
+| `visibleIssues` | Subset from revealed records. |
+| `pendingCount` | Applicable async validator records currently pending. |
+| `unknownCount` | Applicable validators without current records. |
+
+Counts remain populated under higher-precedence status. A warning-only result
+can be valid; an empty issue array can still be pending or unknown.
+
+## `ValidateOptions`
+
+```ts
+interface ValidateOptions {
+  readonly scope?: "form" | Readonly<{ path: DataPath }> | Readonly<{ address: NodeAddress }>;
+  readonly event?: string;
+  readonly reveal?: boolean;
+}
+```
+
+| Member | Default | Contract |
+| --- | --- | --- |
+| `scope` | Form | Root, data-prefix, or address-prefix validator-owner scope. |
+| `event` | `validate` | Context/reveal event string; explicit validation still force-runs applicable rules. |
+| `reveal` | `false` | True records every validated owner address as revealed. |
+
+`StagesController.validate(options?)` returns
+`Promise<ValidationSnapshot>` for the requested scope after work it started
+settles, unless a newer controller run supersedes it.
+
+## Checked usage
+
+```ts
+export function firstVisibleError(
+  snapshot: ValidationSnapshot,
+): ValidationIssue | undefined {
+  return snapshot.visibleIssues.find(issue => issue.severity === "error");
+}
+
+export function connectCancellation(
+  signal: ValidationCancellationSignal,
+  cancel: () => void,
+): () => void {
+  if (signal.aborted) {
+    cancel();
+    return () => undefined;
+  }
+  return signal.onCancel(cancel);
+}
+```
+
+Next: apply these types in [Execution and reveal](/validation/execution-and-reveal),
+[Scopes and aggregation](/validation/scopes-and-aggregation), or
+[Async validation](/validation/async-and-cancellation).
+
+## Evidence
+
+Declarations come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts);
+defaults and runtime behavior come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked usage is in `docs/examples/validation.ts`; the docs checker verifies
+the declared member inventory against source.

@@ -1,0 +1,134 @@
+---
+title: Disabled and conditional validation
+description: Control applicability across disabled, hidden, dormant, and structurally removed nodes.
+---
+
+# Disabled and conditional validation
+
+Node visibility/disabled state determines whether validators participate;
+validator `when` adds rule-specific applicability. These mechanisms exclude
+work differently and have different cache behavior.
+
+**For:** schema authors with optional fields, permissions, and dynamic sections.  
+**Prerequisites:** [Dynamic configuration](/core-concepts/dynamic-configuration)
+and [Dependencies](/validation/dependencies).
+
+## A condition that includes disabled data
+
+```ts
+export const marketingConsentPolicy = {
+  id: "marketing.consent",
+  on: "submit",
+  includeDisabled: true,
+  dependencies: [["marketingRequired"]],
+  when: ({ value }) => value.marketingRequired,
+  validate: ({ fieldValue, path }) => fieldValue === "accepted"
+    ? []
+    : [{ id: "marketing.consent", code: "consent-required", path, severity: "error" }],
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+
+export const marketingNode = {
+  kind: "field",
+  id: "marketingConsent",
+  type: "text",
+  props: { label: "Marketing consent", requiredMessage: "Choose an option" },
+  disabled: ({ context }: { context: DeepReadonly<SignupContext> }) => !context.canEditMarketing,
+  validators: [marketingConsentPolicy],
+} as const;
+```
+
+Inherited disabled state reaches the field and its configured rule. Because
+the rule explicitly opts in, it still participates. Its condition reads an
+external value, so that path is declared as a dependency.
+
+## Applicability matrix
+
+| State | Configured validator | Intrinsic field validator | Cache behavior |
+| --- | --- | --- | --- |
+| Node visible and enabled | Included when `when !== false` | Included | Current record participates. |
+| Node disabled | Excluded unless `includeDisabled: true` | Excluded; no opt-in exists | Existing record can remain dormant and reappear if still current. |
+| Node hidden by node `when: false` | Excluded regardless of `includeDisabled` | Excluded | Identity/record can remain dormant while node stays normalized. |
+| Validator `when` returns false | Excluded | Not available on intrinsic rules | Existing record is cancelled/deleted; no unknown count. |
+| Node removed by schema factory | Absent | Absent | Reconciliation cancels/deletes record; re-add starts unknown. |
+| Owner identity changes incompatibly | New identity rules apply | New identity rules apply | Old record is cancelled/pruned. |
+
+Root validators are always visible/enabled. A collection row or wizard stage
+inherits disabled state from ancestors. A stage cannot own `ValidatorConfig`,
+but disabled descendants follow the same rules.
+
+## `includeDisabled`
+
+This Boolean belongs to each configured validator, not the node. It permits
+validation when the validator owner's resolved/inherited disabled state is
+true. It does not make hidden nodes visible, enable reducers/commands, or opt
+intrinsic registry validators into disabled fields.
+
+Use it when disabled data still has domain obligations—for example immutable
+server-managed identifiers required for submission. Omit it when users cannot
+fix disabled input and stale invalidity would block them unfairly.
+
+## Validator `when`
+
+`when(context)` is synchronous and receives the same full
+`ValidationContext` as `validate`. Returning exactly false makes the rule
+inapplicable: no work, issue, pending record, or unknown count. When it becomes
+true again, run a matching relevant event or explicit validation.
+
+Core also evaluates applicability while deriving status with `event:
+"status"` and a passive cancellation signal. Keep `when` pure and base it on
+stable value/context/meta rather than event-specific side effects. Declare
+every value read outside the owner path in `dependencies`.
+
+A thrown `when` during a validation attempt becomes an engine-owned error
+issue. It does not silently make the rule optional. Failure customization is
+covered in the next guide.
+
+## Dormant versus structurally absent
+
+Node-level `when: false` preserves schema identity in the normalized tree but
+omits it from render/validation aggregation. If the node returns with unchanged
+inputs, a still-current cached result can return. Dynamic factory removal means
+the identity is absent; reconciliation cancels records, and reintroduction is
+unknown until rerun.
+
+This distinction mirrors interaction metadata. Use predicates for dormant UI
+and structural factories when the configured identity genuinely does not
+exist. Neither deletes the canonical domain value.
+
+## Policy recipes
+
+- Optional business field: validator `when` keyed to account type, with the
+  account-type dependency declared.
+- Permission-disabled but server-required value: `includeDisabled: true` and a
+  read-only presentation explaining who can fix it.
+- Hidden irrelevant section: node `when: false`; its validators do not block
+  the current form aggregate.
+- Removed plugin/module: omit it from the schema factory so prior work and
+  records cannot leak when a different module later uses that location.
+
+Avoid security authorization based only on disabled/hidden UI. Validate and
+authorize again at the server boundary.
+
+## What to test
+
+- Cover visible, inherited-disabled, and hidden states with/without
+  `includeDisabled`.
+- Toggle validator applicability and assert unknown/pending counts exclude it.
+- Hide/show a node and compare dormant cache behavior with factory removal/
+  re-addition.
+- Throw from `when` and assert the deterministic failure issue.
+- Verify disabled UI cannot edit while included domain validation still runs.
+
+Next: customize runtime failures in
+[Failures and localization](/validation/failures-and-localization), or inspect
+[Scopes and aggregation](/validation/scopes-and-aggregation).
+
+## Evidence
+
+Applicability, disabled filtering, and record cleanup come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts),
+with node visibility normalization in
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked policy is in `docs/examples/validation.ts`. Validation and
+controller tests cover disabled opt-in, conditional exclusion, dormant
+identity, structural removal, and incompatible reuse.

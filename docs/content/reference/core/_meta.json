@@ -5,6 +5,7 @@
   "field-types": "Field types",
   "event-types": "Event and processing types",
   "snapshot-types": "Snapshot types",
+  "validation-types": "Validation types",
   "path-utilities": "Path utilities",
   "collection-utilities": "Collection utilities",
   "schema-utilities": "Schema utilities"

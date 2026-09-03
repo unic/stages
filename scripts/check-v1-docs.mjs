@@ -106,12 +106,21 @@ const completePagePaths = [
   "structures/wizards.mdx",
   "structures/wizard-validation-and-guards.mdx",
   "structures/recursive-composition.mdx",
+  "validation/overview.mdx",
+  "validation/validators-and-issues.mdx",
+  "validation/execution-and-reveal.mdx",
+  "validation/scopes-and-aggregation.mdx",
+  "validation/dependencies.mdx",
+  "validation/async-and-cancellation.mdx",
+  "validation/disabled-and-conditional.mdx",
+  "validation/failures-and-localization.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
   "reference/core/field-types.mdx",
   "reference/core/event-types.mdx",
   "reference/core/snapshot-types.mdx",
+  "reference/core/validation-types.mdx",
   "reference/core/path-utilities.mdx",
   "reference/core/collection-utilities.mdx",
   "reference/core/schema-utilities.mdx",
@@ -200,6 +209,27 @@ for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts
   assertSameInventory(readonlyInterfaceMembers(controllerTypes, interfaceName), expectedMembers, `${interfaceName} members`);
   for (const member of expectedMembers) {
     assert.ok(snapshotReference.includes(`\`${member}\``), `snapshot reference is missing ${interfaceName}.${member}`);
+  }
+}
+
+function publicInterfaceMembers(source, interfaceName) {
+  const escapedName = interfaceName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const body = source.match(new RegExp(
+    `(?:export )?interface ${escapedName}(?:<[^\\n]+>)?[^\\{]*\\{([\\s\\S]*?)\\n\\}`,
+  ))?.[1];
+  assert.ok(body, `could not find ${interfaceName} declaration`);
+  return [...body.matchAll(/^\s{2}(?:readonly\s+)?([A-Za-z_$][\w$]*)(?:[?:]|\()/gm)]
+    .map((match) => match[1]);
+}
+
+const validationReference = guideEntries.find(
+  ({ relativePath }) => relativePath === "reference/core/validation-types.mdx",
+)?.source;
+assert.ok(validationReference, "missing validation type reference");
+for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts.validationMembers)) {
+  assertSameInventory(publicInterfaceMembers(controllerTypes, interfaceName), expectedMembers, `${interfaceName} validation members`);
+  for (const member of expectedMembers) {
+    assert.ok(validationReference.includes(`\`${member}\``), `validation reference is missing ${interfaceName}.${member}`);
   }
 }
 
@@ -292,6 +322,15 @@ const checkedRegions = [
   { fixture: "docs/examples/structures.ts", region: "wizard-navigation", page: "structures/wizard-validation-and-guards.mdx" },
   { fixture: "docs/examples/structures.ts", region: "recursive-structure", page: "structures/recursive-composition.mdx" },
   { fixture: "docs/examples/collection-utilities.ts", region: "pure-collection-commands", page: "reference/core/collection-utilities.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "validation-overview", page: "validation/overview.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "validator-kinds", page: "validation/validators-and-issues.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "execution-and-reveal", page: "validation/execution-and-reveal.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "validation-scopes", page: "validation/scopes-and-aggregation.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "validation-dependencies", page: "validation/dependencies.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "async-cancellation", page: "validation/async-and-cancellation.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "disabled-and-conditional", page: "validation/disabled-and-conditional.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "failure-localization", page: "validation/failures-and-localization.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "validation-type-usage", page: "reference/core/validation-types.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);
@@ -377,6 +416,8 @@ for (const readme of packageReadmes) assert.match(readme, /MIGRATING_TO_V1\.md/)
 const exportCount = manifest.packages.reduce((count, item) => count + item.exports.length, 0);
 const snapshotMemberCount = Object.values(manifest.contracts.snapshotMembers)
   .reduce((count, members) => count + members.length, 0);
+const validationMemberCount = Object.values(manifest.contracts.validationMembers)
+  .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

@@ -1,0 +1,132 @@
+---
+title: Validation overview
+description: Understand validation execution, presentation, aggregation, ownership, and submission.
+---
+
+# Validation overview
+
+Stages validation turns applicable validator results into readonly status and
+issue snapshots. It deliberately separates when work runs, when issues become
+visible, and whether the owner decides to save.
+
+**For:** application developers implementing validation and submission flows.  
+**Prerequisites:** [Controller lifecycle](/core-concepts/controller-lifecycle),
+[events and reducers](/core-concepts/events-and-reducers), and
+[snapshots](/core-concepts/snapshots-and-subscriptions).
+
+## The validation loop
+
+```text
+schema + registry validators
+          │
+          ├─ event policy / explicit validate()
+          ▼
+applicable sync and async work
+          │
+          ├─ cached by validator identity + owner address + dependencies
+          ▼
+issues + unknown/pending counts
+          │
+          ├─ reveal policy selects presentation subset
+          ▼
+form, container, stage, and field snapshots
+```
+
+Validation never accepts a value, submits a form, stores data, or focuses UI.
+The application owns those effects. Diagnostics describe developer/schema
+problems; validation issues describe domain feedback intended for users.
+
+## Safe submission
+
+```ts
+export async function submitSignup(
+  controller: StagesController<SignupValue, typeof fields, SignupContext>,
+  save: (value: DeepReadonly<SignupValue>) => Promise<void>,
+): Promise<boolean> {
+  const result = await controller.validate({ event: "submit", reveal: true });
+  if (result.status !== "valid") return false;
+
+  await save(controller.getSnapshot().value);
+  return true;
+}
+```
+
+`validate()` forces all applicable validators in scope and awaits the async
+work it started. Check `status === "valid"`, not only an empty issue array:
+unknown or pending work is not valid. Read the canonical snapshot after the
+await so saving uses current owner state; if the owner can change concurrently,
+add an application version/conflict check around the save.
+
+`reveal: true` marks the validated owner addresses for issue presentation. UI
+adapters still own the error summary, live-region behavior, and focus policy.
+
+## Three validator layers
+
+| Layer | Attach to | Best use |
+| --- | --- | --- |
+| Intrinsic `FieldValidator` | A field definition in the registry | Reusable synchronous rules based only on typed field value and resolved props. |
+| Configured `ValidatorConfig` | Field, group, collection, or wizard node | Event/reveal policy, root value/context, dependencies, conditions, async work, and disabled inclusion. |
+| Root `ValidatorConfig` | `StagesSchema.validators` | Cross-form invariants and issues spanning otherwise unrelated branches. |
+
+Stages have no validator property of their own; scope a stage by address and
+place validators on its descendants or containing wizard/root.
+
+## Status is not a Boolean
+
+Every `ValidationSnapshot` has one status:
+
+| Status | Meaning |
+| --- | --- |
+| `invalid` | At least one current error issue. This wins even while other validators are pending or unknown. |
+| `pending` | No current error, but at least one applicable async validator is running. |
+| `unknown` | No error/pending work, but at least one applicable validator has no current result. |
+| `valid` | Every applicable validator has a current completed result and none produced an error. Warnings are allowed. |
+
+`isValid` is true only for `valid`. `issues` contains current error and warning
+results; `visibleIssues` contains the revealed subset. Counts preserve pending
+and unknown information even when status is already invalid.
+
+## Lifecycle summary
+
+- Creation runs intrinsic field validators and configured validators whose
+  `on` includes `init`.
+- Successful dispatch runs relevant intrinsic validators and matching
+  configured event policies after patches/transforms.
+- `controller.validate()` force-runs every applicable validator in its scope,
+  independent of `on`, and defaults its context event to `validate`.
+- Relevant value changes invalidate cached work; context/schema/extension
+  updates invalidate all validation.
+- Superseding work and destruction signal cancellation; stale results cannot
+  publish.
+- Reset clears validation records and reveal metadata, then normal reset-event
+  processing may run configured/intrinsic rules again.
+
+The canonical value and validation have separate lifecycles. Validation can
+publish revisions and snapshots without an `onChange` proposal.
+
+## Production checklist
+
+- Give validators and issues stable non-empty IDs and stable machine-readable
+  codes.
+- Put issues on exact safe data paths and localize their messages.
+- Await explicit validation before saving; handle save failures separately.
+- Use dependencies for every external value a validator reads.
+- Connect cancellation to remote work and still tolerate stale completion.
+- Render warnings without treating them as errors.
+- Expose an accessible summary and move focus only in application/adapter code.
+- Avoid placing secrets or full server responses in messages, metadata, or
+  diagnostics.
+
+Next: define the exact inputs and outputs in
+[Validators and issues](/validation/validators-and-issues), then choose
+[Execution and reveal](/validation/execution-and-reveal) policy.
+
+## Evidence
+
+The validation loop and controller method are implemented in
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts),
+with public types in
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+The checked submission flow is in `docs/examples/validation.ts`; controller,
+validation, serialization, and adapter tests cover execution, status,
+presentation, cancellation, recreation, and accessible rendering.

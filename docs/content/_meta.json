@@ -3,6 +3,7 @@
   "start": "Start here",
   "core-concepts": "Core concepts",
   "structures": "Structures",
+  "validation": "Validation",
   "guides": {
     "type": "separator",
     "title": "Feature guides"
@@ -20,7 +21,6 @@
   "fields-events": "Fields and events",
   "dynamic-behavior": "Dynamic behavior",
   "transforms": "Transforms and batching",
-  "validation": "Validation",
   "collections": {
     "title": "Collections (legacy route)",
     "display": "hidden"

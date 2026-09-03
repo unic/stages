@@ -1,0 +1,137 @@
+---
+title: Execution and reveal
+description: Separate validator work from issue presentation across init, input, blur, submit, and explicit runs.
+---
+
+# Execution and reveal
+
+`on` decides whether a relevant dispatched event runs a configured validator.
+`revealOn` decides whether current and future issues at that owner address are
+eligible for presentation. Neither policy accepts or saves data.
+
+**For:** application developers designing validation timing and error UX.  
+**Prerequisites:** [Validators and issues](/validation/validators-and-issues)
+and [standard events](/reference/standard-events).
+
+## Independent policies
+
+```ts
+export const emailPolicy = {
+  id: "email.format",
+  on: ["input", "submit"],
+  revealOn: ["blur", "submit"],
+  when: ({ fieldValue }) => typeof fieldValue === "string" && fieldValue !== "",
+  validate: ({ fieldValue, path, context }) => String(fieldValue).includes("@")
+    ? []
+    : [{
+        id: "email.format",
+        code: "email",
+        path,
+        severity: "error",
+        message: context.messages.invalidEmail,
+      }],
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+
+export function editThenBlur(
+  controller: StagesController<SignupValue, typeof fields, SignupContext>,
+) {
+  // Runs validation without revealing a configured issue.
+  controller.dispatch(fieldEvent("input", ["email"], { payload: "invalid" }));
+  // Reveals the cached issue; blur is not required to be in `on`.
+  controller.dispatch(fieldEvent("blur", ["email"]));
+}
+```
+
+After accepted input, the issue exists in `issues` but not `visibleIssues`.
+Blur is relevant to the same owner and matches `revealOn`; because it is not in
+`on`, the configured rule need not rerun. Reveal can therefore expose a cached
+result independently from execution.
+
+## Event timeline
+
+| Trigger | Configured validator execution | Reveal behavior |
+| --- | --- | --- |
+| Controller creation | Runs when `on` contains `init`. | Reveals when `revealOn` contains `init`. |
+| Successful field/node event | Runs matching `on` for relevant target/ancestor/dependency validators. | Matching `revealOn` marks relevant owner addresses. |
+| Successful form event | All validators are relevant; configured rules with matching `on` run. | Matching `revealOn` marks their owner addresses. |
+| Rejected reducer/patch/transform/structural event | No event-driven validation step. | No reveal step for that event. |
+| `validate({ event })` | Force-runs all applicable validators in scope, regardless of `on`. | `revealOn` still matches `event`; `reveal: true` reveals regardless. |
+| Repeated explicit validation | Starts fresh runs and cancels prior current work. | Prior reveal state remains. |
+
+Intrinsic field validators do not have event policy. They run at creation, on
+relevant successful events for that field, and in every explicit validation
+that includes it.
+
+Dispatching a form event named `submit` does not return a promise; async
+validation continues in the background. Use
+`await controller.validate({ event: "submit" })` when save logic must wait.
+The event string passed to explicit validation is context and reveal policy,
+not an `on` filter because explicit calls are forced.
+
+## Reveal is address-scoped and durable
+
+When reveal is requested for an applicable validator, core records its owner
+address. Other current/future validator issues at that same relevant address
+can become revealed as they run. `visibleIssues` is therefore a presentation
+subset, not a separate validation result.
+
+Once revealed, an address remains revealed until form reset or identity
+reconciliation removes it. A dormant `when: false` schema node can retain the
+address; structurally removing it from a dynamic schema prunes it. Reveal
+addresses serialize with controller state, but validation result records do
+not.
+
+On recreation, `init` and intrinsic validators run again. Their issues can
+immediately appear if the restored address was revealed. Other configured
+validators remain unknown/no-issue until an event or explicit validation
+reruns them; when they do, the restored reveal address applies.
+
+## Visibility layers
+
+- Form/container `validation.issues` aggregates current issue records for
+  applicable validators in scope.
+- `validation.visibleIssues` includes only revealed records.
+- A field's `state.issues` and `state.visibleIssues` filter the form issues by
+  exact issue data path, even when a root/group validator produced them.
+- Adapter UI should render `visibleIssues` for inline feedback and may use all
+  issues only for developer tooling or deliberate summaries.
+
+Do not reveal solely by mutating DOM state. Controller reveal metadata is what
+keeps all subscribed adapters and recreation behavior consistent.
+
+## Common policies
+
+| UX goal | `on` | `revealOn` |
+| --- | --- | --- |
+| Validate while typing, show after blur | `input` | `blur` |
+| Revalidate visibly after first blur | `input` | `blur` (address remains revealed) |
+| Validate and show on submit | `submit` | `submit` |
+| Precompute at creation but keep quiet | `init` | omitted |
+| Explicit submit flow | Any valid non-empty policy | use `validate({ event: "submit", reveal: true })` |
+
+A configured validator must still declare a valid non-empty `on`, even if the
+application intends to invoke it only through forced `validate()`.
+
+## Accessibility and testing
+
+Reveal timing should avoid announcing errors before users can act while still
+making submission failure discoverable. Applications/adapters should connect
+inline issues with controls, summarize errors, announce updates without noisy
+repetition, and move focus deliberately after a failed submit.
+
+Test `issues` and `visibleIssues` separately. Cover input-before-blur,
+revalidation after reveal, submit dispatch versus awaited validation, reset,
+serialization/recreation, rejected events, and warning presentation.
+
+Next: select a subtree in [Scopes and aggregation](/validation/scopes-and-aggregation),
+or optimize reruns with [Dependencies](/validation/dependencies).
+
+## Evidence
+
+Execution/reveal policy is implemented in
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts),
+with event-policy validation in
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked timeline is in `docs/examples/validation.ts`; validation and
+serialization tests cover init, input, blur, forced validation, durable reveal,
+reset, and recreation.

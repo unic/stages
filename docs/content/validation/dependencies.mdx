@@ -1,0 +1,167 @@
+---
+title: Validation dependencies
+description: Invalidate and rerun cross-field validators precisely without revalidating unrelated branches.
+---
+
+# Validation dependencies
+
+Every validator implicitly depends on the value at its owner path. Add absolute
+`dependencies` for any other domain path read by `when` or `validate` so cached
+results cannot outlive their inputs.
+
+**For:** schema authors implementing confirmation, uniqueness, totals, and other cross-field rules.  
+**Prerequisites:** [Validators and issues](/validation/validators-and-issues)
+and [paths and addresses](/core-concepts/paths-and-addresses).
+
+## Three dependency patterns
+
+```ts
+export const confirmationMatches = {
+  id: "confirmation.matches",
+  on: ["input", "submit"],
+  dependencies: [["password"]],
+  validate: ({ value, fieldValue, path }) => fieldValue === value.password
+    ? []
+    : [{ id: "confirmation.matches", code: "mismatch", path, severity: "error" }],
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+
+export const uniqueMemberEmails = {
+  id: "members.unique-email",
+  on: ["input", "submit"],
+  validate: ({ fieldValue }) => {
+    const members = fieldValue as DeepReadonly<SignupValue["members"]>;
+    const firstIndex = new Map<string, number>();
+    const issues: ValidationIssue[] = [];
+    members.forEach((member, index) => {
+      const previous = firstIndex.get(member.email);
+      if (previous === undefined) firstIndex.set(member.email, index);
+      else issues.push({
+        id: `members.unique-email.${member.id}`,
+        code: "duplicate-email",
+        path: ["members", index, "email"],
+        severity: "error",
+        meta: { duplicatesIndex: previous },
+      });
+    });
+    return issues;
+  },
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+
+export const totalMatches = {
+  id: "total.matches",
+  on: ["input", "submit"],
+  dependencies: [["subtotal"], ["tax"]],
+  validate: ({ value, fieldValue, path }) => fieldValue === value.subtotal + value.tax
+    ? []
+    : [{ id: "total.matches", code: "incorrect-total", path, severity: "error" }],
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+```
+
+Attach `confirmationMatches` to the confirmation field,
+`uniqueMemberEmails` to the members collection, and `totalMatches` to the total
+field. The collection validator already implicitly depends on the full members
+array, so no extra dependency is needed for its row scan.
+
+## Dependency set
+
+For each validator, core records these paths in order:
+
+1. the validator owner's path; then
+2. each declared dependency not already equal to a prior path.
+
+Paths are absolute from the root, not relative to the owner. They must contain
+safe string/non-negative safe-integer segments. Invalid dependency
+configuration reports `schema.invalid-validator`.
+
+Root validators have implicit owner path `[]`, so their cache depends on the
+entire root value. Prefer a narrower node owner when only one branch and a few
+dependencies matter.
+
+## Event-driven relevance
+
+After a successful event, a configured rule runs only if its `on` matches and
+it is relevant through at least one of these routes:
+
+- the validator is on the target or one of its schema ancestors;
+- an accepted patch path intersects its owner/dependency path; or
+- the event is form-targeted, making every validator relevant.
+
+Path intersection is prefix-based in either direction: replacing a group can
+affect a child dependency, and changing a child can affect a dependency on the
+whole group. Unrelated field events preserve cached records and skip work.
+
+Intrinsic field validators have only their implicit field path. Explicit
+`controller.validate()` uses force semantics, so it reruns every applicable
+validator in scope regardless of event relevance or `on`.
+
+## Owner updates and cache currency
+
+`controller.update({ value })` compares the current value at every recorded
+owner/dependency path using deep equality:
+
+- unchanged dependency values retain the result;
+- any changed dependency cancels/deletes the record, leaving it unknown; and
+- owner update does not automatically rerun the rule.
+
+Context, schema, and extension updates invalidate all validation because those
+inputs may affect any callback. When a validator reads dynamic metadata other
+than its value paths, prefer explicit validation after relevant application
+state changes; `dependencies` accepts data paths only.
+
+Changing a collection array invalidates a collection-owned uniqueness rule.
+Row-owned rules follow stable addresses through controller-mediated accepted
+moves, while their implicit paths reconcile to current indexes.
+
+## Conditions need dependencies too
+
+If `when` reads a value outside the owner path, include it:
+
+```ts
+{
+  id: "business.tax-id",
+  on: "submit",
+  dependencies: [["accountType"]],
+  when: ({ value }) => value.accountType === "business",
+  validate: checkTaxId,
+}
+```
+
+When applicability becomes false, core deletes the record and excludes it from
+pending/unknown counts. If the condition later becomes true, the validator is
+unknown until a matching relevant event or explicit validation runs it.
+
+## Performance and correctness
+
+Dependencies are correctness declarations first, optimization hints second.
+Missing one can leave a stale valid/error result. Overly broad dependencies
+are correct but cause more invalidation, deep comparison, and remote work.
+
+For large arrays, attach one collection rule when uniqueness truly depends on
+the entire list. Use stable issue IDs containing domain row IDs so UI identity
+survives reorder; issue paths should still contain the current numeric index.
+Never put sensitive compared values in issue IDs or metadata.
+
+## What to test
+
+- Validate once, update an unrelated value, and assert the result remains
+  current.
+- Change each explicit dependency and assert affected rules become unknown.
+- Dispatch a field event and assert only target/ancestor/dependent rules run.
+- Cover parent/child path intersection in both directions.
+- Move/remove rows and assert uniqueness issue IDs and current paths.
+- Verify context/schema/extension updates invalidate all records.
+
+Next: connect dependencies to remote work in
+[Async validation and cancellation](/validation/async-and-cancellation), or
+control applicability in
+[Disabled and conditional validation](/validation/disabled-and-conditional).
+
+## Evidence
+
+Dependency path construction, comparison, and event intersection come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts);
+path configuration checks come from
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked patterns are in `docs/examples/validation.ts`. Validation tests
+cover selective owner updates, target/dependency event runs, structural
+invalidation, and stale async results.

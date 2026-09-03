@@ -1,0 +1,160 @@
+---
+title: Async validation and cancellation
+description: Connect cooperative cancellation to remote work and prevent stale async results from publishing.
+---
+
+# Async validation and cancellation
+
+Configured validators may return promises. Core exposes a small framework-
+neutral cancellation signal, marks pending snapshots immediately, and accepts
+only the latest result for the same current validator inputs.
+
+**For:** applications validating availability, permissions, or server-backed rules.  
+**Prerequisites:** [Dependencies](/validation/dependencies) and
+[execution and reveal](/validation/execution-and-reveal).
+
+## Bridge to `AbortController`
+
+```ts
+export const uniqueEmail = {
+  id: "email.unique",
+  on: ["input", "submit"],
+  revealOn: ["blur", "submit"],
+  dependencies: [["tenantId"]],
+  when: ({ fieldValue }) => typeof fieldValue === "string" && fieldValue.includes("@"),
+  async validate({ value, fieldValue, path, context, signal }) {
+    const request = new AbortController();
+    const unsubscribe = signal.onCancel(() => request.abort());
+    try {
+      const query = new URLSearchParams({
+        tenant: value.tenantId,
+        email: String(fieldValue),
+      });
+      const response = await fetch(`${context.emailEndpoint}?${query}`, {
+        signal: request.signal,
+      });
+      if (!response.ok) throw new Error(`Availability request failed (${response.status})`);
+      const body = await response.json() as { readonly available?: unknown };
+      return body.available === true
+        ? []
+        : [{ id: "email.unique", code: "taken", path, severity: "error", message: context.messages.emailTaken }];
+    } finally {
+      unsubscribe();
+    }
+  },
+} satisfies ValidatorConfig<SignupValue, SignupContext>;
+```
+
+The adapter signal is not a DOM `AbortSignal`. Register a callback that cancels
+the underlying API, and remove it in `finally` after the work settles.
+Encode request parameters and treat endpoints as trusted application context.
+
+Choose transport failure policy deliberately. Letting the request throw creates
+a deterministic error issue; applications may instead catch known offline/
+timeout cases and return a localized warning or dedicated domain issue.
+
+## `ValidationCancellationSignal`
+
+```ts
+interface ValidationCancellationSignal {
+  readonly aborted: boolean;
+  onCancel(listener: () => void): () => void;
+}
+```
+
+`aborted` becomes true once. `onCancel()` returns an unsubscribe function. If
+the signal is already aborted, registration calls the listener immediately and
+returns a no-op unsubscribe. Cancellation is cooperative: core cannot stop an
+arbitrary promise or network library by itself.
+
+## What cancels current work
+
+Core cancels a validator record when it is superseded or cannot remain current,
+including:
+
+- a new run for the same owner/config ID;
+- a value update changing the owner or declared dependency;
+- context, schema, or extension update;
+- a structurally removed/incompatibly replaced owner;
+- form reset; and
+- controller destruction.
+
+Merely making a normalized node hidden or disabled excludes it from current
+aggregation but does not structurally remove its identity. Do not rely on that
+transition alone to abort application work; include relevant inputs as
+dependencies or model removal when cancellation is required.
+
+## Pending and prior issues
+
+As soon as an async rule starts, its record is `pending`, `pendingCount`
+increases, and field `state.validating` becomes true. If the previous record is
+still current for the same inputs, its issues remain while revalidation is
+pending. If inputs changed, stale prior issues are not carried forward.
+
+Status precedence still applies: an existing error makes the scope `invalid`
+even while another rule is pending; otherwise pending precedes unknown.
+
+Dispatch starts async work without awaiting it. Explicit `validate()` awaits
+the promises it started before returning a scoped result. A second explicit
+validation or owner update supersedes the first call's run; the earlier call
+returns the controller's then-current aggregate after its underlying promises
+settle rather than publishing a stale scoped result.
+
+## Stale-result suppression
+
+Each run stores a token, validator reference, context reference, owner path,
+and deep snapshots of owner/dependency values. Completion publishes only if
+all still match and the controller is alive. Therefore an old request that
+ignores cancellation cannot overwrite newer validation when it eventually
+resolves.
+
+Suppression is not physical cancellation. If underlying work never settles and
+does not observe `signal`, an old `validate()` promise can remain pending even
+though its result can no longer publish. Always connect cancellation for work
+you control and give remote requests application-level timeouts.
+
+## Input race timeline
+
+```text
+input A ── start request A ───────────── resolves late (ignored)
+              │
+input B ──────┴─ cancel A, start B ─ resolves (published)
+owner update ─────────────────────── dependency comparison/reconciliation
+```
+
+Event transactions validate their transformed draft. Controlled owner
+acceptance then updates canonical input; current dependency equality prevents
+the proposal/acceptance cycle from publishing an obsolete result.
+
+## Performance and privacy
+
+Core does not debounce. Debounce in application request glue or use an event
+policy that matches your UX. Cache remote results outside core only with a key
+covering every relevant dependency and authorization context.
+
+Avoid logging field values, server response bodies, or authentication material
+from cancellation/failure paths. Return stable codes and localized safe
+messages; keep detailed telemetry in redacted application observability.
+
+## What to test
+
+- Assert `pending`, `pendingCount`, and field `validating` before resolving.
+- Resolve requests out of order and assert only the newest issue publishes.
+- Change each dependency and count cancellation callbacks.
+- Cover context/schema/extension updates, structural removal, reset, and
+  destroy.
+- Test a cancellation-unaware promise to prove its stale result is ignored.
+- Test offline, timeout, non-OK, malformed response, and business rejection
+  separately.
+
+Next: define failure presentation in
+[Failures and localization](/validation/failures-and-localization), or review
+the exact [validation types](/reference/core/validation-types).
+
+## Evidence
+
+Cancellation, pending records, tokens, and stale checks are implemented in
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+The checked `AbortController` bridge is in `docs/examples/validation.ts`.
+Validation tests cover cooperative cancellation, superseding input, dependency
+updates, destruction, error precedence, and out-of-order completion.
