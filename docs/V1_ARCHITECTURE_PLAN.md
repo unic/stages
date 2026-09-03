@@ -25,6 +25,10 @@ Engine-owned collection row keys now follow accepted move/sort/duplicate
 commands, remain isolated from rejected controlled proposals, preserve row
 interaction identity, and round-trip through serialized state. Dynamic wizard
 stage visibility also reconciles the active stage to a valid fallback.
+The persistence boundary now validates the versioned envelope at runtime,
+encodes JSON with precise error codes and paths, supports explicit value
+codecs for richer domain types, applies ordered schema migrations to value and
+baseline, and rejects ambiguous, cyclic, malformed, or failing migrations.
 
 ## 1. Outcome
 

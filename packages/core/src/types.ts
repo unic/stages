@@ -324,6 +324,8 @@ interface StagesCommonOptions<TValue, TFields, TContext> {
   readonly context?: TContext;
   readonly onChange?: (change: StagesChange<TValue>) => void;
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void;
+  readonly codec?: StagesValueCodec<TValue>;
+  readonly migrations?: readonly StagesStateMigration[];
 }
 
 export type StagesOptions<TValue, TFields, TContext = unknown> =
@@ -352,6 +354,18 @@ export interface SerializedStagesState {
   readonly value: JsonValue;
   readonly baseline: JsonValue;
   readonly meta: Readonly<Record<string, JsonValue>>;
+}
+
+export interface StagesValueCodec<TValue> {
+  readonly encode: (value: DeepReadonly<TValue>) => JsonValue;
+  readonly decode: (value: JsonValue) => TValue;
+}
+
+export interface StagesStateMigration {
+  readonly schemaId: string;
+  readonly fromVersion: number;
+  readonly toVersion: number;
+  readonly migrate: (state: SerializedStagesState) => SerializedStagesState;
 }
 
 export interface StagesController<TValue, TFields = Readonly<Record<string, unknown>>, TContext = unknown> {

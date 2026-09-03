@@ -1,6 +1,12 @@
 import { applyPatches, getAtPath, pathsEqual } from "./path.js";
 import { reduceCollectionCommand, type CollectionCommand } from "./collections.js";
 import {
+  decodeJson,
+  encodeJson,
+  migrateSerializedState,
+  validateSerializedState,
+} from "./serialization.js";
+import {
   evaluateSchema,
   initialFieldValue,
   type EvaluatedSchema,
@@ -100,31 +106,6 @@ function shareSnapshotNode(
     ? next
     : { ...next, nodes: sharedChildren };
   return previousNode !== undefined && deepEqual(previousNode, candidate) ? previousNode : candidate;
-}
-
-function toJson(value: unknown, path: DataPath = [], seen = new Set<object>()): JsonValue {
-  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
-  if (typeof value === "number") {
-    if (Number.isFinite(value)) return value;
-    throw new TypeError(`Non-finite number at ${JSON.stringify(path)}.`);
-  }
-  if (typeof value !== "object") throw new TypeError(`Unsupported ${typeof value} at ${JSON.stringify(path)}.`);
-  if (seen.has(value)) throw new TypeError(`Cyclic value at ${JSON.stringify(path)}.`);
-  seen.add(value);
-  try {
-    if (Array.isArray(value)) return value.map((item, index) => toJson(item, [...path, index], seen));
-    const prototype = Object.getPrototypeOf(value) as object | null;
-    if (prototype !== Object.prototype && prototype !== null) {
-      throw new TypeError(`Unsupported object at ${JSON.stringify(path)}.`);
-    }
-    const output: Record<string, JsonValue> = {};
-    for (const [key, item] of Object.entries(value as Readonly<Record<string, unknown>>)) {
-      output[key] = toJson(item, [...path, key], seen);
-    }
-    return output;
-  } finally {
-    seen.delete(value);
-  }
 }
 
 interface InteractionState {
@@ -412,9 +393,15 @@ function validatorsFor<TValue, TFields, TContext>(
 export function stages<TValue, TFields, TContext = unknown>(
   options: StagesOptions<TValue, TFields, TContext>,
 ): StagesController<TValue, TFields, TContext> {
-  const restored = options.state;
-  let value = (restored === undefined ? options.value : restored.value) as TValue;
-  const baseline = (restored === undefined ? options.value : restored.baseline) as TValue;
+  const restored = options.state === undefined
+    ? undefined
+    : migrateSerializedState(validateSerializedState(options.state), options.migrations ?? []);
+  const decodeValue = (encoded: JsonValue): TValue =>
+    options.codec === undefined ? decodeJson(encoded) as TValue : options.codec.decode(encoded);
+  const encodeValue = (decoded: DeepReadonly<TValue>): JsonValue =>
+    encodeJson(options.codec === undefined ? decoded : options.codec.encode(decoded));
+  let value = restored === undefined ? options.value as TValue : decodeValue(restored.value);
+  const baseline = restored === undefined ? options.value as TValue : decodeValue(restored.baseline);
   let context = options.context as TContext;
   let schemaInput: StagesSchemaInput<TValue, TFields, TContext> = options.schema;
   let revision = 0;
@@ -1257,13 +1244,13 @@ export function stages<TValue, TFields, TContext = unknown>(
       format: "stages",
       formatVersion: 1,
       schema: { id: evaluatedCurrent.schema.id, version: evaluatedCurrent.schema.version },
-      value: toJson(current.value),
-      baseline: toJson(baseline),
+      value: encodeValue(current.value),
+      baseline: encodeValue(readonlyValue(baseline)),
       meta: {
-        touched: toJson([...touched.values()]),
-        visited: toJson([...visited.values()]),
-        activeWizards: toJson([...activeWizards.values()].map((state) => [state.address, state.stage])),
-        collectionKeys: toJson([...collectionKeys.values()].map((state) => [state.address, state.keys])),
+        touched: encodeJson([...touched.values()]),
+        visited: encodeJson([...visited.values()]),
+        activeWizards: encodeJson([...activeWizards.values()].map((state) => [state.address, state.stage])),
+        collectionKeys: encodeJson([...collectionKeys.values()].map((state) => [state.address, state.keys])),
       },
     };
   }
