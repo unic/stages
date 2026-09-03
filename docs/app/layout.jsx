@@ -1,5 +1,7 @@
+import { Head } from "nextra/components";
+import { getPageMap } from "nextra/page-map";
+import { Footer, Layout, Navbar } from "nextra-theme-docs";
 import "nextra-theme-docs/style.css";
-import "./styles.css";
 
 export const metadata = {
   title: {
@@ -9,26 +11,31 @@ export const metadata = {
   description: "Stages v1 form and wizard library documentation",
 };
 
+const navbar = (
+  <Navbar
+    logo={<b>Stages Documentation</b>}
+    projectLink="https://github.com/unic/stages"
+  />
+);
+
+const footer = (
+  <Footer>MIT {new Date().getFullYear()} © Fredi Bach, Unic AG.</Footer>
+);
+
 export default async function RootLayout({ children }) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
+      <Head />
       <body>
-        <header className="site-header">
-          <a className="site-title" href="/">Stages Documentation</a>
-          <nav aria-label="Documentation">
-            <a href="/installation">Installation</a>
-            <a href="/architecture">Architecture</a>
-            <a href="/core">Core</a>
-            <a href="/react">React</a>
-            <a href="/dom">DOM</a>
-            <a href="/migration">Migration</a>
-            <a href="https://github.com/unic/stages">GitHub</a>
-          </nav>
-        </header>
-        <main className="docs-content">{children}</main>
-        <footer className="site-footer">
-          MIT {new Date().getFullYear()} © Fredi Bach, Unic AG.
-        </footer>
+        <Layout
+          docsRepositoryBase="https://github.com/unic/stages/tree/master/docs"
+          footer={footer}
+          navbar={navbar}
+          pageMap={await getPageMap()}
+          sidebar={{ autoCollapse: true }}
+        >
+          {children}
+        </Layout>
       </body>
     </html>
   );

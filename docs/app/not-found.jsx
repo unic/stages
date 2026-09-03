@@ -1,3 +1,3 @@
-export default function NotFound() {
-  return <h1>404: Page not found</h1>;
-}
+import { NotFoundPage } from "nextra-theme-docs";
+
+export default NotFoundPage;

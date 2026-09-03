@@ -1,13 +1,8 @@
-import { useMDXComponents as getNextraComponents } from "nextra/mdx-components";
-
-function Wrapper({ children }) {
-  return children;
-}
+import { useMDXComponents as getThemeComponents } from "nextra-theme-docs";
 
 export function useMDXComponents(components) {
   return {
-    ...getNextraComponents(),
-    wrapper: Wrapper,
+    ...getThemeComponents(),
     ...components,
   };
 }

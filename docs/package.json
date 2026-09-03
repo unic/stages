@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next",
     "start": "serve out",
-    "build": "next build --webpack"
+    "build": "next build --webpack",
+    "postinstall": "patch-package"
   },
   "keywords": [
     "stages"
@@ -24,6 +25,7 @@
     "@xmldom/xmldom": "0.9.12"
   },
   "devDependencies": {
+    "patch-package": "^8.0.1",
     "serve": "^14.2.6",
     "typescript": "^6.0.3"
   }
