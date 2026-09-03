@@ -59,11 +59,13 @@ export type DerivedProps<TValue, TContext = unknown> = (
   context: NodeResolverContext<TValue, TContext>,
 ) => Readonly<Record<string, unknown>>;
 
+export type StagesEventSource = "user" | "adapter" | "system";
+
 export interface StagesEvent<TPayload = unknown> {
   readonly name: string;
   readonly target: StagesEventTarget;
   readonly payload?: TPayload;
-  readonly source?: "user" | "adapter" | "system";
+  readonly source?: StagesEventSource;
 }
 
 export type StagesEventTarget =

@@ -33,6 +33,8 @@ controller = stages({
 The package has no runtime dependencies and contains no DOM or framework code.
 It exports the controller, schema/event/validation/serialization types, safe
 immutable path helpers, collection reduction, and serialization utilities.
+`fieldEvent`, `nodeEvent`, and `formEvent` provide typed target constructors for
+standard and application-defined events.
 Validator execution failures can be localized through
 `validationFailureIssue` without changing their engine-owned error severity,
 identity, or path.

@@ -1,4 +1,7 @@
 import {
+  fieldEvent,
+  formEvent,
+  nodeEvent,
   stages,
   type FieldDefinition,
   type StagesExtensionCodec,
@@ -228,9 +231,11 @@ controller.update({ extensions: { draft: "saved" } });
 
 controller.batch(() => {
   for (let index = 0; index < 100; index += 1) {
-    controller.dispatch({ name: "input", target: { kind: "field", path: ["count"] }, payload: index });
+    controller.dispatch(fieldEvent("input", ["count"], { payload: index, source: "adapter" }));
   }
 });
+controller.dispatch(formEvent("submit", { source: "user" }));
+controller.dispatch(nodeEvent("wizard:next", [{ kind: "node", id: "journeys" }]));
 
 void controller.validate({ scope: "form", event: "submit", reveal: true });
 const serialized = controller.serialize();

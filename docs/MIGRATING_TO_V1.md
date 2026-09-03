@@ -173,6 +173,11 @@ Synchronous dispatches in one turn share a microtask transaction; `batch(fn)`
 defines that boundary explicitly. A batch produces at most one proposed-value
 callback and one general subscriber flush.
 
+Use `fieldEvent`, `nodeEvent`, and `formEvent` to construct typed targets and
+infer custom payloads. The executable `processing-migration` core fixture shows
+filter/cast parsing, blur cleanup and precision, computed and cleared fields,
+custom application events, and collection sorting together.
+
 ## Validation
 
 0.x Boolean/error-code validation becomes structured validators and issues.

@@ -145,7 +145,7 @@ try {
 
   writeFileSync(join(consumerDirectory, "smoke.mjs"), `
 import assert from "node:assert/strict";
-import { stages } from "@stages/core";
+import { fieldEvent, formEvent, nodeEvent, stages } from "@stages/core";
 import { createDomFields } from "@stages/dom";
 import { StagesField, useStagesCollection, useStagesWizard } from "@stages/react";
 import { bindAdapter } from "@stages/test-kit";
@@ -153,6 +153,13 @@ import { bindAdapter } from "@stages/test-kit";
 assert.equal(typeof StagesField, "function");
 assert.equal(typeof useStagesCollection, "function");
 assert.equal(typeof useStagesWizard, "function");
+assert.deepEqual(fieldEvent("input", ["name"], { payload: "Ada" }), {
+  name: "input",
+  target: { kind: "field", path: ["name"] },
+  payload: "Ada",
+});
+assert.equal(nodeEvent("wizard:next", []).target.kind, "node");
+assert.equal(formEvent("submit").target.kind, "form");
 const fields = createDomFields();
 let controller;
 controller = stages({
@@ -237,7 +244,7 @@ migrated.destroy();
   run(process.execPath, [join(consumerDirectory, "smoke.mjs")], consumerDirectory);
 
   writeFileSync(join(consumerDirectory, "consumer.ts"), `
-import { stages, type StagesSchema } from "@stages/core";
+import { fieldEvent, formEvent, nodeEvent, stages, type StagesSchema } from "@stages/core";
 import { createDomFields } from "@stages/dom";
 import { StagesField, type ReactFieldProps } from "@stages/react";
 import { bindAdapter } from "@stages/test-kit";
@@ -250,6 +257,9 @@ const schema = {
   nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }],
 } as const satisfies StagesSchema<Value, typeof fields>;
 const controller = stages({ schema, fields, value: { name: "Ada" } });
+controller.dispatch(fieldEvent("input", ["name"], { payload: "Grace", source: "adapter" }));
+controller.dispatch(formEvent("submit"));
+controller.dispatch(nodeEvent("custom", []));
 const adapter = bindAdapter(controller, (snapshot) => void snapshot.value.name);
 const reactField: typeof StagesField = StagesField;
 type TextBinding = ReactFieldProps<string, { readonly label: string }>;

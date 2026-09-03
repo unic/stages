@@ -119,6 +119,11 @@ presentation hook for localization and reporting metadata. Core retains the
 error severity, validator-derived ID, and exact path, and safely falls back
 with a diagnostic if the hook fails. A navigation matrix covers unknown,
 pending, invalid, warning-only, and hidden-stage validation states.
+Typed `fieldEvent`, `nodeEvent`, and `formEvent` constructors now preserve
+payload inference while guaranteeing the target shape. A dedicated executable
+migration fixture covers the complete 0.x value-processing decision table:
+filter/cast parsing, blur cleanup/precision, computed values, clear-fields
+patches, application actions, and explicit collection sorting.
 
 ## 1. Outcome
 
@@ -1804,7 +1809,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 0 — Contract fixtures and API spike | Implemented | Strict public TypeScript contracts and a compile-tested fixture cover controlled fields, recursive groups/collections/wizards, discriminated collections, custom view tokens, dynamic schemas, transforms, validation, serialization, and batching. | Continue refining types when remaining runtime features are added; freeze the public API only after packed-artifact testing. |
 | Phase 1 — Pure schema and value core | Implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, incompatible-identity diagnostics and state removal, malformed-structure guards, last-valid-tree recovery, and seeded path, collection, controller transaction, and malformed-schema properties are implemented. | Continue expanding regression seeds when new schema boundaries are introduced. |
 | Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous and delayed owner acceptance, rejected proposals, documented callback/subscriber ordering, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, teardown, and a packed-consumer controlled handshake are implemented. | Continue treating the executable callback-order fixture as the compatibility contract. |
-| Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
+| Phase 3 — Events and transforms | Implemented | Field reducers, typed form/field/node event constructors, payload inference, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, reducer/transform/patch diagnostics, and an executable fixture for every documented 0.x processing migration pattern are implemented. | Continue expanding named-event fixtures when new conventions are introduced. |
 | Phase 4 — Validation | Implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; durable reveal state; constrained failure-issue presentation customization; and an unknown/pending/invalid/warning/hidden-stage navigation matrix are implemented. | Continue expanding validator and navigation regression cases when policies change. |
 | Phase 5 — Collections and nested wizards | Implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. An exhaustive 84-case structural permutation matrix plus a 32-level mixed tree verifies paths, stable identity, events, scoped validation, and recreation. | Continue expanding regression cases when structural capabilities change. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, registered namespaced extension codecs, and packed-artifact recreation are implemented. Packed release-candidate verification exercises a custom value codec and schema migration. | Continue adding regression fixtures for future codecs and migrations. |
@@ -1838,7 +1843,7 @@ currently an alpha foundation, not a release-ready v1 build.
   Finally it runs `npm run verify:packages:v1`, which checks all four package
   tarballs—including their required READMEs—and an isolated offline runtime/type
   consumer, followed by `npm run performance:v1`.
-- `npm run test:v1` builds the packages and currently runs 79 passing executable
+- `npm run test:v1` builds the packages and currently runs 80 passing executable
   tests across core, DOM, React 17, and the adapter test kit. The React example's
   own `npm test` adds a passing React 19 Strict Mode lifecycle test.
 - `npm run release:check:v1` composes the strict checks, package tests, vanilla

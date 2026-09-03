@@ -159,6 +159,22 @@ Names are open-ended. Implemented conventions include `input`, `focus`, `blur`,
 `reset`, collection commands, and wizard navigation. Field reducers return a
 new field value, patches, or `undefined`.
 
+`fieldEvent`, `nodeEvent`, and `formEvent` construct correctly targeted events
+while preserving inferred payload types:
+
+```ts
+controller.dispatch(fieldEvent("input", ["name"], {
+  payload: "Ada",
+  source: "adapter",
+}));
+controller.dispatch(nodeEvent("wizard:next", wizardAddress));
+controller.dispatch(formEvent("submit", { source: "user" }));
+```
+
+The helpers do not close the event-name vocabulary or interpret custom
+payloads. Standard collection and wizard payloads are still checked at the
+controller boundary.
+
 Transforms match event names and return immutable `set` or `remove` patches.
 They run in deterministic target-to-root order: target, nearest ancestor through
 farthest ancestor, then schema root. Later patches observe and can overwrite
