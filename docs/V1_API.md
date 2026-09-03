@@ -223,6 +223,30 @@ publish, and thrown or malformed results become deterministic rejection issues.
 Disabled nodes participate only when the validator explicitly sets
 `includeDisabled: true`.
 
+Validator exceptions, rejected promises, and malformed results remain errors
+with engine-owned IDs and paths. Applications may localize their presentation
+without weakening that invariant:
+
+```ts
+const controller = stages({
+  schema,
+  fields,
+  value,
+  validationFailureIssue({ kind, validatorId, event, error }) {
+    return {
+      code: `validation.${kind}`,
+      message: translate("validation.failed", { validatorId, event, error }),
+      meta: { reportable: true },
+    };
+  },
+});
+```
+
+The hook may customize `code`, `message`, and `meta`. Core always supplies the
+failure `id`, exact node `path`, and `severity: "error"`. A hook that throws or
+returns malformed presentation data produces the deterministic default issue
+and a `validation.failure-issue-failed` diagnostic.
+
 The validation cancellation signal exposes `aborted` and `onCancel(listener)`.
 Use it to stop framework-neutral asynchronous work cooperatively.
 

@@ -673,6 +673,59 @@ export function stages<TValue, TFields, TContext = unknown>(
     options.onDiagnostic?.(item);
   }
 
+  function validationFailureIssue(
+    node: Readonly<{ path: DataPath; address: NodeAddress }>,
+    validatorId: string,
+    event: string,
+    kind: "when" | "validate",
+    error: unknown,
+  ): ValidationIssue {
+    const defaultCode = kind === "when" ? "validator-when-failed" : "validator-rejected";
+    const fallback: ValidationIssue = {
+      id: `${validatorId}.${kind === "when" ? "when-failed" : "rejected"}`,
+      code: defaultCode,
+      path: node.path,
+      severity: "error",
+      message: error instanceof Error ? error.message : String(error),
+    };
+    if (options.validationFailureIssue === undefined) return fallback;
+
+    try {
+      const presentation = options.validationFailureIssue({
+        kind,
+        validatorId,
+        event,
+        path: node.path,
+        address: node.address,
+        error,
+      });
+      const candidate = eventRecord(presentation);
+      const code = candidate?.["code"];
+      const message = candidate?.["message"];
+      const meta = candidate?.["meta"];
+      if (candidate === undefined
+        || (code !== undefined && (typeof code !== "string" || code.length === 0))
+        || (message !== undefined && typeof message !== "string")
+        || (meta !== undefined && eventRecord(meta) === undefined)) {
+        throw new TypeError("Validation failure issue presentation is malformed.");
+      }
+      return {
+        ...fallback,
+        ...(typeof code === "string" ? { code } : {}),
+        ...(typeof message === "string" ? { message } : {}),
+        ...(meta === undefined ? {} : { meta: meta as Readonly<Record<string, unknown>> }),
+      };
+    } catch (factoryError) {
+      reportRuntimeDiagnostic(
+        "validation.failure-issue-failed",
+        `Validation failure issue factory failed: ${factoryError instanceof Error ? factoryError.message : String(factoryError)}`,
+        node.path,
+        node.address,
+      );
+      return fallback;
+    }
+  }
+
   function evaluated(currentValue: TValue) {
     const currentCollectionKeys = transactionCollectionKeys ?? collectionKeys;
     let result: EvaluatedSchema<TValue, TFields, TContext>;
@@ -1067,13 +1120,7 @@ export function stages<TValue, TFields, TContext = unknown>(
           dependencyValues: dependencyValues(paths, currentValue),
           context,
           status: "complete",
-          issues: [{
-            id: `${validator.id}.when-failed`,
-            code: "validator-when-failed",
-            path: node.path,
-            severity: "error",
-            message: error instanceof Error ? error.message : String(error),
-          }],
+          issues: [validationFailureIssue(node, validator.id, event, "when", error)],
           revealed: revealRequested || wasRevealed || previous?.revealed === true,
           token: ++validationToken,
           cancel: () => undefined,
@@ -1115,13 +1162,9 @@ export function stages<TValue, TFields, TContext = unknown>(
           });
           const completion = Promise.resolve(output)
             .then((issues) => checkedValidationIssues(issues))
-            .catch((error: unknown): readonly ValidationIssue[] => [{
-              id: `${validator.id}.rejected`,
-              code: "validator-rejected",
-              path: node.path,
-              severity: "error",
-              message: error instanceof Error ? error.message : String(error),
-            }])
+            .catch((error: unknown): readonly ValidationIssue[] => [
+              validationFailureIssue(node, validator.id, event, "validate", error),
+            ])
             .then((issues) => {
               if (destroyed) return;
               const record = validationRecords.get(key);
@@ -1155,13 +1198,7 @@ export function stages<TValue, TFields, TContext = unknown>(
           dependencyValues: values,
           context,
           status: "complete",
-          issues: [{
-            id: `${validator.id}.rejected`,
-            code: "validator-rejected",
-            path: node.path,
-            severity: "error",
-            message: error instanceof Error ? error.message : String(error),
-          }],
+          issues: [validationFailureIssue(node, validator.id, event, "validate", error)],
           revealed,
           token,
           cancel: cancellation.cancel,

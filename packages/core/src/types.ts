@@ -152,6 +152,25 @@ export interface ValidationIssue {
   readonly meta?: Readonly<Record<string, unknown>>;
 }
 
+export interface ValidationFailureContext {
+  readonly kind: "when" | "validate";
+  readonly validatorId: string;
+  readonly event: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly error: unknown;
+}
+
+export interface ValidationFailureIssuePresentation {
+  readonly code?: string;
+  readonly message?: string;
+  readonly meta?: Readonly<Record<string, unknown>>;
+}
+
+export type ValidationFailureIssueFactory = (
+  context: ValidationFailureContext,
+) => ValidationFailureIssuePresentation;
+
 export interface ValidatorConfig<TValue, TContext = unknown> {
   readonly id: string;
   readonly on: string | readonly string[];
@@ -336,6 +355,7 @@ interface StagesCommonOptions<TValue, TFields, TContext> {
   readonly context?: TContext;
   readonly onChange?: (change: StagesChange<TValue>) => void;
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void;
+  readonly validationFailureIssue?: ValidationFailureIssueFactory;
   readonly codec?: StagesValueCodec<TValue>;
   readonly migrations?: readonly StagesStateMigration[];
   readonly extensionCodecs?: Readonly<Record<string, StagesExtensionCodec>>;

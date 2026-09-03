@@ -114,6 +114,11 @@ collection, discriminated collection, and wizard nesting permutations through
 three levels, plus a 32-level mixed tree. Each case verifies normalized and
 controller paths, stable addresses, field events, scoped validation, and
 serialized recreation.
+Validator execution failures now support a typed `validationFailureIssue`
+presentation hook for localization and reporting metadata. Core retains the
+error severity, validator-derived ID, and exact path, and safely falls back
+with a diagnostic if the hook fails. A navigation matrix covers unknown,
+pending, invalid, warning-only, and hidden-stage validation states.
 
 ## 1. Outcome
 
@@ -1800,7 +1805,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 1 — Pure schema and value core | Implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, incompatible-identity diagnostics and state removal, malformed-structure guards, last-valid-tree recovery, and seeded path, collection, controller transaction, and malformed-schema properties are implemented. | Continue expanding regression seeds when new schema boundaries are introduced. |
 | Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous and delayed owner acceptance, rejected proposals, documented callback/subscriber ordering, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, teardown, and a packed-consumer controlled handshake are implemented. | Continue treating the executable callback-order fixture as the compatibility contract. |
 | Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
-| Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
+| Phase 4 — Validation | Implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; durable reveal state; constrained failure-issue presentation customization; and an unknown/pending/invalid/warning/hidden-stage navigation matrix are implemented. | Continue expanding validator and navigation regression cases when policies change. |
 | Phase 5 — Collections and nested wizards | Implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. An exhaustive 84-case structural permutation matrix plus a 32-level mixed tree verifies paths, stable identity, events, scoped validation, and recreation. | Continue expanding regression cases when structural capabilities change. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, registered namespaced extension codecs, and packed-artifact recreation are implemented. Packed release-candidate verification exercises a custom value codec and schema migration. | Continue adding regression fixtures for future codecs and migrations. |
 | Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. | Migrate the existing demo applications to v1 and broaden adapter accessibility testing. |
@@ -1833,7 +1838,7 @@ currently an alpha foundation, not a release-ready v1 build.
   Finally it runs `npm run verify:packages:v1`, which checks all four package
   tarballs—including their required READMEs—and an isolated offline runtime/type
   consumer, followed by `npm run performance:v1`.
-- `npm run test:v1` builds the packages and currently runs 76 passing executable
+- `npm run test:v1` builds the packages and currently runs 79 passing executable
   tests across core, DOM, React 17, and the adapter test kit. The React example's
   own `npm test` adds a passing React 19 Strict Mode lifecycle test.
 - `npm run release:check:v1` composes the strict checks, package tests, vanilla

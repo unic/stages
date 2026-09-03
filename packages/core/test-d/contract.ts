@@ -212,6 +212,13 @@ const controller = stages({
   context: { canApprove: true, showProfile: true },
   extensionCodecs: { draft: draftExtension },
   extensions: { draft: "local" },
+  validationFailureIssue({ kind, validatorId, event, path, address, error }) {
+    return {
+      code: `validation.${kind}`,
+      message: error instanceof Error ? error.message : `Validator ${validatorId} failed on ${event}`,
+      meta: { path, address },
+    };
+  },
   onChange(change) {
     accepted = { ...change.value, name: change.value.name.trimStart() };
     controller.update({ value: accepted });

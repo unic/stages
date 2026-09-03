@@ -33,6 +33,9 @@ controller = stages({
 The package has no runtime dependencies and contains no DOM or framework code.
 It exports the controller, schema/event/validation/serialization types, safe
 immutable path helpers, collection reduction, and serialization utilities.
+Validator execution failures can be localized through
+`validationFailureIssue` without changing their engine-owned error severity,
+identity, or path.
 
 This is an alpha API and is not compatible with `react-stages` 0.x. See the
 [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md) and

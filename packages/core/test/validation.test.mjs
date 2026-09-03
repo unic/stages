@@ -375,6 +375,104 @@ test("stage validity is scoped and gates wizard navigation", async () => {
   assert.equal(wizard().nodes[0].validation.status, "valid");
 });
 
+test("wizard validation gates unknown, pending, invalid, warning, and hidden-stage navigation", async () => {
+  const wizardAddress = [{ kind: "node", id: "flow" }];
+  const firstAddress = [...wizardAddress, { kind: "node", id: "first" }];
+  const secondAddress = [...wizardAddress, { kind: "node", id: "second" }];
+  const createController = (firstValidator, secondValidator = undefined, wizardOptions = {}) => stages({
+    schema: {
+      id: `navigation-matrix-${firstValidator.id}`,
+      version: 1,
+      nodes: [{
+        kind: "wizard",
+        id: "flow",
+        navigation: { validateCurrent: true, nonLinear: true },
+        ...wizardOptions,
+        stages: [
+          {
+            id: "first",
+            nodes: [{ kind: "field", id: "firstValue", type: "text", validators: [firstValidator] }],
+          },
+          {
+            id: "second",
+            nodes: [{
+              kind: "field",
+              id: "secondValue",
+              type: "text",
+              ...(secondValidator === undefined ? {} : { validators: [secondValidator] }),
+            }],
+          },
+          { id: "hidden", when: false, nodes: [] },
+        ],
+      }],
+    },
+    fields,
+    value: { flow: { first: { firstValue: "" }, second: { secondValue: "" }, hidden: {} } },
+  });
+  const valid = (id) => ({ id, on: "submit", validate: () => [] });
+
+  const unknown = createController(valid("unknown"));
+  unknown.dispatch({ name: "wizard:next", target: { kind: "node", address: wizardAddress } });
+  await tick();
+  assert.equal(unknown.getSnapshot().nodes[0].activeStage, "first");
+  assert.equal(unknown.getSnapshot().diagnostics.at(-1).code, "wizard.navigation-rejected");
+  unknown.destroy();
+
+  let finishPending;
+  const pending = createController({
+    id: "pending",
+    on: "submit",
+    validate: () => new Promise((resolve) => { finishPending = resolve; }),
+  });
+  const pendingValidation = pending.validate({ scope: { address: firstAddress }, event: "submit" });
+  assert.equal(pending.getSnapshot().nodes[0].nodes[0].validation.status, "pending");
+  pending.dispatch({ name: "wizard:next", target: { kind: "node", address: wizardAddress } });
+  await tick();
+  assert.equal(pending.getSnapshot().nodes[0].activeStage, "first");
+  finishPending([]);
+  assert.equal((await pendingValidation).status, "valid");
+  pending.dispatch({ name: "wizard:next", target: { kind: "node", address: wizardAddress } });
+  await tick();
+  assert.equal(pending.getSnapshot().nodes[0].activeStage, "second");
+  pending.destroy();
+
+  const invalid = createController(valid("first-valid"), {
+    id: "second-invalid",
+    on: "submit",
+    validate: ({ path }) => [{ id: "second-invalid", code: "invalid", path, severity: "error" }],
+  });
+  assert.equal((await invalid.validate({ scope: { address: firstAddress }, event: "submit" })).status, "valid");
+  invalid.dispatch({ name: "wizard:next", target: { kind: "node", address: wizardAddress } });
+  await tick();
+  assert.equal((await invalid.validate({ scope: { address: secondAddress }, event: "submit" })).status, "invalid");
+  invalid.dispatch({ name: "wizard:previous", target: { kind: "node", address: wizardAddress } });
+  await tick();
+  assert.equal(invalid.getSnapshot().nodes[0].activeStage, "second");
+  invalid.destroy();
+
+  const warning = createController({
+    id: "warning",
+    on: "submit",
+    validate: ({ path }) => [{ id: "warning", code: "warning", path, severity: "warning" }],
+  });
+  const warningValidation = await warning.validate({ scope: { address: firstAddress }, event: "submit" });
+  assert.equal(warningValidation.status, "valid");
+  assert.equal(warningValidation.issues.length, 1);
+  warning.dispatch({ name: "wizard:next", target: { kind: "node", address: wizardAddress } });
+  await tick();
+  assert.equal(warning.getSnapshot().nodes[0].activeStage, "second");
+  warning.destroy();
+
+  const hidden = createController(valid("hidden-target"));
+  assert.equal((await hidden.validate({ scope: { address: firstAddress }, event: "submit" })).status, "valid");
+  hidden.dispatch({ name: "wizard:go", target: { kind: "node", address: wizardAddress }, payload: "hidden" });
+  await tick();
+  assert.equal(hidden.getSnapshot().nodes[0].activeStage, "first");
+  assert.deepEqual(hidden.getSnapshot().nodes[0].visibleStageIds, ["first", "second"]);
+  assert.equal(hidden.getSnapshot().diagnostics.at(-1).code, "wizard.navigation-rejected");
+  hidden.destroy();
+});
+
 test("pending validators are cooperatively cancelled when dependencies change", async () => {
   let cancellations = 0;
   const schema = {
@@ -514,6 +612,119 @@ test("malformed sync and async validator results become deterministic issues", a
   assert.deepEqual(result.issues.map(({ code }) => code), ["validator-rejected", "validator-rejected"]);
   assert.match(result.issues[0].message, /array of issues/);
   assert.match(result.issues[1].message, /malformed issue/);
+});
+
+test("validation failure issues customize presentation without weakening failure semantics", async () => {
+  const failures = [];
+  const schema = {
+    id: "custom-failure-issues",
+    version: 1,
+    nodes: [
+      {
+        kind: "field",
+        id: "conditional",
+        type: "text",
+        validators: [{
+          id: "conditional.failure",
+          on: "submit",
+          when: () => { throw new Error("condition exploded"); },
+          validate: () => [],
+        }],
+      },
+      {
+        kind: "field",
+        id: "sync",
+        type: "text",
+        validators: [{
+          id: "sync.failure",
+          on: "submit",
+          validate: () => { throw new Error("sync exploded"); },
+        }],
+      },
+      {
+        kind: "field",
+        id: "async",
+        type: "text",
+        validators: [{
+          id: "async.failure",
+          on: "submit",
+          validate: async () => { throw new Error("async exploded"); },
+        }],
+      },
+    ],
+  };
+  const controller = stages({
+    schema,
+    fields,
+    value: { conditional: "", sync: "", async: "" },
+    validationFailureIssue: (failure) => {
+      failures.push(failure);
+      return {
+        code: `localized-${failure.kind}`,
+        message: `Localized ${failure.validatorId}`,
+        meta: { event: failure.event, addressDepth: failure.address.length },
+      };
+    },
+  });
+
+  failures.length = 0;
+  const result = await controller.validate({ event: "submit", reveal: true });
+  assert.equal(result.status, "invalid");
+  assert.equal(result.isValid, false);
+  assert.deepEqual(result.issues.map(({ id }) => id), [
+    "conditional.failure.when-failed",
+    "sync.failure.rejected",
+    "async.failure.rejected",
+  ]);
+  assert.deepEqual(result.issues.map(({ code }) => code), [
+    "localized-when",
+    "localized-validate",
+    "localized-validate",
+  ]);
+  assert.deepEqual(result.issues.map(({ path }) => path), [["conditional"], ["sync"], ["async"]]);
+  assert(result.issues.every(({ severity }) => severity === "error"));
+  assert.deepEqual(result.issues.map(({ meta }) => meta), [
+    { event: "submit", addressDepth: 1 },
+    { event: "submit", addressDepth: 1 },
+    { event: "submit", addressDepth: 1 },
+  ]);
+  assert.deepEqual(failures.map(({ kind, validatorId, event }) => ({ kind, validatorId, event })), [
+    { kind: "when", validatorId: "conditional.failure", event: "submit" },
+    { kind: "validate", validatorId: "sync.failure", event: "submit" },
+    { kind: "validate", validatorId: "async.failure", event: "submit" },
+  ]);
+});
+
+test("a broken validation failure issue factory falls back deterministically", async () => {
+  const controller = stages({
+    schema: {
+      id: "broken-failure-issue",
+      version: 1,
+      nodes: [{
+        kind: "field",
+        id: "name",
+        type: "text",
+        validators: [{
+          id: "broken",
+          on: "submit",
+          validate: () => { throw new Error("validator exploded"); },
+        }],
+      }],
+    },
+    fields,
+    value: { name: "" },
+    validationFailureIssue: () => [],
+  });
+
+  const result = await controller.validate({ event: "submit" });
+  assert.equal(result.status, "invalid");
+  assert.deepEqual(result.issues.map(({ id, code, path, severity }) => ({ id, code, path, severity })), [{
+    id: "broken.rejected",
+    code: "validator-rejected",
+    path: ["name"],
+    severity: "error",
+  }]);
+  assert.equal(controller.getSnapshot().diagnostics.at(-1).code, "validation.failure-issue-failed");
 });
 
 test("registry field validators are reusable, path-aware, and independently keyed", async () => {
