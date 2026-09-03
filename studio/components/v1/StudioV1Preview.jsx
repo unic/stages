@@ -5,7 +5,7 @@ import { Button } from "primereact/button";
 import primeFields from "../primeFields";
 import { convertLegacyConfig, prepareStudioValue, studioPresentationKey } from "./legacyConfig.mjs";
 
-const ARRAY_FIELDS = new Set(["buttons", "chips", "multiselect"]);
+const ARRAY_FIELDS = new Set(["chips", "multiselect"]);
 const BOOLEAN_FIELDS = new Set(["checkbox", "switch", "toggle"]);
 const NUMBER_FIELDS = new Set(["number", "rating", "slider"]);
 
@@ -28,7 +28,17 @@ function createFieldRegistry() {
           id={id}
           name={field.path.join(".")}
           value={field.value}
-          onChange={(value) => emit("input", value)}
+          onChange={(value) => {
+            let nextValue = value;
+            if (typeof props.filter === "function") {
+              try {
+                nextValue = props.filter(value);
+              } catch {
+                nextValue = value;
+              }
+            }
+            emit("input", nextValue);
+          }}
           onFocus={() => emit("focus")}
           onBlur={() => emit("blur")}
           isDisabled={field.state.disabled}
@@ -157,7 +167,19 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
           {meta.label ? <label>{meta.label}</label> : null}
           {meta.secondaryText ? <div style={{ color: "#999", marginBottom: "12px" }}>{meta.secondaryText}</div> : null}
           <Nodes controller={controller} nodes={node.nodes} presentation={presentation} previewSize={previewSize} rowCanRemove={node.canRemove} />
-          <button type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")}>add row</button>
+          {Array.isArray(meta.variants) ? meta.variants.map((variant) => (
+            <button
+              key={variant}
+              type="button"
+              disabled={!node.canAdd}
+              onClick={() => nodeEvent(controller, node, "collection:add", { variant })}
+              style={{ marginRight: "6px" }}
+            >
+              add {variant}
+            </button>
+          )) : (
+            <button type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")}>add row</button>
+          )}
         </section>
       );
     }
@@ -172,7 +194,16 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
   });
 }
 
-export default function StudioV1Preview({ config, fieldsets, value, onChange, previewSize }) {
+export function StudioV1Form({
+  config,
+  fieldsets = [],
+  value,
+  onChange,
+  previewSize = "desktop",
+  compact = false,
+  showCompatibilityDiagnostics = true,
+  showSubmit = false,
+}) {
   const formRef = useRef(null);
   const [message, setMessage] = useState("");
   const converted = useMemo(() => convertLegacyConfig(config, {
@@ -200,8 +231,8 @@ export default function StudioV1Preview({ config, fieldsets, value, onChange, pr
 
   return (
     <form ref={formRef} onSubmit={submit} data-stages-runtime="v1">
-      <div style={{ position: "relative", display: "flex", flexWrap: "wrap", maxWidth: previewSize === "mobile" ? "480px" : previewSize === "tablet" ? "640px" : "960px", margin: "0 auto", paddingBottom: "64px" }}>
-        {converted.diagnostics.length > 0 ? (
+      <div style={{ position: "relative", display: "flex", flexWrap: "wrap", maxWidth: compact ? "100%" : previewSize === "mobile" ? "480px" : previewSize === "tablet" ? "640px" : "960px", margin: compact ? "-8px" : "0 auto", paddingBottom: compact ? 0 : "64px" }}>
+        {showCompatibilityDiagnostics && converted.diagnostics.length > 0 ? (
           <aside role="status" style={{ flex: "0 0 100%", margin: "0 8px 16px", padding: "10px 12px", color: "#7a5100", background: "#fff7df", border: "1px solid #ead39b", borderRadius: "3px" }}>
             <strong>v1 compatibility preview</strong>
             <ul style={{ marginBottom: 0 }}>
@@ -215,11 +246,17 @@ export default function StudioV1Preview({ config, fieldsets, value, onChange, pr
           </aside>
         ) : null}
         <Nodes controller={controller} nodes={snapshot.nodes} presentation={converted.presentation} previewSize={previewSize} />
-        <div style={{ flex: "0 0 100%", padding: "8px" }}>
-          <Button type="submit">Submit</Button>
-          {message ? <p role="status">{message}</p> : null}
-        </div>
+        {showSubmit ? (
+          <div style={{ flex: "0 0 100%", padding: "8px" }}>
+            <Button type="submit">Submit</Button>
+            {message ? <p role="status">{message}</p> : null}
+          </div>
+        ) : null}
       </div>
     </form>
   );
+}
+
+export default function StudioV1Preview(props) {
+  return <StudioV1Form {...props} showCompatibilityDiagnostics showSubmit />;
 }

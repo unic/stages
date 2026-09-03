@@ -150,14 +150,27 @@ function convertNodes(items, context, parentPath = [], parentAddress = []) {
     }
 
     if (item.type === "collection") {
-      return [{
+      const collection = {
         kind: "collection",
         id,
         ...behavior,
         ...(Number.isInteger(item.min) && item.min >= 0 ? { min: item.min } : {}),
         ...(Number.isInteger(item.max) && item.max >= 0 ? { max: item.max } : {}),
-        nodes: convertNodes(item.fields, context, path, address),
-      }];
+      };
+      if (item.fields !== null && typeof item.fields === "object" && !Array.isArray(item.fields)) {
+        const variants = Object.fromEntries(Object.entries(item.fields).map(([variant, fields]) => [variant, {
+          nodes: convertNodes(fields, context, path, address),
+        }]));
+        collection.discriminator = "__typename";
+        collection.variants = variants;
+        context.presentation[addressKey(address)] = {
+          ...(context.presentation[addressKey(address)] || {}),
+          variants: Object.keys(variants),
+        };
+      } else {
+        collection.nodes = convertNodes(item.fields, context, path, address);
+      }
+      return [collection];
     }
 
     if (item.type === "wizard") {
@@ -268,7 +281,8 @@ function prepareNodes(nodes, input) {
     }
     if (node.kind === "collection") {
       const current = Array.isArray(source[node.id]) ? source[node.id] : [];
-      const rows = current.map((row) => prepareNodes(node.nodes || [], row));
+      const rowNodes = (row) => node.variants?.[row?.[node.discriminator]]?.nodes || node.nodes || [];
+      const rows = current.map((row) => prepareNodes(rowNodes(row), row));
       while (rows.length < (node.min || 0)) rows.push(prepareNodes(node.nodes || [], {}));
       if (current !== source[node.id] || rows.some((row, index) => row !== current[index]) || rows.length !== current.length) {
         set(node.id, rows);

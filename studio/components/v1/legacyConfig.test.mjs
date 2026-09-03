@@ -92,3 +92,22 @@ test("prepares collection and wizard containers without mutating persisted data"
   assert.deepEqual(value, {});
   assert.equal(prepareStudioValue(schema, prepared), prepared);
 });
+
+test("converts and prepares discriminated legacy collection variants", () => {
+  const schema = convertLegacyConfig([{
+    id: "validation",
+    type: "collection",
+    fields: {
+      email: [{ id: "strong", type: "text", defaultValue: "yes" }],
+      phone: [{ id: "country", type: "text" }],
+    },
+  }], { fieldTypes });
+
+  assert.equal(schema.schema.nodes[0].discriminator, "__typename");
+  assert.deepEqual(Object.keys(schema.schema.nodes[0].variants), ["email", "phone"]);
+  assert.deepEqual(schema.presentation["node:validation"].variants, ["email", "phone"]);
+  assert.deepEqual(
+    prepareStudioValue(schema.schema, { validation: [{ __typename: "email" }] }),
+    { validation: [{ __typename: "email", strong: "yes" }] },
+  );
+});

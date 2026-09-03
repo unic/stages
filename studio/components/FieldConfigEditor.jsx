@@ -1,10 +1,7 @@
 import { useState } from "react";
-import { Form } from "react-stages";
 import { Message } from "primereact/message";
 import { Waypoints } from "lucide-react";
 import fieldProps from "./fieldProps";
-import primeFields from "./primeFields";
-import { FieldRenderer } from "./FieldRenderer";
 import FormattedPath from "./FormattedPath";
 import useStagesStore from "./store";
 import InspectorSpacer from "./InspectorSpacer";
@@ -13,6 +10,7 @@ import {
   removeNonMatchingProperties,
 } from "./helpers";
 import _ from "lodash";
+import { StudioV1Form } from "./v1/StudioV1Preview";
 
 const parseConfig = (config) => {
   if (Array.isArray(config)) {
@@ -224,42 +222,21 @@ const FieldConfigEditor = ({ handleEditFieldConfig }) => {
         </div>
       </div>
       {Array.isArray(actualConfig) ? (
-        <Form
+        <StudioV1Form
           key={`configForm-${
             typeof config === "object" ? config.type : "multiselect"
           }`}
-          id={`configForm-${
-            typeof config === "object" ? config.type : "multiselect"
-          }`}
-          data={data}
-          fields={primeFields}
-          config={{
-            fields: () => {
-              return actualConfig;
-            },
-          }}
-          render={({ actionProps, fieldProps }) => {
-            return (
-              <>
-                <form>
-                  <div style={{ position: "relative", margin: "-8px" }}>
-                    <FieldRenderer
-                      parent=""
-                      fieldProps={fieldProps}
-                      fields={fieldProps.fields}
-                      isFieldConfigEditor
-                    />
-                  </div>
-                </form>
-              </>
-            );
-          }}
+          value={data}
+          config={actualConfig}
+          compact
+          showCompatibilityDiagnostics={false}
           onChange={(payload) => {
             if (!Array.isArray(config)) {
-              if (payload.type !== data.type)
-                payload = removeNonMatchingProperties(payload, payload.type);
-              setData(payload);
-              handleEditFieldConfig(path, payload, isFieldsetItem);
+              const nextPayload = payload.type !== data.type
+                ? removeNonMatchingProperties({ ...payload }, payload.type)
+                : payload;
+              setData(nextPayload);
+              handleEditFieldConfig(path, nextPayload, isFieldsetItem);
             } else {
               // Multiple fields are selected, so change all fields if there is an actualy data change
               // Find out what has changed and than apply that to all paths

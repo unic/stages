@@ -17,8 +17,6 @@ const CommunityForm = () => {
 
     if (!store) return <div>Something went wrong, store not found!</div>;
 
-    console.log({ store });
-
     if (store.isEditMode) {
         return (
             <Splitter gutterSize={5} stateStorage="local" stateKey="stages-splitter" style={{ height: '100vh', minHeight: "100vh", maxHeight: "100vh", width: "100vw", border: "none", borderRadius: 0 }}>
