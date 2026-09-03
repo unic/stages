@@ -1,4 +1,4 @@
-{
+export default {
   "index": {
     "title": "Recipe index",
     "display": "hidden"

@@ -1,4 +1,4 @@
-{
+export default {
   "index": "Overview",
   "start": "Start here",
   "core-concepts": "Core concepts",

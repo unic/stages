@@ -1,4 +1,4 @@
-{
+export default {
   "exports": "Exports",
   "controller": "Controller",
   "schema-types": "Schema types",

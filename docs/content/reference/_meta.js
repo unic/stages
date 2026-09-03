@@ -1,4 +1,4 @@
-{
+export default {
   "core": "Core",
   "react": "React",
   "dom": "DOM",

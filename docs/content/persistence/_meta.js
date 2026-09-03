@@ -1,4 +1,4 @@
-{
+export default {
   "index": {
     "title": "Persistence overview",
     "display": "hidden"

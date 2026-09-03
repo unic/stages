@@ -1,4 +1,4 @@
-{
+export default {
   "index": {
     "title": "Custom adapter overview",
     "display": "hidden"

@@ -1,4 +1,4 @@
-{
+export default {
   "controlled-values": "Controlled values",
   "controller-lifecycle": "Controller lifecycle",
   "schemas": "Schemas",

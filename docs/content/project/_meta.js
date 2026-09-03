@@ -1,4 +1,4 @@
-{
+export default {
   "architecture": "Architecture",
   "core-boundaries": "Core boundaries",
   "performance": "Performance",

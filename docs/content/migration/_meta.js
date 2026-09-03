@@ -1,4 +1,4 @@
-{
+export default {
   "index": {
     "title": "Migration overview",
     "display": "hidden"

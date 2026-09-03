@@ -1,4 +1,4 @@
-{
+export default {
   "index": {
     "title": "Diagnostics overview",
     "display": "hidden"

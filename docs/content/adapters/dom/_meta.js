@@ -1,4 +1,4 @@
-{
+export default {
   "index": {
     "title": "DOM overview",
     "display": "hidden"

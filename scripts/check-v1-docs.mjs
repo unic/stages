@@ -94,19 +94,36 @@ for (const { relativePath, source } of guideEntries) {
 }
 
 async function validateMeta(directory) {
-  const metaPath = path.join(directory, "_meta.json");
+  // Nextra 4 discovers executable metadata modules, not JSON metadata files.
+  const metaPath = path.join(directory, "_meta.js");
   let meta;
   try {
-    meta = JSON.parse(await readFile(metaPath, "utf8"));
+    const source = await readFile(metaPath, "utf8");
+    assert.match(source, /^export default\s+\{/);
+    meta = JSON.parse(source.replace(/^export default\s+/, "").replace(/;\s*$/, ""));
   } catch (error) {
     assert.fail(`missing or invalid navigation metadata at ${path.relative(repositoryRoot, metaPath)}: ${error}`);
   }
+  const names = await readdir(directory, { withFileTypes: true });
+  assert.ok(
+    names.every((entry) => entry.name !== "_meta.json"),
+    `${path.relative(repositoryRoot, directory)} contains unsupported _meta.json metadata`,
+  );
+  const contentKeys = names.flatMap((entry) => {
+    if (entry.isDirectory()) return [entry.name];
+    if (entry.isFile() && entry.name.endsWith(".mdx")) return [entry.name.replace(/\.mdx$/, "")];
+    return [];
+  });
+  const configuredContentKeys = Object.keys(meta).filter((key) => contentKeys.includes(key));
+  assert.deepEqual(
+    sorted(configuredContentKeys),
+    sorted(contentKeys),
+    `${path.relative(repositoryRoot, metaPath)} must explicitly order every page and section`,
+  );
   for (const [key, config] of Object.entries(meta)) {
     if (key === "*") continue;
     if (typeof config === "object" && config !== null && (config.type === "separator" || config.type === "menu" || config.href)) continue;
-    const file = path.join(directory, `${key}.mdx`);
     const childDirectory = path.join(directory, key);
-    const names = await readdir(directory, { withFileTypes: true });
     const hasFile = names.some((entry) => entry.isFile() && entry.name === `${key}.mdx`);
     const hasDirectory = names.some((entry) => entry.isDirectory() && entry.name === key);
     assert.ok(hasFile || hasDirectory, `${path.relative(repositoryRoot, metaPath)} points to missing ${key}`);

@@ -1,4 +1,4 @@
-{
+export default {
   "groups": "Groups",
   "collections": "Collections",
   "collection-identity": "Collection identity",

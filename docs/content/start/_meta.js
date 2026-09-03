@@ -1,4 +1,4 @@
-{
+export default {
   "introduction": "Introduction",
   "mental-model": "Mental model",
   "installation": "Installation",
