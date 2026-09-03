@@ -1,47 +1,53 @@
-# Core API
+# Controller and snapshots
 
-Create a controller with `stages({ schema, fields, value, onChange })`.
+`stages(options)` creates one isolated, framework-neutral controller. It accepts
+either a controlled `value` for a new instance or serialized `state` for
+recreation—never both.
 
-The controller exposes:
+## Controlled ownership
 
-- `getSnapshot()` for the current immutable render and validation state;
-- `subscribe()` and `subscribeSelector()` for updates;
-- `update()` for controlled value, context, schema, and extension updates;
-- `dispatch()` and `batch()` for named events;
-- `validate()` for explicit scoped validation;
-- `serialize()` for durable interaction state;
-- `destroy()` for lifecycle cleanup.
+Reducers, transforms, and collection commands produce a proposed value. Core
+calls `onChange` but does not adopt that proposal. The owner may accept it with
+`update({ value: change.value })`, replace it, delay it, or reject it. This makes
+server synchronization, undo stacks, optimistic UI, and policy enforcement
+possible without special modes.
 
-## Events
+<StagesDemo example="controlled" />
 
-```ts
-import { fieldEvent, formEvent, nodeEvent } from "@stages/core";
+## Controller methods
 
-controller.dispatch(fieldEvent("input", ["profile", "name"], "Ada"));
-controller.dispatch(formEvent("submit"));
-controller.dispatch(nodeEvent("wizard:next", wizardAddress));
-```
+| Method | Contract |
+| --- | --- |
+| `getSnapshot()` | Returns the current immutable value, render tree, validation, revision, and diagnostics. |
+| `subscribe(listener)` | Runs after a published controller change; returns an unsubscribe function. |
+| `subscribeSelector(selector, listener, isEqual?)` | Runs only when the selected result changes. General listeners run first. |
+| `update(input)` | Replaces controlled `value`, `context`, `schema`, or registered `extensions`. |
+| `dispatch(event)` | Sends one named field, node, or form event. Events in one turn share a transaction. |
+| `batch(run)` | Explicitly groups all dispatches in `run` into one proposal and notification. |
+| `validate(options?)` | Runs form-, path-, or address-scoped validation and resolves to its snapshot. |
+| `serialize()` | Produces a validated JSON-safe state envelope. |
+| `destroy()` | Cancels validation, clears subscriptions, and makes later work inert. |
 
-The helpers provide typed targets and payload inference. Application-defined
-event names use the same dispatch contract.
+## Snapshot anatomy
 
-## Validation
+`StagesSnapshot<TValue>` contains `value`, monotonically increasing `revision`,
+recursive `nodes`, aggregate `validation`, and `diagnostics`. Field snapshots
+add their resolved `view`, `props`, `value`, `initialValue`, `path`, `address`,
+and interaction state. Container snapshots add collection size/capabilities,
+wizard navigation, stage activity, or row branches as appropriate.
 
-```ts
-const required = {
-  id: "name.required",
-  on: ["input", "submit"],
-  revealOn: ["blur", "submit"],
-  validate({ fieldValue, path }) {
-    return fieldValue
-      ? []
-      : [{ id: "name.required", code: "required", path, severity: "error" }];
-  },
-};
+Snapshots are readonly and structurally share unchanged branches. Never mutate
+them. A narrow adapter should select the smallest stable branch with
+`subscribeSelector`; pass a custom equality function only when reference
+equality is not the desired contract.
 
-await controller.validate({ scope: "form", event: "submit", reveal: true });
-```
+## Change records and ordering
 
-See the repository [v1 API reference](https://github.com/unic/stages/blob/master/docs/V1_API.md)
-for the full schema, event, validation, collection, serialization, codec, and
-migration contracts.
+`onChange` receives `value`, `previousValue`, ordered `patches`, source
+`events`, `source`, and `transactionId`. Synchronous acceptance inside
+`onChange` is included in the same publication. Delayed acceptance publishes
+the unchanged canonical snapshot first, then publishes again when `update`
+accepts a value.
+
+Each controller owns its transactions, metadata, subscriptions, cancellation,
+and row keys independently. There is no global form state.

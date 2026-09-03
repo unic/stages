@@ -4,8 +4,11 @@
   "description": "Documentation for Stages",
   "main": "index.js",
   "scripts": {
-    "dev": "next",
+    "build:stages": "tsc -p ../packages/core/tsconfig.build.json && tsc -p ../packages/react/tsconfig.build.json",
+    "predev": "npm run build:stages",
+    "dev": "next --webpack",
     "start": "serve out",
+    "prebuild": "npm run build:stages",
     "build": "next build --webpack",
     "postinstall": "patch-package"
   },

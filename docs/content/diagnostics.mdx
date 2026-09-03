@@ -1,0 +1,35 @@
+# Diagnostics, recovery, and safety
+
+Stages treats invalid runtime configuration as observable data. Every
+`Diagnostic` has a stable `code`, human-readable `message`, `error` or `warning`
+severity, data `path`, and node `address`. Diagnostics appear in the snapshot
+and are also delivered immediately to `onDiagnostic`.
+
+<StagesDemo example="diagnostics" />
+
+Sources include malformed schemas, unsafe or duplicate IDs, unknown field
+types, bad collection shapes/commands, duplicate row keys, unknown variants,
+resolver and schema-factory failures, invalid event targets, reducer/transform
+failures, validation failure presentation, and extension codecs.
+
+## Last-valid-tree recovery
+
+Dynamic evaluation is transactional. A malformed revision cannot replace the
+last valid normalized tree. Existing UI remains usable, diagnostics explain the
+rejected revision, and a later valid `update` recovers without recreating the
+controller. Incompatible identity reuse is rejected so old touched, validation,
+or row metadata cannot attach to a different logical field.
+
+## Safe paths
+
+String segments `__proto__`, `prototype`, and `constructor`, negative indexes,
+and unsafe numeric indexes are rejected. Patch helpers never mutate their
+input, preserve unchanged branch identity, and cannot perform prototype
+pollution. Serialization repeats the unsafe-key checks at the persistence
+boundary.
+
+## Operational guidance
+
+Treat diagnostics as developer telemetry: surface them in schema editors and
+send unexpected production codes to observability. Do not use diagnostics as
+user validation; structured `ValidationIssue` is the user-facing contract.

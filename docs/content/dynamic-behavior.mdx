@@ -1,0 +1,45 @@
+# Dynamic schemas and behavior
+
+Dynamic behavior is pure derivation from readonly `value`, external `context`,
+and controller `meta`. It never mutates the schema or canonical value.
+
+## Node resolvers
+
+Every node supports `when` and `disabled` as booleans or predicates. Fields also
+support `deriveProps`. Resolver context includes the root value, external
+context, metadata, current `path` and `address`, `fieldValue`, and
+`parentValue`.
+
+```ts
+{
+  kind: "field",
+  id: "company",
+  type: "text",
+  when: ({ value }) => value.accountType === "business",
+  disabled: ({ context }) => !context.permissions.canEditCompany,
+  deriveProps: ({ context }) => ({ label: context.messages.company }),
+}
+```
+
+Hidden nodes remain known to the controller but do not render or validate.
+Structurally removed nodes from a schema factory are absent and their stale
+validation caches are discarded. Disabled state inherits from ancestors.
+
+<StagesDemo example="controlled" />
+
+## Schema factories
+
+The entire schema may be a factory `(dynamicContext) => schema`. Use a factory
+when the actual node structure changes; use `when` when identity should remain
+stable while visibility changes. Factories must preserve the root schema ID.
+
+If a predicate, derived-props function, item key, stage resolver, or schema
+factory throws or returns malformed data, core publishes a diagnostic and
+retains the last valid evaluated tree. A later valid update recovers normally.
+
+## Updating context
+
+`controller.update({ context })` reevaluates factories and resolvers without
+proposing a domain value. The same is true for schema and extension updates.
+Resolvers must be deterministic and side-effect free because evaluation may
+occur more than once in development tooling.

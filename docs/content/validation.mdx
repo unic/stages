@@ -1,0 +1,65 @@
+# Validation
+
+Validation has two independent policies: `on` decides when work runs;
+`revealOn` decides when issues become visible. This prevents “validate” and
+“show an error” from becoming the same accidental operation.
+
+```ts
+const uniqueEmail = {
+  id: "email.unique",
+  on: ["input", "submit"],
+  revealOn: ["blur", "submit"],
+  dependencies: [["tenantId"]],
+  when: ({ fieldValue }) => Boolean(fieldValue),
+  async validate({ fieldValue, path, signal }) {
+    const available = await checkEmail(fieldValue, signal);
+    return available ? [] : [{
+      id: "email.unique", code: "taken", path,
+      severity: "error", message: "Already registered",
+    }];
+  },
+};
+```
+
+<StagesDemo example="asyncValidation" />
+
+## Validators and issues
+
+Node and root validators receive root `value`, external `context`, metadata,
+current `path`/`address`, `fieldValue`, `parentValue`, interaction state, event
+name, and a cancellation `signal`. Issues require stable `id`, `code`, exact
+`path`, and `error` or `warning` severity; `message` and `meta` are optional.
+
+Registry field validators are reusable synchronous rules receiving only the
+field value and resolved props. Node validators add conditional, dependent,
+async, and form-aware behavior.
+
+## Status and visibility
+
+Validation status is `unknown`, `pending`, `invalid`, or `valid`; `isValid` is
+true only for `valid`. Snapshots expose all `issues`, currently
+`visibleIssues`, `pendingCount`, and `unknownCount`. Errors determine invalid
+status; warnings remain visible without invalidating the scope.
+
+`controller.validate()` validates the form. Pass `{ scope: { path } }` for a
+data subtree or `{ scope: { address } }` for an identity-bound node/stage.
+`event` defaults to an explicit validation event; `reveal: true` reveals the
+resulting issues.
+
+## Dependencies and cancellation
+
+`dependencies` list paths whose changes invalidate a validator. Unrelated
+field events reuse cached results. Superseded runs and controller destruction
+set `signal.aborted`; `signal.onCancel(listener)` lets adapters cancel fetches
+or other async work. Results from stale revisions can never publish.
+
+Disabled nodes are skipped unless a validator declares `includeDisabled: true`.
+Hidden and structurally absent validators do not leak cached results.
+
+## Failure policy
+
+Throws, rejected promises, malformed results, and failing `when` functions
+become deterministic error issues. `validationFailureIssue(context)` may
+localize their `code`, `message`, and `meta`; core always owns the error
+severity, ID, and path. If that presentation hook itself fails, core falls back
+and emits `validation.failure-issue-failed`.

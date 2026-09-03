@@ -1,0 +1,39 @@
+# Collections
+
+Collections model repeated rows without sacrificing stable UI identity. Define
+homogeneous `nodes`, or a `discriminator` with a map of `variants`. Optional
+`min` and `max` constrain structural commands. Supply `itemKey(item, index)`
+when an external owner may reorder or replace arrays independently.
+
+<StagesDemo example="collection" />
+
+## Commands
+
+| Event | Collection-target payload | Row-target payload |
+| --- | --- | --- |
+| `collection:add` | `{ value?, index? }`; for a union, `{ variant, index? }` can create defaults | — |
+| `collection:remove` | `{ index }` | no payload |
+| `collection:replace` | `{ index, value }` | `{ value }` |
+| `collection:duplicate` | `{ index, toIndex? }` | `{ toIndex? }` |
+| `collection:move` | `{ from, to }` | `{ to }` |
+| `collection:sort` | `{ order }`, a complete index permutation | — |
+
+Rejected constraints, invalid indexes, unchanged replacements/moves, malformed
+payloads, and invalid sort orders create diagnostics and do not call
+`onChange`. `reduceCollectionCommand(current, command, constraints?)` exposes
+the pure array operation for non-controller tooling.
+
+## Discriminated rows
+
+For `{ discriminator: "kind", variants: { person: ..., company: ... } }`, each
+row chooses its recursive nodes from `row.kind`. Adding `{ variant: "person" }`
+writes the discriminator and registry defaults. Unknown variants are diagnosed
+without crashing the remaining form.
+
+## Snapshots and React binding
+
+Collection snapshots expose `size`, `canAdd`, `canRemove`, and row branches.
+Rows use stable addresses. `useStagesCollection()` converts those into typed
+items with `key`, `index`, `value`, `fieldPath()`, `remove()`, and `moveTo()`;
+the capabilities `canAdd`, `canRemove`, `canMovePrevious`, and `canMoveNext`
+should drive button state.

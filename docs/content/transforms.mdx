@@ -1,0 +1,33 @@
+# Transforms, patches, and batching
+
+Transforms express computed and cross-field behavior as immutable `set` and
+`remove` patches. They declare event names in `on`, an optional pure `when`, and
+an `apply(context)` function.
+
+```ts
+transforms: [{
+  on: "input",
+  when: ({ path }) => path.at(-1) === "name",
+  apply: ({ fieldValue }) => [{
+    op: "set",
+    path: ["slug"],
+    value: String(fieldValue).toLowerCase().replaceAll(" ", "-"),
+  }],
+}]
+```
+
+For an event, transforms run target-to-root: target node, nearest ancestor,
+farther ancestors, then schema root. Each later transform observes earlier
+patches, and later patches win when paths overlap. If a reducer, transform, or
+patch fails, no part of that value transaction is proposed.
+
+<StagesDemo example="transaction" />
+
+Synchronous dispatches in one JavaScript turn already share a microtask
+transaction. `controller.batch(fn)` makes the boundary explicit, including for
+code that might otherwise flush between operations. One batch produces one
+`onChange`, one transaction ID, one general notification, and only the selector
+notifications whose results changed.
+
+The exported `applyPatches`, `setAtPath`, and `removeAtPath` functions use the
+same safe immutable semantics for application-side workflows.

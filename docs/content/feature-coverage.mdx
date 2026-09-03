@@ -1,0 +1,27 @@
+# Feature coverage
+
+This map is the completeness checklist for the v1 documentation. “Live” means
+the page embeds the real controller and React adapter through `StagesDemo`.
+
+| Feature family | Detailed guide | Live proof |
+| --- | --- | --- |
+| Controlled ownership, updates, snapshots, subscriptions, selectors, lifecycle | [Controller](/core) | Controlled profile |
+| Field registry, defaults, reducers, intrinsic validators, events, interaction state | [Fields and events](/fields-events) | Controlled profile |
+| Recursive fields, groups, collections, wizards, paths, addresses, identity | [Schemas](/schema) | Profile, collection, wizard |
+| Predicates, disabled inheritance, derived props, context, factories, reconciliation | [Dynamic behavior](/dynamic-behavior) | Controlled profile, recovery |
+| Transforms, patches, ordering, transactions, batching, structural sharing | [Transforms](/transforms) | Batch transaction |
+| Sync/async validation, policies, scope, dependencies, cancellation, failure handling | [Validation](/validation) | Async validation |
+| Homogeneous/union rows, keys, constraints, every collection command | [Collections](/collections) | Stable collection rows |
+| Stage state, linear/nonlinear navigation, validation gates, guards, dynamic stages | [Wizards](/wizards) | Guarded wizard |
+| JSON boundary, recreation, metadata, value/extension codecs, migrations | [Persistence](/persistence) | Serialized envelope |
+| Diagnostics, invalid revisions, recovery, safe paths, prototype-pollution defense | [Diagnostics](/diagnostics) | Last-valid-tree recovery |
+| React lifecycle, fields, collection/wizard hooks, Strict Mode | [React](/react) | All interactive examples |
+| Native fields, accessibility, focus, inactive stages, custom DOM views | [DOM](/dom) | Reference contract and repository fixture |
+| Framework-neutral adapter contract and test harness | [Custom adapters](/custom-adapters) | Executable Vue/Angular-style test-kit proofs |
+| Path, schema, collection, serialization utility exports and public types | [Utilities](/utilities) | Executable package and property tests |
+| Localization through context, props, issues, and view formatting | [Internationalization](/i18n) | Controlled derived-props pattern |
+
+Low-level pure helpers are demonstrated by executable snippets and the linked
+repository tests rather than browser controls. They have no UI behavior to make
+interactive. The release gate verifies this page list and every live demo name
+so additions cannot silently disappear.

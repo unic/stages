@@ -1864,6 +1864,14 @@ currently an alpha foundation, not a release-ready v1 build.
 - The Nextra application now documents the implemented v1 architecture,
   installation model, core, React and DOM adapters, internationalization, and
   the 0.x migration strategy.
+- The feature guide now contains twenty routed guides covering the complete
+  public runtime surface and seven embedded live examples powered by the real
+  `@stages/core` and `@stages/react` packages. The demos cover controlled
+  ownership, dynamic behavior, transforms, validation, transactions,
+  collections, wizards, serialization, and invalid-schema recovery.
+- `npm run check:docs:v1` verifies the guide inventory, every public runtime
+  export, key behavioral contracts, and that every registered live demo is
+  embedded in at least one guide.
 - The application has been migrated to the Nextra 4 content-directory and
   Next.js App Router model. It builds on Next.js 16 and React 19; TypeScript 6
   is retained here because it is the newest stable major accepted by Nextra's

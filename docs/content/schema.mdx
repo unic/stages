@@ -1,0 +1,57 @@
+# Schemas and recursive nesting
+
+A `StagesSchema` has a stable string `id`, a positive integer `version`, and a
+`nodes` array. Every structural feature is a node and every node can recursively
+contain the others.
+
+| Kind | Data shape | Children |
+| --- | --- | --- |
+| `field` | Value at its ID | Registered field type |
+| `group` | Object at its ID | `nodes` |
+| `collection` | Array at its ID | homogeneous `nodes` or discriminated `variants` |
+| `wizard` | Object at its ID | ordered `stages`, each with recursive `nodes` |
+
+```ts
+const schema = {
+  id: "checkout",
+  version: 3,
+  nodes: [{
+    kind: "wizard",
+    id: "flow",
+    stages: [{
+      id: "shipping",
+      nodes: [{
+        kind: "collection",
+        id: "addresses",
+        itemKey: address => address.id,
+        nodes: [{ kind: "field", id: "city", type: "text" }],
+      }],
+    }],
+  }],
+} as const satisfies StagesSchema<Checkout, typeof fields>;
+```
+
+Structural IDs add object segments to the data path. Collection rows add their
+current numeric index; stages add their ID. The corresponding node address uses
+`{ kind: "row", id }` for stable row identity, so interaction metadata survives
+reordering even though data indexes change.
+
+## Initial values
+
+Missing field values come from the registry definition's `initialValue`, which
+may be a value or factory. Factories create independent values. Structural
+containers are derived from the supplied domain value; malformed collection or
+union shapes become diagnostics rather than unchecked exceptions.
+
+## Identity rules
+
+Sibling IDs must be unique and safe. A dynamic replacement may retain identity
+only when its kind and field type remain compatible. Reusing an address for an
+incompatible node is diagnosed and its stale interaction state is discarded.
+
+## Evaluation without a controller
+
+`evaluateSchema({ schema, value, context, meta, fields, collectionKeys? })`
+returns normalized nodes and diagnostics. `initialFieldValue(definition)`
+evaluates a registry default. These lower-level exports are useful for tooling,
+schema editors, and static analysis; applications normally use `stages()`.

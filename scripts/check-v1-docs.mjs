@@ -5,11 +5,63 @@ const baselinePath = new URL("../docs/CURRENT_IMPLEMENTATION_API.md", import.met
 const migrationPath = new URL("../docs/MIGRATING_TO_V1.md", import.meta.url);
 const apiPath = new URL("../docs/V1_API.md", import.meta.url);
 
+const guideNames = [
+  "index", "installation", "architecture", "core", "schema",
+  "fields-events", "dynamic-behavior", "transforms", "validation",
+  "collections", "wizards", "persistence", "diagnostics", "react", "dom",
+  "custom-adapters", "utilities", "i18n", "migration", "feature-coverage",
+];
+
 const [baseline, migration, api] = await Promise.all([
   readFile(baselinePath, "utf8"),
   readFile(migrationPath, "utf8"),
   readFile(apiPath, "utf8"),
 ]);
+
+const guides = await Promise.all(guideNames.map((name) =>
+  readFile(new URL(`../docs/content/${name}.mdx`, import.meta.url), "utf8"),
+));
+const guideCorpus = guides.join("\n");
+const demoSource = await readFile(
+  new URL("../docs/components/StagesDemo.jsx", import.meta.url),
+  "utf8",
+);
+
+const documentedRuntimeExports = [
+  "stages", "fieldEvent", "nodeEvent", "formEvent", "evaluateSchema",
+  "initialFieldValue", "reduceCollectionCommand", "getAtPath", "setAtPath",
+  "removeAtPath", "applyPatches", "pathsEqual", "isSafePathSegment",
+  "assertSafePath", "encodeJson", "decodeJson", "validateSerializedState",
+  "migrateSerializedState", "SerializationError", "useStages",
+  "useStagesController", "useStagesField", "StagesField",
+  "useStagesCollection", "useStagesWizard", "createDomFields", "mountStages",
+  "bindAdapter",
+];
+for (const name of documentedRuntimeExports) {
+  assert.ok(guideCorpus.includes(name), `v1 guide is missing runtime export ${name}`);
+}
+
+const requiredDemos = [
+  "controlled", "collection", "wizard", "transaction", "persistence",
+  "asyncValidation", "diagnostics",
+];
+for (const name of requiredDemos) {
+  assert.match(demoSource, new RegExp(`\\b${name}:`), `missing live demo ${name}`);
+  assert.ok(guideCorpus.includes(`example=\"${name}\"`), `live demo ${name} is not embedded in a guide`);
+}
+
+const documentedFeatureContracts = [
+  "controlled", "subscribeSelector", "schema factory", "deriveProps",
+  "includeDisabled", "revealOn", "dependencies", "signal.onCancel",
+  "collection:add", "collection:remove", "collection:replace",
+  "collection:duplicate", "collection:move", "collection:sort",
+  "discriminator", "itemKey", "wizard:previous", "wizard:next", "wizard:go",
+  "validateCurrent", "nonLinear", "validationFailureIssue", "extensionCodecs",
+  "StagesStateMigration", "last valid", "Strict Mode", "focusFirstIssue",
+];
+for (const contract of documentedFeatureContracts) {
+  assert.ok(guideCorpus.toLowerCase().includes(contract.toLowerCase()), `v1 guide is missing feature contract ${contract}`);
+}
 
 const exportSection = baseline.match(
   /## 2\. Package and export surface([\s\S]*?)## 3\./,
@@ -138,5 +190,5 @@ for (const readme of packageReadmes) {
 }
 
 console.log(
-  `v1 documentation check passed (${rootExports.length} root exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideNames.length} guides, ${requiredDemos.length} live demos, ${documentedRuntimeExports.length} runtime exports, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

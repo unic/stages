@@ -1,0 +1,58 @@
+# Fields, registry, and events
+
+The field registry defines the complete vocabulary of field types. A definition
+contains an opaque adapter-owned `view`, optional `initialValue`, optional
+`reduce`, and reusable intrinsic `validators`.
+
+```ts
+const fields = {
+  text: {
+    view: TextInput,
+    initialValue: "",
+    reduce({ event }) {
+      if (event.name !== "input" || typeof event.payload !== "string") return;
+      return { value: event.payload.trimStart() };
+    },
+    validators: [{
+      id: "text.max",
+      validate: (value, props) => value.length <= props.max ? [] : [{
+        id: "text.max", code: "max", severity: "error"
+      }],
+    }],
+  },
+} as const;
+```
+
+Registry validators are reusable and field-local. Node validators have access
+to the whole form, context, metadata, dependencies, event policy, and async
+cancellation; use those for cross-field rules.
+
+## Named events
+
+Events have an open string `name`, a field/path, node/address, or form target,
+an optional payload, and optional `user`, `adapter`, or `system` source.
+
+```ts
+controller.dispatch(fieldEvent("input", ["name"], {
+  payload: "Ada",
+  source: "adapter",
+}));
+controller.dispatch(nodeEvent("wizard:next", wizard.address));
+controller.dispatch(formEvent("submit", { source: "user" }));
+```
+
+`fieldEvent`, `nodeEvent`, and `formEvent` are typed constructors; direct event
+objects are equivalent. Names such as `input`, `focus`, `blur`, and `submit` are
+conventions, not a closed enum. Custom views may define `select-option`,
+`upload-complete`, or any domain event their reducer understands.
+
+A reducer returns `{ value }`, `{ patches }`, or `undefined`. Returning patches
+allows one field event to update multiple paths immutably. A reducer failure or
+unsafe patch rejects the entire transaction and creates a diagnostic.
+
+## Interaction state
+
+Focus and blur events maintain `focused`, `visited`, and `touched` state.
+`dirty` compares canonical value with the initial baseline. Visibility,
+disabled state, validation activity, all issues, and visible issues are exposed
+on every field snapshot so adapters do not reimplement engine policy.

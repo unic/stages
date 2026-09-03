@@ -1,0 +1,36 @@
+# Utilities and type reference
+
+## Immutable path helpers
+
+| Export | Purpose |
+| --- | --- |
+| `getAtPath(value, path)` | Reads a nested value, returning `undefined` when traversal stops. |
+| `setAtPath(value, path, next)` | Immutably creates/replaces a path and preserves unrelated references. |
+| `removeAtPath(value, path)` | Immutably removes an object key or array item. |
+| `applyPatches(value, patches)` | Applies ordered `set`/`remove` patches. |
+| `pathsEqual(left, right)` | Segment-by-segment path equality. |
+| `isSafePathSegment(segment)` | Checks string/numeric safety. |
+| `assertSafePath(path)` | Throws with the failing segment when unsafe. |
+
+`reduceCollectionCommand` is the pure implementation behind collection array
+operations. `evaluateSchema` and `initialFieldValue` expose schema tooling.
+`encodeJson`, `decodeJson`, `validateSerializedState`, and
+`migrateSerializedState` expose the persistence boundary.
+
+## Important public types
+
+- Schema: `StagesSchema`, `StagesSchemaFactory`, `NodeConfig`, field/group/
+  collection/wizard configs, predicates, derived props, transforms, validators.
+- Runtime: `StagesController`, `StagesOptions`, `StagesUpdate`, `StagesChange`,
+  `StagesSnapshot`, field/container/render snapshots, validation and diagnostic
+  snapshots.
+- Identity: `DataPath`, `NodeAddress`, `NodeAddressSegment`, `StagesPatch`.
+- Events: `StagesEvent`, `StagesEventTarget`, `StagesEventSource`,
+  `StagesEventInit`.
+- Persistence: `JsonValue`, `SerializedStagesState`, `StagesValueCodec`,
+  `StagesExtensionCodec`, `StagesStateMigration`, `SerializationError`.
+- Immutability: `DeepReadonly<T>` recursively prevents mutation in callbacks.
+
+Prefer `as const satisfies StagesSchema<Value, typeof fields>` over a type cast:
+it checks the schema while retaining literal field IDs and types. All packages
+are ESM and expose declarations through their package export maps.

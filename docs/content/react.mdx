@@ -1,38 +1,52 @@
 # React adapter
 
-`@stages/react` manages controller lifecycle and connects snapshot fields to
-application-owned React components.
+`@stages/react` connects controller lifecycle and narrow snapshot subscriptions
+to application-owned components. It does not prescribe layout or styling.
+
+<StagesDemo example="controlled" />
+
+## Field views
+
+A registered React view receives `id`, the full field snapshot, resolved
+`props`, and `emit(name, payload?)`. Associate the ID with the control, honor
+disabled state, and render `visibleIssues` with accessible relationships.
 
 ```tsx
-import { useState } from "react";
-import { stages } from "@stages/core";
-import { StagesField, useStages } from "@stages/react";
-
-function ProfileForm() {
-  const [value, setValue] = useState({ name: "" });
-  const { controller, snapshot } = useStages(
-    () => stages({
-      schema,
-      fields,
-      value,
-      onChange: ({ value }) => setValue(value),
-    }),
-    { value },
-  );
-
-  return (
-    <form>
-      <StagesField controller={controller} path={["name"]} />
-      <output>{snapshot.validation.status}</output>
-    </form>
-  );
+function TextField({ id, field, props, emit }: ReactFieldProps<string, Props>) {
+  return <label htmlFor={id}>
+    {props.label}
+    <input id={id} disabled={field.state.disabled} value={field.value}
+      onFocus={() => emit("focus")} onBlur={() => emit("blur")}
+      onChange={event => emit("input", event.target.value)} />
+  </label>;
 }
 ```
 
-A registry field view receives `id`, the field snapshot, resolved `props`, and
-an `emit(name, payload)` function. `useStagesCollection()` supplies typed stable
-row operations, while `useStagesWizard()` supplies stage state and navigation
-commands. Layout, action placement, error markup, and inactive-stage mounting
-remain application decisions.
+`StagesField` selects the requested path and renders its registered view. Its
+generated ID is collision-safe across nested collection rows; pass `id` to
+override it. Missing paths or views throw early.
 
-Controller teardown is safe under React Strict Mode effect replay.
+## Hooks
+
+| Hook | Use |
+| --- | --- |
+| `useStages(factory, input)` | Creates one controller, pushes controlled updates, subscribes, and destroys safely after real unmount. |
+| `useStagesController(controller)` | Subscribes to the complete snapshot. |
+| `useStagesField(controller, path)` | Narrowly subscribes to one field snapshot. |
+| `useStagesCollection(controller, path)` | Returns stable keyed items, paths, capabilities, add/remove/move commands. |
+| `useStagesWizard(controller, path)` | Returns stage state/capabilities and previous/next/go commands. |
+
+`useStages` is safe under React Strict Mode effect replay. Keep schema, context,
+and extension object identities stable with module constants or `useMemo` when
+they have not semantically changed.
+
+```tsx
+const { controller, snapshot } = useStages(
+  () => stages({ schema, fields, value, onChange: c => setValue(c.value) }),
+  { value, context, schema },
+);
+```
+
+React owns form tags, buttons, inactive-stage mounting, error summaries, focus,
+and design-system integration. Use `snapshot.validation` for form-level status
+and adapter hooks for collection/wizard controls.

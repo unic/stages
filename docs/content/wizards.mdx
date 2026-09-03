@@ -1,0 +1,37 @@
+# Wizards
+
+A wizard is an ordered set of recursive stages. Its active location is engine
+metadata, not domain data, so navigation never creates a value proposal by
+itself.
+
+<StagesDemo example="wizard" />
+
+```ts
+{
+  kind: "wizard",
+  id: "checkout",
+  initialStage: "address",
+  navigation: {
+    validateCurrent: true,
+    nonLinear: true,
+    guard: (value, from, to) => canNavigate(value, from, to),
+  },
+  stages: [/* recursive nodes */],
+}
+```
+
+Dispatch `wizard:previous`, `wizard:next`, or `wizard:go` to the wizard node
+address. `wizard:go` carries the target stage ID and requires `nonLinear`.
+`validateCurrent` runs the current stage's applicable validators and blocks on
+unknown, pending, or invalid status. Warnings do not make a stage invalid. The
+pure guard runs after validation and may impose additional policy.
+
+Stage `when` and `disabled` predicates dynamically change navigation. If the
+active stage becomes hidden, the controller reconciles to a visible stage.
+Inactive stages are represented in snapshots; adapters choose whether to keep
+their UI mounted.
+
+Wizard snapshots expose `activeStage`, `visibleStageIds`, `canPrevious`,
+`canNext`, and `canGo`. Each stage exposes `active`, disabled state, scoped
+validation, path, address, and recursive nodes. `useStagesWizard()` provides
+the same information plus `previous()`, `next()`, and `go()` commands.

@@ -1,0 +1,23 @@
+.demo { margin: 1.75rem 0; overflow: hidden; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: .8rem; background: color-mix(in srgb, var(--nextra-bg, white) 96%, #4f46e5); }
+.heading { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+.heading p { margin: .25rem 0 0; color: color-mix(in srgb, currentColor 68%, transparent); font-size: .9rem; }
+.live { align-self: flex-start; border-radius: 999px; padding: .15rem .55rem; background: #dcfce7; color: #166534; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.surface { display: grid; gap: 1rem; padding: 1.1rem; }
+.surface button { width: fit-content; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: .4rem; padding: .4rem .7rem; background: color-mix(in srgb, var(--nextra-bg, white) 88%, #6366f1); cursor: pointer; }
+.surface button:disabled { cursor: not-allowed; opacity: .45; }
+.field { display: grid; gap: .3rem; }
+.field label { font-size: .9rem; font-weight: 650; }
+.field small { color: color-mix(in srgb, currentColor 65%, transparent); }
+.field input:not([type="checkbox"]), .field select { width: min(100%, 28rem); border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: .4rem; padding: .5rem .65rem; background: var(--nextra-bg, white); }
+.field[data-disabled] { opacity: .65; }
+.issues { margin: .1rem 0 0; color: #dc2626; font-size: .85rem; }
+.status { font-size: .85rem; font-weight: 600; }
+.row { display: grid; grid-template-columns: minmax(12rem, 1fr) auto; gap: .7rem 1rem; align-items: end; padding: .8rem; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: .55rem; }
+.row code { grid-column: 1 / -1; font-size: .72rem; opacity: .65; }
+.actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.steps { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.steps li[data-active] button { border-color: #6366f1; box-shadow: 0 0 0 2px color-mix(in srgb, #6366f1 24%, transparent); }
+.inspector { border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); padding: .8rem 1.1rem; font-size: .85rem; }
+.inspector summary { cursor: pointer; font-weight: 600; }
+.inspector pre, .surface pre { max-height: 20rem; overflow: auto; margin-top: .7rem; padding: .8rem; border-radius: .45rem; background: color-mix(in srgb, currentColor 8%, transparent); font-size: .75rem; }
+@media (max-width: 40rem) { .row { grid-template-columns: 1fr; } }
