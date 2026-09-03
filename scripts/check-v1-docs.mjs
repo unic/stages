@@ -120,6 +120,10 @@ const completePagePaths = [
   "persistence/extension-state.mdx",
   "persistence/migrations.mdx",
   "persistence/storage-and-autosave.mdx",
+  "diagnostics/overview.mdx",
+  "diagnostics/recovery.mdx",
+  "diagnostics/safety.mdx",
+  "diagnostics/observability-and-troubleshooting.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
@@ -133,6 +137,7 @@ const completePagePaths = [
   "reference/core/serialization-utilities.mdx",
   "reference/core/schema-utilities.mdx",
   "reference/standard-events.mdx",
+  "reference/diagnostics.mdx",
   "reference/serialization-errors.mdx",
   "project/contributing-to-docs.mdx",
 ];
@@ -263,6 +268,32 @@ const diagnosticCodes = [...`${controllerSource}\n${schemaSource}\n${collectionS
   /["']((?:schema|event|collection|field|transform|validation|wizard)\.[a-z0-9-]+)["']/g,
 )].map((match) => match[1]);
 assertSameInventory(diagnosticCodes, manifest.contracts.diagnostics, "diagnostic codes");
+const diagnosticReference = guideEntries.find(
+  ({ relativePath }) => relativePath === "reference/diagnostics.mdx",
+)?.source;
+assert.ok(diagnosticReference, "missing diagnostic reference");
+assertSameInventory(
+  publicInterfaceMembers(controllerTypes, "Diagnostic"),
+  manifest.contracts.diagnosticMembers,
+  "Diagnostic members",
+);
+for (const member of manifest.contracts.diagnosticMembers) {
+  assert.ok(diagnosticReference.includes(`\`${member}\``), `diagnostic reference is missing Diagnostic.${member}`);
+}
+for (const code of manifest.contracts.diagnostics) {
+  assert.ok(diagnosticReference.includes(`\`${code}\``), `diagnostic reference is missing ${code}`);
+}
+for (const column of ["Severity", "Trigger", "Path / address", "Effect", "Recovery"]) {
+  assert.ok(diagnosticReference.includes(column), `diagnostic reference is missing ${column} catalog detail`);
+}
+const diagnosticSeverities = [
+  schemaSource.match(/function diagnostic\([\s\S]*?return \{[^\n]*severity: ["']([^"']+)["']/)?.[1],
+  controllerSource.match(/function reportRuntimeDiagnostic\([\s\S]*?const item: Diagnostic = \{[^\n]*severity: ["']([^"']+)["']/)?.[1],
+  ...[...controllerSource.matchAll(/const failure: Diagnostic = \{[\s\S]*?severity: ["']([^"']+)["']/g)]
+    .map((match) => match[1]),
+].filter((severity) => severity !== undefined);
+assert.ok(diagnosticSeverities.length >= 4, "could not derive all Diagnostic construction severities");
+assertSameInventory(diagnosticSeverities, [manifest.contracts.diagnosticSeverity], "built-in diagnostic severity");
 
 const serializationCodes = [...`${serializationSource}\n${controllerSource}`.matchAll(
   /["']((?:json|state|migration|extension)\.[a-z0-9-]+)["']/g,
@@ -394,6 +425,10 @@ const checkedRegions = [
   { fixture: "docs/examples/persistence.ts", region: "storage-and-autosave", page: "persistence/storage-and-autosave.mdx" },
   { fixture: "docs/examples/persistence.ts", region: "serialized-envelope", page: "reference/core/persistence-types.mdx" },
   { fixture: "docs/examples/persistence.ts", region: "serialization-utilities", page: "reference/core/serialization-utilities.mdx" },
+  { fixture: "docs/examples/diagnostics.ts", region: "diagnostic-observation", page: "diagnostics/overview.mdx" },
+  { fixture: "docs/examples/diagnostics.ts", region: "last-valid-recovery", page: "diagnostics/recovery.mdx" },
+  { fixture: "docs/examples/diagnostics.ts", region: "safe-path-boundary", page: "diagnostics/safety.mdx" },
+  { fixture: "docs/examples/diagnostics.ts", region: "diagnostic-troubleshooting", page: "diagnostics/observability-and-troubleshooting.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);
@@ -484,5 +519,5 @@ const validationMemberCount = Object.values(manifest.contracts.validationMembers
 const persistenceMemberCount = Object.values(manifest.contracts.persistenceMembers)
   .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

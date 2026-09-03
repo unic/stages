@@ -1,0 +1,77 @@
+# Safety boundaries
+
+**For:** Schema, tooling, and integration authors handling paths or untrusted
+configuration.
+
+**Prerequisites:** [Paths and addresses](/core-concepts/paths-and-addresses) and
+[serialization utilities](/reference/core/serialization-utilities).
+
+Mutation paths are segment arrays, not dot-separated strings. A safe numeric
+segment is a non-negative safe integer. A safe string segment is anything
+except `"__proto__"`, `"prototype"`, or `"constructor"`.
+
+```ts
+export function updateNameSafely<TValue>(
+  value: TValue,
+  path: DataPath,
+  name: string,
+): TValue {
+  assertSafePath(path);
+  return setAtPath(value, path, name);
+}
+
+export function prototypePollutionIsRejected(): boolean {
+  const hostilePath = ["profile", "__proto__", "polluted"] as const;
+  if (isSafePathSegment(hostilePath[1])) return false;
+
+  try {
+    setAtPath({}, hostilePath, true);
+  } catch (error) {
+    return error instanceof TypeError;
+  }
+  return false;
+}
+```
+
+`assertSafePath()` throws `TypeError` at the first unsafe segment.
+`setAtPath()`, `removeAtPath()`, and therefore `applyPatches()` enforce this
+check before mutation. They update immutably, so a successful operation does
+not mutate its input and preserves unchanged branch identity.
+
+`getAtPath()` is a read helper and does not validate its input path;
+`pathsEqual()` only compares segments. Validate paths from an untrusted source
+before using them consistently across reads and writes.
+
+## Other boundaries using safe segments
+
+Schema normalization reports diagnostics for unsafe schema/node IDs,
+collection discriminators, and variant names. Stage IDs share the same segment
+rules and are reported as `schema.invalid-stage`. Extension namespaces must
+also be non-empty; invalid registration throws `TypeError` during controller
+creation.
+
+Serialization separately rejects unsafe object keys at any encoded depth with
+`json.unsafe-key`. That is necessary even when schema paths are safe because a
+domain object or extension can contain keys no schema node traverses.
+
+The generic path helper accepts an empty string because it is not one of the
+three unsafe keys. Product-level schema naming rules may be stricter; validate
+them before passing configuration to Stages if tooling requires non-empty or
+identifier-shaped names.
+
+## Trust model
+
+Safe-path checks prevent dangerous property traversal; they do not make an
+arbitrary schema trusted. Dynamic factories, predicates, reducers, transforms,
+validators, codecs, and extension codecs are executable application code and
+must come from a trusted source. Parse declarative external configuration into
+a reviewed schema rather than evaluating received functions.
+
+## Evidence
+
+The exact segment predicate and mutation enforcement come from core path
+utilities and their immutable/property tests. Schema and serialization tests
+cover unsafe identifiers and keys. The example is compiled from
+`docs/examples/diagnostics.ts`.
+
+**Next:** Put codes and locations into an [observability and troubleshooting workflow](/diagnostics/observability-and-troubleshooting).

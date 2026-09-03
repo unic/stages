@@ -1,0 +1,92 @@
+# Recovery behavior
+
+**For:** Developers designing resilient dynamic schemas and failure states.
+
+**Prerequisites:** [Dynamic configuration](/core-concepts/dynamic-configuration)
+and [observing diagnostics](/diagnostics/overview).
+
+Once a controller has evaluated one error-free schema, a later erroneous
+dynamic revision cannot replace that last valid tree. Core reports diagnostics
+and preserves the previous topology and configuration until evaluation becomes
+valid again.
+
+```ts
+export function demonstrateLastValidRecovery(
+  reported: Diagnostic[],
+) {
+  const controller = stages({
+    schema: recoveringSchema,
+    fields,
+    value: { count: 1, failSchema: false },
+    onDiagnostic: diagnostic => reported.push(diagnostic),
+  });
+
+  controller.update({ value: { count: 2, failSchema: true } });
+  const failedRevision = controller.getSnapshot();
+  // The last valid field/config remains, but it reads canonical count 2.
+
+  controller.update({ value: { count: 3, failSchema: false } });
+  const recoveredRevision = controller.getSnapshot();
+  // A valid revision replaces the fallback tree and clears schema diagnostics.
+
+  return { controller, failedRevision, recoveredRevision };
+}
+```
+
+The fallback freezes schema-derived topology and configuration, not the domain
+value. Fields in the last valid tree read from the newly accepted canonical
+value. This lets an application repair the state or context that broke a
+factory or resolver while keeping the prior UI usable.
+
+## What is rejected
+
+An evaluation with any error-severity schema diagnostic keeps the entire last
+valid tree. This includes malformed nodes and behavior, resolver failures,
+collection shape/identity errors, an unstable factory root ID/version, and
+other `schema.*` failures. The failing revision's diagnostic array remains
+visible until a later valid evaluation.
+
+A schema factory exception becomes `schema.factory-failed` only when a last
+valid evaluation exists. If the very first factory call throws, controller
+creation throws because no fallback tree exists. An initially malformed schema
+that returns an object is normalized into its valid subset and diagnostics are
+exposed, but it does not establish a last-valid baseline until an error-free
+revision occurs.
+
+Calling `update({ schema })` intentionally starts identity checking for the new
+schema input. It still uses the previous valid tree as a fallback if that new
+input evaluates with errors.
+
+## Identity recovery
+
+`schema.identity-changed` rejects an unexpected ID/version change from the
+same schema factory and preserves the prior tree. In contrast,
+`schema.incompatible-identity` means a valid evaluation reused one node address
+for a different kind, or changed a field type. Core accepts the new tree but
+discards focus, touched/visited, revealed validation, validation cache, and
+other incompatible metadata at that address so it cannot attach to a different
+logical control.
+
+## Runtime operation failures
+
+Reducer, patch, transform, collection-command, and wizard-navigation failures
+reject their affected operation and report a runtime diagnostic. A standalone
+failed value event does not call `onChange`. Inside a batch, earlier accepted
+draft work remains, while the failed event contributes no patches.
+
+`event.target-missing` is more nuanced: missing collection and wizard commands
+are rejected. Another event still has no target-specific reducer or transforms,
+but matching root transforms may process it. Use the event name and target kind
+when deciding whether this code is expected during dynamic removal.
+
+Runtime diagnostics remain in the rolling snapshot history after later success;
+that history documents occurrences rather than current schema validity.
+
+## Evidence
+
+Fallback, recovery, identity reset, and transaction rejection are defined by
+the controller and covered by dynamic factory, malformed revision, identity,
+reducer, transform, collection, and wizard tests. The example is compiled from
+`docs/examples/diagnostics.ts`.
+
+**Next:** Review the [safety boundaries](/diagnostics/safety) that throw or diagnose unsafe paths and keys.

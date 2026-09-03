@@ -36,7 +36,7 @@
         { "symbol": "DataPath", "kind": "type", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#datapath", "status": "complete" },
         { "symbol": "DeepReadonly", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#deepreadonly", "status": "complete" },
         { "symbol": "DerivedProps", "kind": "type", "guide": "/core-concepts/dynamic-configuration", "reference": "/reference/core/schema-types#dynamic-and-resolver-context", "status": "complete" },
-        { "symbol": "Diagnostic", "kind": "type", "status": "partial" },
+        { "symbol": "Diagnostic", "kind": "type", "guide": "/diagnostics/overview", "reference": "/reference/diagnostics#diagnostic", "examples": ["diagnostic-observation"], "status": "complete" },
         { "symbol": "DynamicConfigContext", "kind": "type", "guide": "/core-concepts/dynamic-configuration", "reference": "/reference/core/schema-types#dynamic-and-resolver-context", "status": "complete" },
         { "symbol": "DynamicMetaSnapshot", "kind": "type", "guide": "/core-concepts/dynamic-configuration", "reference": "/reference/core/snapshot-types#dynamicmetasnapshot", "status": "complete" },
         { "symbol": "EvaluatedSchema", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#normalized-output", "status": "complete" },
@@ -185,6 +185,8 @@
     },
     "serializationErrorMembers": ["code", "path"],
     "serializedMetaMembers": ["touched", "visited", "revealedValidation", "activeWizards", "collectionKeys", "extensions"],
+    "diagnosticMembers": ["code", "message", "severity", "path", "address"],
+    "diagnosticSeverity": "error",
     "events": [
       { "symbol": "focus", "interpretation": "core interaction metadata" },
       { "symbol": "blur", "interpretation": "core interaction metadata" },

@@ -23,7 +23,7 @@ source regions.
 | Homogeneous/union rows, keys, constraints, every collection command | [Collections](/structures/collections) | Stable collection rows |
 | Stage state, linear/nonlinear navigation, validation gates, guards, dynamic stages | [Wizards](/structures/wizards) | Guarded wizard |
 | JSON boundary, recreation, metadata, value/extension codecs, migrations | [Persistence](/persistence/serialization), [types](/reference/core/persistence-types), [errors](/reference/serialization-errors) | Serialized envelope + strict TypeScript fixtures |
-| Diagnostics, invalid revisions, recovery, safe paths, prototype-pollution defense | [Diagnostics](/diagnostics) | Last-valid-tree recovery |
+| Diagnostics, invalid revisions, recovery, safe paths, prototype-pollution defense | [Diagnostics](/diagnostics/overview), [catalog](/reference/diagnostics) | Last-valid-tree recovery + checked telemetry/safety fixtures |
 | React lifecycle, fields, collection/wizard hooks, Strict Mode | [React](/react) | All interactive examples |
 | Native fields, accessibility, focus, inactive stages, custom DOM views | [DOM](/dom) | Reference contract and repository fixture |
 | Framework-neutral adapter contract and test harness | [Custom adapters](/custom-adapters) | Executable Vue/Angular-style test-kit proofs |
@@ -39,7 +39,8 @@ so additions cannot silently disappear.
 entry points and compares them with the manifest. It also extracts diagnostic,
 serialization-error, and collection-rejection codes from source; checks exact
 snapshot, validation, persistence, and serialized-metadata members; checks
-nested navigation routes; verifies displayed regions against strict TypeScript
+all diagnostic members, severities, codes, and catalog columns; checks nested
+navigation routes; verifies displayed regions against strict TypeScript
 fixtures; and rejects known obsolete API names in normative pages.
 
 The initial manifest freezes exports and recognized code/event catalogs. Later

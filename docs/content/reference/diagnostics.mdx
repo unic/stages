@@ -1,0 +1,131 @@
+# Diagnostic reference
+
+**For:** Developers looking up an exact diagnostic shape, trigger, location,
+effect, and repair.
+
+**Prerequisites:** [Observe diagnostics](/diagnostics/overview) and
+[recovery behavior](/diagnostics/recovery).
+
+## Diagnostic
+
+```ts
+interface Diagnostic {
+  readonly code: string;
+  readonly message: string;
+  readonly severity: "error" | "warning";
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+}
+```
+
+| Member | Contract |
+| --- | --- |
+| `code` | Stable machine-readable category from the catalog below |
+| `message` | Human-readable detail; may contain text from an application-thrown error |
+| `severity` | `"error"` or `"warning"`; every built-in code below currently reports `"error"` |
+| `path` | Domain-data location for the failing revision |
+| `address` | Stable schema-node/row location where one is known |
+
+The controller supplies diagnostics through `StagesOptions.onDiagnostic` and
+`StagesSnapshot.diagnostics`. See the guide for callback deduplication and the
+100-entry runtime snapshot limit.
+
+## Schema shape and behavior
+
+For the effects below, “fallback” means a controller with a previous valid
+evaluation keeps that entire tree. The pure `evaluateSchema()` result instead
+contains the valid normalized subset described in the table.
+
+| Code | Severity | Trigger | Path / address | Effect | Recovery |
+| --- | --- | --- | --- | --- | --- |
+| `schema.invalid-node` | error | Node is not an object or lacks a string ID | Parent / parent | Skip candidate; controller fallback | Emit a node object with a string `id` |
+| `schema.invalid-kind` | error | Unknown node `kind` | Node / node | Skip node; fallback | Use `field`, `group`, `collection`, or `wizard` |
+| `schema.unsafe-id` | error | Root or node ID uses an unsafe key, or root ID is not a string | Root or node / same | Skip unsafe node; root evaluation erroneous; fallback | Use a safe string ID |
+| `schema.duplicate-id` | error | Sibling ID repeats | Duplicate node / node | Skip duplicate; fallback | Make sibling IDs unique |
+| `schema.invalid-props` | error | Static field props are not an object | Field / field | Skip field; fallback | Supply an object or omit `props` |
+| `schema.invalid-transform` | error | Transform list, event policy, predicate, or `apply` shape is malformed | Config owner / owner | Skip node, or strip invalid root transforms; fallback | Supply valid event names and functions |
+| `schema.invalid-validator` | error | Validator IDs/policies/dependencies/functions are malformed or duplicate | Config owner / owner | Skip node, or strip invalid root validators; fallback | Repair every validator and unique ID |
+| `schema.resolver-failed` | error | Node/stage `when` or `disabled` throws/returns non-boolean, or `deriveProps` throws/returns non-object | Node or stage / same | Skip that node/stage; fallback | Make resolver total, typed, and deterministic |
+| `schema.unknown-field` | error | Field type is not a string or is absent from the registry | Field / field | Skip field; fallback | Register and reference a valid type |
+| `schema.invalid-field-definition` | error | Registry entry or intrinsic validators are malformed | Field / field | Skip field; fallback | Repair the registered field definition |
+| `schema.invalid-nodes` | error | Root/group `nodes` is not an array | Root or group / same | Root has no nodes or group is skipped; fallback | Supply a node array |
+| `schema.invalid-version` | error | Root version is not a positive safe integer | Root / root | Evaluation erroneous; fallback | Use a positive safe integer |
+
+## Collections and row identity during schema evaluation
+
+| Code | Severity | Trigger | Path / address | Effect | Recovery |
+| --- | --- | --- | --- | --- | --- |
+| `schema.collection-shape` | error | Collection does not define exactly one valid `nodes` or `variants` shape | Collection / collection | Skip collection; fallback | Choose one well-formed mode |
+| `schema.item-key` | error | Configured `itemKey` is not a function | Collection / collection | Skip collection; fallback | Supply a function or omit it |
+| `schema.collection-min` | error | `min` is negative or not a safe integer | Collection / collection | Mark evaluation erroneous; fallback | Use a non-negative safe integer |
+| `schema.collection-max` | error | `max` is negative or not a safe integer | Collection / collection | Mark evaluation erroneous; fallback | Use a non-negative safe integer |
+| `schema.collection-range` | error | `min` exceeds `max` | Collection / collection | Mark evaluation erroneous; fallback | Correct the range |
+| `schema.collection-value` | error | Defined collection value is not an array | Collection / collection | Normalize with no rows; fallback | Replace domain value with an array |
+| `schema.unsafe-discriminator` | error | Union discriminator is missing, non-string, or unsafe | Collection / collection | Skip collection; fallback | Use a safe string property name |
+| `schema.invalid-variant` | error | Variant map is empty or a variant lacks a node array | Collection / collection | Skip collection; fallback | Define at least one valid variant |
+| `schema.unsafe-variant` | error | Variant name is an unsafe path segment | Collection / collection | Skip collection; fallback | Rename the variant |
+| `schema.item-key-failed` | error | `itemKey` throws or returns an empty/non-string key | Row data path / collection address | Skip failing row; fallback | Return a unique non-empty string for every row |
+| `schema.duplicate-row-key` | error | Two rows resolve to the same key | Row data path / row address | Skip duplicate row; fallback | Make application keys unique |
+| `schema.unknown-variant` | error | Row discriminator is missing or not a configured variant | Row data path / row address | Skip row; fallback | Repair discriminator value or variant map |
+
+## Wizards and dynamic identity
+
+| Code | Severity | Trigger | Path / address | Effect | Recovery |
+| --- | --- | --- | --- | --- | --- |
+| `schema.invalid-wizard` | error | Wizard `stages` is not an array | Wizard / wizard | Skip wizard; fallback | Supply a stage array |
+| `schema.invalid-stage` | error | Stage is malformed, has unsafe/duplicate ID, or lacks a node array | Wizard or stage / same | Skip stage; fallback | Repair stage shape and unique safe ID |
+| `schema.wizard-target` | error | `initialStage` names no declared valid stage | Wizard / wizard | Evaluation erroneous; fallback | Point to an existing stage or omit it |
+| `schema.factory-failed` | error | Schema factory throws after a valid evaluation exists | Root / root | Keep last valid tree | Repair inputs/factory; an initial throw escapes as `TypeError` |
+| `schema.identity-changed` | error | Same factory unexpectedly changes root schema ID/version | Root / root | Keep last valid tree and identity | Keep identity stable; use `update({ schema })` for intentional replacement |
+| `schema.incompatible-identity` | error | Valid revision reuses an address for another node kind or field type | Node / node | Accept new tree; clear incompatible metadata/cache | Keep identity compatible or intentionally remount at a new ID |
+
+## Event targets, patches, reducers, and transforms
+
+| Code | Severity | Trigger | Path / address | Effect | Recovery |
+| --- | --- | --- | --- | --- | --- |
+| `event.target-missing` | error | Field path or node address is absent from current schema | Requested field path / empty, or empty / requested node address | Reject collection/wizard commands; other events skip target logic but may reach root transforms | Refresh target from current snapshot/address |
+| `event.target-kind` | error | Collection parser receives a non-collection target (defensive invariant) | Target / target | Reject command | Send collection commands to a collection or row address |
+| `event.patch-failed` | error | Reducer/reset patch contains an unsafe or otherwise failing update | Target, or root / same | Reject event patches and value proposal | Produce safe valid patches |
+| `field.reducer-failed` | error | Field reducer throws | Field / field | Reject field event and its proposal | Make reducer total; validate payload before use |
+| `transform.failed` | error | Transform predicate/application/derived patch throws | Transform owner / owner | Roll back that event to its input draft; stop later transforms | Repair transform and emitted patches |
+
+## Collection commands
+
+Each code below rejects the collection command. No collection patch, downstream
+transform, validation run, or standalone `onChange` proposal is produced.
+
+| Code | Severity | Trigger | Path / address | Recovery |
+| --- | --- | --- | --- | --- |
+| `collection.disabled` | error | Target collection is hidden or disabled | Collection / collection | Disable the UI command or make collection operable |
+| `collection.value` | error | Runtime collection value is not an array | Collection / collection | Repair/accept an array value |
+| `collection.event` | error | Unknown `collection:*` event name | Collection / collection | Use a standard command name |
+| `collection.payload` | error | Command payload lacks required value/index/order or has the wrong primitive shape | Collection / collection | Send the documented payload |
+| `collection.variant` | error | Union add omits or names an unknown variant | Collection / collection | Send a configured variant |
+| `collection.max` | error | Add/duplicate would exceed `max` | Collection / collection | Respect `canAdd` or increase valid limit |
+| `collection.min` | error | Remove would go below `min` | Collection / collection | Respect `canRemove` or lower valid limit |
+| `collection.index` | error | Add/item/duplicate/move index is not a valid safe integer in range | Collection / collection | Recompute indexes from current value |
+| `collection.order` | error | Sort order is not a complete valid permutation | Collection / collection | Supply every current index exactly once |
+| `collection.unchanged` | error | Replace uses the identical item, move is a no-op, or sort order is unchanged | Collection / collection | Avoid dispatching a no-op |
+
+The same constraint codes are returned—not emitted—as rejected
+`CollectionCommandResult` values when using `reduceCollectionCommand()`
+directly.
+
+## Wizard navigation and validation presentation
+
+| Code | Severity | Trigger | Path / address | Effect | Recovery |
+| --- | --- | --- | --- | --- | --- |
+| `wizard.navigation-rejected` | error | Wizard is hidden/disabled, target is not visible, non-linear go is disabled, current validation is not valid, or guard rejects/throws | Wizard / wizard | Keep active stage; no domain proposal | Use snapshot capabilities and repair validation/guard |
+| `validation.failure-issue-failed` | error | `validationFailureIssue` throws or returns malformed presentation | Validator node / node | Use deterministic fallback `ValidationIssue` | Make the presentation factory total and well-formed |
+
+Extension registration/codec failures do not produce diagnostics. They throw
+`TypeError` or a code from the [serialization error catalog](/reference/serialization-errors).
+
+## Evidence
+
+The docs gate derives all 47 codes from core schema, controller, and collection
+source, verifies this page contains every code, and compares all five
+`Diagnostic` members with the public declaration. Schema normalization,
+recovery, event rejection, and collection tests cover representative effects.
+
+**Next:** Apply the catalog through the [troubleshooting workflow](/diagnostics/observability-and-troubleshooting).

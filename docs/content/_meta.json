@@ -5,6 +5,7 @@
   "structures": "Structures",
   "validation": "Validation",
   "persistence": "Persistence and recreation",
+  "diagnostics": "Diagnostics and recovery",
   "guides": {
     "type": "separator",
     "title": "Feature guides"
@@ -30,7 +31,6 @@
     "title": "Wizards (legacy route)",
     "display": "hidden"
   },
-  "diagnostics": "Diagnostics and safety",
   "react": "React adapter",
   "dom": "DOM adapter",
   "custom-adapters": "Custom adapters",

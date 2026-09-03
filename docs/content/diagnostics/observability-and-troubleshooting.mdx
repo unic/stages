@@ -1,0 +1,86 @@
+# Observability and troubleshooting
+
+**For:** Teams operating Stages forms in development and production.
+
+**Prerequisites:** [Observe diagnostics](/diagnostics/overview) and the
+[diagnostic code reference](/reference/diagnostics).
+
+Start with the stable code, then use the data path and node address to find the
+responsible configuration:
+
+```ts
+export function diagnosticLocation(diagnostic: Diagnostic) {
+  return {
+    code: diagnostic.code,
+    dataPath: diagnostic.path.length === 0
+      ? "<root>"
+      : diagnostic.path.map(String).join("."),
+    nodeAddress: diagnostic.address.length === 0
+      ? "<root>"
+      : diagnostic.address
+        .map(segment => `${segment.kind}:${segment.id}`)
+        .join(" / "),
+  };
+}
+
+export function provokeMissingTarget(
+  controller: StagesController<DiagnosticValue, typeof fields>,
+) {
+  controller.dispatch({
+    name: "input",
+    target: { kind: "field", path: ["removed-field"] },
+    payload: 1,
+  });
+}
+```
+
+## Troubleshooting flow
+
+1. Look up `code` in the [catalog](/reference/diagnostics) to identify the
+   subsystem and whether schema evaluation or one runtime operation was
+   affected.
+2. Use `path` to inspect the domain location. A row index can change after a
+   reorder, so interpret it against the failing revision.
+3. Use `address` to locate the stable schema node or collection row identity.
+   An empty path/address means the root, or that a missing target supplied only
+   the other locator.
+4. Inspect schema, field registry, or event construction at that location. For
+   user callbacks, retain the diagnostic message and original application logs.
+5. Repair the responsible input. Confirm whether schema diagnostics disappear,
+   a runtime retry succeeds, and canonical value/metadata match expectations.
+
+Do not assume every diagnostic rejected a value. For example,
+`schema.incompatible-identity` accepts a valid new tree while clearing stale
+metadata, and a non-structural missing-target event can still reach root
+transforms. The catalog states each effect.
+
+## Production telemetry
+
+Send `code`, `severity`, release/schema identifiers, and a sanitized form of
+`path`/`address`. Avoid attaching `snapshot.value`, event payloads, serialized
+state, validation metadata, or extension data by default. Messages can include
+text from errors thrown by application factories, resolvers, reducers,
+transforms, guards, or presentation callbacks; review or redact them before
+exporting to a third party.
+
+Rate-limit recurring runtime codes and group by code plus structural location.
+Schema callback delivery is already deduplicated by code/path/message within a
+controller, but a recreated controller starts a new lifetime. Alert on
+unexpected production codes; keep expected user-driven constraint rejections
+at a lower operational level if the UI already prevents them.
+
+## Adjacent failures
+
+Extension registration and serialized extension decoding do not use the
+diagnostic catalog; they throw `TypeError` or `SerializationError`. Validator
+rejection normally becomes a `ValidationIssue`; only failure of the configured
+failure-issue presentation reports `validation.failure-issue-failed`. Keep
+these streams distinct in dashboards and recovery UI.
+
+## Evidence
+
+The workflow follows the source-defined path/address for every code and the
+tested recovery behavior. The locator and missing-target example are compiled
+from `docs/examples/diagnostics.ts`.
+
+**Next:** Use the exhaustive [diagnostic reference](/reference/diagnostics) during implementation and incident response.

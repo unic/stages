@@ -1,0 +1,89 @@
+# Observe diagnostics
+
+**For:** Application and tooling developers integrating schema problems with a
+debug panel, test assertion, or observability system.
+
+**Prerequisites:** [Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions)
+and [validation overview](/validation/overview).
+
+A `Diagnostic` describes a configuration or runtime operation problem with a
+stable `code`, human-readable `message`, `severity`, data `path`, and stable
+node `address`. It is developer-facing operational data, not a validation issue
+to show beside an input.
+
+## Two observation channels
+
+```ts
+export function observeDiagnostics(
+  send: (channel: "callback" | "snapshot", items: readonly DiagnosticRecord[]) => void,
+) {
+  const controller = stages({
+    schema: stableSchema,
+    fields,
+    value: { count: 0, failSchema: false },
+    onDiagnostic(diagnostic) {
+      // Immediate occurrences are useful for logs and counters.
+      send("callback", [diagnosticRecord(diagnostic)]);
+    },
+  });
+
+  const unsubscribe = controller.subscribeSelector(
+    snapshot => snapshot.diagnostics,
+    diagnostics => {
+      // Snapshot state is useful for an inspector or schema editor.
+      send("snapshot", diagnostics.map(diagnosticRecord));
+    },
+  );
+
+  return {
+    controller,
+    destroy() {
+      unsubscribe();
+      controller.destroy();
+    },
+  };
+}
+```
+
+`onDiagnostic` receives a diagnostic when core reports it. Use it for event
+logs, counters, and test hooks. Schema diagnostics with the same code, path,
+and message are delivered only once per controller lifetime; recurring runtime
+diagnostics are delivered on every occurrence.
+
+`snapshot.diagnostics` describes the state an inspector should show:
+
+- schema diagnostics belong to the current evaluation and disappear after a
+  valid revision;
+- runtime diagnostics accumulate for the controller lifetime, capped at the
+  most recent 100 entries; and
+- schema diagnostics appear before retained runtime diagnostics.
+
+Subscribe to the array for UI inspection, but do not infer occurrence counts
+from it. Use `onDiagnostic` when every runtime occurrence matters. Always run
+the returned unsubscribe function and destroy an application-owned controller.
+
+## Diagnostics versus validation and exceptions
+
+Validation issues describe domain input and have reveal policy, scope,
+aggregation, and user-facing presentation. Diagnostics describe schema,
+adapter-event, reducer, transform, collection, wizard, or validation-failure
+infrastructure problems. Do not convert every diagnostic into an input error.
+
+Some boundary failures throw instead of producing diagnostics: an initially
+throwing schema factory, unsafe mutation paths, invalid extension registration,
+codecs, and serialized-state validation cannot always leave a usable
+controller. Handle those exceptions at the API boundary documented for that
+feature.
+
+All built-in diagnostics currently use `"error"`; the public `severity` union
+also reserves `"warning"` for compatible producers and tooling. Consumers
+should handle both values.
+
+## Evidence
+
+Delivery, deduplication, retention, and snapshot ordering are defined by the
+core controller; validation separation is covered by validation and failure
+presentation tests. The observation example is compiled from
+`docs/examples/diagnostics.ts`.
+
+**Next:** Understand [last-valid recovery and rejected operations](/diagnostics/recovery).
