@@ -287,6 +287,15 @@ export interface ContainerSnapshot {
   readonly address: NodeAddress;
   readonly state: Pick<SnapshotState, "disabled" | "visible">;
   readonly nodes: readonly RenderNodeSnapshot[];
+  readonly active?: boolean;
+  readonly activeStage?: string;
+  readonly visibleStageIds?: readonly string[];
+  readonly canPrevious?: boolean;
+  readonly canNext?: boolean;
+  readonly canGo?: boolean;
+  readonly size?: number;
+  readonly canAdd?: boolean;
+  readonly canRemove?: boolean;
 }
 
 export type RenderNodeSnapshot = FieldSnapshot | ContainerSnapshot;

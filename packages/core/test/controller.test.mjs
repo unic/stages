@@ -268,3 +268,175 @@ test("async validation preserves declaration order and converts rejections", asy
   assert.equal(result.issues[2].message, "service unavailable");
   assert.equal(result.status, "invalid");
 });
+
+test("collection events create defaults, enforce constraints, and expose capabilities", async () => {
+  const collectionFields = {
+    text: { view: "text", initialValue: "" },
+  };
+  const collectionSchema = {
+    id: "people",
+    version: 1,
+    nodes: [{
+      kind: "collection",
+      id: "people",
+      min: 1,
+      max: 2,
+      itemKey: (item) => item.id,
+      nodes: [{ kind: "field", id: "name", type: "text" }],
+    }],
+  };
+  const changes = [];
+  let controller;
+  controller = stages({
+    schema: collectionSchema,
+    fields: collectionFields,
+    value: { people: [{ id: "existing", name: "Ada" }] },
+    onChange: (change) => {
+      changes.push(change);
+      const people = change.value.people.map((person, index) => person.id === undefined ? { ...person, id: `generated-${index}` } : person);
+      controller.update({ value: { people } });
+    },
+  });
+  const target = { kind: "node", address: [{ kind: "node", id: "people" }] };
+  controller.dispatch({ name: "collection:add", target });
+  await tick();
+
+  assert.deepEqual(controller.getSnapshot().value.people, [
+    { id: "existing", name: "Ada" },
+    { id: "generated-1", name: "" },
+  ]);
+  const collection = controller.getSnapshot().nodes[0];
+  assert.equal(collection.size, 2);
+  assert.equal(collection.canAdd, false);
+  assert.equal(collection.canRemove, true);
+  assert.equal(collection.nodes[1].kind, "row");
+
+  controller.dispatch({ name: "collection:add", target });
+  await tick();
+  assert.equal(changes.length, 1);
+  assert.equal(controller.getSnapshot().diagnostics.at(-1).code, "collection.max");
+
+  controller.dispatch({ name: "collection:remove", target, payload: { index: 1 } });
+  await tick();
+  controller.dispatch({ name: "collection:remove", target, payload: { index: 0 } });
+  await tick();
+  assert.equal(changes.length, 2);
+  assert.equal(controller.getSnapshot().value.people.length, 1);
+  assert.equal(controller.getSnapshot().diagnostics.at(-1).code, "collection.min");
+});
+
+test("union collection add writes its discriminator and variant defaults", async () => {
+  const collectionFields = { text: { view: "text", initialValue: "" } };
+  const schema = {
+    id: "contacts",
+    version: 1,
+    nodes: [{
+      kind: "collection",
+      id: "contacts",
+      discriminator: "kind",
+      variants: {
+        person: { nodes: [{ kind: "field", id: "name", type: "text" }] },
+        company: { nodes: [{ kind: "field", id: "companyName", type: "text" }] },
+      },
+    }],
+  };
+  let controller;
+  controller = stages({
+    schema,
+    fields: collectionFields,
+    value: { contacts: [] },
+    onChange: ({ value }) => controller.update({ value }),
+  });
+  controller.dispatch({
+    name: "collection:add",
+    target: { kind: "node", address: [{ kind: "node", id: "contacts" }] },
+    payload: { variant: "company" },
+  });
+  await tick();
+
+  assert.deepEqual(controller.getSnapshot().value.contacts, [{ kind: "company", companyName: "" }]);
+});
+
+test("nested wizard navigation changes metadata without proposing domain values", async () => {
+  const wizardSchema = {
+    id: "nested-wizard",
+    version: 1,
+    nodes: [{
+      kind: "group",
+      id: "account",
+      nodes: [{
+        kind: "wizard",
+        id: "flow",
+        initialStage: "intro",
+        navigation: {
+          nonLinear: true,
+          guard: (value, _from, to) => to !== "confirm" || value.allowConfirm,
+        },
+        stages: [
+          { id: "intro", nodes: [] },
+          { id: "details", nodes: [] },
+          { id: "confirm", nodes: [] },
+        ],
+      }],
+    }],
+  };
+  let changes = 0;
+  const controller = stages({
+    schema: wizardSchema,
+    fields: {},
+    value: { allowConfirm: false, account: { flow: { intro: {}, details: {}, confirm: {} } } },
+    onChange: () => { changes += 1; },
+  });
+  const address = [{ kind: "node", id: "account" }, { kind: "node", id: "flow" }];
+  const wizard = () => controller.getSnapshot().nodes[0].nodes[0];
+  assert.equal(wizard().activeStage, "intro");
+  assert.equal(wizard().nodes[0].active, true);
+
+  controller.dispatch({ name: "wizard:next", target: { kind: "node", address } });
+  await tick();
+  assert.equal(wizard().activeStage, "details");
+  assert.equal(wizard().canPrevious, true);
+
+  controller.dispatch({ name: "wizard:go", target: { kind: "node", address }, payload: { stage: "confirm" } });
+  await tick();
+  assert.equal(wizard().activeStage, "details");
+  assert.equal(controller.getSnapshot().diagnostics.at(-1).code, "wizard.navigation-rejected");
+  assert.equal(changes, 0);
+
+  controller.update({ value: { allowConfirm: true, account: { flow: { intro: {}, details: {}, confirm: {} } } } });
+  await tick();
+  controller.dispatch({ name: "wizard:go", target: { kind: "node", address }, payload: "confirm" });
+  await tick();
+  assert.equal(wizard().activeStage, "confirm");
+
+  const recreated = stages({ schema: wizardSchema, fields: {}, state: controller.serialize() });
+  assert.equal(recreated.getSnapshot().nodes[0].nodes[0].activeStage, "confirm");
+});
+
+test("rejected collection commands do not run transforms or propose changes", async () => {
+  const schema = {
+    id: "rejected-command",
+    version: 1,
+    transforms: [{
+      on: "collection:remove",
+      apply: () => [{ op: "set", path: ["transformed"], value: true }],
+    }],
+    nodes: [{ kind: "collection", id: "items", min: 1, nodes: [] }],
+  };
+  let changes = 0;
+  const controller = stages({
+    schema,
+    fields: {},
+    value: { items: [{}], transformed: false },
+    onChange: () => { changes += 1; },
+  });
+  controller.dispatch({
+    name: "collection:remove",
+    target: { kind: "node", address: [{ kind: "node", id: "items" }] },
+    payload: { index: 0 },
+  });
+  await tick();
+
+  assert.equal(changes, 0);
+  assert.equal(controller.getSnapshot().value.transformed, false);
+});

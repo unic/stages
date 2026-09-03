@@ -1,4 +1,5 @@
 import { applyPatches, getAtPath, pathsEqual } from "./path.js";
+import { reduceCollectionCommand, type CollectionCommand } from "./collections.js";
 import {
   evaluateSchema,
   initialFieldValue,
@@ -16,6 +17,7 @@ import type {
   FieldSnapshot,
   JsonValue,
   NodeAddress,
+  NodeConfig,
   RenderNodeSnapshot,
   SerializedStagesState,
   StagesChange,
@@ -129,6 +131,125 @@ interface InteractionState {
   readonly focused: Readonly<{ has(value: string): boolean }>;
   readonly touched: Readonly<{ has(value: string): boolean }>;
   readonly visited: Readonly<{ has(value: string): boolean }>;
+  readonly activeWizards: ReadonlyMap<string, string>;
+}
+
+interface ActiveWizardState {
+  readonly address: NodeAddress;
+  readonly stage: string;
+}
+
+function initialScopeValue<TValue, TFields, TContext>(
+  nodes: readonly NodeConfig<TValue, TFields, TContext>[],
+  fields: TFields,
+): Readonly<Record<string, unknown>> {
+  const value: Record<string, unknown> = {};
+  for (const node of nodes) {
+    if (node.kind === "field") {
+      const definition = fieldDefinition(fields, node.type);
+      value[node.id] = definition === undefined ? undefined : initialFieldValue(definition);
+    } else if (node.kind === "group") {
+      value[node.id] = initialScopeValue(node.nodes, fields);
+    } else if (node.kind === "collection") {
+      value[node.id] = [];
+    } else {
+      const wizardValue: Record<string, unknown> = {};
+      for (const stage of node.stages) wizardValue[stage.id] = initialScopeValue(stage.nodes, fields);
+      value[node.id] = wizardValue;
+    }
+  }
+  return value;
+}
+
+function eventRecord(payload: unknown): Readonly<Record<string, unknown>> | undefined {
+  return payload !== null && typeof payload === "object" && !Array.isArray(payload)
+    ? payload as Readonly<Record<string, unknown>>
+    : undefined;
+}
+
+function parseNodeAddress(value: unknown): NodeAddress | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const address: Array<Readonly<{ kind: "node" | "row"; id: string }>> = [];
+  for (const candidate of value) {
+    const record = eventRecord(candidate);
+    const kind = record?.["kind"];
+    const id = record?.["id"];
+    if ((kind !== "node" && kind !== "row") || typeof id !== "string") return undefined;
+    address.push({ kind, id });
+  }
+  return address;
+}
+
+type ParsedCollectionCommand =
+  | Readonly<{ command: CollectionCommand }>
+  | Readonly<{ code: string; message: string }>;
+
+function parseCollectionCommand<TValue, TFields, TContext>(
+  node: NormalizedNode<TValue, TFields, TContext>,
+  event: StagesEvent,
+  fields: TFields,
+): ParsedCollectionCommand {
+  if (node.config.kind !== "collection") return { code: "event.target-kind", message: "Collection event requires a collection target." };
+  const payload = eventRecord(event.payload) ?? {};
+
+  if (event.name === "collection:add") {
+    const index = payload["index"];
+    if (index !== undefined && typeof index !== "number") return { code: "collection.payload", message: "Add index must be a number." };
+    let item: unknown;
+    if (Object.prototype.hasOwnProperty.call(payload, "value")) {
+      item = payload["value"];
+    } else if (node.config.variants !== undefined) {
+      const variant = payload["variant"];
+      if (typeof variant !== "string" || node.config.variants[variant] === undefined) {
+        return { code: "collection.variant", message: "Adding to a union collection requires a known variant." };
+      }
+      const variantConfig = node.config.variants[variant];
+      if (variantConfig === undefined) return { code: "collection.variant", message: "Unknown collection variant." };
+      item = {
+        ...initialScopeValue(variantConfig.nodes, fields),
+        [node.config.discriminator]: variant,
+      };
+    } else {
+      item = initialScopeValue(node.config.nodes, fields);
+    }
+    return {
+      command: {
+        name: "collection:add",
+        item,
+        ...(index === undefined ? {} : { index }),
+      },
+    };
+  }
+
+  if (event.name === "collection:remove") {
+    return typeof payload["index"] === "number"
+      ? { command: { name: event.name, index: payload["index"] } }
+      : { code: "collection.payload", message: "Remove requires a numeric index." };
+  }
+  if (event.name === "collection:replace") {
+    return typeof payload["index"] === "number" && Object.prototype.hasOwnProperty.call(payload, "value")
+      ? { command: { name: event.name, index: payload["index"], item: payload["value"] } }
+      : { code: "collection.payload", message: "Replace requires an index and value." };
+  }
+  if (event.name === "collection:duplicate") {
+    const index = payload["index"];
+    const toIndex = payload["toIndex"];
+    return typeof index === "number" && (toIndex === undefined || typeof toIndex === "number")
+      ? { command: { name: event.name, index, ...(toIndex === undefined ? {} : { toIndex }) } }
+      : { code: "collection.payload", message: "Duplicate requires numeric indexes." };
+  }
+  if (event.name === "collection:move") {
+    return typeof payload["from"] === "number" && typeof payload["to"] === "number"
+      ? { command: { name: event.name, from: payload["from"], to: payload["to"] } }
+      : { code: "collection.payload", message: "Move requires numeric from and to indexes." };
+  }
+  if (event.name === "collection:sort") {
+    const order = payload["order"];
+    return Array.isArray(order) && order.every((index) => typeof index === "number")
+      ? { command: { name: event.name, order } }
+      : { code: "collection.payload", message: "Sort requires a numeric order array." };
+  }
+  return { code: "collection.event", message: `Unknown collection event \"${event.name}\".` };
 }
 
 function mapSnapshotNode<TValue, TFields, TContext>(
@@ -180,10 +301,37 @@ function mapSnapshotNode<TValue, TFields, TContext>(
     nodes: node.branches.length > 0
       ? node.branches
         .filter((branch) => branch.visible)
-        .map((branch) => mapSnapshotBranch(branch, value, baseline, fields, interaction, issues))
+        .map((branch) => mapSnapshotBranch(
+          branch,
+          value,
+          baseline,
+          fields,
+          interaction,
+          issues,
+          node.config.kind === "wizard"
+            ? interaction.activeWizards.get(addressKey(node.address)) === branch.id
+            : undefined,
+        ))
       : node.children
         .filter((child) => child.visible)
         .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
+    ...(node.config.kind === "collection" ? {
+      size: Array.isArray(getAtPath(value, node.path)) ? (getAtPath(value, node.path) as readonly unknown[]).length : 0,
+      canAdd: node.config.max === undefined || node.branches.length < node.config.max,
+      canRemove: node.config.min === undefined || node.branches.length > node.config.min,
+    } : {}),
+    ...(node.config.kind === "wizard" ? (() => {
+      const visibleStages = node.branches.filter((branch) => branch.visible);
+      const activeStage = interaction.activeWizards.get(addressKey(node.address)) ?? visibleStages[0]?.id;
+      const activeIndex = visibleStages.findIndex((branch) => branch.id === activeStage);
+      return {
+        ...(activeStage === undefined ? {} : { activeStage }),
+        visibleStageIds: visibleStages.map((branch) => branch.id),
+        canPrevious: !node.disabled && activeIndex > 0,
+        canNext: !node.disabled && activeIndex >= 0 && activeIndex < visibleStages.length - 1,
+        canGo: !node.disabled && node.config.navigation?.nonLinear === true,
+      };
+    })() : {}),
   };
   return snapshot;
 }
@@ -195,6 +343,7 @@ function mapSnapshotBranch<TValue, TFields, TContext>(
   fields: TFields,
   interaction: InteractionState,
   issues: readonly ValidationIssue[],
+  active: boolean | undefined,
 ): ContainerSnapshot {
   return {
     kind: branch.kind,
@@ -205,6 +354,7 @@ function mapSnapshotBranch<TValue, TFields, TContext>(
     nodes: branch.children
       .filter((child) => child.visible)
       .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
+    ...(active === undefined ? {} : { active }),
   };
 }
 
@@ -240,6 +390,31 @@ export function stages<TValue, TFields, TContext = unknown>(
   let focused = new Map<string, NodeAddress>();
   let touched = new Map<string, NodeAddress>();
   let visited = new Map<string, NodeAddress>();
+  let activeWizards = new Map<string, ActiveWizardState>();
+  if (restored !== undefined) {
+    const serializedTouched = restored.meta["touched"];
+    if (Array.isArray(serializedTouched)) {
+      for (const item of serializedTouched) {
+        const address = parseNodeAddress(item);
+        if (address !== undefined) touched.set(addressKey(address), address);
+      }
+    }
+    const serializedVisited = restored.meta["visited"];
+    if (Array.isArray(serializedVisited)) {
+      for (const item of serializedVisited) {
+        const address = parseNodeAddress(item);
+        if (address !== undefined) visited.set(addressKey(address), address);
+      }
+    }
+    const serializedWizards = restored.meta["activeWizards"];
+    if (Array.isArray(serializedWizards)) {
+      for (const item of serializedWizards) {
+        if (!Array.isArray(item) || item.length !== 2 || typeof item[1] !== "string") continue;
+        const address = parseNodeAddress(item[0]);
+        if (address !== undefined) activeWizards.set(addressKey(address), { address, stage: item[1] });
+      }
+    }
+  }
   let validation = emptyValidation;
   let validationRun = 0;
   let publishedEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
@@ -247,6 +422,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   const listeners = new Set<() => void>();
   const selectorListeners = new Set<() => void>();
   const reportedDiagnostics = new Set<string>();
+  let runtimeDiagnostics: Diagnostic[] = [];
   let knownIdentities = new Map<string, string>();
   let cachedSnapshot: StagesSnapshot<TValue>;
 
@@ -256,9 +432,20 @@ export function stages<TValue, TFields, TContext = unknown>(
       isDirty: !deepEqual(value, baseline),
       touched: [...touched.values()],
       visited: [...visited.values()],
-      activeWizards: new Map(),
+      activeWizards: new Map([...activeWizards].map(([key, state]) => [key, state.stage])),
       extensions: {},
     };
+  }
+
+  function reportRuntimeDiagnostic(
+    code: string,
+    message: string,
+    path: DataPath,
+    address: NodeAddress,
+  ): void {
+    const item: Diagnostic = { code, message, severity: "error", path, address };
+    runtimeDiagnostics = [...runtimeDiagnostics.slice(-99), item];
+    options.onDiagnostic?.(item);
   }
 
   function evaluated(currentValue: TValue) {
@@ -315,6 +502,26 @@ export function stages<TValue, TFields, TContext = unknown>(
     focused = retainCompatible(focused);
     touched = retainCompatible(touched);
     visited = retainCompatible(visited);
+    const nextActiveWizards = new Map<string, ActiveWizardState>();
+    const initializeWizards = (items: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
+      for (const node of items) {
+        if (node.config.kind === "wizard") {
+          const key = addressKey(node.address);
+          const visibleStages = node.branches.filter((branch) => branch.visible);
+          const previous = activeWizards.get(key);
+          const configured = node.config.initialStage;
+          const stage = previous !== undefined && visibleStages.some((branch) => branch.id === previous.stage)
+            ? previous.stage
+            : configured !== undefined && visibleStages.some((branch) => branch.id === configured)
+              ? configured
+              : visibleStages[0]?.id;
+          if (stage !== undefined) nextActiveWizards.set(key, { address: node.address, stage });
+        }
+        initializeWizards(node.children);
+      }
+    };
+    initializeWizards(nodes);
+    activeWizards = nextActiveWizards;
     knownIdentities = nextIdentities;
   }
 
@@ -326,14 +533,19 @@ export function stages<TValue, TFields, TContext = unknown>(
     const previousNodes = indexSnapshotNodes(cachedSnapshot.nodes);
     const nextNodes = result.nodes
       .filter((node) => node.visible)
-      .map((node) => mapSnapshotNode(node, value, baseline, options.fields, { focused, touched, visited }, validation.issues))
+      .map((node) => mapSnapshotNode(node, value, baseline, options.fields, {
+        focused,
+        touched,
+        visited,
+        activeWizards: new Map([...activeWizards].map(([key, state]) => [key, state.stage])),
+      }, validation.issues))
       .map((node) => shareSnapshotNode(node, previousNodes));
     cachedSnapshot = {
       value: readonlyValue(value),
       revision,
       nodes: nextNodes,
       validation,
-      diagnostics: result.diagnostics,
+      diagnostics: [...result.diagnostics, ...runtimeDiagnostics],
     };
     dirtySnapshot = false;
     return cachedSnapshot;
@@ -415,6 +627,17 @@ export function stages<TValue, TFields, TContext = unknown>(
       : event.target.kind === "node"
         ? allNodes.find((node) => addressKey(node.address) === addressKey(event.target.kind === "node" ? event.target.address : []))
         : undefined;
+    let commandRejected = false;
+
+    if (event.target.kind !== "form" && target === undefined) {
+      commandRejected = event.name.startsWith("collection:") || event.name.startsWith("wizard:");
+      reportRuntimeDiagnostic(
+        "event.target-missing",
+        "Event target does not exist in the current schema.",
+        event.target.kind === "field" ? event.target.path : [],
+        event.target.kind === "node" ? event.target.address : [],
+      );
+    }
 
     if (target !== undefined) {
       const key = addressKey(target.address);
@@ -436,10 +659,74 @@ export function stages<TValue, TFields, TContext = unknown>(
       if (reduced !== undefined) {
         patches = "patches" in reduced ? reduced.patches : [{ op: "set", path: target.path, value: reduced.value }];
       }
+    } else if (target?.config.kind === "collection" && event.name.startsWith("collection:")) {
+      if (!target.visible || target.disabled) {
+        commandRejected = true;
+        reportRuntimeDiagnostic("collection.disabled", "Cannot change a hidden or disabled collection.", target.path, target.address);
+      } else {
+        const current = getAtPath(draft, target.path);
+        if (!Array.isArray(current)) {
+          commandRejected = true;
+          reportRuntimeDiagnostic("collection.value", "Collection commands require an array value.", target.path, target.address);
+        } else {
+          const parsed = parseCollectionCommand(target, event, options.fields);
+          if ("command" in parsed) {
+            const commandResult = reduceCollectionCommand(current, parsed.command, {
+              ...(target.config.min === undefined ? {} : { min: target.config.min }),
+              ...(target.config.max === undefined ? {} : { max: target.config.max }),
+            });
+            if (commandResult.accepted) {
+              patches = [{ op: "set", path: target.path, value: commandResult.value }];
+            } else {
+              commandRejected = true;
+              reportRuntimeDiagnostic(commandResult.code, commandResult.message, target.path, target.address);
+            }
+          } else {
+            commandRejected = true;
+            reportRuntimeDiagnostic(parsed.code, parsed.message, target.path, target.address);
+          }
+        }
+      }
+    } else if (target?.config.kind === "wizard" && event.name.startsWith("wizard:")) {
+      const visibleStages = target.branches.filter((branch) => branch.visible);
+      const key = addressKey(target.address);
+      const currentStage = activeWizards.get(key)?.stage ?? visibleStages[0]?.id;
+      const currentIndex = visibleStages.findIndex((branch) => branch.id === currentStage);
+      let requestedStage: string | undefined;
+      if (event.name === "wizard:next") requestedStage = visibleStages[currentIndex + 1]?.id;
+      if (event.name === "wizard:previous") requestedStage = visibleStages[currentIndex - 1]?.id;
+      if (event.name === "wizard:go") {
+        const payload = eventRecord(event.payload);
+        requestedStage = typeof event.payload === "string"
+          ? event.payload
+          : typeof payload?.["stage"] === "string"
+            ? payload["stage"]
+            : undefined;
+      }
+
+      let rejection: string | undefined;
+      if (!target.visible || target.disabled) rejection = "Cannot navigate a hidden or disabled wizard.";
+      else if (requestedStage === undefined || !visibleStages.some((branch) => branch.id === requestedStage)) rejection = "Wizard target is not a visible stage.";
+      else if (event.name === "wizard:go" && target.config.navigation?.nonLinear !== true) rejection = "Non-linear wizard navigation is disabled.";
+      else if (target.config.navigation?.validateCurrent === true && validation.status !== "valid") rejection = "Current wizard state must be valid before navigation.";
+      else if (currentStage !== undefined && target.config.navigation?.guard !== undefined) {
+        try {
+          if (!target.config.navigation.guard(readonlyValue(draft), currentStage, requestedStage)) rejection = "Wizard navigation guard rejected the target stage.";
+        } catch (error) {
+          rejection = `Wizard navigation guard failed: ${error instanceof Error ? error.message : String(error)}`;
+        }
+      }
+
+      if (rejection === undefined && requestedStage !== undefined) {
+        activeWizards = new Map(activeWizards).set(key, { address: target.address, stage: requestedStage });
+      } else if (rejection !== undefined) {
+        commandRejected = true;
+        reportRuntimeDiagnostic("wizard.navigation-rejected", rejection, target.path, target.address);
+      }
     }
 
     let nextDraft = applyPatches(draft, patches);
-    const matchingNodes = target === undefined
+    const matchingNodes = target === undefined || commandRejected
       ? []
       : allNodes.filter((node) => addressStartsWith(target.address, node.address)).sort((left, right) => right.address.length - left.address.length);
     for (const node of matchingNodes) {
@@ -462,7 +749,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         patches = [...patches, ...derived];
       }
     }
-    for (const transform of result.schema.transforms ?? []) {
+    for (const transform of commandRejected ? [] : result.schema.transforms ?? []) {
       const names = typeof transform.on === "string" ? [transform.on] : transform.on;
       if (!names.includes(event.name)) continue;
       const transformContext = {
@@ -560,7 +847,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       meta: {
         touched: toJson([...touched.values()]),
         visited: toJson([...visited.values()]),
-        activeWizards: [],
+        activeWizards: toJson([...activeWizards.values()].map((state) => [state.address, state.stage])),
         collectionKeys: [],
       },
     };
@@ -614,6 +901,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       validationRun += 1;
       listeners.clear();
       selectorListeners.clear();
+      activeWizards.clear();
       proposal = undefined;
       transactionEvents = [];
       transactionPatches = [];

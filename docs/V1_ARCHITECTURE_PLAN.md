@@ -13,7 +13,11 @@ state APIs in this slice are foundations, not a declaration that later phase
 exit criteria are complete. The controller foundation now also includes
 explicit row/stage snapshot branches, dynamic metadata reconciliation,
 structurally shared selector subscriptions, per-controller queues, and stale
-async-validation protection.
+async-validation protection. Collection events now cover immutable
+add/remove/replace/duplicate/move/sort commands, constraints, union defaults,
+and rejection diagnostics. Nested wizard snapshots expose active stages and
+navigation capabilities, with metadata-only next/previous/go events, guards,
+and durable active-stage recreation.
 
 ## 1. Outcome
 
