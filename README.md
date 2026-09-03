@@ -1,34 +1,69 @@
-# Stages
+# Stages v1
 
-<img src="https://unpkg.com/react-stages@0.1.17/stages-logo.png" align="right" title="Stages" width="400">
+Stages is a framework-neutral, controlled engine for forms, collections, and
+wizards. It owns schema evaluation, immutable value proposals, validation,
+navigation, and serializable interaction state while applications retain
+control of accepted values, markup, field components, and styling.
 
-Stages, ultra flexible, super powerful and relatively lightweight (37.2 kb minified and gzipped as of v0.5.6) wizard and form components for React. For devs which miss advanced features like collections and deeply nested data structures from libs like React-Hook-Forms or Formik.
+The v1 implementation is currently an alpha release candidate and is not API
+compatible with the historical `react-stages` 0.x package.
 
-**Stages is currently not production ready! The API will most likely slightly change before v1 release. Use at your own risk. However, we here at Unic already do use it with success in multiple big client projects.**
+## Packages
 
-- [Demos (WIP)](https://stages-demo.vercel.app/)
-- [Docs (WIP)](https://stages-docs.vercel.app/)
-- [Stages Studio (online form editor, coming soon)](https://stages.studio/)
+- `@stages/core` — dependency-free controller and schema runtime
+- `@stages/dom` — accessible native-DOM reference adapter
+- `@stages/react` — React lifecycle, field, collection, and wizard bindings
+- `@stages/test-kit` — reusable adapter contract harness
 
-## Possible Usecases:
+## Quick start
 
-- Forms (one stage)
-- Wizards (multiple stages, linear progression)
-- Dynamic Wizard (multiple dynamic stages, non linear progression)
-- Text Adventure (multiple stages, free progression)
-- Quiz (One or multiple stages, with custom validation and locked fields)
-- Accordion Form (stages rendered inside an accordion)
-- Slideshow (multiple stages, no validation, keyboard navigation)
-- Router (for SPAs)
+```ts
+import { stages } from "@stages/core";
 
-## Installation
+const fields = {
+  text: {
+    view: "text",
+    initialValue: "",
+    reduce: ({ event }) => event.name === "input"
+      ? { value: event.payload }
+      : undefined,
+  },
+};
 
-Installation:
+let value = { name: "" };
+let controller;
+controller = stages({
+  schema: {
+    id: "profile",
+    version: 1,
+    nodes: [{ kind: "field", id: "name", type: "text" }],
+  },
+  fields,
+  value,
+  onChange: ({ value: proposed }) => {
+    value = proposed;
+    controller.update({ value });
+  },
+});
+```
 
-`npm i react-stages --save`
+## Active applications and examples
 
-## Component Structure
+- [`examples/vanilla`](examples/vanilla/README.md) — DOM adapter wizard
+- [`examples/react`](examples/react/README.md) — React workspace wizard
+- [`studio`](studio) — v1-backed visual form editor
+- [`docs`](docs) — v1 documentation application
 
-This is the basic component structure for a wizard:
+## Documentation
 
-<img src="https://unpkg.com/react-stages@0.1.19/stages-structure.png" title="Stages Structure" width="100%">
+- [v1 API](docs/V1_API.md)
+- [Architecture plan and implementation state](docs/V1_ARCHITECTURE_PLAN.md)
+- [Migrating from 0.x](docs/MIGRATING_TO_V1.md)
+- [Release-candidate checklist](docs/V1_RELEASE_CHECKLIST.md)
+- [Historical 0.x API inventory](docs/CURRENT_IMPLEMENTATION_API.md)
+
+Run the complete local candidate gate with:
+
+```sh
+npm run release:check:v1
+```

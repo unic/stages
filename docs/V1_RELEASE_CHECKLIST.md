@@ -38,19 +38,20 @@ npm run release:check:v1
 The release gate performs:
 
 1. migration/API documentation inventory checks;
-2. strict package and example type checks;
-3. ESM and declaration builds;
-4. four real `npm pack` operations using an isolated cache;
-5. manifest, license, export-map, source-map, and tarball allowlist checks;
-6. offline installation into an isolated consumer;
-7. packed runtime/type checks, including controlled changes, adapters,
+2. active-application boundary and legacy-retirement checks;
+3. strict package and example type checks;
+4. ESM and declaration builds;
+5. four real `npm pack` operations using an isolated cache;
+6. manifest, license, export-map, source-map, and tarball allowlist checks;
+7. offline installation into an isolated consumer;
+8. packed runtime/type checks, including controlled changes, adapters,
    serialization, a custom value codec, migration, and recreation;
-8. structural and elapsed-time performance budgets;
-9. the complete core/DOM/React/test-kit test suite;
-10. Studio compatibility-converter tests and a production Studio build;
-11. a production build of the v1 documentation application;
-12. production builds of the vanilla and React examples; and
-13. the React 19 Strict Mode lifecycle test.
+9. structural and elapsed-time performance budgets;
+10. the complete core/DOM/React/test-kit test suite;
+11. Studio compatibility-converter tests and a production Studio build;
+12. a production build of the v1 documentation application;
+13. production builds of the vanilla and React examples; and
+14. the React 19 Strict Mode lifecycle test.
 
 Any failure blocks the candidate.
 
@@ -88,7 +89,7 @@ the entire gate.
 ## Stable v1 promotion
 
 Promote `1.0.0` only when the architecture acceptance criteria are satisfied,
-the remaining legacy demo migration decision is recorded, accessibility
-coverage is accepted, and at least one release candidate has been exercised by
-real consumers. Update the API and migration documents whenever a public
-contract changes during prerelease feedback.
+the active applications remain on the v1 boundary, accessibility coverage is
+accepted, and at least one release candidate has been exercised by real
+consumers. Update the API and migration documents whenever a public contract
+changes during prerelease feedback.
