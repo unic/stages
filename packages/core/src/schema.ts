@@ -118,6 +118,7 @@ function validValidators(value: unknown): boolean {
     ids.add(id);
     if (!validEventPolicy(candidate["on"]) || typeof candidate["validate"] !== "function") return false;
     if (candidate["revealOn"] !== undefined && !validEventPolicy(candidate["revealOn"])) return false;
+    if (candidate["includeDisabled"] !== undefined && typeof candidate["includeDisabled"] !== "boolean") return false;
     if (candidate["when"] !== undefined && typeof candidate["when"] !== "function") return false;
     const dependencies = candidate["dependencies"];
     return dependencies === undefined || Array.isArray(dependencies) && dependencies.every((path) =>

@@ -46,7 +46,10 @@ provenance and cleared interaction metadata. Reducer and transform failures are
 now isolated as rejected value transactions with structured diagnostics.
 Normalization rejects malformed transform and validator policies, duplicate
 validator identities, unsafe dependency paths, and non-object resolver props;
-dynamic failures retain the previous valid tree until recovery.
+dynamic failures retain the previous valid tree until recovery. Disabled-node
+validation is now an explicit per-validator opt-in, and malformed synchronous
+or asynchronous issue results are converted into deterministic rejection
+issues at the runtime boundary.
 
 ## 1. Outcome
 
@@ -641,6 +644,7 @@ interface ValidatorConfig<TValue, TContext = unknown> {
   id: string;
   on: string | readonly string[];
   revealOn?: string | readonly string[];
+  includeDisabled?: boolean;
   when?: (
     context: ValidationContext<TValue, TContext>,
   ) => boolean;
@@ -687,12 +691,14 @@ Rules:
 - Stale async completions cannot update current state.
 - Rejections become a configurable validation/system issue; they are never unhandled.
 - Validator `when` is reevaluated from the same draft/context as dynamic configuration. A false validator is excluded rather than considered unknown.
+- Validators attached to disabled nodes are excluded unless `includeDisabled` is explicitly true.
 - When a validator becomes inapplicable, pending work is cancelled and its issues are removed. When it becomes applicable again, it is stale until its event policy or `validate()` runs it for the current dependencies.
 - Event policy determines when a validator runs. Presentation policy determines when its issue becomes visible.
 - A validator that has not run for the current dependencies makes aggregate status `unknown`, not valid.
 - Pending work makes aggregate status `pending` unless a current error already makes it `invalid`; counts remain available in either case.
 - `validate()` runs all applicable validators for a scope, regardless of their normal event policy, and resolves only when the result for that revision is definitive.
 - `isValid` is true only for a complete, current, error-free result. Consumers never need to inspect error-object shapes.
+- Malformed synchronous or asynchronous validator results become deterministic `validator-rejected` issues rather than escaping the controller.
 
 Full-form validity includes every currently applicable node, including inactive stages of a wizard. A node excluded by `when` does not participate. Disabled-field participation must be explicit in validator configuration; it must not vary by adapter. Per-stage and per-subtree validity are derived from the same index for navigation and progress.
 

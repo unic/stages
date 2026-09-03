@@ -151,6 +151,7 @@ export interface ValidatorConfig<TValue, TContext = unknown> {
   readonly id: string;
   readonly on: string | readonly string[];
   readonly revealOn?: string | readonly string[];
+  readonly includeDisabled?: boolean;
   readonly when?: (context: ValidationContext<TValue, TContext>) => boolean;
   readonly dependencies?: readonly DataPath[];
   readonly validate: (

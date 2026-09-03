@@ -435,3 +435,83 @@ test("superseding validation and controller teardown cancel per-instance work", 
   controller.destroy();
   assert.equal(cancellations, 2);
 });
+
+test("disabled fields validate only through explicit opt-in", async () => {
+  const calls = { excluded: 0, included: 0 };
+  const controller = stages({
+    schema: {
+      id: "disabled-validation",
+      version: 1,
+      nodes: [
+        {
+          kind: "field",
+          id: "excluded",
+          type: "text",
+          disabled: true,
+          validators: [{
+            id: "excluded",
+            on: "submit",
+            validate: () => {
+              calls.excluded += 1;
+              return [];
+            },
+          }],
+        },
+        {
+          kind: "field",
+          id: "included",
+          type: "text",
+          disabled: true,
+          validators: [{
+            id: "included",
+            on: "submit",
+            includeDisabled: true,
+            validate: ({ path }) => {
+              calls.included += 1;
+              return [{ id: "included", code: "included", path, severity: "error" }];
+            },
+          }],
+        },
+      ],
+    },
+    fields,
+    value: { excluded: "", included: "" },
+  });
+
+  const result = await controller.validate({ event: "submit" });
+  assert.deepEqual(calls, { excluded: 0, included: 1 });
+  assert.equal(result.status, "invalid");
+  assert.equal(result.unknownCount, 0);
+  assert.deepEqual(result.issues.map(({ id }) => id), ["included"]);
+});
+
+test("malformed sync and async validator results become deterministic issues", async () => {
+  const controller = stages({
+    schema: {
+      id: "invalid-validator-results",
+      version: 1,
+      nodes: [{
+        kind: "field",
+        id: "name",
+        type: "text",
+        validators: [
+          { id: "sync", on: "submit", validate: () => undefined },
+          {
+            id: "async",
+            on: "submit",
+            validate: async () => [{ id: "bad", code: "bad", path: [], severity: "fatal" }],
+          },
+        ],
+      }],
+    },
+    fields,
+    value: { name: "" },
+  });
+
+  const result = await controller.validate({ event: "submit" });
+  assert.equal(result.status, "invalid");
+  assert.deepEqual(result.issues.map(({ id }) => id), ["sync.rejected", "async.rejected"]);
+  assert.deepEqual(result.issues.map(({ code }) => code), ["validator-rejected", "validator-rejected"]);
+  assert.match(result.issues[0].message, /array of issues/);
+  assert.match(result.issues[1].message, /malformed issue/);
+});

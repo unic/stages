@@ -1,4 +1,4 @@
-import { applyPatches, getAtPath, pathsEqual } from "./path.js";
+import { applyPatches, getAtPath, isSafePathSegment, pathsEqual } from "./path.js";
 import { reduceCollectionCommand, type CollectionCommand } from "./collections.js";
 import {
   decodeJson,
@@ -187,6 +187,30 @@ function createValidationCancellation(): Readonly<{
 function pathsIntersect(left: DataPath, right: DataPath): boolean {
   const commonLength = Math.min(left.length, right.length);
   return pathsEqual(left.slice(0, commonLength), right.slice(0, commonLength));
+}
+
+function checkedValidationIssues(value: unknown): readonly ValidationIssue[] {
+  if (!Array.isArray(value)) throw new TypeError("Validator result must be an array of issues.");
+  for (const issue of value) {
+    if (issue === null || typeof issue !== "object" || Array.isArray(issue)) {
+      throw new TypeError("Each validation issue must be an object.");
+    }
+    const candidate = issue as Readonly<Record<string, unknown>>;
+    const path = candidate["path"];
+    const meta = candidate["meta"];
+    if (typeof candidate["id"] !== "string" || candidate["id"].length === 0
+      || typeof candidate["code"] !== "string" || candidate["code"].length === 0
+      || (candidate["severity"] !== "error" && candidate["severity"] !== "warning")
+      || !Array.isArray(path)
+      || !path.every((segment) =>
+        (typeof segment === "string" || typeof segment === "number") && isSafePathSegment(segment),
+      )
+      || (candidate["message"] !== undefined && typeof candidate["message"] !== "string")
+      || (meta !== undefined && (meta === null || typeof meta !== "object" || Array.isArray(meta)))) {
+      throw new TypeError("Validator returned a malformed issue.");
+    }
+  }
+  return value as readonly ValidationIssue[];
 }
 
 function initialScopeValue<TValue, TFields, TContext>(
@@ -823,7 +847,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     let unknownCount = 0;
 
     for (const { node, validator } of validatorsFor(result.nodes, result.schema.validators)) {
-      if (!node.visible || !inValidationScope(node, scope)) continue;
+      if (!node.visible || (node.disabled && validator.includeDisabled !== true) || !inValidationScope(node, scope)) continue;
       const key = validationRecordKey(node.address, validator.id);
       const record = validationRecords.get(key);
       let applicable = true;
@@ -906,7 +930,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   ): Promise<void> {
     const pending: Promise<void>[] = [];
     for (const { node, validator } of validatorsFor(result.nodes, result.schema.validators)) {
-      if (!node.visible || !inValidationScope(node, scope)) continue;
+      if (!node.visible || (node.disabled && validator.includeDisabled !== true) || !inValidationScope(node, scope)) continue;
       const key = validationRecordKey(node.address, validator.id);
       const previous = validationRecords.get(key);
       const paths = validatorPaths(node, validator);
@@ -974,25 +998,25 @@ export function stages<TValue, TFields, TContext = unknown>(
             token,
             cancel: cancellation.cancel,
           });
-          const completion = Promise.resolve(output).then(
-            (issues) => issues,
-            (error: unknown): readonly ValidationIssue[] => [{
+          const completion = Promise.resolve(output)
+            .then((issues) => checkedValidationIssues(issues))
+            .catch((error: unknown): readonly ValidationIssue[] => [{
               id: `${validator.id}.rejected`,
               code: "validator-rejected",
               path: node.path,
               severity: "error",
               message: error instanceof Error ? error.message : String(error),
-            }],
-          ).then((issues) => {
-            if (destroyed) return;
-            const record = validationRecords.get(key);
-            const latestValue = proposal ?? value;
-            if (record?.token !== token || !recordIsCurrent(record, node, validator, latestValue)) return;
-            validationRecords.set(key, { ...record, status: "complete", issues });
-            revision += 1;
-            dirtySnapshot = true;
-            schedule();
-          });
+            }])
+            .then((issues) => {
+              if (destroyed) return;
+              const record = validationRecords.get(key);
+              const latestValue = proposal ?? value;
+              if (record?.token !== token || !recordIsCurrent(record, node, validator, latestValue)) return;
+              validationRecords.set(key, { ...record, status: "complete", issues });
+              revision += 1;
+              dirtySnapshot = true;
+              schedule();
+            });
           pending.push(completion);
         } else {
           validationRecords.set(key, {
@@ -1002,7 +1026,7 @@ export function stages<TValue, TFields, TContext = unknown>(
             dependencyValues: values,
             context,
             status: "complete",
-            issues: output,
+            issues: checkedValidationIssues(output),
             revealed,
             token,
             cancel: cancellation.cancel,
