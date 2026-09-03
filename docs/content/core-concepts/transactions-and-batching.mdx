@@ -1,0 +1,172 @@
+---
+title: Transactions and batching
+description: Understand automatic microtask transactions, explicit synchronous batches, proposal records, and publication order.
+---
+
+# Transactions and batching
+
+A controller accumulates synchronous dispatch work into a transaction and
+flushes it in a microtask. `batch()` makes that synchronous boundary explicit
+and nests safely; it does not turn the controller into an uncontrolled store.
+
+**For:** controller owners, adapter authors, and performance-sensitive applications.  
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values) and
+[Transforms and patches](/core-concepts/transforms-and-patches).
+
+## Automatic microtask transaction
+
+The first dispatch schedules a Promise microtask. Further synchronous
+dispatches before that scheduled flush share the pending draft, event list,
+patch list, and publication. Reducers and transforms process immediately
+against that draft; `onChange` and subscribers wait for the flush.
+
+```ts
+controller.dispatch(fieldEvent("input", ["first"], { payload: "Ada" }));
+controller.dispatch(fieldEvent("input", ["last"], { payload: "Lovelace" }));
+// Both dispatches normally flush as one transaction after this stack unwinds.
+```
+
+An immediate `getSnapshot()` still returns the canonical owner value, not the
+pending proposal. Interaction metadata is updated during dispatch and may be
+visible if a snapshot is read before listeners are notified.
+
+## Explicit `batch()`
+
+```ts
+batch(run: () => void): void;
+```
+
+`batch()` suppresses scheduling until the outermost batch callback exits. The
+callback is synchronous: do not pass an `async` function expecting work after
+an `await` to remain in the batch.
+
+This checked example accepts the final proposal synchronously:
+
+```ts
+let value = initialOrder;
+const changes: StagesChange<Order>[] = [];
+let controller!: StagesController<Order, typeof fields>;
+
+controller = stages({
+  schema,
+  fields,
+  value,
+  onChange(change) {
+    changes.push(change);
+    value = change.value;
+    controller.update({ value });
+  },
+});
+
+controller.batch(() => {
+  controller.dispatch(fieldEvent("input", ["quantity"], { payload: 3 }));
+  controller.dispatch(fieldEvent("input", ["unitPrice"], { payload: 12 }));
+});
+
+// After the queued microtask flush, one change contains both events and
+// proposes `{ quantity: 3, unitPrice: 12, total: 36, ... }`.
+```
+
+Nested batches increment an internal depth and schedule only after the outer
+callback exits. If a callback throws, the error propagates; dispatches already
+performed remain pending and are still scheduled by the outermost `finally`.
+
+## What one flush groups
+
+| Work | Flush behavior |
+| --- | --- |
+| Events | Preserved in dispatch order in `StagesChange.events` when a value proposal exists |
+| Patches | Accepted reducer/command/transform patches preserved in application order |
+| Draft | Each successful event starts from the prior successful event's result |
+| `onChange` | At most once, and only when the final proposal is not `Object.is` the current canonical root |
+| Schema evaluation | Reused through dispatch processing; reevaluated for the published canonical snapshot as needed |
+| General subscribers | One notification pass per flush, including metadata-only/no-op event batches |
+| Selector subscribers | Called after general subscribers, only when their selection changes |
+
+`transactionId` increments only when a `StagesChange` is emitted. Metadata-only,
+ignored, or wholly rejected batches publish a snapshot but do not consume a
+change transaction ID.
+
+## Controlled acceptance and callback order
+
+At flush, a value-producing transaction creates one `StagesChange` with the
+proposed `value`, original canonical `previousValue`, ordered events and
+patches, change source, and new transaction ID.
+
+For synchronous acceptance inside `onChange`, observable order is:
+
+```text
+onChange(change)
+  → owner calls update({ value: change.value })
+  → general subscribers observe accepted canonical value
+  → changed selector subscribers observe accepted selection
+```
+
+If the owner delays or rejects acceptance, the first subscriber publication
+still exposes the previous canonical value. A later `update({ value })` causes
+a separate publication and no second `onChange`.
+
+Form reset is also controlled. It uses a root set patch, clears interaction,
+reveal, wizard, and validation metadata, and marks the change source as
+`"reset"`. Avoid mixing reset and unrelated value events in one batch; a reset
+changes the source for that pending transaction.
+
+## Metadata-only and validation work
+
+Focus, blur, successful wizard navigation, ignored reducer events, and many
+custom events can publish without a domain proposal. They still increment the
+snapshot revision and participate in one notification pass at flush.
+
+Relevant event-driven validation is started after each successful event using
+that event's draft and affected paths. Synchronous results join the batched
+snapshot. Async completions can schedule later publications; superseded work
+is cancelled where possible and stale results are ignored.
+
+`controller.validate()` has its own awaited validation contract. Calling it in
+or beside a batch does not make asynchronous completion part of that
+synchronous `batch()` callback.
+
+## Failure scope inside a batch
+
+Each event's reducer/command, initial patches, and transforms form an atomic
+value step. If that step fails, its patches are discarded and processing
+returns to the draft produced by earlier events. Earlier successful steps are
+not rolled back.
+
+Consequently, a batch can still emit `onChange` after one event fails if a
+different event changed the draft. The change's `events` includes the failed
+event, while `patches` includes only accepted work. Diagnostics remain on the
+snapshot and are also sent to `onDiagnostic`.
+
+## Controller isolation and performance
+
+Batch state, proposal drafts, metadata, transaction IDs, listeners, and
+scheduled flushes are per controller. Dispatching in one controller cannot
+flush another.
+
+The repository test budget sends 100 field events in one explicit batch and
+asserts one change callback, one general notification, and one dynamic schema
+reevaluation for the accepted snapshot. Treat that as a tested workload, not a
+universal latency guarantee. Batch coherent synchronous UI work; do not delay
+flushes merely to reduce callback counts.
+
+## What to test
+
+- Ordered events and patches for two dependent dispatches.
+- Exactly one proposal/publication for the batch sizes used by the application.
+- Synchronous, delayed, replaced, and rejected owner acceptance.
+- Selector suppression for structurally shared, unaffected fields.
+- A failed event following a successful event in the same batch.
+- Nested batches, thrown callbacks, and independent controllers.
+
+Next: look up [`dispatch()` and `batch()`](/reference/core/controller#dispatch),
+or continue to [Dynamic behavior](/dynamic-behavior).
+
+## Evidence
+
+Flush and batching behavior comes from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+`controller.test.mjs` covers callback order, explicit batches, reset, failures,
+selector suppression, isolation, and the 100-event budget;
+`controller-property.test.mjs` exercises seeded controlled transactions and
+one-publication invariants.

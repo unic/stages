@@ -133,7 +133,9 @@ Adds one field, node, or form event to the current transaction. Missing or
 wrong targets, malformed commands, reducer/transform/patch failures, and
 rejected structural operations produce diagnostics as applicable. A domain
 change remains a proposal. Metadata-only events can publish without
-`onChange`.
+`onChange`. Dispatch processing is synchronous; one microtask flush delivers
+the proposal and notifications. Failure rolls back the current event's value
+step, not earlier successful events already pending in the same transaction.
 
 ### `batch()`
 
@@ -143,7 +145,13 @@ batch(run: () => void): void;
 
 Groups synchronous dispatches until the outermost nested batch ends. Events,
 patches, proposal callback, dynamic evaluation, and publication are grouped.
-The callback's thrown error is not swallowed.
+The flush is still queued as a microtask after the outer callback exits. The
+callback is not awaited, so an `async` callback does not extend the batch past
+its first `await`. A thrown callback error is not swallowed; already-dispatched
+work remains scheduled.
+
+See [Transactions and batching](/core-concepts/transactions-and-batching) for
+automatic batching, publication order, metadata-only work, and failure scope.
 
 ### `validate()`
 

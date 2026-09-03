@@ -94,12 +94,17 @@ const completePagePaths = [
   "core-concepts/schemas.mdx",
   "core-concepts/paths-and-addresses.mdx",
   "core-concepts/field-registry.mdx",
+  "core-concepts/events-and-reducers.mdx",
+  "core-concepts/transforms-and-patches.mdx",
+  "core-concepts/transactions-and-batching.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
   "reference/core/field-types.mdx",
+  "reference/core/event-types.mdx",
   "reference/core/path-utilities.mdx",
   "reference/core/schema-utilities.mdx",
+  "reference/standard-events.mdx",
   "project/contributing-to-docs.mdx",
 ];
 for (const relativePath of completePagePaths) {
@@ -201,6 +206,11 @@ assertSameInventory(
   expectedEvents,
   "standard events and conventions",
 );
+const standardEventsSource = guideEntries.find(({ relativePath }) => relativePath === "reference/standard-events.mdx")?.source;
+assert.ok(standardEventsSource, "missing standard event reference");
+for (const eventName of expectedEvents) {
+  assert.ok(standardEventsSource.includes(`\`${eventName}\``), `standard event reference is missing ${eventName}`);
+}
 
 const checkedRegions = [
   { fixture: "docs/examples/first-controller.ts", region: "first-controller", page: "start/first-controller.mdx" },
@@ -211,6 +221,10 @@ const checkedRegions = [
   { fixture: "docs/examples/schema-evaluation.ts", region: "evaluate-schema", page: "reference/core/schema-utilities.mdx" },
   { fixture: "docs/examples/field-registry.ts", region: "field-registry", page: "core-concepts/field-registry.mdx" },
   { fixture: "docs/examples/path-utilities.ts", region: "path-utilities", page: "core-concepts/paths-and-addresses.mdx" },
+  { fixture: "docs/examples/events-and-reducers.ts", region: "event-constructors", page: "core-concepts/events-and-reducers.mdx" },
+  { fixture: "docs/examples/events-and-reducers.ts", region: "reducer-patterns", page: "core-concepts/events-and-reducers.mdx" },
+  { fixture: "docs/examples/transforms-and-batching.ts", region: "transform-pipeline", page: "core-concepts/transforms-and-patches.mdx" },
+  { fixture: "docs/examples/transforms-and-batching.ts", region: "explicit-batch", page: "core-concepts/transactions-and-batching.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);

@@ -18,7 +18,7 @@ Last reviewed against `packages/core/src/index.ts`: **2026-09-03**.
 | Area | Exports |
 | --- | --- |
 | Controller | [`stages`](/reference/core/controller#stages) |
-| Event constructors | `fieldEvent`, `nodeEvent`, `formEvent` |
+| Event constructors | [`fieldEvent`, `nodeEvent`, `formEvent`](/reference/core/event-types) |
 | Paths and patches | [`getAtPath`, `setAtPath`, `removeAtPath`, `applyPatches`, `pathsEqual`, `isSafePathSegment`, `assertSafePath`](/reference/core/path-utilities) |
 | Schema tooling | [`evaluateSchema`, `initialFieldValue`](/reference/core/schema-utilities) |
 | Collection tooling | `reduceCollectionCommand` |
@@ -30,7 +30,7 @@ Last reviewed against `packages/core/src/index.ts`: **2026-09-03**.
 | --- | --- |
 | Identity and JSON | [`DataPath`, `NodeAddressSegment`, `NodeAddress`](/reference/core/path-utilities), `JsonPrimitive`, `JsonValue`, `DeepReadonly` |
 | Diagnostics and dynamics | `Diagnostic`, [`DynamicMetaSnapshot`, `DynamicConfigContext`, `NodeResolverContext`, `NodePredicate`, `DerivedProps`](/reference/core/schema-types#dynamic-and-resolver-context) |
-| Events, reduction, transforms | `StagesEventSource`, `StagesEvent`, `StagesEventTarget`, `StagesEventInit`, [`StagesPatch`](/reference/core/path-utilities#stagespatch), [`FieldReduceContext`, `FieldReduceResult`, `FieldEventReducer`](/reference/core/field-types#reducer-types), `TransformContext`, `TransformConfig` |
+| Events, reduction, transforms | [`StagesEventSource`, `StagesEvent`, `StagesEventTarget`, `StagesEventInit`](/reference/core/event-types), [`StagesPatch`](/reference/core/path-utilities#stagespatch), [`FieldReduceContext`, `FieldReduceResult`, `FieldEventReducer`](/reference/core/field-types#reducer-types), [`TransformContext`, `TransformConfig`](/reference/core/event-types#transform-types) |
 | Fields | [`FieldDefinition`, `FieldRegistry`, `FieldValidator`, `FieldValidationIssue`](/reference/core/field-types) |
 | Validation | `FieldInteractionState`, `ValidationContext`, `ValidationCancellationSignal`, `ValidationIssue`, `ValidationFailureContext`, `ValidationFailureIssuePresentation`, `ValidationFailureIssueFactory`, `ValidatorConfig`, `ValidationSnapshot`, `ValidateOptions` |
 | Schema | [`FieldNodeConfig`, `GroupNodeConfig`, `CollectionVariantConfig`, `CollectionNodeConfig`, `StageNodeConfig`, `WizardNavigationConfig`, `WizardNodeConfig`, `NodeConfig`, `StagesSchema`, `StagesSchemaFactory`, `StagesSchemaInput`, `NormalizedNode`, `NormalizedBranch`, `EvaluatedSchema`](/reference/core/schema-types), [`EvaluateSchemaOptions`](/reference/core/schema-utilities#evaluateschema) |

@@ -1,0 +1,244 @@
+---
+title: Events and reducers
+description: Route open, typed events to fields, nodes, and form scope, then turn field input into controlled value proposals.
+---
+
+# Events and reducers
+
+Events are the single input channel into a Stages controller. Core recognizes a
+small set of interaction and structural conventions; field reducers,
+transforms, and validators can interpret any application-defined name.
+
+**For:** field-view authors, adapter authors, and application developers.  
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values),
+[Paths and addresses](/core-concepts/paths-and-addresses), and the
+[Field registry](/core-concepts/field-registry).
+
+## One open event shape
+
+```ts
+interface StagesEvent<TPayload = unknown> {
+  readonly name: string;
+  readonly target: StagesEventTarget;
+  readonly payload?: TPayload;
+  readonly source?: "user" | "adapter" | "system";
+}
+```
+
+Names are deliberately open strings. `input`, `focus`, `blur`, collection and
+wizard commands, and `reset` have established meanings, while names such as
+`tags:commit` or `address:copy-billing` belong to a field library or
+application.
+
+`source` is event metadata available to reducers/transforms and retained in
+`StagesChange.events`. It does not select dispatch policy or replace
+`StagesChange.source`; ordinary value proposals currently use change source
+`"user"`, while form reset uses `"reset"`.
+
+## Typed constructors
+
+The checked fixture uses all three target constructors and a direct event:
+
+```ts
+const quantityInput = fieldEvent("input", ["quantity"], {
+  payload: "12",
+  source: "adapter",
+});
+
+const nextStage = nodeEvent("wizard:next", [
+  { kind: "node", id: "checkout" },
+]);
+
+const submit = formEvent("submit", { source: "user" });
+
+// Direct event objects use the same public shape.
+const custom: StagesEvent<{ readonly tags: readonly string[] }> = {
+  name: "tags:commit",
+  target: { kind: "field", path: ["tags"] },
+  payload: { tags: ["docs", "v1"] },
+  source: "user",
+};
+```
+
+`fieldEvent()` uses a data path, `nodeEvent()` uses a node address, and
+`formEvent()` needs no location. The generic payload is inferred from
+`init.payload`. Constructors assemble the public object shape; they do not
+validate the meaning of an application payload, confirm that a target exists,
+or dispatch the event.
+
+## Targets
+
+| Target | Identity | Typical use |
+| --- | --- | --- |
+| `{ kind: "field", path }` | Current `DataPath` | Field input, focus/blur, field-local custom events |
+| `{ kind: "node", address }` | Stable `NodeAddress` | Collection commands, wizard navigation, node-scoped custom events |
+| `{ kind: "form" }` | Root scope | Reset, submit conventions, root transforms |
+
+Field lookup requires an exact field path in the current normalized schema.
+Node lookup requires an exact current node address. Collection commands also
+accept a current row address where an index can be inferred for row-oriented
+operations.
+
+A missing non-form target produces `event.target-missing`. Missing collection
+and wizard command targets reject their structural operation. Other open events
+with a missing target have no field/node reducer, but a matching root transform
+or validation policy can still observe the event; do not use a deliberately
+missing target as form scope.
+
+Built-in collection and wizard behavior also requires the correct node kind.
+Because names are open, sending a command-like name to another resolved kind
+can still reach that field's reducer or matching node/root transforms. Adapters
+should construct the correct target rather than relying on a wrong-kind event
+to be rejected as a structural command.
+
+## Dispatch pipeline
+
+For one event, the controller processes this sequence synchronously and queues
+publication for the transaction flush:
+
+```text
+resolve target
+  → update focus/touch metadata when applicable
+  → run the target field reducer or structural command
+  → apply its patches to the transaction draft
+  → run matching transforms from target to root
+  → start relevant validation work
+  → append accepted patches and the event to the pending transaction
+```
+
+The resulting value remains a proposal. At flush, `onChange` receives it; only
+the owner's later or synchronous `update({ value })` changes the canonical
+snapshot.
+
+## Reducer contract
+
+A field reducer receives the current draft value at its field path, the full
+event, and the current data path:
+
+```ts
+type FieldReduceResult<TValue> =
+  | Readonly<{ value: TValue }>
+  | Readonly<{ patches: readonly StagesPatch[] }>
+  | undefined;
+```
+
+- `{ value }` becomes one set patch at the field path.
+- `{ patches }` can update multiple domain locations in listed order.
+- `undefined` means this field definition does not handle the event.
+
+Reducers are synchronous and should be pure. They receive readonly current
+values but must still validate an open event payload before returning it as a
+domain value.
+
+## Practical reducer patterns
+
+This checked fixture covers numeric parsing, empty input, filtering, blur
+cleanup, a custom editor event, and a multi-path change. `isStringArray()` is a
+small application type guard.
+
+```ts
+const numericText = {
+  view: "numeric-text",
+  initialValue: null,
+  reduce: ({ event }) => {
+    if (event.name !== "input" || typeof event.payload !== "string") return;
+    const input = event.payload.trim();
+    if (input === "") return { value: null };
+    const parsed = Number(input);
+    return Number.isFinite(parsed) ? { value: parsed } : undefined;
+  },
+} satisfies FieldDefinition<number | null, InputProps, "numeric-text">;
+
+const identifier = {
+  view: "text",
+  initialValue: "",
+  reduce: ({ value, event }) => {
+    if (event.name === "input" && typeof event.payload === "string") {
+      return { value: event.payload.replace(/[^a-z0-9-]/gi, "") };
+    }
+    return event.name === "blur" ? { value: value.trim() } : undefined;
+  },
+} satisfies FieldDefinition<string, InputProps, "text">;
+
+const tags = {
+  view: "tag-editor",
+  initialValue: (): readonly string[] => [],
+  reduce: ({ event }) => event.name === "tags:commit"
+    && isStringArray(event.payload)
+    ? { value: event.payload }
+    : undefined,
+} satisfies FieldDefinition<readonly string[], InputProps, "tag-editor">;
+
+const country = {
+  view: "country-select",
+  initialValue: "",
+  reduce: ({ event, path }) => event.name === "country:select"
+    && typeof event.payload === "string"
+    ? {
+        patches: [
+          { op: "set", path, value: event.payload },
+          { op: "remove", path: ["region"] },
+        ],
+      }
+    : undefined,
+} satisfies FieldDefinition<string, InputProps, "country-select">;
+
+export const reducerFields = { numericText, identifier, tags, country } as const;
+```
+
+An adapter may need local editing state for incomplete numeric text such as
+`"-"` or `"1."`; the example ignores invalid strings, so the canonical number
+does not change until parsing succeeds. That temporary presentation state does
+not belong in core unless it is part of the domain model.
+
+Use `{ patches }` sparingly in a reusable field definition. The `country`
+example intentionally knows the containing domain path; a node/root transform
+is usually easier to reuse for cross-field behavior.
+
+## Interaction events and disabled state
+
+For a resolved target, `focus` records focused and visited metadata. `blur`
+clears focused and records touched metadata. A field reducer may also interpret
+those names—for example, normalization on blur—after interaction metadata is
+updated.
+
+A field reducer runs only when its normalized field is visible and enabled.
+Hidden or disabled collections and wizards reject structural commands. Generic
+events can still match transforms placed on a resolved disabled/hidden field
+or its ancestors, so use transform `when` when the same interaction policy
+must suppress those effects.
+
+## Failure and atomicity
+
+If a reducer throws, the event's value work is rejected and
+`field.reducer-failed` is recorded. If reducer patches contain an unsafe path
+or otherwise fail during immutable application, the event is rejected with
+`event.patch-failed`. Matching transforms do not run after either rejection.
+
+The patches produced by one event and all transforms caused by that event are
+atomic relative to the incoming transaction draft: a later failure restores
+that draft. Earlier successful events already accumulated in the same batch
+are not rolled back. The failed event is still recorded in the batch's event
+list if another event produces the final change.
+
+## What to test
+
+- Accept, ignore, and malformed payload cases for every reducer event.
+- Empty and incomplete text representations for numeric/date editors.
+- Exact patch order for reducers that update multiple locations.
+- Hidden and disabled field-view behavior in the chosen adapter.
+- Thrown reducers and unsafe patches, including no `onChange` when no earlier
+  event in the batch produced a proposal.
+
+Next: compose cross-field behavior with
+[Transforms and patches](/core-concepts/transforms-and-patches), then group
+work with [Transactions and batching](/core-concepts/transactions-and-batching).
+
+## Evidence
+
+Types and constructors come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`events.ts`](https://github.com/unic/stages/blob/master/packages/core/src/events.ts).
+Dispatch, reduction, interaction, atomic failure, and controlled proposal
+behavior come from `controller.ts` and its controller, validation, property,
+and processing-migration tests.

@@ -1,0 +1,230 @@
+---
+title: Standard events
+description: Target, payload, effect, validation, batching, and rejection behavior for every v1 event convention.
+---
+
+# Standard events
+
+Stages event names form an open vocabulary. This catalog separates names that
+core interprets directly from conventions interpreted only by field reducers,
+transforms, validators, or application code.
+
+**For:** application developers, field/view authors, and adapter authors.  
+**Prerequisites:** [Events and reducers](/core-concepts/events-and-reducers)
+and the [event type reference](/reference/core/event-types).
+
+Last reviewed against `packages/core/src/controller.ts`, `collections.ts`, and
+the controller/validation tests: **2026-09-03**.
+
+## Interpretation categories
+
+| Category | Names | Meaning |
+| --- | --- | --- |
+| Direct interaction | `focus`, `blur` | Core updates interaction metadata for a resolved target. |
+| Direct form command | `reset` on a form target | Core clears metadata and begins a baseline proposal. |
+| Direct collection commands | `collection:add`, `collection:remove`, `collection:replace`, `collection:duplicate`, `collection:move`, `collection:sort` | Core parses and immutably reduces an array command. |
+| Direct wizard commands | `wizard:previous`, `wizard:next`, `wizard:go` | Core changes active-stage metadata after navigation policy. |
+| Validation lifecycle strings | `init`, `validate` | Core supplies these to validator execution without requiring a dispatched event. |
+| Open conventions | `input`, `submit`, every custom name | Only configured reducers/transforms/validators or the application give these names meaning. |
+
+A directly interpreted name is still open to reducers, transforms, and
+validation policies after its built-in step succeeds. A rejected structural
+command skips those later steps.
+
+The command tables assume the correct node kind. A collection/wizard-like name
+sent to another resolved kind has no built-in structural effect, but the open
+event can still reach a field reducer or matching transforms. Do not use a
+wrong-kind target as a command rejection mechanism.
+
+## `focus` and `blur`
+
+| Name | Target | Payload | Direct effect | Value/batch effect |
+| --- | --- | --- | --- | --- |
+| `focus` | Existing field or node | Ignored by core metadata logic | Adds target to focused and visited metadata | Usually metadata-only; reducer/transform patches can still propose a value |
+| `blur` | Existing field or node | Ignored by core metadata logic | Removes target from focused; adds it to touched | Usually metadata-only; commonly runs blur reducers/transforms and validation/reveal policies |
+
+Field snapshots expose `focused` and `touched`; validators additionally receive
+`fieldState.visited`. Dynamic metadata contains visited/touched node addresses.
+Focus is ephemeral; touched and visited are durable in serialized controller
+state.
+
+A missing target reports `event.target-missing`. Metadata updates happen for a
+resolved target before a field reducer. Disabled/hidden field reducers are
+skipped, but matching transforms may still run; add an explicit transform
+`when` when visibility/disabled policy should suppress them.
+
+## `reset`
+
+```ts
+controller.dispatch(formEvent("reset"));
+```
+
+Only the exact combination of name `reset` and target `{ kind: "form" }`
+activates reset semantics. Core:
+
+1. marks the pending change source as `"reset"`;
+2. clears focused, touched, visited, revealed-validation, active-wizard, and
+   validation-record state;
+3. starts with `{ op: "set", path: [], value: baseline }`;
+4. runs matching root transforms and validation through the normal successful
+   event pipeline; and
+5. flushes a controlled proposal only if the resulting root differs by
+   identity from the current canonical root.
+
+The payload is not interpreted by reset logic. A root transform listening to
+`reset` can add or override patches; most applications should leave reset
+untransformed when “return exactly to baseline” is the intended policy. A
+failed reset transform rejects the value patches but the metadata clearing has
+already occurred.
+
+There is no `controller.reset()` method, and reset still requires owner
+acceptance through `update({ value })`.
+
+## Collection command targets
+
+The collection node address is the conventional target for every command. A
+current row address is also accepted for every collection-prefixed event;
+row-oriented commands can infer their source index from it. An explicit
+payload index/from takes precedence.
+
+All accepted collection commands create one set patch at the collection data
+path. The new array is a controlled proposal. Rejected commands append a
+diagnostic, produce no patches, skip transforms/validation for that event, and
+still participate in the next notification flush.
+
+### `collection:add`
+
+| Target | Payload | Effect | Rejections |
+| --- | --- | --- | --- |
+| Collection or row address | `{ value?, index?, variant? }` | Inserts at `index` or appends. Explicit `value` is used as-is; otherwise core recursively builds defaults. A union default requires `variant` and writes its discriminator. | `collection.disabled`, `collection.value`, `collection.payload`, `collection.variant`, `collection.max`, `collection.index` |
+
+`index`, when supplied, must be a safe integer from zero through current
+length. Supplying an own `value` property bypasses default construction, even
+if that value is `undefined`.
+
+### `collection:remove`
+
+| Target | Payload | Effect | Rejections |
+| --- | --- | --- | --- |
+| Collection or row address | `{ index? }` | Removes the payload index or targeted row index using splice semantics. | `collection.disabled`, `collection.value`, `collection.payload`, `collection.min`, `collection.index` |
+
+### `collection:replace`
+
+| Target | Payload | Effect | Rejections |
+| --- | --- | --- | --- |
+| Collection or row address | `{ index?, value }` | Replaces the payload index or targeted row with `value`. | `collection.disabled`, `collection.value`, `collection.payload`, `collection.index`, `collection.unchanged` |
+
+The payload must own a `value` property. Replacing with the same item by
+`Object.is` is rejected as unchanged.
+
+### `collection:duplicate`
+
+| Target | Payload | Effect | Rejections |
+| --- | --- | --- | --- |
+| Collection or row address | `{ index?, toIndex? }` | Inserts the selected item reference at `toIndex`, defaulting immediately after the source. | `collection.disabled`, `collection.value`, `collection.payload`, `collection.max`, `collection.index` |
+
+Duplicate is a shallow array operation; core does not deep-clone the item.
+Engine-managed row identity still allocates a distinct row key. Applications
+using `itemKey` must ensure the accepted duplicate receives a unique domain key
+or subsequent schema evaluation reports duplicate identity.
+
+### `collection:move`
+
+| Target | Payload | Effect | Rejections |
+| --- | --- | --- | --- |
+| Collection or row address | `{ from?, to }` | Moves `from` or the targeted row to an existing item index `to`. | `collection.disabled`, `collection.value`, `collection.payload`, `collection.index`, `collection.unchanged` |
+
+Both indexes must address current items. Moving an item to its existing index
+is rejected as unchanged.
+
+### `collection:sort`
+
+| Target | Payload | Effect | Rejections |
+| --- | --- | --- | --- |
+| Collection or row address | `{ order: number[] }` | Reorders with a complete permutation of current indexes. | `collection.disabled`, `collection.value`, `collection.payload`, `collection.order`, `collection.unchanged` |
+
+The order must contain every current index exactly once. The identity
+permutation is rejected as unchanged.
+
+## Wizard commands
+
+Use the wizard node address. Successful navigation changes controller metadata
+only; it does not itself patch the domain value. Matching wizard/ancestor/root
+transforms can still turn the event into a value proposal.
+
+| Name | Payload | Requested target |
+| --- | --- | --- |
+| `wizard:previous` | None | Previous visible stage |
+| `wizard:next` | None | Next visible stage |
+| `wizard:go` | Stage string or `{ stage: string }` | Named visible stage; requires `navigation.nonLinear: true` |
+
+Every navigation checks:
+
+- the wizard is visible and enabled;
+- the target is a current visible stage;
+- `wizard:go` is enabled for non-linear navigation;
+- current-stage validation is `valid` when `validateCurrent` is true; and
+- the optional synchronous `guard(readonlyValue, from, to)` returns true.
+
+Boundary navigation, unknown/hidden stages, invalid/unknown/pending current
+validation, guard false/throw, and disabled/hidden wizards all report
+`wizard.navigation-rejected`. A rejected navigation keeps the active stage,
+skips transforms/validation for that event, and makes no value proposal.
+
+## `input`
+
+`input` is an open convention, not a built-in assignment operation. A field
+changes only if its registered reducer accepts the payload or a matching
+transform returns patches. Input commonly also triggers validators whose `on`
+contains `input`.
+
+Views may emit strings, numbers, booleans, domain objects, or custom payloads.
+The reducer owns runtime narrowing and parsing.
+
+## `submit`
+
+`submit` is application-selected policy. Core does not submit a form, prevent a
+browser default, save data, or guarantee validation merely because a submit
+event was dispatched.
+
+Use `await controller.validate({ event: "submit", reveal: true })` when
+submission must wait for validation. Dispatch `formEvent("submit")` only when
+reducers/transforms or ordinary event-driven policies also need that event;
+`dispatch()` itself returns `void` and does not await async validators.
+
+## `init` and `validate`
+
+These names normally enter validation without a `StagesEvent` object:
+
+| Name | Origin | Behavior |
+| --- | --- | --- |
+| `init` | Controller creation | Runs intrinsic field validators and configured validators whose `on` contains `init`; no `StagesChange.events` entry. |
+| `validate` | Default `controller.validate()` event | Forces applicable validators in scope and supplies `"validate"` as validation context/reveal event; no dispatch event or value proposal. |
+
+Applications may still dispatch events with either string because names are
+open, but that is separate from the lifecycle behavior above.
+
+## Batching and validation summary
+
+- Every dispatch increments revision and schedules publication, including
+  metadata-only, ignored, or rejected events.
+- Synchronous dispatches before the queued flush share one event list and at
+  most one `onChange` proposal.
+- Successful events start relevant event-driven validation after transforms.
+- Rejected reducer/patch/transform or structural-command events do not start
+  that event's validation step.
+- `source` metadata never bypasses disabled, constraint, guard, or validation
+  policy.
+
+Next: see [Transactions and batching](/core-concepts/transactions-and-batching)
+for flush ordering, or the future diagnostics reference via the current
+[Diagnostics overview](/diagnostics).
+
+## Evidence
+
+Direct effects and failure codes come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts)
+and [`collections.ts`](https://github.com/unic/stages/blob/master/packages/core/src/collections.ts).
+Controller, collection, validation, serialization, and processing-migration
+tests cover interaction metadata, every structural command, reset, validation
+conventions, transform ordering, batching, and controlled acceptance.

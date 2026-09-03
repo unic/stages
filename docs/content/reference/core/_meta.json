@@ -3,6 +3,7 @@
   "controller": "Controller",
   "schema-types": "Schema types",
   "field-types": "Field types",
+  "event-types": "Event and processing types",
   "path-utilities": "Path utilities",
   "schema-utilities": "Schema utilities"
 }

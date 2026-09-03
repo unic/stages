@@ -1,0 +1,177 @@
+---
+title: Event and processing types
+description: Exact event constructors, event types, targets, sources, reducer links, and transform types for @stages/core.
+---
+
+# Event and processing types
+
+This page is the normative shape reference for controller events and schema
+transforms. Standard event meanings are cataloged separately.
+
+**For:** field-library authors, adapter authors, schema authors, and controller owners.  
+**Prerequisites:** [Events and reducers](/core-concepts/events-and-reducers).
+
+Last reviewed against `packages/core/src/events.ts` and `types.ts`:
+**2026-09-03**.
+
+## `StagesEvent`
+
+```ts
+type StagesEventSource = "user" | "adapter" | "system";
+
+interface StagesEvent<TPayload = unknown> {
+  readonly name: string;
+  readonly target: StagesEventTarget;
+  readonly payload?: TPayload;
+  readonly source?: StagesEventSource;
+}
+```
+
+| Property | Required | Contract |
+| --- | --- | --- |
+| `name` | Yes | Open string interpreted by core conventions, reducers, transforms, or validation policies. |
+| `target` | Yes | Field path, node address, or form scope. |
+| `payload` | No | Application/command data. Its generic preserves TypeScript inference but has no runtime schema. |
+| `source` | No | Event-origin metadata. Core does not branch dispatch behavior on this field. |
+
+`source` is independent of `StagesChange.source`. It remains attached to the
+event in `change.events`; ordinary proposal changes currently use change source
+`"user"` regardless of whether an event says `"adapter"` or `"system"`.
+
+## `StagesEventTarget`
+
+```ts
+type StagesEventTarget =
+  | Readonly<{ kind: "field"; path: DataPath }>
+  | Readonly<{ kind: "node"; address: NodeAddress }>
+  | Readonly<{ kind: "form" }>;
+```
+
+| Kind | Resolution |
+| --- | --- |
+| `field` | Exact current normalized field at `path` |
+| `node` | Exact normalized node at `address`; collection commands additionally resolve row addresses to their collection/index |
+| `form` | Root scope; no node lookup |
+
+Controller dispatch reports `event.target-missing` for a field/node target that
+cannot resolve. Collection/wizard commands with missing targets reject and skip
+their transform/validation pipeline. Other open names can still reach root
+processing even when their non-form target is missing.
+
+## `StagesEventInit`
+
+```ts
+interface StagesEventInit<TPayload = never> {
+  readonly payload?: TPayload;
+  readonly source?: StagesEventSource;
+}
+```
+
+`TPayload = never` allows a no-payload call without widening its event payload.
+Passing `payload` infers its type from the value.
+
+## `fieldEvent()`
+
+```ts
+function fieldEvent<TPayload = never>(
+  name: string,
+  path: DataPath,
+  init: StagesEventInit<TPayload> = {},
+): StagesEvent<TPayload>;
+```
+
+Returns `{ name, target: { kind: "field", path }, ...init }`. It preserves the
+path and payload references; it does not clone, validate, or dispatch them.
+
+## `nodeEvent()`
+
+```ts
+function nodeEvent<TPayload = never>(
+  name: string,
+  address: NodeAddress,
+  init: StagesEventInit<TPayload> = {},
+): StagesEvent<TPayload>;
+```
+
+Returns `{ name, target: { kind: "node", address }, ...init }`. It preserves
+the address and payload references and performs no target lookup.
+
+## `formEvent()`
+
+```ts
+function formEvent<TPayload = never>(
+  name: string,
+  init: StagesEventInit<TPayload> = {},
+): StagesEvent<TPayload>;
+```
+
+Returns `{ name, target: { kind: "form" }, ...init }`. Use it for reset and
+application/root event conventions, not as a substitute for an unresolved
+field or node target.
+
+## Constructor behavior
+
+All three helpers include `payload` when that property was explicitly supplied
+in `init`, including an explicit `undefined`. They omit an undefined `source`.
+They do not reject an empty name, unsafe path, malformed command payload, or
+unknown target; the typed call surface and `controller.dispatch()` processing
+are separate boundaries.
+
+Direct `StagesEvent` objects are equivalent. Constructors are recommended for
+payload inference and consistent target construction.
+
+## Reducer types
+
+`FieldReduceContext`, `FieldReduceResult`, and `FieldEventReducer` are defined
+in the [field type reference](/reference/core/field-types#reducer-types). A
+reducer receives the full `StagesEvent`, so its `payload` is `unknown` at a
+general registry boundary and must be narrowed.
+
+## Transform types
+
+```ts
+interface TransformContext<TValue, TContext = unknown>
+  extends NodeResolverContext<TValue, TContext> {
+  readonly event: StagesEvent;
+}
+
+interface TransformConfig<TValue, TContext = unknown> {
+  readonly on: string | readonly string[];
+  readonly when?: (
+    context: TransformContext<TValue, TContext>,
+  ) => boolean;
+  readonly apply: (
+    context: TransformContext<TValue, TContext>,
+  ) => readonly StagesPatch[];
+}
+```
+
+| Member | Contract |
+| --- | --- |
+| `on` | Non-empty name or non-empty name array; the transform runs only for a matching event. |
+| `when` | Optional synchronous predicate evaluated against the latest transaction draft; exactly `false` skips processing. |
+| `apply` | Synchronous function returning ordered immutable patches. |
+
+The inherited resolver fields (`value`, `context`, `meta`, `path`, `address`,
+`fieldValue`, `parentValue`) describe the current transaction draft and
+resolved event target. `path` and `address` do not change as processing climbs
+through transforms owned by target ancestors.
+
+Transforms run target-to-root and in declaration order within one scope. A
+throw or invalid/unsafe returned patch records `transform.failed` and rolls
+back that event's value work. See
+[Transforms and patches](/core-concepts/transforms-and-patches) for ordering
+and atomicity.
+
+Next: choose an exact behavior from the
+[standard event reference](/reference/standard-events), or review
+[`dispatch()`](/reference/core/controller#dispatch).
+
+## Evidence
+
+Constructor signatures and object assembly come from
+[`events.ts`](https://github.com/unic/stages/blob/master/packages/core/src/events.ts).
+Event, target, source, and transform declarations come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+`test-d/contract.ts` checks inference; controller and processing-migration tests
+exercise dispatch and transform behavior.

@@ -1,5 +1,9 @@
 # Transforms, patches, and batching
 
+For the expanded contracts and checked production patterns, see
+[Transforms and patches](/core-concepts/transforms-and-patches) and
+[Transactions and batching](/core-concepts/transactions-and-batching).
+
 Transforms express computed and cross-field behavior as immutable `set` and
 `remove` patches. They declare event names in `on`, an optional pure `when`, and
 an `apply(context)` function.
@@ -19,15 +23,16 @@ transforms: [{
 For an event, transforms run target-to-root: target node, nearest ancestor,
 farther ancestors, then schema root. Each later transform observes earlier
 patches, and later patches win when paths overlap. If a reducer, transform, or
-patch fails, no part of that value transaction is proposed.
+patch fails, no part of that event's value step is proposed; earlier successful
+events in the same batch remain pending.
 
 <StagesDemo example="transaction" />
 
-Synchronous dispatches in one JavaScript turn already share a microtask
-transaction. `controller.batch(fn)` makes the boundary explicit, including for
-code that might otherwise flush between operations. One batch produces one
-`onChange`, one transaction ID, one general notification, and only the selector
-notifications whose results changed.
+Synchronous dispatches before the queued microtask already share a transaction.
+`controller.batch(fn)` makes the synchronous boundary explicit and nests, but
+does not extend across `await`. A value-producing batch creates at most one
+`onChange` and transaction ID; every batch creates one general notification
+pass and only the selector notifications whose results changed.
 
 The exported `applyPatches`, `setAtPath`, and `removeAtPath` functions use the
 same safe immutable semantics for application-side workflows.

@@ -1,0 +1,216 @@
+---
+title: Transforms and patches
+description: Derive deterministic cross-field changes with target-to-root transforms and immutable ordered patches.
+---
+
+# Transforms and patches
+
+Transforms react to named events after a field reducer or structural command
+has produced its first draft. They are the schema-level mechanism for computed
+values, normalization, and cross-field effects.
+
+**For:** application developers and schema authors implementing deterministic derived changes.  
+**Prerequisites:** [Events and reducers](/core-concepts/events-and-reducers)
+and [Paths and addresses](/core-concepts/paths-and-addresses).
+
+## Contract
+
+```ts
+interface TransformConfig<TValue, TContext = unknown> {
+  readonly on: string | readonly string[];
+  readonly when?: (context: TransformContext<TValue, TContext>) => boolean;
+  readonly apply: (
+    context: TransformContext<TValue, TContext>,
+  ) => readonly StagesPatch[];
+}
+```
+
+`on` is one non-empty event name or a non-empty array of non-empty names.
+`when`, when present, can skip a matching transform. `apply` returns zero or
+more immutable set/remove patches.
+
+Transforms may be attached to any field, group, collection, or wizard and to
+the schema root. Put behavior at the narrowest shared scope that owns the
+invariant.
+
+## Transform context
+
+`TransformContext` extends `NodeResolverContext` and adds the current event:
+
+| Field | Meaning during a transform |
+| --- | --- |
+| `value` | Readonly transaction draft after the reducer/command and all earlier transforms |
+| `context` | Current readonly application context |
+| `meta` | Current dynamic controller metadata |
+| `path` / `address` | Resolved event target, not the node that owns this transform |
+| `fieldValue` | Current draft value at the target path, or `undefined` without a target |
+| `parentValue` | Current draft value above the target path, or `undefined` without a target |
+| `event` | Original event including payload and source metadata |
+
+A form-targeted event has no resolved node target, so its target path/address
+are root `[]` and its `fieldValue`/`parentValue` are `undefined`. Root
+transforms are the natural place to interpret form events.
+
+## Target-to-root ordering
+
+For a successfully resolved, non-rejected event, matching transforms run in
+this order:
+
+```text
+target node transforms (declaration order)
+  → nearest ancestor transforms
+  → farther ancestor transforms
+  → schema root transforms
+```
+
+Each patch list is applied before the next transform's `when` and `apply`, so a
+later transform sees all earlier changes. Overlapping patches are
+last-writer-wins. Sibling transforms do not run. A form event skips node
+transforms and starts at the schema root.
+
+## Checked processing example
+
+The following fixture demonstrates blur normalization followed by slug
+derivation, total calculation, dependent-region removal, and copying a domain
+address. The group transform sees the field transform's updated name.
+
+```ts
+const slugify = (value: string) => value
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "");
+
+const trimName = {
+  on: "blur",
+  apply: ({ path, fieldValue }) => [{
+    op: "set",
+    path,
+    value: typeof fieldValue === "string" ? fieldValue.trim() : fieldValue,
+  }],
+} satisfies TransformConfig<Order>;
+
+const updateSlug = {
+  on: "blur",
+  when: ({ path }) => path[path.length - 1] === "name",
+  // This group transform sees the name after `trimName` ran.
+  apply: ({ value }) => [{
+    op: "set",
+    path: ["profile", "slug"],
+    value: slugify(value.profile.name),
+  }],
+} satisfies TransformConfig<Order>;
+
+const recalculateTotal = {
+  on: "input",
+  when: ({ path }) => path[0] === "quantity" || path[0] === "unitPrice",
+  apply: ({ value }) => [{
+    op: "set",
+    path: ["total"],
+    value: value.quantity * value.unitPrice,
+  }],
+} satisfies TransformConfig<Order>;
+
+const clearRegion = {
+  on: "input",
+  apply: () => [{ op: "remove", path: ["region"] }],
+} satisfies TransformConfig<Order>;
+
+const copyBillingAddress = {
+  on: "address:copy-billing",
+  apply: ({ value }) => [{
+    op: "set",
+    path: ["shipping"],
+    value: value.billing,
+  }],
+} satisfies TransformConfig<Order>;
+
+const schema = {
+  id: "order",
+  version: 1,
+  transforms: [recalculateTotal, copyBillingAddress],
+  nodes: [
+    {
+      kind: "group",
+      id: "profile",
+      transforms: [updateSlug],
+      nodes: [
+        { kind: "field", id: "name", type: "text", props: { label: "Name" }, transforms: [trimName] },
+        { kind: "field", id: "slug", type: "text", props: { label: "Slug" }, disabled: true },
+      ],
+    },
+    { kind: "field", id: "quantity", type: "number", props: { label: "Quantity" } },
+    { kind: "field", id: "unitPrice", type: "number", props: { label: "Unit price" } },
+    { kind: "field", id: "total", type: "number", props: { label: "Total" }, disabled: true },
+    { kind: "field", id: "country", type: "text", props: { label: "Country" }, transforms: [clearRegion] },
+    { kind: "field", id: "region", type: "text", props: { label: "Region" } },
+    { kind: "field", id: "billing", type: "address", props: { label: "Billing" } },
+    { kind: "field", id: "shipping", type: "address", props: { label: "Shipping" } },
+  ],
+} as const satisfies StagesSchema<Order, typeof fields>;
+```
+
+The total is stored in this example because it is part of the submitted domain
+contract. For presentation-only calculations, derive in the adapter or a
+selector instead of adding redundant canonical state.
+
+Copying `value.billing` assigns the same readonly domain reference. If the
+domain requires a deep copy, perform an explicit, domain-aware clone; core does
+not infer cloning semantics.
+
+## Patch semantics
+
+```ts
+type StagesPatch =
+  | Readonly<{ op: "set"; path: DataPath; value: unknown }>
+  | Readonly<{ op: "remove"; path: DataPath }>;
+```
+
+Patches are ordered and immutable. Sets copy the changed ancestor chain;
+removes delete object keys or splice array indexes. Unsafe segments reject the
+event. See the [path utility reference](/reference/core/path-utilities) for
+root behavior, no-op identity, and exact safety rules.
+
+## Failure boundary
+
+If `when` or `apply` throws, or a returned patch list cannot be applied, core
+records `transform.failed`. It restores the draft from immediately before this
+event and suppresses all patches from this event, including its reducer or
+structural command. Remaining ancestor/root transforms do not run.
+
+This atomic boundary is one event. Earlier successful events in the same
+microtask or explicit batch remain accumulated. If they produced a value
+proposal, `onChange` still runs at flush with their events/patches plus the
+failed event in `events` and no patches from the failed event.
+
+Rejected collection/wizard commands and reducer/initial patch failures do not
+run transforms. A generic open event with a valid target may run transforms
+even if its field reducer returns `undefined`.
+
+## Design guidance
+
+- Keep transforms synchronous, deterministic, and side-effect-free.
+- Use the transaction draft in `value`; do not read a stale external owner
+  variable while deriving patches.
+- Guard broad root transforms with `when` using target path/name.
+- Avoid transform cycles by deriving each invariant in one direction. Returned
+  patches do not dispatch new events, so a patch does not recursively trigger
+  another transform by itself.
+- Put network calls, analytics, and authorization in owner/application effects,
+  not transforms.
+- Test exact patch order when multiple scopes write overlapping paths.
+
+<StagesDemo example="transaction" />
+
+Next: understand the flush boundary in
+[Transactions and batching](/core-concepts/transactions-and-batching), or look
+up the exact [processing types](/reference/core/event-types#transform-types).
+
+## Evidence
+
+Signatures come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+Target-to-root ordering, updated draft visibility, last-writer-wins behavior,
+rejected-command suppression, and rollback are covered by `controller.test.mjs`;
+production-style normalization and calculation cases are covered by
+`processing-migration.test.mjs`.
