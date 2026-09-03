@@ -14,4 +14,5 @@ adapter.destroy();
 subscriptions, and events. The repository uses it for Vue-style and
 Angular-style integration fixtures.
 
-See the [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md).
+See the [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md)
+and [0.x migration guide](https://github.com/unic/stages/blob/master/docs/MIGRATING_TO_V1.md).

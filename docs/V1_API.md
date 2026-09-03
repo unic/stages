@@ -5,7 +5,9 @@ Status: implemented alpha API
 This guide describes the API currently implemented in the v1 packages. For
 design rationale and delivery status, see
 [`V1_ARCHITECTURE_PLAN.md`](./V1_ARCHITECTURE_PLAN.md). The v1 API is not
-compatible with `react-stages` 0.x.
+compatible with `react-stages` 0.x. Existing users should follow
+[`MIGRATING_TO_V1.md`](./MIGRATING_TO_V1.md), which maps every legacy root
+export and major runtime concept to its v1 disposition.
 
 ## Packages
 

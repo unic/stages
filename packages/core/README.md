@@ -35,4 +35,5 @@ It exports the controller, schema/event/validation/serialization types, safe
 immutable path helpers, collection reduction, and serialization utilities.
 
 This is an alpha API and is not compatible with `react-stages` 0.x. See the
-[v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md).
+[v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md) and
+[0.x migration guide](https://github.com/unic/stages/blob/master/docs/MIGRATING_TO_V1.md).

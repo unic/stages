@@ -1795,7 +1795,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. | Add exhaustive tests for every permitted container nesting permutation. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, registered namespaced extension codecs, and packed-artifact recreation are implemented. | Extend the packed release-candidate matrix to migrations and custom codecs. |
 | Phase 7 — Adapters and accessibility reference | Mostly implemented | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented, including Strict Mode-safe teardown. Vue-style and Angular-style contract proofs use the same core API. Production-style vanilla and React wizards exercise the public packages, are continuously typechecked, and have verified production builds. | Migrate the existing demo applications to v1 and broaden adapter accessibility testing. |
-| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, seeded immutable-path, collection-command, mixed controller transaction, and malformed-schema properties, formal initialization/batch/selector performance budgets, implementation-accurate API documentation, package READMEs, tarball allowlist/export checks, offline packed installation, runtime import smoke tests, packed declaration consumption, and packed recreation exist. | Complete 0.x migration documentation, release packaging, and release-candidate validation. |
+| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, seeded immutable-path, collection-command, mixed controller transaction, and malformed-schema properties, formal initialization/batch/selector performance budgets, implementation-accurate API documentation, a complete searchable 0.x disposition guide with an executable coverage inventory, package READMEs, tarball allowlist/export checks, offline packed installation, runtime import smoke tests, packed declaration consumption, and packed recreation exist. | Complete release packaging and release-candidate validation. |
 
 ### Current packages
 
@@ -1817,11 +1817,13 @@ currently an alpha foundation, not a release-ready v1 build.
 
 ### Verification baseline
 
-- `npm run check:v1` performs strict type checking for all four packages and the
-  vanilla and React examples, and builds the packages' ESM declaration/output
-  artifacts. It then runs `npm run verify:packages:v1`, which checks all four
-  package tarballs—including their required READMEs—and an isolated offline
-  runtime/type consumer, followed by `npm run performance:v1`.
+- `npm run check:v1` first verifies the API/migration documentation inventory,
+  including every legacy root export and the major public runtime concepts. It
+  then performs strict type checking for all four packages and the vanilla and
+  React examples, and builds the packages' ESM declaration/output artifacts.
+  Finally it runs `npm run verify:packages:v1`, which checks all four package
+  tarballs—including their required READMEs—and an isolated offline runtime/type
+  consumer, followed by `npm run performance:v1`.
 - `npm run test:v1` builds the packages and currently runs 75 passing executable
   tests across core, DOM, React 17, and the adapter test kit. The React example's
   own `npm test` adds a passing React 19 Strict Mode lifecycle test.

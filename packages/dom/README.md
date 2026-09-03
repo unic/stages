@@ -26,4 +26,5 @@ The adapter includes native text, number, and checkbox views, accessible issue
 relationships, focus preservation, path-based focus, first-visible-error focus,
 and custom `DomFieldView` support.
 
-See the [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md).
+See the [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md)
+and [0.x migration guide](https://github.com/unic/stages/blob/master/docs/MIGRATING_TO_V1.md).
