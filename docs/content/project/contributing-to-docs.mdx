@@ -1,0 +1,101 @@
+---
+title: Contributing to the v1 docs
+description: Add a source-backed vertical documentation slice with checked examples and coverage metadata.
+---
+
+# Contributing to the v1 docs
+
+Documentation changes should finish one capability across explanation,
+reference, examples, evidence, and coverage instead of adding isolated prose.
+
+**For:** API maintainers and documentation contributors.  
+**Prerequisites:** read the capability's public declarations and focused tests
+before editing normative pages.
+
+## Use evidence in this order
+
+1. Package entry points and exported TypeScript declarations define public
+   shape.
+2. Executable tests define observable behavior, edge cases, and ordering.
+3. Production examples show recommended composition.
+4. `V1_ARCHITECTURE_PLAN.md` explains rationale and intended boundaries.
+5. Existing prose is a summary to verify, not an unquestioned contract.
+
+If prose would make a stronger promise than the tests prove, strengthen the
+public test first or narrow the statement.
+
+## Finish a vertical slice
+
+For one capability, update all applicable artifacts:
+
+- a task-oriented guide explaining when and why to use it;
+- a normative reference with signatures, defaults, returns, ordering,
+  lifecycle, no-op/rejection, and failure behavior;
+- a strict source fixture or live demo for substantial code;
+- focused source and test links in an `Evidence` section;
+- `coverage-manifest.json` status and routes;
+- redirects or retained old files when moving an existing route.
+
+Pages in a completed slice identify their audience and prerequisites near the
+top, and end with a concrete `Next:` path and `Evidence` section. Include
+purpose, the smallest valid example, state effects, composition, edge cases,
+failure behavior, testing advice, and relevant accessibility, security, and
+performance responsibilities.
+
+## Add a checked source example
+
+Put strict TypeScript or TSX in `docs/examples/`. Wrap each displayed region in
+markers:
+
+```ts
+// source:start unique-region-name
+const checked = "code shown in the MDX page";
+// source:end unique-region-name
+```
+
+Copy the exact region—not a hand-edited variant—into the page, then register
+the fixture, region, and page in `scripts/check-v1-docs.mjs`. Add package path
+mappings to `docs/examples/tsconfig.json` only when the slice needs another
+public entry point. Observable output, callback ordering, errors, or identity
+behavior should also have an executable test.
+
+## Update coverage
+
+The manifest contains one export record per package entry point and catalogs
+for controller methods, standard event conventions, diagnostics,
+serialization errors, and collection rejections. Use:
+
+- `complete` only when a guide/example and normative contract cover behavior
+  and failures;
+- `partial` when the symbol is discoverable but the contract is incomplete;
+- `missing` when inventory exists but user documentation does not.
+
+The checker derives package exports and recognized codes from source. If an API
+change fails the inventory comparison, update implementation tests and docs,
+then add or remove the corresponding manifest record. Do not weaken the check
+to preserve a stale manifest.
+
+## Validate locally
+
+```sh
+npm run check:docs:v1
+npm run test:v1
+npm --prefix docs run build
+```
+
+The first command typechecks documentation fixtures; validates navigation and
+internal routes; compares exports and code catalogs; verifies displayed source
+regions and live-demo registration; checks migration inventory; and blocks
+known obsolete v1 names. The production build remains required because it
+catches MDX and Nextra behavior that text checks cannot.
+
+Next: choose the next vertical slice in the
+[comprehensive documentation plan](https://github.com/unic/stages/blob/master/docs/V1_COMPREHENSIVE_DOCUMENTATION_PLAN.md)
+and turn its related manifest entries from `partial` into `complete`.
+
+## Evidence
+
+This workflow is enforced by
+[`scripts/check-v1-docs.mjs`](https://github.com/unic/stages/blob/master/scripts/check-v1-docs.mjs),
+the strict [`docs/examples`](https://github.com/unic/stages/tree/master/docs/examples)
+fixtures, and the root release scripts.

@@ -1,0 +1,55 @@
+---
+title: Core exports
+description: Inventory of every public runtime and type export from @stages/core.
+---
+
+# `@stages/core` exports
+
+This page is an inventory of the package entry point. It is normative for
+export availability; linked reference pages define behavior in detail.
+
+**For:** consumers looking up an API symbol and maintainers checking coverage.  
+**Prerequisites:** none. For usage, start with [First controller](/start/first-controller).
+
+Last reviewed against `packages/core/src/index.ts`: **2026-09-03**.
+
+## Runtime exports
+
+| Area | Exports |
+| --- | --- |
+| Controller | [`stages`](/reference/core/controller#stages) |
+| Event constructors | `fieldEvent`, `nodeEvent`, `formEvent` |
+| Paths and patches | `getAtPath`, `setAtPath`, `removeAtPath`, `applyPatches`, `pathsEqual`, `isSafePathSegment`, `assertSafePath` |
+| Schema tooling | `evaluateSchema`, `initialFieldValue` |
+| Collection tooling | `reduceCollectionCommand` |
+| Persistence | `encodeJson`, `decodeJson`, `validateSerializedState`, `migrateSerializedState`, `SerializationError` |
+
+## Type exports
+
+| Area | Exports |
+| --- | --- |
+| Identity and JSON | `DataPath`, `NodeAddressSegment`, `NodeAddress`, `JsonPrimitive`, `JsonValue`, `DeepReadonly` |
+| Diagnostics and dynamics | `Diagnostic`, `DynamicMetaSnapshot`, `DynamicConfigContext`, `NodeResolverContext`, `NodePredicate`, `DerivedProps` |
+| Events, reduction, transforms | `StagesEventSource`, `StagesEvent`, `StagesEventTarget`, `StagesEventInit`, `StagesPatch`, `FieldReduceContext`, `FieldReduceResult`, `FieldEventReducer`, `TransformContext`, `TransformConfig` |
+| Fields | `FieldDefinition`, `FieldRegistry`, `FieldValidator`, `FieldValidationIssue` |
+| Validation | `FieldInteractionState`, `ValidationContext`, `ValidationCancellationSignal`, `ValidationIssue`, `ValidationFailureContext`, `ValidationFailureIssuePresentation`, `ValidationFailureIssueFactory`, `ValidatorConfig`, `ValidationSnapshot`, `ValidateOptions` |
+| Schema | `FieldNodeConfig`, `GroupNodeConfig`, `CollectionVariantConfig`, `CollectionNodeConfig`, `StageNodeConfig`, `WizardNavigationConfig`, `WizardNodeConfig`, `NodeConfig`, `StagesSchema`, `StagesSchemaFactory`, `StagesSchemaInput`, `NormalizedNode`, `NormalizedBranch`, `EvaluatedSchema`, `EvaluateSchemaOptions` |
+| Snapshots and controller | `FieldSnapshot`, `ContainerSnapshot`, `RenderNodeSnapshot`, `StagesSnapshot`, `StagesChange`, [`StagesOptions`](/reference/core/controller#stagesoptions), [`StagesUpdate`](/reference/core/controller#update), [`StagesController`](/reference/core/controller#stagescontroller) |
+| Collections | `CollectionCommand`, `CollectionCommandResult` |
+| Persistence | `SerializedStagesState`, `StagesValueCodec`, `StagesExtensionCodec`, `StagesStateMigration` |
+
+`NormalizedNode`, `NormalizedBranch`, `EvaluatedSchema`, and
+`EvaluateSchemaOptions` primarily serve schema tooling and adapter/tool authors.
+Ordinary controller consumers should prefer readonly render snapshots.
+
+The machine-readable [coverage manifest](/feature-coverage) is checked against
+this entry point so a new export cannot be added silently.
+
+Next: [`stages()` and `StagesController`](/reference/core/controller), or the
+[Utilities overview](/utilities).
+
+## Evidence
+
+The export list is derived from
+[`packages/core/src/index.ts`](https://github.com/unic/stages/blob/master/packages/core/src/index.ts)
+and its public re-exports by `npm run check:docs:v1`.

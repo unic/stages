@@ -1,0 +1,64 @@
+---
+title: Introduction
+description: What Stages owns, what your application owns, and which learning path to follow.
+---
+
+import { Callout } from 'nextra/components'
+
+# Introduction
+
+Stages is a headless, framework-neutral engine for controlled forms,
+collections, and wizards.
+
+**For:** developers evaluating Stages or starting a v1 integration.  
+**Prerequisites:** TypeScript fundamentals and familiarity with controlled UI
+state are helpful, but no Stages knowledge is required.
+
+<Callout emoji="🧪">
+  The v1 packages in this repository are versioned `1.0.0-alpha.0`. The
+  implemented contracts are release-gated, but they are not a stable 1.0
+  compatibility promise yet. Keep all Stages packages on exactly the same
+  prerelease version.
+</Callout>
+
+## The four packages
+
+| Package | Responsibility | Does not own |
+| --- | --- | --- |
+| `@stages/core` | Schema evaluation, immutable proposals, validation, collection commands, wizard metadata, serialization | Markup, storage, routing, network requests |
+| `@stages/react` | React lifecycle and bindings for fields, collections, and wizards | A component library or visual design |
+| `@stages/dom` | Accessible native field definitions, recursive mounting, and focus helpers | Application layout and custom-view accessibility |
+| `@stages/test-kit` | A small harness for exercising custom adapters | Framework-specific rendering |
+
+Core understands four recursive structures: fields, groups, collections, and
+wizards made from stages. Field views are opaque tokens to core. React
+components, DOM view objects, or another adapter decide what those tokens mean.
+
+## Ownership boundary
+
+Stages owns the evaluated render tree, interaction metadata, validation cache,
+row identity, wizard position, and a serializable state envelope. Your
+application owns the canonical domain value and decides whether to accept every
+proposed value.
+
+The application also owns visual UI, accessibility for application-created
+markup, remote data, submission, storage, autosave, routing, analytics, and
+undo/redo. These concerns compose with the controller; they are not hidden
+controller modes.
+
+## Choose a path
+
+- New to Stages: [Mental model](/start/mental-model) → [Installation](/start/installation) → [First controller](/start/first-controller).
+- React application: continue to the [React quickstart](/start/react-quickstart).
+- Framework-free application: continue to the [DOM quickstart](/start/dom-quickstart).
+- Another framework: read [Custom adapters](/custom-adapters) after the first-controller tutorial.
+- Existing 0.x application: start with [Migrating from 0.x](/migration).
+
+Next: learn why a dispatched event is a proposal, not an implicit domain-value
+mutation, in the [mental model](/start/mental-model).
+
+## Evidence
+
+This orientation is checked against the package export maps, the
+[core controller source](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts),
+and the [v1 acceptance review](https://github.com/unic/stages/blob/master/docs/V1_ACCEPTANCE_REVIEW.md).

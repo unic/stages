@@ -1,0 +1,104 @@
+---
+title: DOM quickstart
+description: Mount accessible native Stages fields and clean up both adapter and controller lifecycles.
+---
+
+# DOM quickstart
+
+`@stages/dom` is the small framework-free reference adapter. Its native field
+registry provides text, number, and checkbox controls.
+
+**For:** browser applications that render directly to the DOM.  
+**Prerequisites:** [First controller](/start/first-controller) and an existing
+host element.
+
+## Mount a controlled form
+
+```ts
+import {
+  formEvent,
+  stages,
+  type StagesController,
+  type StagesSchema,
+} from "@stages/core";
+import { createDomFields, mountStages } from "@stages/dom";
+
+interface Profile {
+  displayName: string;
+}
+
+const fields = createDomFields();
+const schema = {
+  id: "profile",
+  version: 1,
+  nodes: [{
+    kind: "field",
+    id: "displayName",
+    type: "text",
+    props: { label: "Display name", autocomplete: "name" },
+  }],
+} as const satisfies StagesSchema<Profile, typeof fields>;
+```
+
+The typechecked owner fixture mounts into a caller-provided host and keeps the
+adapter and controller lifetimes together:
+
+```ts
+export function mountProfile(root: Element) {
+  let value: Profile = { displayName: "" };
+  let controller!: StagesController<Profile, typeof fields>;
+  controller = stages({
+    schema,
+    fields,
+    value,
+    onChange(change) {
+      value = change.value;
+      controller.update({ value });
+    },
+  });
+
+  const mounted = mountStages(root, controller);
+  return {
+    async submit() {
+      const result = await controller.validate({ event: "submit", reveal: true });
+      if (!result.isValid) mounted.focusFirstIssue({ preventScroll: false });
+      return result;
+    },
+    reset() {
+      controller.dispatch(formEvent("reset"));
+    },
+    destroy() {
+      mounted.destroy();
+      controller.destroy();
+    },
+  };
+}
+```
+
+The native view connects labels and controls, composes descriptions and issue
+IDs, adds error or status announcement semantics, and preserves focus across
+rerenders. `required` only sets native/assistive semantics; add a core validator
+when requiredness must participate in `controller.validate()`.
+
+## Validate and focus
+
+`focus(path)` and `focusFirstIssue()` return whether focus reached a mounted,
+enabled, visible control. Inactive stages are skipped. The historical name
+`focusFirstVisibleIssue()` is not a v1 API.
+
+## Teardown
+
+The mounted adapter and controller have separate lifetimes. Tear down both:
+
+The returned `destroy()` calls both `mounted.destroy()` and
+`controller.destroy()`. DOM adapter destruction unsubscribes rendering and is idempotent. Controller
+destruction cancels validation and removes controller subscribers.
+
+Next: [DOM adapter guide](/dom), [Validation](/validation), or write a
+[custom DOM view](/dom#custom-dom-views).
+
+## Evidence
+
+Native parsing, accessible relationships, focus exclusions, focus
+preservation, rendering, and idempotent teardown are covered by
+[`dom.test.mjs`](https://github.com/unic/stages/blob/master/packages/dom/test/dom.test.mjs).

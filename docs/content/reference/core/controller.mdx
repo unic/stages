@@ -1,0 +1,213 @@
+---
+title: Controller API
+description: Exact signatures, options, change records, methods, defaults, lifecycle, and failures for stages().
+---
+
+# `stages()` and `StagesController`
+
+This is the normative reference for creating and operating a core controller.
+
+**For:** controller owners and adapter authors.  
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values).
+
+Last reviewed against `packages/core/src/controller.ts` and `types.ts`:
+**2026-09-03**.
+
+## `stages()`
+
+```ts
+function stages<TValue, TFields, TContext = unknown>(
+  options: StagesOptions<TValue, TFields, TContext>,
+): StagesController<TValue, TFields, TContext>;
+```
+
+Creates one controller and immediately evaluates the schema. A failing initial
+schema factory or invalid recreation input can throw. Schema diagnostics are
+exposed in the initial snapshot and sent to `onDiagnostic`.
+
+## `StagesOptions`
+
+`StagesOptions` combines the common options below with exactly one of
+`{ value, state?: never }` or `{ state, value?: never }`.
+
+| Option | Required | Read/evaluation behavior |
+| --- | --- | --- |
+| `schema` | Yes | Static schema or factory; evaluated at creation and after relevant updates/events |
+| `fields` | Yes | Registry used for defaults, reducers, intrinsic validators, and opaque views; fixed for controller lifetime |
+| `value` | One of `value`/`state` | New canonical value and reset baseline |
+| `state` | One of `value`/`state` | Validated, migrated recreation envelope; restores value, baseline, and durable metadata |
+| `context` | No | Readonly application context supplied to factories, resolvers, transforms, and validators |
+| `onChange` | No | Called once per value-producing transaction with a proposal; never called by `update()` |
+| `onDiagnostic` | No | Receives schema and runtime diagnostics; snapshot diagnostics remain available separately |
+| `validationFailureIssue` | No | Customizes presentation fields for deterministic engine issues when validator `when`/`validate` fails |
+| `codec` | No | Encodes and decodes the domain value and baseline at the JSON boundary |
+| `migrations` | No | Ordered candidate steps used to migrate restored state by schema ID/version |
+| `extensionCodecs` | No | Registered safe namespaces with required `encode`/`decode` functions |
+| `extensions` | No | Initial values for registered extension namespaces; visible to dynamic configuration |
+
+The schema factory, node resolvers, transforms, and validators receive readonly
+projections and should be deterministic and side-effect-free. `onChange` and
+`onDiagnostic` are explicitly imperative owner callbacks.
+
+## `StagesChange`
+
+```ts
+interface StagesChange<TValue> {
+  readonly value: TValue;
+  readonly previousValue: TValue;
+  readonly patches: readonly StagesPatch[];
+  readonly events: readonly StagesEvent[];
+  readonly source: "user" | "external" | "restore" | "reset";
+  readonly transactionId: number;
+}
+```
+
+`patches` and `events` preserve transaction order. `transactionId` increases
+per controller for value proposals. The record is a proposal; only
+`update({ value })` supplies a new canonical value. The current implementation
+uses `user` for ordinary proposals and `reset` for the form reset event.
+`update()` and recreation do not call `onChange`, so they do not currently emit
+records with the declared `external` or `restore` source values.
+
+## `StagesController`
+
+### `getSnapshot()`
+
+```ts
+getSnapshot(): StagesSnapshot<TValue>;
+```
+
+Returns the cached readonly canonical value, revision, recursive render nodes,
+aggregate validation, and diagnostics. Do not mutate returned data.
+
+### `subscribe()`
+
+```ts
+subscribe(listener: () => void): () => void;
+```
+
+Registers a general publication listener and returns an unsubscribe function.
+There is no immediate call. General listeners run before changed selector
+listeners.
+
+### `subscribeSelector()`
+
+```ts
+subscribeSelector<TSelection>(
+  selector: (snapshot: StagesSnapshot<TValue>) => TSelection,
+  listener: (selection: TSelection, previousSelection: TSelection) => void,
+  isEqual?: (left: TSelection, right: TSelection) => boolean,
+): () => void;
+```
+
+Captures a selection immediately but calls the listener only after a
+publication changes it. Equality defaults to `Object.is`. Select stable,
+structurally shared branches for narrow adapter updates; supply custom equality
+for derived objects when necessary.
+
+### `update()`
+
+```ts
+interface StagesUpdate<TValue, TFields, TContext = unknown> {
+  readonly value?: TValue;
+  readonly context?: TContext;
+  readonly schema?: StagesSchemaInput<TValue, TFields, TContext>;
+  readonly extensions?: Readonly<Record<string, unknown>>;
+}
+
+update(input: StagesUpdate<TValue, TFields, TContext>): void;
+```
+
+Supplies owner-controlled inputs and schedules reevaluation/publication. It
+does not call `onChange`. Unknown, unsafe, or unregistered extension namespaces
+throw `TypeError`. Context/schema/extension changes invalidate all validation;
+value changes invalidate records whose dependency values changed.
+
+### `dispatch()`
+
+```ts
+dispatch(event: StagesEvent): void;
+```
+
+Adds one field, node, or form event to the current transaction. Missing or
+wrong targets, malformed commands, reducer/transform/patch failures, and
+rejected structural operations produce diagnostics as applicable. A domain
+change remains a proposal. Metadata-only events can publish without
+`onChange`.
+
+### `batch()`
+
+```ts
+batch(run: () => void): void;
+```
+
+Groups synchronous dispatches until the outermost nested batch ends. Events,
+patches, proposal callback, dynamic evaluation, and publication are grouped.
+The callback's thrown error is not swallowed.
+
+### `validate()`
+
+```ts
+interface ValidateOptions {
+  readonly scope?: "form" | { readonly path: DataPath } | { readonly address: NodeAddress };
+  readonly event?: string;
+  readonly reveal?: boolean;
+}
+
+validate(options?: ValidateOptions): Promise<ValidationSnapshot>;
+```
+
+Defaults: form scope, `event: "validate"`, and `reveal: false`. The result
+describes the requested scope. Validation failures become deterministic engine
+issues; superseded work is cancelled when possible and stale results are
+ignored.
+
+### `serialize()`
+
+```ts
+serialize(): SerializedStagesState;
+```
+
+Returns a format-version-1 JSON-safe envelope with canonical value, baseline,
+durable metadata, row keys, and registered extension state. JSON-boundary and
+extension-codec failures use `SerializationError`; a custom value codec's own
+exception propagates. Invalid extension registration/use can throw `TypeError`.
+
+### `destroy()`
+
+```ts
+destroy(): void;
+```
+
+Cancels validation, clears listeners and transient state, and makes scheduled
+or future mutation work inert. A destroyed controller is terminal; recreate
+instead of reusing it.
+
+## Form reset
+
+```ts
+controller.dispatch(formEvent("reset"));
+```
+
+The form-targeted `reset` event proposes the stored baseline, records a root
+set patch, uses change source `reset`, and clears interaction, reveal, wizard,
+and validation metadata. The value is still controlled. No `reset()` method is
+present on `StagesController`.
+
+## Publication order
+
+For a synchronously accepted proposal, `onChange` runs first, then general
+listeners, then changed selector listeners. For a delayed or rejected
+proposal, the first publication retains the canonical value; a later accepted
+`update()` creates a second publication.
+
+Next: [Controlled-value recipes](/core-concepts/controlled-values),
+[Validation](/validation), or [Persistence](/persistence).
+
+## Evidence
+
+Signatures come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+Behavior and ordering come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts)
+and focused controller/validation tests.

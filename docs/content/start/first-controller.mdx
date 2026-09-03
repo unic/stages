@@ -1,0 +1,138 @@
+---
+title: First controller
+description: Build a typed one-field controller and understand accept, replace, reject, and delay decisions.
+---
+
+import { Callout } from 'nextra/components'
+
+# First controller
+
+This tutorial builds the smallest useful Stages integration: one field, one
+canonical owner, a subscriber, an event, and clean teardown.
+
+**For:** developers beginning a core, React, DOM, or custom-adapter integration.  
+**Prerequisites:** [Mental model](/start/mental-model) and
+[Installation](/start/installation).
+
+## Define the domain, field, and schema
+
+The checked fixture defines a `Profile` value, a text field reducer, and a
+schema whose field type is constrained by the registry:
+
+```ts
+interface Profile {
+  displayName: string;
+}
+
+const text = {
+  view: "text",
+  initialValue: "",
+  reduce: ({ event }) => event.name === "input" && typeof event.payload === "string"
+    ? { value: event.payload }
+    : undefined,
+} satisfies FieldDefinition<string, TextProps, "text">;
+
+const fields = { text } as const;
+
+const schema = {
+  id: "profile",
+  version: 1,
+  nodes: [{ kind: "field", id: "displayName", type: "text",
+    props: { label: "Display name" } }],
+} as const satisfies StagesSchema<Profile, typeof fields>;
+```
+
+`initialValue` supplies a fresh missing field value during structural default
+construction; it does not override an owner-provided `displayName`. The view
+token is deliberately meaningless to core. An adapter maps it to UI.
+
+## Create the controlled owner
+
+The following region is copied from the typechecked
+`docs/examples/first-controller.ts` fixture:
+
+```ts
+let value: Profile = { displayName: "" };
+let controller!: StagesController<Profile, typeof fields>;
+
+controller = stages({
+  schema,
+  fields,
+  value,
+  onChange(change) {
+    // This owner accepts the proposal synchronously.
+    value = change.value;
+    controller.update({ value });
+  },
+});
+
+const unsubscribe = controller.subscribe(() => {
+  console.log(controller.getSnapshot().value);
+});
+
+controller.dispatch(fieldEvent("input", ["displayName"], { payload: "Ada" }));
+
+// Call this when the application owner is removed.
+export function disposeFirstController() {
+  unsubscribe();
+  controller.destroy();
+}
+```
+
+Line by line, `value` is the application-owned source of truth;
+`stages({ value })` initializes both the canonical value and reset baseline;
+`onChange` receives a proposed value; and `update({ value })` accepts it. The
+subscriber observes the accepted snapshot. `fieldEvent()` constructs the
+typed event shape but does not validate application-specific payload meaning;
+the reducer performs that check.
+
+Dispatches flush in a microtask. After this example's input transaction, the
+subscriber receives `{ displayName: "Ada" }`. Call the returned teardown logic
+only when the controller's application owner is removed.
+
+## Accept, replace, reject, or delay
+
+| Owner decision | `onChange` behavior | Canonical snapshot |
+| --- | --- | --- |
+| Accept | `controller.update({ value: change.value })` | Becomes the proposal |
+| Replace | Update with a normalized or server-returned value | Becomes the replacement |
+| Reject | Do not call `update({ value })` | Remains unchanged |
+| Delay | Save/authorize, then update later | Remains unchanged until the later update |
+
+<Callout type="info">
+  Delayed proposals are not optimistic UI. If you want optimistic rendering,
+  the application must own that policy explicitly—for example by accepting
+  immediately and later replacing or reverting after the server responds.
+</Callout>
+
+## Reset uses an event
+
+There is no `controller.reset()` method. Dispatch the form-targeted event:
+
+```ts
+controller.dispatch({ name: "reset", target: { kind: "form" } });
+```
+
+Reset proposes the creation/recreation baseline with `source: "reset"`, clears
+focus/touched/visited/revealed validation metadata, and still requires owner
+acceptance for the domain value.
+
+## Tests to write in your application
+
+- Assert that your owner accepts, replaces, or rejects proposals according to
+  product policy.
+- Assert that the adapter emits the payload shape your reducer accepts.
+- Assert that a rejected or delayed proposal does not appear as canonical.
+- Assert that teardown removes subscriptions and cancels pending validation.
+- If reset is exposed, assert both the baseline value and cleared issue/touch UI.
+
+Next: choose the [React quickstart](/start/react-quickstart),
+[DOM quickstart](/start/dom-quickstart), or study
+[controlled values](/core-concepts/controlled-values) in depth.
+
+## Evidence
+
+The fixture is typechecked by `npm run check:docs:v1`. Runtime ownership,
+ordering, reset, and teardown behavior is covered by
+[`controller.test.mjs`](https://github.com/unic/stages/blob/master/packages/core/test/controller.test.mjs)
+and [`validation.test.mjs`](https://github.com/unic/stages/blob/master/packages/core/test/validation.test.mjs).

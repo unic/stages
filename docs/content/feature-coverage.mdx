@@ -1,12 +1,19 @@
 # Feature coverage
 
-This map is the completeness checklist for the v1 documentation. “Live” means
-the page embeds the real controller and React adapter through `StagesDemo`.
-Each live proof includes its exact, commented, copyable source and the common
-field-adapter source; the documentation gate verifies those source regions.
+This map is the completeness checklist for the v1 documentation. A
+machine-readable `coverage-manifest.json` records all current package exports
+and the first controller/event/error catalogs. Entries remain `partial` until
+a capability has both a complete guide and a normative reference; the
+manifest is a progress tracker, not a word-occurrence score.
+
+“Live” means the page embeds the real controller and React adapter through
+`StagesDemo`. Each live proof includes its exact, commented, copyable source
+and the common field-adapter source; the documentation gate verifies those
+source regions.
 
 | Feature family | Detailed guide | Live proof |
 | --- | --- | --- |
+| Controlled ownership, accept/replace/reject/delay, reset, lifecycle | [Tutorial](/start/first-controller), [concept](/core-concepts/controlled-values), [reference](/reference/core/controller) | Strict TypeScript fixture + controller tests |
 | Controlled ownership, updates, snapshots, subscriptions, selectors, lifecycle | [Controller](/core) | Controlled profile |
 | Field registry, defaults, reducers, intrinsic validators, events, interaction state | [Fields and events](/fields-events) | Controlled profile |
 | Recursive fields, groups, collections, wizards, paths, addresses, identity | [Schemas](/schema) | Profile, collection, wizard |
@@ -27,3 +34,15 @@ Low-level pure helpers are demonstrated by executable snippets and the linked
 repository tests rather than browser controls. They have no UI behavior to make
 interactive. The release gate verifies this page list and every live demo name
 so additions cannot silently disappear.
+
+`npm run check:docs:v1` derives runtime and type exports from all four package
+entry points and compares them with the manifest. It also extracts diagnostic,
+serialization-error, and collection-rejection codes from source, checks nested
+navigation routes, verifies the first-controller displayed region against its
+strict TypeScript fixture, and rejects known obsolete API names in normative
+pages.
+
+The initial manifest freezes exports and recognized code/event catalogs. Later
+vertical slices will turn the remaining `partial` entries into complete
+per-symbol references and extend the manifest to every public interface member
+and discriminated-union branch.

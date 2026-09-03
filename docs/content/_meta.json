@@ -1,8 +1,20 @@
 {
-  "index": "Introduction",
-  "installation": "Installation",
+  "index": "Overview",
+  "start": "Start here",
+  "core-concepts": "Core concepts",
+  "guides": {
+    "type": "separator",
+    "title": "Feature guides"
+  },
+  "installation": {
+    "title": "Installation (legacy route)",
+    "display": "hidden"
+  },
   "architecture": "Architecture",
-  "core": "Controller and snapshots",
+  "core": {
+    "title": "Controller and snapshots (overview)",
+    "display": "hidden"
+  },
   "schema": "Schemas and nesting",
   "fields-events": "Fields and events",
   "dynamic-behavior": "Dynamic behavior",
@@ -18,5 +30,7 @@
   "utilities": "Utilities and type reference",
   "feature-coverage": "Feature coverage",
   "i18n": "Internationalization",
-  "migration": "Migrating from 0.x"
+  "reference": "API reference",
+  "migration": "Migrating from 0.x",
+  "project": "Project"
 }

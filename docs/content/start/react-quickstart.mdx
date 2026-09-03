@@ -1,0 +1,95 @@
+---
+title: React quickstart
+description: Render a controlled Stages field with an accessible application-owned React view.
+---
+
+# React quickstart
+
+`@stages/react` owns React subscription and controller lifecycle glue. Your
+components still own markup, styling, form submission, and focus policy.
+
+**For:** React 17+ application developers.  
+**Prerequisites:** [First controller](/start/first-controller).
+
+## An accessible field view
+
+Register a React component as the field's opaque `view` token. It receives a
+collision-safe `id`, the field snapshot, resolved props, and `emit`:
+
+```tsx
+function TextField({ id, field, props, emit }: ReactFieldProps<string, TextProps>) {
+  const issuesId = `${id}-issues`;
+  const hasErrors = field.state.visibleIssues.some(issue => issue.severity === "error");
+
+  return <div>
+    <label htmlFor={id}>{props.label}</label>
+    <input
+      id={id}
+      value={field.value}
+      disabled={field.state.disabled}
+      aria-invalid={hasErrors || undefined}
+      aria-errormessage={hasErrors ? issuesId : undefined}
+      aria-describedby={field.state.visibleIssues.length ? issuesId : undefined}
+      onFocus={() => emit("focus")}
+      onBlur={() => emit("blur")}
+      onChange={event => emit("input", event.currentTarget.value)}
+    />
+    {field.state.visibleIssues.length > 0 &&
+      <ul id={issuesId} role={hasErrors ? "alert" : "status"}>
+        {field.state.visibleIssues.map(issue =>
+          <li key={issue.id}>{issue.message ?? issue.code}</li>)}
+      </ul>}
+  </div>;
+}
+```
+
+## Own the value in React
+
+Keep `fields` and `schema` stable outside the component (or memoize truly
+dynamic inputs). `useStages` creates the controller once, pushes each
+controlled update, subscribes to snapshots, and destroys it after a real
+unmount—including safe handling of Strict Mode effect replay.
+
+```tsx
+export function ProfileForm() {
+  const [value, setValue] = useState<Profile>({ displayName: "" });
+  const { controller, snapshot } = useStages(
+    () => stages({
+      schema,
+      fields,
+      value,
+      onChange: change => setValue(change.value),
+    }),
+    { value, schema },
+  );
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = await controller.validate({ event: "submit", reveal: true });
+    if (result.isValid) await save({ ...snapshot.value });
+  }
+
+  return <form onSubmit={submit} noValidate>
+    <StagesField controller={controller} path={["displayName"]} />
+    <button type="submit">Save profile</button>
+  </form>;
+}
+```
+
+`setValue` accepts the proposal; on the next render, `useStages` passes the
+canonical React value back through `controller.update()`. `StagesField`
+subscribes narrowly and throws early for a missing field path or view.
+
+Use `snapshot.validation` for a form summary. If submission fails, move focus
+with application code to the summary or first invalid React control; the React
+adapter does not prescribe a focus manager.
+
+Next: [React adapter guide](/react), [Validation](/validation), or
+[Collections](/collections).
+
+## Evidence
+
+The lifecycle and hook guarantees are covered by
+[`react.test.mjs`](https://github.com/unic/stages/blob/master/packages/react/test/react.test.mjs)
+and the example application's
+[`strict-mode.test.mjs`](https://github.com/unic/stages/blob/master/examples/react/test/strict-mode.test.mjs).

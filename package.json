@@ -32,7 +32,7 @@
     "build": "vite build",
     "build:v1": "tsc -p packages/core/tsconfig.build.json && tsc -p packages/dom/tsconfig.build.json && tsc -p packages/react/tsconfig.build.json && tsc -p packages/test-kit/tsconfig.build.json",
     "check:v1": "npm run check:docs:v1 && npm run check:apps:v1 && tsc -p packages/core/tsconfig.json --noEmit && npm run build:v1 && tsc -p packages/dom/tsconfig.json --noEmit && tsc -p packages/react/tsconfig.json --noEmit && tsc -p packages/test-kit/tsconfig.json --noEmit && tsc -p examples/vanilla/tsconfig.json --noEmit && tsc -p examples/react/tsconfig.json --noEmit && npm run check:acceptance:v1 && npm run verify:packages:v1 && npm run performance:v1",
-    "check:docs:v1": "node scripts/check-v1-docs.mjs",
+    "check:docs:v1": "tsc -p docs/examples/tsconfig.json --noEmit && node scripts/check-v1-docs.mjs",
     "check:apps:v1": "node scripts/check-v1-apps.mjs",
     "check:acceptance:v1": "node scripts/check-v1-acceptance.mjs",
     "performance:v1": "node scripts/check-v1-performance.mjs",

@@ -1,0 +1,132 @@
+---
+title: Controller lifecycle
+description: Create, observe, update, validate, serialize, reset, and destroy one isolated controller.
+---
+
+# Controller lifecycle
+
+One `stages(options)` call creates one isolated controller. Its transactions,
+metadata, validation work, subscribers, wizard state, and collection row keys
+are not shared with any other controller.
+
+**For:** application owners and adapter authors responsible for lifetime.  
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values).
+
+## Creation branches
+
+Exactly one initialization branch is required:
+
+- `value` creates a new controller. That value is both the initial canonical
+  value and the baseline used by the form `reset` event.
+- `state` recreates a controller from a `SerializedStagesState`. Migrations run
+  first; codecs decode the stored value and baseline; durable metadata is then
+  restored.
+
+Supplying both is a TypeScript error. Runtime state is validated, migrated, and
+checked against the evaluated schema identity. The field registry, value
+codec, extension codecs, migrations, callbacks, and validation-failure
+presentation hook are creation-time configuration. Use `update()` for the
+inputs that are designed to change.
+
+## Read and observe
+
+`getSnapshot()` returns the current readonly `StagesSnapshot`. Repeated reads
+reuse the cached snapshot until controller state changes. Unaffected recursive
+branches are structurally shared across snapshots.
+
+`subscribe(listener)` observes every publication. It does not invoke the
+listener immediately. `subscribeSelector(selector, listener, isEqual?)`
+captures an initial selection and calls the listener with `(next, previous)`
+only when equality reports a change. Both methods return unsubscribe functions.
+
+Adapters normally perform one immediate `getSnapshot()` render, subscribe,
+then unsubscribe during teardown.
+
+## Update dynamic inputs
+
+```ts
+controller.update({
+  value: nextValue,
+  context: nextContext,
+  schema: nextSchema,
+  extensions: nextRegisteredExtensions,
+});
+```
+
+Every supplied field is optional. An update never calls `onChange`. Value
+updates selectively invalidate validation records whose dependencies changed;
+context, schema, or extension updates invalidate all validation records.
+Dynamic configuration is reevaluated at publication. Updating `schema` also
+establishes a new expected root schema identity.
+
+`fields` cannot be updated. Create a new controller if the registry or another
+creation-time option changes materially.
+
+## Dispatch and batch
+
+`dispatch(event)` resolves its target against the current evaluated tree,
+updates interaction/structural metadata, runs an eligible field reducer or
+collection/wizard command, then runs transforms and validation policy when the
+event is accepted. Dispatch schedules one microtask publication.
+
+Use `batch(run)` when a group of synchronous dispatches must form one explicit
+transaction. Nested batches publish after the outermost call returns. The
+controller leaves the batch even if `run` throws; the original error continues
+to the caller.
+
+## Validate
+
+```ts
+const result = await controller.validate({
+  scope: { path: ["profile"] },
+  event: "submit",
+  reveal: true,
+});
+```
+
+Defaults are form scope, event name `validate`, and no forced reveal. The
+promise resolves to the requested scope's `ValidationSnapshot`. New validation,
+dependency-changing updates, structural removal, and destruction cancel or
+make older results stale. A warning does not make `isValid` false; `unknown`
+and `pending` are not valid states.
+
+## Serialize and recreate
+
+`serialize()` returns the JSON-safe envelope containing value, baseline,
+durable interaction addresses, revealed addresses, wizard stages, row keys,
+and registered extensions. Focus, listeners, validation results, pending work,
+and adapter-local state are excluded. Serialization can throw
+`SerializationError` for invalid JSON or wrapped extension-codec output, or
+`TypeError` for invalid extension configuration. A custom value codec's own
+exception propagates unchanged.
+
+Recreation is explicit:
+
+```ts
+const state = controller.serialize();
+controller.destroy();
+const recreated = stages({ schema, fields, state, migrations, codec });
+```
+
+## Teardown is terminal
+
+`destroy()` cancels pending validation, invokes registered cancellation
+listeners, clears subscriptions and transient controller state, and suppresses
+scheduled work. `dispatch()`, `update()`, and `batch()` become inert;
+`subscribe()` returns an inert unsubscribe; and `validate()` returns the last
+validation snapshot. Do not reuse a destroyed controller—create or recreate a
+new one.
+
+React's `useStages` owns controller destruction after a real unmount. The DOM
+adapter has a separate `mounted.destroy()` subscription lifecycle; call both
+when the application owns both objects.
+
+Next: the [controller API reference](/reference/core/controller),
+[Snapshots overview](/core), or [Persistence](/persistence).
+
+## Evidence
+
+Lifecycle behavior is implemented in
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts)
+and covered by controller, validation-cancellation, React Strict Mode, DOM,
+and test-kit adapter tests.

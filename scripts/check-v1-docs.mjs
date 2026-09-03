@@ -1,52 +1,212 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const baselinePath = new URL("../docs/CURRENT_IMPLEMENTATION_API.md", import.meta.url);
-const migrationPath = new URL("../docs/MIGRATING_TO_V1.md", import.meta.url);
-const apiPath = new URL("../docs/V1_API.md", import.meta.url);
+const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+const contentRoot = path.join(repositoryRoot, "docs/content");
+const fromRoot = (relativePath) => path.join(repositoryRoot, relativePath);
+const readRoot = (relativePath) => readFile(fromRoot(relativePath), "utf8");
 
-const guideNames = [
-  "index", "installation", "architecture", "core", "schema",
-  "fields-events", "dynamic-behavior", "transforms", "validation",
-  "collections", "wizards", "persistence", "diagnostics", "react", "dom",
-  "custom-adapters", "utilities", "i18n", "migration", "feature-coverage",
-];
+async function filesBelow(directory, extension) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(entries.map(async (entry) => {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return filesBelow(absolute, extension);
+    return entry.name.endsWith(extension) ? [absolute] : [];
+  }));
+  return nested.flat();
+}
 
-const [baseline, migration, api] = await Promise.all([
-  readFile(baselinePath, "utf8"),
-  readFile(migrationPath, "utf8"),
-  readFile(apiPath, "utf8"),
+function sorted(values) {
+  return [...new Set(values)].sort();
+}
+
+function assertSameInventory(actual, expected, label) {
+  assert.deepEqual(sorted(actual), sorted(expected), `${label} inventory drifted`);
+}
+
+const [baseline, migration, api, demoSource, exampleSource, mdxComponents, manifestSource] = await Promise.all([
+  readRoot("docs/CURRENT_IMPLEMENTATION_API.md"),
+  readRoot("docs/MIGRATING_TO_V1.md"),
+  readRoot("docs/V1_API.md"),
+  readRoot("docs/components/StagesDemo.jsx"),
+  readRoot("docs/components/StagesExample.jsx"),
+  readRoot("docs/mdx-components.jsx"),
+  readRoot("docs/content/coverage-manifest.json"),
 ]);
 
-const guides = await Promise.all(guideNames.map((name) =>
-  readFile(new URL(`../docs/content/${name}.mdx`, import.meta.url), "utf8"),
-));
-const guideCorpus = guides.join("\n");
-const demoSource = await readFile(
-  new URL("../docs/components/StagesDemo.jsx", import.meta.url),
-  "utf8",
-);
-const exampleSource = await readFile(
-  new URL("../docs/components/StagesExample.jsx", import.meta.url),
-  "utf8",
-);
-const mdxComponents = await readFile(
-  new URL("../docs/mdx-components.jsx", import.meta.url),
-  "utf8",
+const manifest = JSON.parse(manifestSource);
+assert.equal(manifest.schemaVersion, 1);
+assert.deepEqual(manifest.statusValues, ["complete", "partial", "missing"]);
+
+const mdxPaths = await filesBelow(contentRoot, ".mdx");
+const guideEntries = await Promise.all(mdxPaths.map(async (absolutePath) => ({
+  absolutePath,
+  relativePath: path.relative(contentRoot, absolutePath),
+  source: await readFile(absolutePath, "utf8"),
+})));
+const guideCorpus = guideEntries.map(({ source }) => source).join("\n");
+
+const routeFor = (relativePath) => {
+  const withoutExtension = relativePath.replace(/\.mdx$/, "").split(path.sep).join("/");
+  return withoutExtension === "index" ? "/" : `/${withoutExtension.replace(/\/index$/, "")}`;
+};
+const routes = new Set(guideEntries.map(({ relativePath }) => routeFor(relativePath)));
+
+for (const { relativePath, source } of guideEntries) {
+  for (const match of source.matchAll(/\]\((\/[a-zA-Z0-9_./-]+)(?:#[a-zA-Z0-9_-]+)?\)/g)) {
+    assert.ok(routes.has(match[1]), `${relativePath} links to missing route ${match[1]}`);
+  }
+}
+
+async function validateMeta(directory) {
+  const metaPath = path.join(directory, "_meta.json");
+  let meta;
+  try {
+    meta = JSON.parse(await readFile(metaPath, "utf8"));
+  } catch (error) {
+    assert.fail(`missing or invalid navigation metadata at ${path.relative(repositoryRoot, metaPath)}: ${error}`);
+  }
+  for (const [key, config] of Object.entries(meta)) {
+    if (key === "*") continue;
+    if (typeof config === "object" && config !== null && (config.type === "separator" || config.type === "menu" || config.href)) continue;
+    const file = path.join(directory, `${key}.mdx`);
+    const childDirectory = path.join(directory, key);
+    const names = await readdir(directory, { withFileTypes: true });
+    const hasFile = names.some((entry) => entry.isFile() && entry.name === `${key}.mdx`);
+    const hasDirectory = names.some((entry) => entry.isDirectory() && entry.name === key);
+    assert.ok(hasFile || hasDirectory, `${path.relative(repositoryRoot, metaPath)} points to missing ${key}`);
+    if (hasDirectory) await validateMeta(childDirectory);
+  }
+}
+await validateMeta(contentRoot);
+
+const completePagePaths = [
+  "start/introduction.mdx",
+  "start/mental-model.mdx",
+  "start/installation.mdx",
+  "start/first-controller.mdx",
+  "start/react-quickstart.mdx",
+  "start/dom-quickstart.mdx",
+  "core-concepts/controlled-values.mdx",
+  "core-concepts/controller-lifecycle.mdx",
+  "reference/core/exports.mdx",
+  "reference/core/controller.mdx",
+  "project/contributing-to-docs.mdx",
+];
+for (const relativePath of completePagePaths) {
+  const page = guideEntries.find((entry) => entry.relativePath === relativePath);
+  assert.ok(page, `missing planned page ${relativePath}`);
+  assert.match(page.source, /\*\*For:\*\*/i, `${relativePath} has no audience`);
+  assert.match(page.source, /\*\*Prerequisites:\*\*/i, `${relativePath} has no prerequisites`);
+  assert.match(page.source, /\bNext:/i, `${relativePath} has no next step`);
+  assert.match(page.source, /## Evidence/i, `${relativePath} has no evidence section`);
+}
+
+function namedExports(source) {
+  const exports = [];
+  for (const match of source.matchAll(/export\s+(type\s+)?\{([\s\S]*?)\}\s*(?:from\s+["'][^"']+["'])?\s*;/g)) {
+    for (const item of match[2].split(",")) {
+      const name = item.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[1] ?? item.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0];
+      if (name && !name.includes("\n")) exports.push({ symbol: name, kind: match[1] ? "type" : "runtime" });
+    }
+  }
+  return exports;
+}
+
+function declarationExports(source) {
+  const exports = [];
+  for (const match of source.matchAll(/\bexport\s+(?:declare\s+)?(interface|type|class|function|const)\s+([A-Za-z_$][\w$]*)/g)) {
+    exports.push({
+      symbol: match[2],
+      kind: match[1] === "interface" || match[1] === "type" ? "type" : "runtime",
+    });
+  }
+  return exports;
+}
+
+async function entrypointExports(entrypoint) {
+  const entryAbsolute = fromRoot(entrypoint);
+  const entrySource = await readFile(entryAbsolute, "utf8");
+  const exports = [...namedExports(entrySource), ...declarationExports(entrySource)];
+  for (const match of entrySource.matchAll(/export\s+\*\s+from\s+["']([^"']+)["']/g)) {
+    const sourcePath = match[1].replace(/\.js$/, ".ts");
+    exports.push(...declarationExports(await readFile(path.resolve(path.dirname(entryAbsolute), sourcePath), "utf8")));
+  }
+  const unique = new Map(exports.map((item) => [`${item.kind}:${item.symbol}`, item]));
+  return [...unique.values()];
+}
+
+for (const packageRecord of manifest.packages) {
+  assert.ok(packageRecord.package && packageRecord.entrypoint && packageRecord.tests.length > 0);
+  const keys = packageRecord.exports.map(({ kind, symbol }) => `${kind}:${symbol}`);
+  assert.equal(new Set(keys).size, keys.length, `${packageRecord.package} has duplicate manifest exports`);
+  for (const item of packageRecord.exports) {
+    assert.ok(manifest.statusValues.includes(item.status), `${packageRecord.package}:${item.symbol} has invalid status`);
+    const reference = item.reference || packageRecord.defaultReference;
+    assert.ok(reference, `${packageRecord.package}:${item.symbol} has no reference route`);
+    assert.ok(routes.has(reference.split("#")[0]), `${packageRecord.package}:${item.symbol} has an invalid reference route ${reference}`);
+    if (item.guide) assert.ok(routes.has(item.guide), `${packageRecord.package}:${item.symbol} has an invalid guide route ${item.guide}`);
+  }
+  const sourceExports = await entrypointExports(packageRecord.entrypoint);
+  assertSameInventory(
+    sourceExports.map(({ kind, symbol }) => `${kind}:${symbol}`),
+    keys,
+    `${packageRecord.package} public exports`,
+  );
+}
+
+const controllerTypes = await readRoot("packages/core/src/types.ts");
+const controllerBody = controllerTypes.match(/export interface StagesController[\s\S]*?\{([\s\S]*?)\n\}/)?.[1];
+assert.ok(controllerBody, "could not find StagesController declaration");
+const controllerMethods = [...controllerBody.matchAll(/^\s{2}([A-Za-z_$][\w$]*)(?:<[^\n]+>)?\(/gm)]
+  .map((match) => `StagesController.${match[1]}`);
+assertSameInventory(controllerMethods, manifest.contracts.controllerMethods, "controller methods");
+
+const [controllerSource, schemaSource, collectionSource, serializationSource] = await Promise.all([
+  readRoot("packages/core/src/controller.ts"),
+  readRoot("packages/core/src/schema.ts"),
+  readRoot("packages/core/src/collections.ts"),
+  readRoot("packages/core/src/serialization.ts"),
+]);
+const diagnosticCodes = [...`${controllerSource}\n${schemaSource}\n${collectionSource}`.matchAll(
+  /["']((?:schema|event|collection|field|transform|validation|wizard)\.[a-z0-9-]+)["']/g,
+)].map((match) => match[1]);
+assertSameInventory(diagnosticCodes, manifest.contracts.diagnostics, "diagnostic codes");
+
+const serializationCodes = [...`${serializationSource}\n${controllerSource}`.matchAll(
+  /["']((?:json|state|migration|extension)\.[a-z0-9-]+)["']/g,
+)].map((match) => match[1]);
+assertSameInventory(serializationCodes, manifest.contracts.serializationErrors, "serialization error codes");
+
+const collectionRejections = [...collectionSource.matchAll(/reject\(["'](collection\.[a-z0-9-]+)["']/g)]
+  .map((match) => match[1]);
+assertSameInventory(collectionRejections, manifest.contracts.collectionRejections, "collection rejection codes");
+
+const expectedEvents = [
+  "focus", "blur", "reset", "collection:add", "collection:remove", "collection:replace",
+  "collection:duplicate", "collection:move", "collection:sort", "wizard:previous",
+  "wizard:next", "wizard:go", "init", "validate", "input", "submit",
+];
+assertSameInventory(
+  manifest.contracts.events.map(({ symbol }) => symbol),
+  expectedEvents,
+  "standard events and conventions",
 );
 
-const documentedRuntimeExports = [
-  "stages", "fieldEvent", "nodeEvent", "formEvent", "evaluateSchema",
-  "initialFieldValue", "reduceCollectionCommand", "getAtPath", "setAtPath",
-  "removeAtPath", "applyPatches", "pathsEqual", "isSafePathSegment",
-  "assertSafePath", "encodeJson", "decodeJson", "validateSerializedState",
-  "migrateSerializedState", "SerializationError", "useStages",
-  "useStagesController", "useStagesField", "StagesField",
-  "useStagesCollection", "useStagesWizard", "createDomFields", "mountStages",
-  "bindAdapter",
+const checkedRegions = [
+  { fixture: "docs/examples/first-controller.ts", region: "first-controller", page: "start/first-controller.mdx" },
+  { fixture: "docs/examples/react-quickstart.tsx", region: "react-field", page: "start/react-quickstart.mdx" },
+  { fixture: "docs/examples/react-quickstart.tsx", region: "react-owner", page: "start/react-quickstart.mdx" },
+  { fixture: "docs/examples/dom-quickstart.ts", region: "dom-owner", page: "start/dom-quickstart.mdx" },
 ];
-for (const name of documentedRuntimeExports) {
-  assert.ok(guideCorpus.includes(name), `v1 guide is missing runtime export ${name}`);
+for (const { fixture, region, page } of checkedRegions) {
+  const fixtureSource = await readRoot(fixture);
+  const displayedRegion = fixtureSource.match(new RegExp(`// source:start ${region}\\n([\\s\\S]*?)\\n// source:end ${region}`))?.[1].trim();
+  assert.ok(displayedRegion, `${fixture} has no ${region} source region`);
+  const pageSource = guideEntries.find(({ relativePath }) => relativePath === page)?.source;
+  assert.ok(pageSource?.includes(displayedRegion), `${page} drifted from checked source region ${region}`);
 }
 
 const requiredDemos = [
@@ -55,7 +215,7 @@ const requiredDemos = [
 ];
 for (const name of requiredDemos) {
   assert.match(demoSource, new RegExp(`\\b${name}:`), `missing live demo ${name}`);
-  assert.ok(guideCorpus.includes(`example=\"${name}\"`), `live demo ${name} is not embedded in a guide`);
+  assert.ok(guideCorpus.includes(`example="${name}"`), `live demo ${name} is not embedded in a guide`);
   const region = demoSource.match(new RegExp(`// source:start ${name}([\\s\\S]*?)// source:end ${name}`));
   assert.ok(region, `live demo ${name} has no displayable source region`);
   assert.match(region[1], /\/\//, `live demo ${name} source has no explanatory comments`);
@@ -77,132 +237,52 @@ for (const contract of documentedFeatureContracts) {
   assert.ok(guideCorpus.toLowerCase().includes(contract.toLowerCase()), `v1 guide is missing feature contract ${contract}`);
 }
 
-const exportSection = baseline.match(
-  /## 2\. Package and export surface([\s\S]*?)## 3\./,
-);
-assert.ok(exportSection, "could not locate the 0.x root-export inventory");
+const obsoleteAllowances = [
+  /There is no `controller\.reset\(\)`/,
+  /No `reset\(\)` method is present/,
+  /historical name\s+`focusFirstVisibleIssue\(\)` is not a v1 API/,
+];
+for (const { relativePath, source } of guideEntries) {
+  const withoutAllowedStatements = obsoleteAllowances.reduce((current, allowance) => current.replace(allowance, ""), source);
+  assert.doesNotMatch(withoutAllowedStatements, /controller\.reset\(\)|focusFirstVisibleIssue\(\)|Validator `events`/,
+    `${relativePath} contains an obsolete v1 API name`);
+}
 
-const rootExports = [...exportSection[1].matchAll(/^\| `([^`]+)` \|/gm)].map(
-  ([, name]) => name,
-);
+const exportSection = baseline.match(/## 2\. Package and export surface([\s\S]*?)## 3\./);
+assert.ok(exportSection, "could not locate the 0.x root-export inventory");
+const rootExports = [...exportSection[1].matchAll(/^\| `([^`]+)` \|/gm)].map(([, name]) => name);
 assert.deepEqual(rootExports, [
-  "Stages",
-  "HashRouter",
-  "Navigation",
-  "Progression",
-  "Debugger",
-  "Form",
-  "Actions",
-  "plainFields",
-  "get",
+  "Stages", "HashRouter", "Navigation", "Progression", "Debugger", "Form",
+  "Actions", "plainFields", "get",
 ]);
 
 const legacyConcepts = [
   ...rootExports,
-  // Form inputs and runtime configuration.
-  "config",
-  "fields",
-  "data",
-  "render",
-  "renderFields",
-  "onChange",
-  "isVisible",
-  "isDisabled",
-  "id",
-  "onValidation",
-  "parentRunValidation",
-  "validateOn",
-  "throttleWait",
-  "customEvents",
-  "enableUndo",
-  "undoMaxDepth",
-  "customRuleHandlers",
-  "autoSave",
-  "typeValidations",
-  "fieldsets",
-  "initialInterfaceState",
-  "hashSeparator",
-  "fieldConfigs",
-  "modifyConfig",
-  // Field processing and validation.
-  "defaultValue",
-  "computedValue",
-  "computedOptions",
-  "dynamicOptions",
-  "filter",
-  "transform",
-  "cast.data",
-  "cast.field",
-  "cleanUp",
-  "clearFields",
-  "precision",
-  "isRendered",
-  "isInterfaceState",
-  "disableAutoSave",
-  "isUnique",
-  "regexValidation",
-  "customValidation",
-  "errorRenderer",
-  // Structural nodes and collection commands.
-  "group",
-  "collection",
-  "subform",
-  "fieldset",
-  "wizard",
-  "stage",
-  "add",
-  "remove",
-  "move",
-  "sort",
-  "duplicate",
-  "update",
-  "setInitialData",
-  "uniqEntries",
-  // Outer wizard and routing inputs.
-  "children",
-  "initialData",
-  "initialStep",
-  "validateOnStepChange",
-  "onNav",
-  "onChangeStep",
-  "prefix",
-  "hashFormat",
-  // The complete plainFields key set.
-  "text",
-  "number",
-  "email",
-  "password",
-  "tel",
-  "time",
-  "date",
-  "checkbox",
-  "select",
-  "radio",
-  "checkboxGroup",
-  "dummy",
+  "config", "fields", "data", "render", "renderFields", "onChange", "isVisible", "isDisabled", "id",
+  "onValidation", "parentRunValidation", "validateOn", "throttleWait", "customEvents", "enableUndo",
+  "undoMaxDepth", "customRuleHandlers", "autoSave", "typeValidations", "fieldsets", "initialInterfaceState",
+  "hashSeparator", "fieldConfigs", "modifyConfig", "defaultValue", "computedValue", "computedOptions",
+  "dynamicOptions", "filter", "transform", "cast.data", "cast.field", "cleanUp", "clearFields", "precision",
+  "isRendered", "isInterfaceState", "disableAutoSave", "isUnique", "regexValidation", "customValidation",
+  "errorRenderer", "group", "collection", "subform", "fieldset", "wizard", "stage", "add", "remove", "move",
+  "sort", "duplicate", "update", "setInitialData", "uniqEntries", "children", "initialData", "initialStep",
+  "validateOnStepChange", "onNav", "onChangeStep", "prefix", "hashFormat", "text", "number", "email",
+  "password", "tel", "time", "date", "checkbox", "select", "radio", "checkboxGroup", "dummy",
 ];
-
-const missing = legacyConcepts.filter((concept) => !migration.includes(concept));
-assert.deepEqual(
-  missing,
-  [],
-  `migration guide is missing 0.x concepts: ${missing.join(", ")}`,
-);
-
+const missingMigrationConcepts = legacyConcepts.filter((concept) => !migration.includes(concept));
+assert.deepEqual(missingMigrationConcepts, [], `migration guide is missing 0.x concepts: ${missingMigrationConcepts.join(", ")}`);
 assert.match(migration, /\*\*Replace\*\*/);
 assert.match(migration, /\*\*Move\*\*/);
 assert.match(migration, /\*\*Remove\*\*/);
+assert.doesNotMatch(migration, /controller\.reset\(\)|focusFirstVisibleIssue\(\)|Validator `events`/);
 assert.match(api, /MIGRATING_TO_V1\.md/);
 
 const packageReadmes = await Promise.all(
-  ["core", "dom", "react", "test-kit"].map((name) =>
-    readFile(new URL(`../packages/${name}/README.md`, import.meta.url), "utf8"),
-  ),
+  ["core", "dom", "react", "test-kit"].map((name) => readRoot(`packages/${name}/README.md`)),
 );
-for (const readme of packageReadmes) {
-  assert.match(readme, /MIGRATING_TO_V1\.md/);
-}
+for (const readme of packageReadmes) assert.match(readme, /MIGRATING_TO_V1\.md/);
 
+const exportCount = manifest.packages.reduce((count, item) => count + item.exports.length, 0);
 console.log(
-  `v1 documentation check passed (${guideNames.length} guides, ${requiredDemos.length} live demos, ${documentedRuntimeExports.length} runtime exports, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

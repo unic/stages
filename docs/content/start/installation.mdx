@@ -1,0 +1,70 @@
+---
+title: Installation and compatibility
+description: Install aligned ESM-only Stages v1 packages for core, React, DOM, or adapter development.
+---
+
+import { Callout } from 'nextra/components'
+
+# Installation and compatibility
+
+Install `@stages/core` plus only the adapter packages your application uses.
+
+**For:** consumers preparing a v1 project.  
+**Prerequisites:** an ESM-capable TypeScript or JavaScript build.
+
+```sh
+# React application
+npm install @stages/core@1.0.0-alpha.0 @stages/react@1.0.0-alpha.0
+
+# Framework-free DOM application
+npm install @stages/core@1.0.0-alpha.0 @stages/dom@1.0.0-alpha.0
+
+# Custom adapter development
+npm install @stages/core@1.0.0-alpha.0 @stages/test-kit@1.0.0-alpha.0
+```
+
+These commands reflect the packages currently implemented in this repository.
+Before a registry release exists, use the repository workspace or packed
+artifacts produced by the release verification instead of assuming the alpha
+tag is available publicly.
+
+## Compatibility contract
+
+| Concern | Requirement |
+| --- | --- |
+| Module format | ESM-only (`"type": "module"`; import and type entry points) |
+| Package alignment | Keep all `@stages/*` packages on the exact same version |
+| React peer | React 17 or newer for `@stages/react` |
+| Core runtime | No runtime dependencies and no DOM or framework globals |
+| DOM boundary | `@stages/dom` needs browser DOM types and globals at runtime |
+| Server use | Pure core APIs and controller creation do not require DOM globals; UI adapters keep their own runtime boundaries |
+| TypeScript | Strict declarations are shipped; the repository currently verifies them with its pinned compiler |
+
+<Callout type="warning" emoji="⚠️">
+  `1.0.0-alpha.0` can still change before stable 1.0. Pin exact versions, review
+  release notes, and run your integration tests when upgrading.
+</Callout>
+
+## Repository development
+
+The examples in this repository resolve local workspace source/build output;
+that is different from a registry install. Use these root commands:
+
+```sh
+npm run check:docs:v1
+npm run test:v1
+npm run release:check:v1
+```
+
+The release check builds and typechecks all four packages, verifies packed
+consumers, builds the docs and example applications, and runs the acceptance
+and performance gates.
+
+Next: create a registry, schema, controlled value owner, and teardown in
+[First controller](/start/first-controller).
+
+## Evidence
+
+Version, ESM, dependency, and peer requirements come from the four
+[`packages/*/package.json`](https://github.com/unic/stages/tree/master/packages)
+export maps and are exercised by the packed-package verification script.

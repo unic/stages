@@ -194,13 +194,13 @@ valid result.
 | `customValidation` | Replace | Sync or async validator with stable ID and cancellation signal. |
 | `isRequired` | Replace | An explicit required validator with application-defined empty semantics. |
 | `isUnique` / `uniqEntries` | Replace | Field or collection validators with explicit dependencies. |
-| `validateOn` / dynamic `validateOn` | Replace | Validator `events`, `revealOn`, and optional `when`. |
+| `validateOn` / dynamic `validateOn` | Replace | Validator `on`, `revealOn`, and optional `when`. |
 | Dependency strings such as `field:change` | Replace | Typed validator `dependencies` using data paths. |
 | `onValidation` | Replace | `await controller.validate(...)` and/or subscribe to validation snapshots. |
 | `parentRunValidation` | Remove | Validate a recursive path/address scope; subform bridging no longer exists. |
 | `silentlyGetValidationErrors` | Replace | Validate without reveal, or inspect all issues separately from visible issues. |
 | `errorRenderer` and type renderer | Move | Render structured visible issues in the adapter/application. |
-| DOM error scrolling | Move | `focusFirstVisibleIssue()` in `@stages/dom`, or an adapter focus implementation. |
+| DOM error scrolling | Move | `focusFirstIssue()` in `@stages/dom`, or an adapter focus implementation. |
 | Form `customRuleHandlers` and collection `rules` language | Remove | Ordinary collection/root validators; express count, sum, uniqueness, allow/disallow, and cross-field rules directly. |
 
 Async validators are supported uniformly. Dependency changes cancel and
@@ -285,7 +285,7 @@ writes, and uncaught loader failures.
 | Touched/visited exposure | Replace | Durable controller metadata, included in serialization. |
 | `enableUndo`, `undoMaxDepth`, `handleUndo`, `handleRedo` | Move | An optional subscriber/extension history built from accepted values; not v1 core. |
 | Form/Stages `autoSave`, `disableAutoSave` | Move | Subscribe, select the persisted value, and store `serialize()` output externally. |
-| Form/Stages `reset` | Replace | `controller.reset()` restores the baseline without retaining stale errors. |
+| Form/Stages `reset` | Replace | Dispatch the form-targeted `reset` event; it proposes the baseline and clears stale interaction/validation metadata. |
 | `id`-derived browser storage keys | Remove | The persistence adapter owns namespacing, storage selection, errors, and async behavior. |
 | `hashSeparator`, `prefix`, `hashFormat` | Move | Router configuration outside core, mapped to wizard IDs/stage IDs. |
 

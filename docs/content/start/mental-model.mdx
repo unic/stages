@@ -1,0 +1,99 @@
+---
+title: Mental model
+description: Follow a Stages event from a view through a proposal and owner acceptance.
+---
+
+# Mental model
+
+Stages is a controlled state machine with a recursive render snapshot. The
+controller coordinates work, but the application remains the source of truth
+for the domain value.
+
+**For:** anyone implementing a controller or adapter.  
+**Prerequisites:** [Introduction](/start/introduction).
+
+## Inputs and outputs
+
+```text
+schema + canonical value + field registry + context
+                         │
+                         ▼
+                     controller
+                    ╱          ╲
+       readonly snapshots       events from a view
+                    ╲          ╱
+                 value proposal
+                         │
+                  application owner
+                         │ update({ value })
+                         └───────────────► canonical value
+```
+
+The schema says what exists. The registry gives each field type a default,
+event reducer, intrinsic validators, and an opaque view token. The canonical
+value contains application data. Evaluation combines those inputs into a
+readonly snapshot for an adapter to render.
+
+## One keystroke, end to end
+
+Suppose a text view emits `input` with `"Ada"` for `['displayName']`.
+
+1. `dispatch()` resolves the field target in the current evaluated schema.
+2. The registered field reducer converts the event into a set patch.
+3. Matching transforms run from the target toward the root. Each transform
+   sees patches produced before it.
+4. The event joins the current transaction. Dispatches in the same turn are
+   automatically flushed in a microtask; `batch()` makes the boundary explicit.
+5. If the transaction produced a different value, `onChange` receives a
+   `StagesChange`. At this point `change.value` is proposed and
+   `getSnapshot().value` is still canonical.
+6. The owner may accept the proposal, replace it with another value, delay its
+   decision, or reject it by doing nothing.
+7. `update({ value })` supplies the owner's decision. The controller
+   reevaluates dynamic configuration and publishes the accepted snapshot.
+8. General subscribers run before selector subscribers whose selections
+   changed. With synchronous acceptance, observers see the accepted value in
+   the same publication.
+
+Field focus/touch state and wizard navigation are controller metadata. They can
+publish a new snapshot without proposing a domain-value change.
+
+## Path and address are different identities
+
+A **data path** such as `['people', 0, 'name']` locates a value at this moment.
+A **node address** uses schema IDs and stable row IDs. If row zero moves to row
+two, its data path changes while its address and interaction metadata follow
+the row. Use paths to read or patch data; use addresses for structural targets,
+row identity, wizard identity, and persistent interaction metadata.
+
+## Four kinds of state
+
+| State | Examples | Owner | Durable in `serialize()`? |
+| --- | --- | --- | --- |
+| Domain value and baseline | profile data, collection items, reset target | Application; baseline is captured at creation/recreation | Yes |
+| Interaction metadata | touched, visited, revealed issues, active wizard stage, row keys | Core | Yes, except focus |
+| Validation cache | unknown/pending/invalid/valid, current issues | Core | No; recreated controllers validate again |
+| Adapter-local UI | open popover, animation, modal, browser handle | Adapter/application | No, unless deliberately registered as extension state |
+
+## Where should logic live?
+
+| Need | Correct layer |
+| --- | --- |
+| Parse a field event into a value | Field reducer in core configuration |
+| Derive another domain field atomically | Transform |
+| Decide whether a section exists or is disabled | Schema factory or node resolver |
+| Fetch options or submit to a server | Application, then `update()` context/value |
+| Render labels, issues, and controls | Adapter or application view |
+| Store/resume a controller | Application storage using `serialize()` and `state` |
+| Change the URL with a wizard | Application subscriber/router integration |
+| Retain serializable plugin state | Registered extension namespace |
+
+Next: [install compatible packages](/start/installation), then build the
+[first controller](/start/first-controller).
+
+## Evidence
+
+The ordering and ownership claims are covered by
+[`controller.test.mjs`](https://github.com/unic/stages/blob/master/packages/core/test/controller.test.mjs),
+including synchronous and delayed acceptance, callback order, batching, and
+stable collection-row identity.

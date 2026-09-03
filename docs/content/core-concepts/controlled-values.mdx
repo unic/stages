@@ -1,0 +1,146 @@
+---
+title: Controlled values
+description: Understand proposal, acceptance, replacement, rejection, and delay in the Stages controller.
+---
+
+# Controlled values
+
+Controlled ownership is the central Stages contract: core calculates proposed
+domain values, while the application chooses the canonical value.
+
+**For:** controller owners, state-management integrators, and adapter authors.  
+**Prerequisites:** [Mental model](/start/mental-model) and
+[First controller](/start/first-controller).
+
+## The handshake
+
+```text
+view          controller                 owner
+ │ input event    │                        │
+ ├───────────────►│ reduce + transform     │
+ │                ├── onChange(proposal) ─►│
+ │                │                        │ decide
+ │                │◄── update(canonical) ──┤
+ │◄──────── accepted snapshot ─────────────┤
+```
+
+`dispatch()` can update controller metadata, but reducers, transforms, reset,
+and collection commands only **propose** domain values. They do not make the
+proposal canonical. This remains true even when `onChange` is omitted.
+
+## Synchronous acceptance
+
+```ts
+let controller;
+controller = stages({
+  schema,
+  fields,
+  value,
+  onChange(change) {
+    value = change.value;
+    controller.update({ value });
+  },
+});
+```
+
+When the owner calls `update()` inside `onChange`, the accepted value is
+included in the same publication. Callback order is:
+
+1. `onChange(change)`;
+2. every general `subscribe()` listener;
+3. each `subscribeSelector()` listener whose selected value changed.
+
+A selector listener is not called just because a transaction happened. Its
+initial selection is captured at subscription time and its equality function
+(default `Object.is`) controls later calls.
+
+## Delayed acceptance
+
+```ts
+onChange(change) {
+  void authorize(change.value).then(result => {
+    if (result.accepted) controller.update({ value: result.value });
+  });
+}
+```
+
+After the proposal transaction, general subscribers are notified so they can
+observe metadata and diagnostics, but `snapshot.value` remains the previous
+canonical value. A later `update()` causes another publication. Selectors of
+the domain branch run only when that accepted value arrives.
+
+The application should define what happens if another proposal arrives while a
+request is pending: cancel the earlier request, serialize requests, compare a
+request token, or accept the server's conflict policy. Core suppresses stale
+validation results, but it cannot infer the policy for application save calls.
+
+## Replacement and rejection
+
+An owner can replace a proposal—for example with server normalization:
+
+```ts
+onChange(change) {
+  controller.update({
+    value: { ...change.value, slug: normalizeSlug(change.value.slug) },
+  });
+}
+```
+
+To reject, do not update the controller with the proposal. Avoid mutating
+`change.value` or any snapshot; pass a new immutable value when making a later
+decision.
+
+## Transactions and change records
+
+Dispatches in one JavaScript turn are automatically grouped at the microtask
+boundary. `batch(run)` creates an explicit, nestable boundary. One accepted
+value-producing transaction yields one `StagesChange` with:
+
+| Field | Meaning |
+| --- | --- |
+| `value` | Final proposed value after ordered reducer/collection patches and transforms |
+| `previousValue` | Canonical value used as the transaction base |
+| `patches` | Ordered set/remove patches applied while calculating the proposal |
+| `events` | Ordered source events in the transaction |
+| `source` | Declared as `user`, `external`, `restore`, or `reset`; current proposals use `user` or `reset` |
+| `transactionId` | Per-controller increasing ID for value proposals |
+
+Events that only change metadata can publish snapshots without calling
+`onChange`. Rejected collection or wizard commands append diagnostics and do
+not run value transforms or propose a value.
+
+## External replacement
+
+Call `update({ value })` whenever another store, route loader, server response,
+or undo manager changes the canonical value. External updates invalidate
+affected validation records and reevaluate the schema. They do not call
+`onChange`, because the owner is supplying a decision rather than asking core
+to calculate one.
+
+## Reset is still controlled
+
+```ts
+controller.dispatch({ name: "reset", target: { kind: "form" } });
+```
+
+Reset proposes the baseline captured at controller creation or recreation,
+sets `change.source` to `reset`, and clears focus, touch, visit, reveal, wizard,
+and validation runtime metadata before publication. The owner may still reject
+or replace the baseline proposal. There is no `controller.reset()` method.
+
+## Testing ownership policy
+
+Test canonical snapshots before and after the owner's decision, not only the
+`onChange` payload. For delayed flows, assert the unchanged snapshot first and
+the accepted or replaced snapshot after the server decision. If collection
+rows move, also assert their stable addresses before proposal and after
+acceptance.
+
+Next: [Controller lifecycle](/core-concepts/controller-lifecycle) and the
+normative [`stages()`/controller reference](/reference/core/controller).
+
+## Evidence
+
+See the controlled batches, callback order, delayed row-key acceptance, reset,
+and external-update tests in
+[`packages/core/test/controller.test.mjs`](https://github.com/unic/stages/blob/master/packages/core/test/controller.test.mjs).
