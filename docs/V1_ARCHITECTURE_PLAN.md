@@ -1654,3 +1654,47 @@ The collection commands are ordinary controller events hidden behind typed React
 - every row and action is still placed in application-owned React markup.
 
 An application can dispatch the corresponding collection events directly when it does not want React adapter helpers. The helpers provide typed paths, stable identity, capability flags, and narrow subscriptions; they do not add collection behavior outside the core.
+
+## 21. Implementation state
+
+Last updated: 2026-09-03
+
+The v1 implementation is active under `packages/` and is intentionally kept
+alongside the existing 0.x library while the replacement is completed. It is
+currently an alpha foundation, not a release-ready v1 build.
+
+| Phase | State | Implemented | Remaining |
+| --- | --- | --- | --- |
+| Phase 0 — Contract fixtures and API spike | Implemented | Strict public TypeScript contracts and a compile-tested fixture cover controlled fields, recursive groups/collections/wizards, discriminated collections, custom view tokens, dynamic schemas, transforms, validation, serialization, and batching. | Continue refining types when remaining runtime features are added; freeze the public API only after packed-artifact testing. |
+| Phase 1 — Pure schema and value core | Mostly implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, schema diagnostics, malformed-structure guards, and last-valid-tree recovery are implemented. | Complete explicit schema-diff reporting for every incompatible identity reuse and add broader reducer/property tests. |
+| Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous owner acceptance, rejected proposals, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, and teardown are implemented. | Add packed-package integration coverage and finalize callback-order documentation. |
+| Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
+| Phase 4 — Validation | Mostly implemented | Root and node validators, `init`/event/reveal policies, disabled-node opt-in, dependencies, conditional applicability, scoped and per-stage aggregation, async cancellation, stale-result protection, runtime issue validation, and durable reveal state are implemented. | Integrate registry-level `FieldDefinition.validators`, finalize validation/system-issue customization, and broaden navigation/validation matrix tests. |
+| Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, and serialized identity are implemented. | Add exhaustive tests for every permitted container nesting permutation and finish higher-level adapter collection/wizard bindings. |
+| Phase 6 — Serialization | Mostly implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, and revealed validation addresses are implemented. | Add registered namespaced extension codecs and packed-artifact recreation tests. |
+| Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, and accessible issue relationships. React lifecycle, snapshot, selector, and field bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add focus/error navigation hooks, richer collection/wizard helpers, production examples, and migrate the demo applications to v1. |
+| Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, and notification-count performance tests exist. | Add property/fuzz tests, packed export verification, formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
+
+### Current packages
+
+- `@stages/core`: framework-neutral schema, controller, events, validation,
+  collections, paths, and serialization.
+- `@stages/dom`: dependency-free DOM reference adapter and native fields.
+- `@stages/react`: React controller lifecycle and selector-based field bindings.
+- `@stages/test-kit`: reusable adapter contract harness, including Vue-style and
+  Angular-style integration proofs.
+
+### Verification baseline
+
+- `npm run check:v1` performs strict type checking for all four packages and
+  builds their ESM declaration/output artifacts.
+- `npm run test:v1` builds the packages and currently runs 59 passing executable
+  tests across core, DOM, React, and the adapter test kit.
+- Generated package `dist/` directories are build artifacts and are not tracked.
+
+### Work not yet migrated
+
+The existing root 0.x package, `demo/`, `docs/` application, and `studio/`
+application still use the legacy implementation. Their migration should follow
+the remaining adapter/API work so they validate the final v1 contract rather
+than an intermediate alpha surface.
