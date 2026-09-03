@@ -91,8 +91,15 @@ const completePagePaths = [
   "start/dom-quickstart.mdx",
   "core-concepts/controlled-values.mdx",
   "core-concepts/controller-lifecycle.mdx",
+  "core-concepts/schemas.mdx",
+  "core-concepts/paths-and-addresses.mdx",
+  "core-concepts/field-registry.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
+  "reference/core/schema-types.mdx",
+  "reference/core/field-types.mdx",
+  "reference/core/path-utilities.mdx",
+  "reference/core/schema-utilities.mdx",
   "project/contributing-to-docs.mdx",
 ];
 for (const relativePath of completePagePaths) {
@@ -200,6 +207,10 @@ const checkedRegions = [
   { fixture: "docs/examples/react-quickstart.tsx", region: "react-field", page: "start/react-quickstart.mdx" },
   { fixture: "docs/examples/react-quickstart.tsx", region: "react-owner", page: "start/react-quickstart.mdx" },
   { fixture: "docs/examples/dom-quickstart.ts", region: "dom-owner", page: "start/dom-quickstart.mdx" },
+  { fixture: "docs/examples/schema-evaluation.ts", region: "recursive-schema", page: "core-concepts/schemas.mdx" },
+  { fixture: "docs/examples/schema-evaluation.ts", region: "evaluate-schema", page: "reference/core/schema-utilities.mdx" },
+  { fixture: "docs/examples/field-registry.ts", region: "field-registry", page: "core-concepts/field-registry.mdx" },
+  { fixture: "docs/examples/path-utilities.ts", region: "path-utilities", page: "core-concepts/paths-and-addresses.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);

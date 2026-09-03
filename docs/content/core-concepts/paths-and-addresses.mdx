@@ -1,0 +1,170 @@
+---
+title: Paths and addresses
+description: Choose data paths or stable node addresses and use immutable path helpers safely.
+---
+
+# Paths and addresses
+
+Stages exposes two location systems because a value's current location and a
+render node's stable identity are different concerns.
+
+**For:** application developers, adapter authors, and persistence/tooling authors.  
+**Prerequisites:** [Schemas](/core-concepts/schemas).
+
+## Data paths
+
+```ts
+type DataPath = readonly (string | number)[];
+```
+
+A data path locates the current domain value. Object/group/wizard/stage/field
+IDs are string segments. Collection row positions are numeric segments.
+`[]` is the root value.
+
+Use data paths for field event targets, reading and patching domain data,
+path-scoped validation, dependencies, issue locations, and React field lookup.
+
+## Node addresses
+
+```ts
+type NodeAddressSegment =
+  | Readonly<{ kind: "node"; id: string }>
+  | Readonly<{ kind: "row"; id: string }>;
+
+type NodeAddress = readonly NodeAddressSegment[];
+```
+
+A node address locates structural identity. Schema nodes and wizard stages use
+`node` segments. Collection rows use engine-owned or application `itemKey`
+row IDs. `[]` addresses form/root scope.
+
+Use addresses for node and row event targets, address-scoped validation,
+interaction metadata, wizard identity, persistent row identity, and adapter UI
+keys.
+
+## Choose the right identity
+
+| Task | Use |
+| --- | --- |
+| Emit input to a field | Data path |
+| Read/set/remove domain data | Data path |
+| Declare validator dependencies | Data path |
+| Target a collection or wizard | Node address |
+| Target the same row after reorder | Node address |
+| Key a React collection row | Row binding key/address |
+| Show an issue beside its value | Issue data path |
+| Persist touched/visited/revealed state | Node address |
+| Locate form-wide scope | Root `[]` path or address, depending on API branch |
+
+Do not cache a collection field's path as row identity. Its numeric segment is
+expected to change.
+
+## Identity through a move
+
+Before moving row `contact-7` from index zero:
+
+```ts
+path: ["contacts", 0, "label"]
+address: [
+  { kind: "node", id: "contacts" },
+  { kind: "row", id: "contact-7" },
+  { kind: "node", id: "label" },
+]
+```
+
+After moving it to index two, only the path changes:
+
+```ts
+path: ["contacts", 2, "label"]
+address: [
+  { kind: "node", id: "contacts" },
+  { kind: "row", id: "contact-7" },
+  { kind: "node", id: "label" },
+]
+```
+
+Because moves are controlled proposals, both identities remain unchanged until
+the owner accepts the reordered array. The address then follows the accepted
+row while its path reflects the accepted index.
+
+## Immutable path helpers
+
+The checked utility example performs an immutable rename, array removal, and
+ordered patch transaction:
+
+```ts
+const source = {
+  profile: { name: "Ada", city: "Bern" },
+  rows: [{ id: "a" }, { id: "b" }],
+  stable: { untouched: true },
+};
+
+const renamed = setAtPath(source, ["profile", "name"], "Grace");
+// source.profile.name is still "Ada"; renamed.stable === source.stable.
+
+const withoutFirstRow = removeAtPath(renamed, ["rows", 0]);
+// Array removal uses splice semantics, so row "b" is now at index 0.
+
+const patched = applyPatches(withoutFirstRow, [
+  { op: "set", path: ["profile", "city"], value: "Zürich" },
+  { op: "remove", path: ["profile", "name"] },
+]);
+
+const city = getAtPath(patched, ["profile", "city"]); // "Zürich"
+const samePath = pathsEqual(["rows", 0], ["rows", 0]); // true
+const safe = isSafePathSegment(0); // true
+assertSafePath(["profile", "city"]); // returns void
+```
+
+`setAtPath` and `removeAtPath` copy only ancestors on the changed path and
+retain unrelated references. Setting an `Object.is`-equal leaf or removing a
+missing target returns the original root. `applyPatches` applies patches in
+array order, so later overlapping patches see and can replace earlier work.
+
+See the [path utility reference](/reference/core/path-utilities) for exact root,
+missing-container, return, and array semantics.
+
+## Safe segments
+
+Mutation helpers reject negative, fractional, infinite, NaN, or unsafe integer
+segments. String segments are safe except `__proto__`, `prototype`, and
+`constructor`. `assertSafePath()` throws `TypeError` naming the first unsafe
+segment. These checks prevent prototype-pollution paths.
+
+`getAtPath()` and `pathsEqual()` do not call `assertSafePath()` because they do
+not mutate. Validate untrusted paths before using them as a general policy;
+schema and patch boundaries already enforce safety where required.
+
+## Root and removal edge cases
+
+- `getAtPath(value, [])` returns `value`.
+- `setAtPath(value, [], replacement)` replaces the root.
+- `removeAtPath(value, [])` returns `undefined` cast to the root generic type.
+- Removing an array index uses `splice`, shifting later indexes left.
+- Removing a missing object key, out-of-range array index, or path below a
+  primitive is a no-op that preserves the original reference.
+- Setting through a missing branch creates object or array containers according
+  to the next path segment.
+
+Treat root removal carefully: the generic return type cannot prove that
+`undefined` is valid for your domain model.
+
+## What to test
+
+- Freeze the source and assert no helper mutates it.
+- Assert unrelated branch identity with `===`.
+- Cover root, absent, object-key, and array-index behavior.
+- Reject unsafe or application-invalid user paths before dispatch.
+- For rows, assert the address is stable and path changes after accepted moves.
+
+Next: read the exact [path utility API](/reference/core/path-utilities) or
+connect paths to typed definitions in the
+[field registry](/core-concepts/field-registry).
+
+## Evidence
+
+Signatures and safety behavior come from
+[`path.ts`](https://github.com/unic/stages/blob/master/packages/core/src/path.ts).
+Immutability, no-op identity, array semantics, unsafe paths, and 500 seeded
+property cases are covered by `path.test.mjs` and `property.test.mjs`; stable
+row behavior is covered by controller tests.

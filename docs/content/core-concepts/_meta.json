@@ -1,4 +1,7 @@
 {
   "controlled-values": "Controlled values",
-  "controller-lifecycle": "Controller lifecycle"
+  "controller-lifecycle": "Controller lifecycle",
+  "schemas": "Schemas",
+  "paths-and-addresses": "Paths and addresses",
+  "field-registry": "Field registry"
 }

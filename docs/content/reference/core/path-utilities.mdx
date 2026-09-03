@@ -1,0 +1,180 @@
+---
+title: Path utilities
+description: Exact signatures, return identity, root behavior, and safety rules for @stages/core path helpers.
+---
+
+# Path utilities
+
+All mutation helpers are immutable: they return a new root only when the
+requested operation changes something and preserve unrelated branch identity.
+
+**For:** application developers, reducer authors, and tooling authors.  
+**Prerequisites:** [Paths and addresses](/core-concepts/paths-and-addresses).
+
+Last reviewed against `packages/core/src/path.ts`: **2026-09-03**.
+
+## `DataPath`
+
+```ts
+type DataPath = readonly (string | number)[];
+```
+
+String segments address object properties; non-negative safe integer segments
+address array positions. The empty path `[]` means the root. The type itself
+does not enforce safe values—use `assertSafePath()` at untrusted boundaries.
+
+## Node addresses
+
+```ts
+type NodeAddressSegment =
+  | Readonly<{ kind: "node"; id: string }>
+  | Readonly<{ kind: "row"; id: string }>;
+
+type NodeAddress = readonly NodeAddressSegment[];
+```
+
+These identity types are not inputs to the path helpers. They target
+structural nodes and stable collection rows, while `DataPath` targets current
+domain locations.
+
+## `StagesPatch`
+
+```ts
+type StagesPatch =
+  | Readonly<{ op: "set"; path: DataPath; value: unknown }>
+  | Readonly<{ op: "remove"; path: DataPath }>;
+```
+
+Patches are consumed by `applyPatches()`, field reducers, and transforms.
+
+## `getAtPath()`
+
+```ts
+function getAtPath(value: unknown, path: DataPath): unknown;
+```
+
+Reads one segment at a time. It returns the root for `[]` and `undefined` if
+traversal encounters `null` or a non-object before the path ends. It does not
+call `assertSafePath()` and does not distinguish a missing property from a
+property whose value is `undefined`.
+
+## `setAtPath()`
+
+```ts
+function setAtPath<TValue>(
+  value: TValue,
+  path: DataPath,
+  nextValue: unknown,
+): TValue;
+```
+
+Validates every segment, then immutably creates or replaces the target. The
+empty path returns `nextValue` cast to `TValue`. Missing/primitive ancestors
+are replaced with arrays when the next segment is numeric and objects when it
+is a string.
+
+If the current leaf and `nextValue` are `Object.is`-equal, the function returns
+the original root. Otherwise it shallow-copies only containers on the changed
+path and preserves unrelated references.
+
+**Throws:** `TypeError` if any segment is unsafe.
+
+## `removeAtPath()`
+
+```ts
+function removeAtPath<TValue>(value: TValue, path: DataPath): TValue;
+```
+
+Validates every segment, then immutably removes the target. Object removal
+deletes an own key. Array removal requires an in-range numeric segment and uses
+`splice`, shifting later values left.
+
+The original root is returned when an ancestor is null/non-object, an object
+does not own the key, or an array index is out of range. The empty path returns
+`undefined` cast to `TValue`; callers must ensure that result is valid for
+their domain type.
+
+**Throws:** `TypeError` if any segment is unsafe.
+
+## `applyPatches()`
+
+```ts
+function applyPatches<TValue>(
+  value: TValue,
+  patches: readonly StagesPatch[],
+): TValue;
+```
+
+Reduces patches in array order using `setAtPath()` and `removeAtPath()`. A
+later patch observes the result of every earlier patch. An empty patch list
+returns the original root. If a patch throws, the input root remains unchanged
+because preceding steps only created immutable intermediate values.
+
+**Throws:** `TypeError` when a patch contains an unsafe path.
+
+## `pathsEqual()`
+
+```ts
+function pathsEqual(left: DataPath, right: DataPath): boolean;
+```
+
+Returns true only when lengths match and every corresponding segment is
+strictly equal. It does not validate segments or coerce `0` and `"0"`.
+
+## `isSafePathSegment()`
+
+```ts
+function isSafePathSegment(segment: string | number): boolean;
+```
+
+- A number is safe only when it is a non-negative safe integer.
+- A string is safe except for `__proto__`, `prototype`, and `constructor`.
+
+The current contract accepts the empty string. Applications may impose a
+stricter naming policy for readability.
+
+## `assertSafePath()`
+
+```ts
+function assertSafePath(path: DataPath): void;
+```
+
+Returns `void` for a safe path, including `[]`. Otherwise it throws
+`TypeError` with `Unsafe path segment: <segment>` for the first rejected
+segment.
+
+## Checked example
+
+```ts
+const source = {
+  profile: { name: "Ada", city: "Bern" },
+  rows: [{ id: "a" }, { id: "b" }],
+  stable: { untouched: true },
+};
+
+const renamed = setAtPath(source, ["profile", "name"], "Grace");
+// source.profile.name is still "Ada"; renamed.stable === source.stable.
+
+const withoutFirstRow = removeAtPath(renamed, ["rows", 0]);
+// Array removal uses splice semantics, so row "b" is now at index 0.
+
+const patched = applyPatches(withoutFirstRow, [
+  { op: "set", path: ["profile", "city"], value: "Zürich" },
+  { op: "remove", path: ["profile", "name"] },
+]);
+
+const city = getAtPath(patched, ["profile", "city"]); // "Zürich"
+const samePath = pathsEqual(["rows", 0], ["rows", 0]); // true
+const safe = isSafePathSegment(0); // true
+assertSafePath(["profile", "city"]); // returns void
+```
+
+Next: use paths in [Events and reducers](/fields-events), or inspect normalized
+locations with [`evaluateSchema()`](/reference/core/schema-utilities#evaluateschema).
+
+## Evidence
+
+Signatures and implementation come from
+[`path.ts`](https://github.com/unic/stages/blob/master/packages/core/src/path.ts).
+`path.test.mjs` and 500 seeded property cases cover root behavior, structural
+sharing, array removal, missing paths, unsafe segments, and immutability.

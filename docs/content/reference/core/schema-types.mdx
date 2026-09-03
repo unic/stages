@@ -1,0 +1,285 @@
+---
+title: Schema types
+description: Exact root, node, resolver, normalized-tree, and evaluation result types for @stages/core schemas.
+---
+
+# Schema types
+
+These are the public types used to declare schemas and inspect normalized
+schema output. The declarations below preserve the important generic and
+readonly relationships from `@stages/core`.
+
+**For:** schema authors, schema generators, and adapter/tool authors.  
+**Prerequisites:** [Schemas](/core-concepts/schemas).
+
+Last reviewed against `packages/core/src/types.ts` and `schema.ts`:
+**2026-09-03**.
+
+## Root schema and input
+
+```ts
+interface StagesSchema<TValue, TFields, TContext = unknown> {
+  readonly id: string;
+  readonly version: number;
+  readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+  readonly transforms?: readonly TransformConfig<TValue, TContext>[];
+  readonly validators?: readonly ValidatorConfig<TValue, TContext>[];
+}
+
+type StagesSchemaFactory<TValue, TFields, TContext = unknown> = (
+  context: DynamicConfigContext<TValue, TContext>,
+) => StagesSchema<TValue, TFields, TContext>;
+
+type StagesSchemaInput<TValue, TFields, TContext = unknown> =
+  | StagesSchema<TValue, TFields, TContext>
+  | StagesSchemaFactory<TValue, TFields, TContext>;
+```
+
+| Property | Contract |
+| --- | --- |
+| `id` | Stable schema identity. It must be a safe string segment. |
+| `version` | Positive safe integer used by persistence and migrations. |
+| `nodes` | Recursive root nodes. Root scope itself adds no path/address segment. |
+| `transforms` | Optional form-scope event transforms. |
+| `validators` | Optional form-scope validators. |
+
+A factory is evaluated with the current readonly value, context, and dynamic
+metadata. It must return an object; a throw or non-object return makes
+`evaluateSchema()` throw `TypeError`.
+
+## Dynamic and resolver context
+
+```ts
+interface DynamicMetaSnapshot {
+  readonly revision: number;
+  readonly isDirty: boolean;
+  readonly touched: readonly NodeAddress[];
+  readonly visited: readonly NodeAddress[];
+  readonly activeWizards: ReadonlyMap<string, string>;
+  readonly extensions: Readonly<Record<string, unknown>>;
+}
+
+interface DynamicConfigContext<TValue, TContext = unknown> {
+  readonly value: DeepReadonly<TValue>;
+  readonly context: DeepReadonly<TContext>;
+  readonly meta: DeepReadonly<DynamicMetaSnapshot>;
+}
+
+interface NodeResolverContext<TValue, TContext = unknown>
+  extends DynamicConfigContext<TValue, TContext> {
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly fieldValue: unknown;
+  readonly parentValue: unknown;
+}
+
+type NodePredicate<TValue, TContext = unknown> = (
+  context: NodeResolverContext<TValue, TContext>,
+) => boolean;
+
+type DerivedProps<TValue, TContext = unknown> = (
+  context: NodeResolverContext<TValue, TContext>,
+) => Readonly<Record<string, unknown>>;
+```
+
+`fieldValue` is the value at `path`; `parentValue` is the value one segment
+above it. Predicates must return a boolean. `DerivedProps` must return an
+object, and its keys overwrite matching static field props.
+
+## Common node behavior
+
+The exported node types share this non-exported shape:
+
+```ts
+interface NodeBehavior<TValue, TContext> {
+  readonly when?: boolean | NodePredicate<TValue, TContext>;
+  readonly disabled?: boolean | NodePredicate<TValue, TContext>;
+  readonly transforms?: readonly TransformConfig<TValue, TContext>[];
+  readonly validators?: readonly ValidatorConfig<TValue, TContext>[];
+}
+```
+
+`when` defaults to visible. `disabled` defaults to false and inherits from
+ancestors. A resolver failure diagnoses and omits that node for the evaluation.
+
+## Field and group nodes
+
+Conceptually, `FieldNodeConfig` is a mapped union over string keys in the field
+registry:
+
+```ts
+type FieldNodeConfig<TValue, TFields, TContext = unknown> = {
+  readonly [TType in Extract<keyof TFields, string>]:
+    NodeBehavior<TValue, TContext> & {
+      readonly kind: "field";
+      readonly id: string;
+      readonly type: TType;
+      readonly props?: DeepReadonly<DefinitionProps<TFields[TType]>>;
+      readonly deriveProps?: DerivedProps<TValue, TContext>;
+    };
+}[Extract<keyof TFields, string>];
+
+interface GroupNodeConfig<TValue, TFields, TContext = unknown>
+  extends NodeBehavior<TValue, TContext> {
+  readonly kind: "group";
+  readonly id: string;
+  readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+}
+```
+
+The mapped field union is what checks `type` and `props` together when a
+concrete `typeof fields` registry is used. A group contributes its `id` to the
+data path and node address, then recursively evaluates `nodes`.
+
+## Collection nodes
+
+```ts
+interface CollectionVariantConfig<TValue, TFields, TContext = unknown> {
+  readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+}
+```
+
+A collection combines common behavior and these base properties:
+
+```ts
+{
+  readonly kind: "collection";
+  readonly id: string;
+  readonly min?: number;
+  readonly max?: number;
+  readonly itemKey?: (item: Readonly<unknown>, index: number) => string;
+}
+```
+
+It must then select exactly one child shape:
+
+```ts
+// Homogeneous rows
+{
+  readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+  readonly discriminator?: never;
+  readonly variants?: never;
+}
+
+// Discriminated rows
+{
+  readonly nodes?: never;
+  readonly discriminator: string;
+  readonly variants: Readonly<Record<
+    string,
+    CollectionVariantConfig<TValue, TFields, TContext>
+  >>;
+}
+```
+
+`min` and `max`, when present, must be non-negative safe integers and `min`
+must not exceed `max`. A present domain value must be an array. `itemKey` must
+return a non-empty string unique among current rows; a failed/invalid key or a
+duplicate key reports a diagnostic and omits that row branch.
+
+The discriminated form reads the named property from each row. Both the
+discriminator name and every variant key must be safe path segments, and each
+runtime discriminator value must name a configured variant.
+
+## Stage and wizard nodes
+
+```ts
+interface StageNodeConfig<TValue, TFields, TContext = unknown> {
+  readonly id: string;
+  readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+  readonly when?: boolean | NodePredicate<TValue, TContext>;
+  readonly disabled?: boolean | NodePredicate<TValue, TContext>;
+}
+
+interface WizardNavigationConfig<TValue> {
+  readonly validateCurrent?: boolean;
+  readonly nonLinear?: boolean;
+  readonly guard?: (
+    value: DeepReadonly<TValue>,
+    from: string,
+    to: string,
+  ) => boolean;
+}
+
+interface WizardNodeConfig<TValue, TFields, TContext = unknown>
+  extends NodeBehavior<TValue, TContext> {
+  readonly kind: "wizard";
+  readonly id: string;
+  readonly stages: readonly StageNodeConfig<TValue, TFields, TContext>[];
+  readonly initialStage?: string;
+  readonly navigation?: WizardNavigationConfig<TValue>;
+}
+```
+
+Stage IDs are unique within their wizard and contribute to both the data path
+and node address. Unlike a full schema node, a stage only accepts `when` and
+`disabled`; it has no stage-level `transforms` or `validators` properties.
+
+`initialStage` selects the initial visible stage. Navigation can require
+current-stage validation, permit non-linear `wizard:go`, and synchronously
+guard a transition using the readonly form value.
+
+## `NodeConfig`
+
+```ts
+type NodeConfig<TValue, TFields, TContext = unknown> =
+  | FieldNodeConfig<TValue, TFields, TContext>
+  | GroupNodeConfig<TValue, TFields, TContext>
+  | CollectionNodeConfig<TValue, TFields, TContext>
+  | WizardNodeConfig<TValue, TFields, TContext>;
+```
+
+Every container accepts the complete union recursively. See
+[Paths and addresses](/core-concepts/paths-and-addresses) for how each branch
+contributes identity segments.
+
+## Normalized output
+
+```ts
+interface NormalizedNode<TValue, TFields, TContext> {
+  readonly config: NodeConfig<TValue, TFields, TContext>;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly visible: boolean;
+  readonly disabled: boolean;
+  readonly props: Readonly<Record<string, unknown>>;
+  readonly children: readonly NormalizedNode<TValue, TFields, TContext>[];
+  readonly branches: readonly NormalizedBranch<TValue, TFields, TContext>[];
+}
+
+interface NormalizedBranch<TValue, TFields, TContext> {
+  readonly kind: "row" | "stage";
+  readonly id: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly visible: boolean;
+  readonly disabled: boolean;
+  readonly children: readonly NormalizedNode<TValue, TFields, TContext>[];
+}
+
+interface EvaluatedSchema<TValue, TFields, TContext> {
+  readonly schema: StagesSchema<TValue, TFields, TContext>;
+  readonly nodes: readonly NormalizedNode<TValue, TFields, TContext>[];
+  readonly diagnostics: readonly Diagnostic[];
+}
+```
+
+Fields and groups use `children`; collections and wizards expose row/stage
+`branches`, whose children recurse again. Inspect `node.config.kind` to narrow
+a normalized node. These types serve tooling and engine adapters; application
+rendering normally consumes `RenderNodeSnapshot` instead.
+
+`EvaluateSchemaOptions` and evaluation failure behavior are documented with
+[`evaluateSchema()`](/reference/core/schema-utilities#evaluateschema).
+
+Next: evaluate these declarations with the
+[schema utilities](/reference/core/schema-utilities), or define their field
+vocabulary with the [field types](/reference/core/field-types).
+
+## Evidence
+
+Declarations come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+Schema, collection, wizard, identity, and recursive nesting tests exercise the
+runtime invariants described here.

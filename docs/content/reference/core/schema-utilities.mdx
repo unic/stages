@@ -1,0 +1,127 @@
+---
+title: Schema utilities
+description: Exact evaluateSchema and initialFieldValue contracts for schema tooling outside a controller.
+---
+
+# Schema utilities
+
+These low-level functions evaluate schema structure and field defaults without
+creating a controller. Most applications should consume `stages()` snapshots;
+schema editors, inspectors, and adapter tooling may need these APIs directly.
+
+**For:** schema tooling and adapter authors.  
+**Prerequisites:** [Schemas](/core-concepts/schemas) and the
+[schema type reference](/reference/core/schema-types).
+
+Last reviewed against `packages/core/src/schema.ts`: **2026-09-03**.
+
+## `evaluateSchema()`
+
+```ts
+interface EvaluateSchemaOptions<TValue, TFields, TContext> {
+  readonly schema: StagesSchemaInput<TValue, TFields, TContext>;
+  readonly value: DeepReadonly<TValue>;
+  readonly context: DeepReadonly<TContext>;
+  readonly meta: DynamicMetaSnapshot;
+  readonly fields: TFields;
+  readonly collectionKeys?: ReadonlyMap<string, readonly string[]>;
+}
+
+function evaluateSchema<TValue, TFields, TContext>(
+  options: EvaluateSchemaOptions<TValue, TFields, TContext>,
+): EvaluatedSchema<TValue, TFields, TContext>;
+```
+
+The function resolves a static schema or invokes a factory, validates the root
+and registry-dependent node structure, evaluates predicates and derived props,
+and recursively produces normalized nodes. It does not mutate the schema,
+value, context, metadata, registry, or collection-key map.
+
+The returned object contains:
+
+| Property | Contract |
+| --- | --- |
+| `schema` | Evaluated root schema. Invalid root transforms/validators are replaced with empty arrays in this returned projection. |
+| `nodes` | Recursive `NormalizedNode[]`; collections/wizards expose row/stage `branches`. |
+| `diagnostics` | Deterministic structural and resolver `Diagnostic[]`, with exact data paths and node addresses. |
+
+Invisible ordinary nodes remain normalized with `visible: false`. Invisible
+wizard stages are omitted from the wizard's branches. A disabled ancestor
+makes descendants disabled.
+
+### Options
+
+| Option | Meaning |
+| --- | --- |
+| `schema` | Static schema or schema factory. |
+| `value` | Readonly canonical domain value used for paths, rows, predicates, and props. |
+| `context` | Readonly application context for dynamic configuration. |
+| `meta` | Current revision, dirty state, interaction addresses, wizard state, and extensions. |
+| `fields` | Registry used to validate field names/definitions and resolve field defaults later in controller processing. |
+| `collectionKeys` | Optional engine row-key arrays, looked up by an internal encoded collection address. |
+
+The `collectionKeys` keys use an internal address encoding that is not a public
+API. External callers should normally omit it and provide stable `itemKey`
+functions when row identity matters. Treat any engine-provided keys as opaque;
+do not construct or persist the map's string keys yourself.
+
+### Checked example
+
+```ts
+const evaluated = evaluateSchema({
+  schema,
+  fields,
+  value,
+  context: { locale: "de-CH", canReview: true },
+  meta,
+});
+
+const contactLabel = evaluated.nodes[1]?.branches[0]?.children[0];
+// contactLabel.path:
+// ["contacts", 0, "label"]
+// contactLabel.address:
+// [{ kind: "node", id: "contacts" },
+//  { kind: "row", id: "contact-7" },
+//  { kind: "node", id: "label" }]
+```
+
+### Failures
+
+A thrown schema factory becomes a thrown `TypeError` whose message begins
+`Schema factory failed:`. A factory/static input that is not an object throws
+`TypeError` with `Schema factory must return an object.`
+
+Other malformed input is reported through diagnostics where possible:
+unsafe IDs, invalid version/nodes/behavior, unknown or malformed fields,
+invalid collection/wizard shapes, duplicate identities, and resolver failures.
+Invalid nodes or branches are omitted from normalized output. Unlike a
+controller, this pure function has no previous valid tree to retain.
+
+## `initialFieldValue()`
+
+```ts
+function initialFieldValue(
+  definition: FieldDefinition<unknown, unknown, unknown>,
+): unknown;
+```
+
+Returns `definition.initialValue`. If it is a function, the function is called
+with no arguments on every invocation and its result is returned. A literal
+object/array is returned by reference; no clone is performed. Missing
+`initialValue` returns `undefined`, and an exception from a factory propagates.
+
+This helper evaluates one field default. It does not populate canonical owner
+state. Controllers use the same behavior for missing baseline fallbacks and
+recursive new collection-row construction.
+
+Next: return to the [controller reference](/reference/core/controller), or
+inspect the exact [path utilities](/reference/core/path-utilities) used by
+normalized locations.
+
+## Evidence
+
+Signatures and behavior come from
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+Schema, schema-property, collection, nesting, and controller tests cover pure
+evaluation, diagnostics, row keys, defaults, immutability, and controller
+last-valid-tree recovery.

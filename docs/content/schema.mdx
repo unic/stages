@@ -1,5 +1,9 @@
 # Schemas and recursive nesting
 
+For the expanded conceptual guide and exact declarations, see
+[Schemas](/core-concepts/schemas) and the
+[schema type reference](/reference/core/schema-types).
+
 A `StagesSchema` has a stable string `id`, a positive integer `version`, and a
 `nodes` array. Every structural feature is a node and every node can recursively
 contain the others.
@@ -38,10 +42,13 @@ reordering even though data indexes change.
 
 ## Initial values
 
-Missing field values come from the registry definition's `initialValue`, which
-may be a value or factory. Factories create independent values. Structural
-containers are derived from the supplied domain value; malformed collection or
-union shapes become diagnostics rather than unchecked exceptions.
+The owner-provided canonical value is never populated implicitly. A registry
+definition's `initialValue` is used as a field snapshot's baseline fallback
+when that baseline path is `undefined`, and while core constructs defaults for
+a new collection row. It may be a value or factory; use a factory for fresh
+object or array defaults. Structural containers otherwise come from the
+supplied domain value. Malformed collection or union shapes become diagnostics
+rather than unchecked exceptions.
 
 ## Identity rules
 
@@ -54,4 +61,6 @@ incompatible node is diagnosed and its stale interaction state is discarded.
 `evaluateSchema({ schema, value, context, meta, fields, collectionKeys? })`
 returns normalized nodes and diagnostics. `initialFieldValue(definition)`
 evaluates a registry default. These lower-level exports are useful for tooling,
-schema editors, and static analysis; applications normally use `stages()`.
+schema editors, and static analysis; applications normally use `stages()`. See
+the [schema utility reference](/reference/core/schema-utilities) for exact
+options, output, and failures.

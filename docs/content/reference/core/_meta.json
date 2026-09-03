@@ -1,4 +1,8 @@
 {
   "exports": "Exports",
-  "controller": "Controller"
+  "controller": "Controller",
+  "schema-types": "Schema types",
+  "field-types": "Field types",
+  "path-utilities": "Path utilities",
+  "schema-utilities": "Schema utilities"
 }

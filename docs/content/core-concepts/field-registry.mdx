@@ -1,0 +1,192 @@
+---
+title: Field registry
+description: Define typed field values, props, opaque views, reducers, defaults, and intrinsic validators.
+---
+
+# Field registry
+
+The field registry is the vocabulary that connects schema field `type` names
+to value behavior and adapter-owned view tokens.
+
+**For:** design-system integrators, schema authors, and adapter authors.  
+**Prerequisites:** [Schemas](/core-concepts/schemas) and
+[Controlled values](/core-concepts/controlled-values).
+
+## Definition contract
+
+```ts
+interface FieldDefinition<
+  TValue = unknown,
+  TProps = Readonly<Record<string, unknown>>,
+  TView = unknown,
+> {
+  readonly view: TView;
+  readonly initialValue?: TValue | (() => TValue);
+  readonly reduce?: FieldEventReducer<TValue>;
+  readonly validators?: readonly FieldValidator<TValue, TProps>[];
+}
+```
+
+`TValue` is the field's domain value. `TProps` is the adapter-facing resolved
+props shape. `TView` is opaque to core: a React component, a `DomFieldView`, a
+string token for another framework, or any adapter-specific value.
+
+## Typed registry example
+
+This checked registry covers primitive, nullable, and object-valued fields:
+
+```ts
+const text = {
+  view: "text-input",
+  initialValue: "",
+  reduce: ({ event }) => event.name === "input" && typeof event.payload === "string"
+    ? { value: event.payload }
+    : undefined,
+  validators: [{
+    id: "text.max-length",
+    validate: (value, props) =>
+      props.maxLength === undefined || value.length <= props.maxLength
+        ? []
+        : [{ id: "text.max-length", code: "max-length", severity: "error" }],
+  }],
+} satisfies FieldDefinition<string, TextProps, "text-input">;
+
+const optionalNumber = {
+  view: "number-input",
+  initialValue: null,
+  reduce: ({ event }) => event.name === "input"
+    && (typeof event.payload === "number" || event.payload === null)
+    ? { value: event.payload }
+    : undefined,
+} satisfies FieldDefinition<number | null, NumberProps, "number-input">;
+
+const money = {
+  view: "money-editor",
+  // Factories return a fresh default for every constructed collection row.
+  initialValue: (): Money => ({ amount: 0, currency: "CHF" }),
+  reduce: ({ event }) => event.name === "money:commit" && isMoney(event.payload)
+    ? { value: event.payload }
+    : undefined,
+} satisfies FieldDefinition<Money, MoneyProps, "money-editor">;
+
+export const fields = { text, optionalNumber, money } as const;
+```
+
+Pass `typeof fields` to `StagesSchema`. Its keys become the permitted field
+`type` strings, and each key carries its value, props, and view types into
+schema checking and adapters. Avoid widening the concrete object to
+`FieldRegistry` before defining the schema; that broad utility type
+intentionally erases per-key specifics.
+
+## `initialValue` has two precise roles
+
+Core does not write registry defaults into a newly created controller's
+canonical owner value.
+
+1. When a field's path is `undefined` in the controller baseline, its field
+   snapshot uses `initialValue` as the `initialValue`/dirty comparison fallback.
+2. A collection `add` without an explicit value recursively builds a row from
+   field defaults, `{}` group scopes, `[]` nested collections, and objects for
+   wizard stages.
+
+`initialFieldValue(definition)` exposes the same operation to tooling. A value
+default is returned by reference. A factory is invoked on every call; use one
+for arrays, objects, dates/domain objects, or anything that must not be shared
+between constructed rows.
+
+## Reducers translate view events
+
+A reducer receives the current field value, full `StagesEvent`, and current
+data path. It returns one of:
+
+```ts
+{ value: nextFieldValue }
+{ patches: readonly StagesPatch[] }
+undefined
+```
+
+`{ value }` becomes a set patch at the field path. `{ patches }` can atomically
+update multiple domain locations. `undefined` means the definition does not
+handle that event. Validate open event payloads in the reducer; event
+constructors preserve TypeScript inference but do not enforce domain payloads
+at runtime.
+
+Reducers should be synchronous and pure. If a reducer throws or returns
+patches with unsafe paths, the value transaction is rejected, `onChange` is
+suppressed, and the controller appends a `field.reducer-failed` or
+`event.patch-failed` diagnostic.
+
+## Intrinsic field validators
+
+Registry validators are reusable, synchronous rules whose signature is:
+
+```ts
+interface FieldValidator<TValue, TProps> {
+  readonly id: string;
+  readonly validate: (
+    value: DeepReadonly<TValue>,
+    props: DeepReadonly<TProps>,
+  ) => readonly FieldValidationIssue[];
+}
+```
+
+They receive resolved props (static `props` merged with `deriveProps`) and
+return issues without `path`; core supplies the current field path. Issues keep
+`id`, `code`, `severity`, and optional `message`/`meta`.
+
+Intrinsic validators run at controller initialization and whenever validation
+work is relevant to their field; they do not expose `on`, `revealOn`, `when`,
+dependencies, async cancellation, or form context. Explicit
+`validate({ reveal: true })` can reveal their cached issues. Use node/root
+`ValidatorConfig` for event policy, conditional/cross-field rules, dependencies,
+async work, or disabled-field inclusion.
+
+Configured and intrinsic validators have independent internal keys, so the same
+ID can exist in both categories on one field. Keep IDs stable and make issue IDs
+stable within each validator.
+
+## Props and views
+
+Static node `props` must be an object. `deriveProps(context)` may return another
+object; derived keys overwrite static keys for that evaluation. The readonly
+resolved object becomes `FieldSnapshot.props` and is passed to intrinsic
+validators and adapter views.
+
+Core never invokes or interprets `view`. React's `StagesField` throws if a
+field has no view; the DOM reference adapter renders values implementing its
+view contract. Custom adapters decide their own token mapping and missing-view
+policy.
+
+## Failure behavior
+
+- Unknown schema field types produce `schema.unknown-field` and omit the node.
+- A malformed reducer or duplicate/malformed intrinsic validators produce
+  `schema.invalid-field-definition` during runtime normalization.
+- Invalid static/derived props produce `schema.invalid-props` or
+  `schema.resolver-failed`.
+- Thrown or malformed intrinsic validation results become deterministic engine
+  validation issues rather than escaping the validation transaction.
+- A controller retains its last valid tree if a later dynamic registry/schema
+  evaluation has an error diagnostic.
+
+## What to test
+
+- Typecheck every schema field's `type` and `props` against `typeof fields`.
+- Test accepted and ignored payload variants for each reducer.
+- Assert object defaults are not shared across collection rows.
+- Reuse intrinsic validators at two paths and assert core supplies each path.
+- Render every view token through the chosen adapter, including issues and
+  disabled state.
+
+Next: use the exact [field type reference](/reference/core/field-types), then
+continue to [Events and reducers](/fields-events) or
+[Validation](/validation).
+
+## Evidence
+
+Types come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+Default construction and runtime behavior come from `controller.ts`; registry
+typing is covered by `test-d/contract.ts`, intrinsic validation by
+`validation.test.mjs`, reducer failure by `controller.test.mjs`, and processing
+patterns by `processing-migration.test.mjs`.

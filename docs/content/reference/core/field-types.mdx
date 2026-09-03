@@ -1,0 +1,147 @@
+---
+title: Field types
+description: Exact field definition, registry, reducer, and intrinsic validator types from @stages/core.
+---
+
+# Field types
+
+These types define how a schema field connects domain values to adapter-owned
+views, event reduction, defaults, and reusable intrinsic validation.
+
+**For:** field-library authors, schema authors, and adapter authors.  
+**Prerequisites:** [Field registry](/core-concepts/field-registry).
+
+Last reviewed against `packages/core/src/types.ts`: **2026-09-03**.
+
+## `FieldDefinition`
+
+```ts
+interface FieldDefinition<
+  TValue = unknown,
+  TProps = Readonly<Record<string, unknown>>,
+  TView = unknown,
+> {
+  readonly view: TView;
+  readonly initialValue?: TValue | (() => TValue);
+  readonly reduce?: FieldEventReducer<TValue>;
+  readonly validators?: readonly FieldValidator<TValue, TProps>[];
+}
+```
+
+| Property | Required | Contract |
+| --- | --- | --- |
+| `view` | Yes | Opaque adapter-owned component, renderer, or token. Core stores but does not invoke it. |
+| `initialValue` | No | Literal default or zero-argument factory. It does not populate the owner's canonical value. |
+| `reduce` | No | Synchronous field event reducer. |
+| `validators` | No | Synchronous, reusable validators local to this field type. Validator IDs must be non-empty and unique within the definition. |
+
+For reference defaults, literal objects are returned by reference; factories
+run for every default construction. Use a factory for mutable object/array
+values that must be distinct across collection rows.
+
+## `FieldRegistry`
+
+```ts
+type FieldRegistry = Readonly<
+  Record<string, FieldDefinition<unknown, unknown, unknown>>
+>;
+```
+
+This erased record is useful at generic API boundaries. Preserve a concrete
+registry object and use `typeof fields` in `StagesSchema` when you want each
+field key to retain its `TValue`, `TProps`, and `TView` relationship.
+
+Runtime schema evaluation requires the named key to be an own registry
+property. Unknown types produce `schema.unknown-field`. Malformed reducers or
+intrinsic validator arrays produce `schema.invalid-field-definition`.
+
+## Reducer types
+
+```ts
+interface FieldReduceContext<TValue = unknown> {
+  readonly value: DeepReadonly<TValue>;
+  readonly event: StagesEvent;
+  readonly path: DataPath;
+}
+
+type FieldReduceResult<TValue = unknown> =
+  | Readonly<{ value: TValue }>
+  | Readonly<{ patches: readonly StagesPatch[] }>
+  | undefined;
+
+type FieldEventReducer<TValue = unknown> = (
+  context: FieldReduceContext<TValue>,
+) => FieldReduceResult<TValue>;
+```
+
+`value` is the current field value and `path` is its current data path. The
+event has an open name and payload, so reducers must narrow both before using
+them.
+
+- Returning `{ value }` proposes a set patch at the current field path.
+- Returning `{ patches }` proposes the listed form-level patches in order.
+- Returning `undefined` means the reducer did not handle the event.
+
+A thrown reducer rejects the value transaction and emits
+`field.reducer-failed`. An unsafe returned patch rejects it and emits
+`event.patch-failed`. In either case, `onChange` is not called for that failed
+transaction.
+
+## `FieldValidator`
+
+```ts
+interface FieldValidator<TValue, TProps> {
+  readonly id: string;
+  readonly validate: (
+    value: DeepReadonly<TValue>,
+    props: DeepReadonly<TProps>,
+  ) => readonly FieldValidationIssue[];
+}
+
+type FieldValidationIssue = Omit<ValidationIssue, "path">;
+```
+
+`FieldValidationIssue` therefore contains:
+
+```ts
+{
+  readonly id: string;
+  readonly code: string;
+  readonly severity: "error" | "warning";
+  readonly message?: string;
+  readonly meta?: Readonly<Record<string, unknown>>;
+}
+```
+
+Core supplies the current path. `props` is the resolved static-plus-derived
+object for that field evaluation. The validator is synchronous and does not
+receive form context, event policy, dependencies, disabled inclusion, or an
+async cancellation signal. Use `ValidatorConfig` on a node or the root when
+those capabilities are required.
+
+Intrinsic field validators and configured node validators use separate
+internal namespaces, so equal validator IDs across the two categories do not
+collide. IDs within one field definition must still be unique.
+
+## Generic relationships
+
+| Generic | Flows into |
+| --- | --- |
+| `TValue` | Reducer current/next value and intrinsic validator value |
+| `TProps` | Schema field `props`, resolved props, validator props, adapter props |
+| `TView` | `FieldSnapshot.view` and the selected adapter renderer |
+
+The schema's `FieldNodeConfig` extracts these types from each registry key. See
+the [schema type reference](/reference/core/schema-types#field-and-group-nodes)
+for that mapped union.
+
+Next: connect reducers to [Events and reducers](/fields-events), or inspect the
+[schema types](/reference/core/schema-types) that consume a registry.
+
+## Evidence
+
+Signatures come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+`test-d/contract.ts` checks generic inference; controller and validation tests
+cover reducer rejection, resolved props, intrinsic issues, and repeated field
+instances.

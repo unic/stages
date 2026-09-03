@@ -1,0 +1,219 @@
+---
+title: Schemas
+description: Model fields, groups, collections, and wizards as one recursive, typed Stages schema.
+---
+
+# Schemas
+
+A schema describes the recursive structure that core evaluates into render and
+validation snapshots. It does not contain the canonical domain value or UI
+markup.
+
+**For:** application developers, schema generators, and adapter/tool authors.  
+**Prerequisites:** [First controller](/start/first-controller) and
+[Controlled values](/core-concepts/controlled-values).
+
+## Root contract
+
+```ts
+interface StagesSchema<TValue, TFields, TContext = unknown> {
+  readonly id: string;
+  readonly version: number;
+  readonly nodes: readonly NodeConfig<TValue, TFields, TContext>[];
+  readonly transforms?: readonly TransformConfig<TValue, TContext>[];
+  readonly validators?: readonly ValidatorConfig<TValue, TContext>[];
+}
+```
+
+`id` and `version` are persistence identity. Version must be a positive safe
+integer. Once a controller has accepted a root identity, a factory may not
+change either field during ordinary reevaluation. Use `update({ schema })` to
+establish an intentionally different schema input, and migrations when
+recreating persisted state across versions.
+
+Root `transforms` and `validators` operate at form scope. Root identity does not
+become a data-path or node-address segment.
+
+## Node branches
+
+All node IDs add a string segment to the data path and a
+`{ kind: "node", id }` segment to the node address.
+
+| Kind | Required shape | Domain scope | Child structure |
+| --- | --- | --- | --- |
+| Field | `id`, `type` | Value at the field ID | Registered field definition |
+| Group | `id`, `nodes` | Object at the group ID | Recursive nodes |
+| Collection | `id`, exactly one of `nodes` or `discriminator` + `variants` | Array at the collection ID | Stable row branches, then recursive nodes |
+| Wizard | `id`, `stages` | Object at the wizard ID | Stage-ID objects, then recursive nodes |
+
+Fields, groups, collections, and wizards also accept `when`, `disabled`,
+`transforms`, and `validators`. Fields add `props` and `deriveProps`.
+Collections add `min`, `max`, and `itemKey`. Wizards add `initialStage` and
+`navigation`. A stage has `id`, `nodes`, `when`, and `disabled`; it does not
+have its own transform or validator properties.
+
+The full property tables are in the
+[schema type reference](/reference/core/schema-types).
+
+## Recursive example
+
+The checked example combines a group, keyed collection, and wizard. The field
+registry constrains each `type` and `props` object:
+
+```ts
+const schema = {
+  id: "account-editor",
+  version: 1,
+  nodes: [
+    {
+      kind: "group",
+      id: "profile",
+      nodes: [
+        {
+          kind: "field",
+          id: "displayName",
+          type: "text",
+          props: { label: "Display name", maxLength: 80 },
+        },
+        {
+          kind: "field",
+          id: "budget",
+          type: "money",
+          props: { label: "Budget", currencies: ["CHF", "EUR"] },
+        },
+      ],
+    },
+    {
+      kind: "collection",
+      id: "contacts",
+      itemKey: item => (item as Account["contacts"][number]).id,
+      nodes: [{
+        kind: "field",
+        id: "label",
+        type: "text",
+        props: { label: "Contact", maxLength: 100 },
+      }],
+    },
+    {
+      kind: "wizard",
+      id: "flow",
+      stages: [
+        {
+          id: "details",
+          nodes: [{
+            kind: "field",
+            id: "note",
+            type: "text",
+            props: { label: "Note", maxLength: 500 },
+          }],
+        },
+        { id: "review", when: ({ context }) => context.canReview, nodes: [] },
+      ],
+    },
+  ],
+} as const satisfies StagesSchema<Account, typeof fields, AccountContext>;
+```
+
+`as const satisfies` checks field types, props, node branches, and resolver
+context while preserving literal IDs. A type cast would suppress useful
+errors.
+
+## How scopes map to data
+
+Given one contact `{ id: "contact-7", label: "Grace" }`, the label field has:
+
+```ts
+path: ["contacts", 0, "label"]
+address: [
+  { kind: "node", id: "contacts" },
+  { kind: "row", id: "contact-7" },
+  { kind: "node", id: "label" },
+]
+```
+
+Groups and wizard stages contribute their IDs to both identities. A collection
+row contributes its current numeric index only to the path, and its stable row
+key only to the address. Every container pairing can recurse; there is no
+special subform node.
+
+## Static schemas and factories
+
+`StagesSchemaInput` accepts either a schema object or a factory:
+
+```ts
+const schema = ({ value, context, meta }) => ({
+  id: "account",
+  version: 1,
+  nodes: context.canEdit ? editableNodes : readonlyNodes,
+});
+```
+
+The factory sees readonly canonical `value`, application `context`, and
+dynamic `meta`. It runs during evaluation and must be deterministic and free of
+side effects. Use a factory to structurally add/remove nodes. Use a node's
+`when` to keep its identity dormant while hiding it.
+
+A node whose `when` resolves false remains in pure normalized output with
+`visible: false`, but it is omitted from the controller's render snapshot.
+Dormant compatible nodes can retain interaction metadata when they return.
+Nodes removed by a factory lose that metadata. Invisible wizard stages are
+omitted from evaluated branches.
+
+`disabled` inherits from ancestors. Disabled nodes remain in the render tree
+but field reducers and structural commands do not change their values.
+
+## Defaults do not seize ownership
+
+The schema does not fill missing canonical objects or fields. Structural
+containers come from the owner value. Registry `initialValue` participates in
+new collection-row construction and is a field snapshot's baseline fallback
+when the baseline path is `undefined`; it does not silently update the domain
+value.
+
+## Identity and safety rules
+
+- Sibling node IDs must be unique.
+- Schema, node, stage, discriminator, and variant strings may not be
+  `__proto__`, `prototype`, or `constructor`.
+- Collection `itemKey` results must be non-empty, unique strings within that
+  collection evaluation.
+- Reusing one address for another container kind or field type is incompatible;
+  the controller diagnoses it and discards stale interaction/validation state.
+- `itemKey` should be deterministic and stable for the lifetime of a domain row.
+
+The current safe-segment contract permits other strings, including an empty
+string. Prefer non-empty descriptive IDs even though only the three unsafe
+prototype-related keys are rejected by `isSafePathSegment()`.
+
+## Failure and recovery
+
+`evaluateSchema()` throws when a factory throws or does not return an object.
+Malformed nodes, behavior, registry definitions, collection shapes, and
+resolver results normally produce `schema.*` diagnostics and omit invalid
+branches.
+
+A controller with a previously valid evaluation retains that last valid tree
+when a later dynamic revision contains any error diagnostic. Current canonical
+field values are still projected into the retained structure. When evaluation
+becomes valid again, the controller publishes the recovered tree and clears
+the current snapshot diagnostics.
+
+## What to test
+
+- Typecheck schemas with `satisfies`, including invalid fixture expectations.
+- Evaluate representative nested values and assert exact paths and addresses.
+- Exercise hidden/disabled transitions and incompatible identity reuse.
+- Freeze schema/value fixtures to prove evaluation does not mutate them.
+- Test malformed generated schemas and recovery to the last valid tree.
+
+Next: distinguish [paths and addresses](/core-concepts/paths-and-addresses),
+then define a typed [field registry](/core-concepts/field-registry).
+
+## Evidence
+
+Contracts come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+Recursive paths, malformed input, immutability, and all 84 depth-three
+container permutations plus a depth-32 mixed tree are covered by the schema,
+schema-property, and nesting tests.
