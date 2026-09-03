@@ -310,9 +310,18 @@ const recreated = stages({ schema, fields, state, migrations, codec });
 - `focusFirstIssue(options?)`;
 - `destroy()`.
 
-Native views connect labels, `aria-invalid`, issue descriptions, and alert
-output. Focus is preserved across controller-driven rerenders. Custom controls
-implement a `DomFieldView` and receive document, ID, snapshot, and emitter.
+Native field props include `label`, `description`, `placeholder`, `inputType`,
+`required`, and `autocomplete`. Labels use collision-safe control IDs, including
+inside collection rows. Descriptions and visible issues are composed through
+`aria-describedby`; errors additionally set `aria-invalid` and
+`aria-errormessage` and use alert output, while warning-only output uses status
+semantics. Native `required` exposes browser/assistive semantics but does not
+implicitly add a core validator.
+
+Focus is preserved across controller-driven rerenders. Explicit focus and
+first-issue focus skip disabled controls and controls inside rendered inactive
+stages. Custom controls implement a `DomFieldView` and receive document, ID,
+snapshot, and emitter; they own equivalent semantics for their markup.
 
 ## React adapter
 

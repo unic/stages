@@ -22,9 +22,10 @@ controller = stages({
 const mounted = mountStages(document.querySelector("#form")!, controller);
 ```
 
-The adapter includes native text, number, and checkbox views, accessible issue
-relationships, focus preservation, path-based focus, first-visible-error focus,
-and custom `DomFieldView` support.
+The adapter includes native text, number, and checkbox views; associated labels
+and descriptions; severity-aware issue relationships; collision-safe collection
+row IDs; focus preservation; path-based and first-visible-error focus that skips
+hidden/disabled controls; and custom `DomFieldView` support.
 
 See the [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md)
 and [0.x migration guide](https://github.com/unic/stages/blob/master/docs/MIGRATING_TO_V1.md).

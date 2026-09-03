@@ -254,7 +254,17 @@ const fields = createDomFields();
 const schema = {
   id: "packed-types",
   version: 1,
-  nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }],
+  nodes: [{
+    kind: "field",
+    id: "name",
+    type: "text",
+    props: {
+      label: "Name",
+      description: "Your public name.",
+      required: true,
+      autocomplete: "name",
+    },
+  }],
 } as const satisfies StagesSchema<Value, typeof fields>;
 const controller = stages({ schema, fields, value: { name: "Ada" } });
 controller.dispatch(fieldEvent("input", ["name"], { payload: "Grace", source: "adapter" }));

@@ -21,8 +21,11 @@ export interface DomFieldView {
 
 export interface DomFieldProps {
   readonly label?: string;
+  readonly description?: string;
   readonly inputType?: string;
   readonly placeholder?: string;
+  readonly required?: boolean;
+  readonly autocomplete?: string;
 }
 
 export interface MountStagesOptions<TValue> {
@@ -56,6 +59,11 @@ function nativeInputView(kind: "text" | "number" | "checkbox"): DomFieldView {
       input.type = kind === "text" ? props.inputType ?? "text" : kind;
       input.disabled = field.state.disabled;
       if (props.placeholder !== undefined) input.placeholder = props.placeholder;
+      if (props.required === true) {
+        input.required = true;
+        input.setAttribute("aria-required", "true");
+      }
+      if (props.autocomplete !== undefined) input.setAttribute("autocomplete", props.autocomplete);
       if (kind === "checkbox") input.checked = field.value === true;
       else input.value = field.value === undefined || field.value === null ? "" : String(field.value);
 
@@ -79,19 +87,33 @@ function nativeInputView(kind: "text" | "number" | "checkbox"): DomFieldView {
       input.addEventListener("blur", () => emit("blur"));
       wrapper.append(input);
 
+      const describedBy: string[] = [];
+      if (props.description !== undefined) {
+        const description = document.createElement("p");
+        description.id = `${id}-description`;
+        description.textContent = props.description;
+        describedBy.push(description.id);
+        wrapper.append(description);
+      }
+
       if (field.state.visibleIssues.length > 0) {
         const list = document.createElement("ul");
         list.id = `${id}-issues`;
-        list.setAttribute("role", "alert");
-        input.setAttribute("aria-invalid", "true");
-        input.setAttribute("aria-describedby", list.id);
+        const hasError = field.state.visibleIssues.some((issue) => issue.severity === "error");
+        list.setAttribute("role", hasError ? "alert" : "status");
+        if (hasError) {
+          input.setAttribute("aria-invalid", "true");
+          input.setAttribute("aria-errormessage", list.id);
+        }
         for (const issue of field.state.visibleIssues) {
           const item = document.createElement("li");
           item.textContent = issue.message ?? issue.code;
           list.append(item);
         }
+        describedBy.push(list.id);
         wrapper.append(list);
       }
+      if (describedBy.length > 0) input.setAttribute("aria-describedby", describedBy.join(" "));
       return wrapper;
     },
   };
@@ -178,10 +200,12 @@ export function mountStages<TValue, TFields, TContext>(
   };
   const findMountedElement = (id: string): HTMLElement | undefined =>
     Array.from(root.querySelectorAll<HTMLElement>("[id]")).find((candidate) => candidate.id === id);
+  const canFocus = (element: HTMLElement): boolean =>
+    !element.matches(":disabled") && element.closest("[hidden]") === null;
   const focusField = (field: FieldSnapshot | undefined, options?: FocusOptions): boolean => {
     if (field === undefined || destroyed) return false;
     const element = findMountedElement(elementId(field));
-    if (element === undefined) return false;
+    if (element === undefined || !canFocus(element)) return false;
     element.focus(options);
     return document.activeElement === element;
   };
@@ -199,7 +223,8 @@ export function mountStages<TValue, TFields, TContext>(
     }
     root.replaceChildren(fragment);
     if (activeId !== undefined && activeId.length > 0) {
-      findMountedElement(activeId)?.focus({ preventScroll: true });
+      const replacement = findMountedElement(activeId);
+      if (replacement !== undefined && canFocus(replacement)) replacement.focus({ preventScroll: true });
     }
     options.onRender?.(snapshot);
   };
@@ -217,7 +242,10 @@ export function mountStages<TValue, TFields, TContext>(
         candidate.state.visible
         && !candidate.state.disabled
         && candidate.state.visibleIssues.some((issue) => issue.severity === "error")
-        && findMountedElement(elementId(candidate)) !== undefined);
+        && (() => {
+          const element = findMountedElement(elementId(candidate));
+          return element !== undefined && canFocus(element);
+        })());
       return focusField(field, focusOptions);
     },
     destroy() {
