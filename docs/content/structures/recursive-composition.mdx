@@ -1,0 +1,217 @@
+---
+title: Recursive composition
+description: Compose groups, rows, variants, and wizard stages at arbitrary depth without losing paths or identity.
+---
+
+# Recursive composition
+
+Every Stages container recursively hosts the same node model. Deep structures
+therefore use one controlled value, one controller, and predictable location
+rules rather than linked subform instances.
+
+**For:** schema authors designing nested editors, onboarding flows, and form builders.  
+**Prerequisites:** [Groups](/structures/groups), [Collections](/structures/collections),
+and [Wizards](/structures/wizards).
+
+## A group → collection → wizard → group → collection tree
+
+```ts
+export const portfolioSchema = {
+  id: "portfolio",
+  version: 1,
+  nodes: [{
+    kind: "group",
+    id: "organization",
+    nodes: [{
+      kind: "collection",
+      id: "projects",
+      itemKey: item => (item as PortfolioForm["organization"]["projects"][number]).id,
+      nodes: [{
+        kind: "wizard",
+        id: "onboarding",
+        stages: [
+          {
+            id: "basics",
+            nodes: [{
+              kind: "group",
+              id: "details",
+              nodes: [{ kind: "field", id: "title", type: "text", props: { label: "Title" } }],
+            }],
+          },
+          {
+            id: "team",
+            nodes: [{
+              kind: "group",
+              id: "roster",
+              nodes: [{
+                kind: "collection",
+                id: "members",
+                itemKey: item => (item as Member).id,
+                nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }],
+              }],
+            }],
+          },
+        ],
+      }],
+    }],
+  }],
+} as const satisfies StagesSchema<PortfolioForm, typeof fields>;
+
+export const memberNamePath = [
+  "organization", "projects", 0, "onboarding", "team", "roster", "members", 0, "name",
+] as const;
+
+export const memberNameAddress = [
+  { kind: "node", id: "organization" },
+  { kind: "node", id: "projects" },
+  { kind: "row", id: "project-7" },
+  { kind: "node", id: "onboarding" },
+  { kind: "node", id: "team" },
+  { kind: "node", id: "roster" },
+  { kind: "node", id: "members" },
+  { kind: "row", id: "member-3" },
+  { kind: "node", id: "name" },
+] as const;
+```
+
+The compatible value is:
+
+```ts
+const value: PortfolioForm = {
+  organization: {
+    projects: [{
+      id: "project-7",
+      onboarding: {
+        basics: { details: { title: "Documentation" } },
+        team: {
+          roster: {
+            members: [{ id: "member-3", name: "Ada" }],
+          },
+        },
+      },
+    }],
+  },
+};
+```
+
+## How locations accumulate
+
+Every object-like node (`group`, `wizard`, `stage`, `field`) contributes its
+string ID to the data path. A collection contributes its ID, then each row
+contributes the current numeric index. Addresses instead use `node` segments
+for schema nodes/stages and a stable `row` segment for collection items.
+
+The checked `memberNamePath` and `memberNameAddress` point to the same field.
+If the project moves, both numeric indexes may change while the `project-7`
+and `member-3` row segments remain stable. Events use the current field path
+or stable container/row address according to their target kind.
+
+## Recursive render tree
+
+The snapshot shape mirrors the schema:
+
+```text
+group organization
+└─ collection projects
+   └─ row project-7
+      └─ wizard onboarding
+         ├─ stage basics (active)
+         │  └─ group details
+         │     └─ field title
+         └─ stage team
+            └─ group roster
+               └─ collection members
+                  └─ row member-3
+                     └─ field name
+```
+
+Wizard snapshots include all visible stage containers and mark one `active`.
+An adapter normally renders only the active stage's interactive content.
+Collection snapshots include visible row containers in current array order.
+A recursive renderer needs only field versus container handling plus active
+stage policy; it does not need a special case for every depth.
+
+## Behavior through ancestors
+
+- A hidden ancestor omits its entire descendant tree while preserving domain
+  data.
+- Disabled state is inherited through every group, row, wizard, stage, and
+  nested collection.
+- Accepted event transforms run from the target through containing schema
+  nodes to the root. Rows and stages are structural branches, not transform
+  owners.
+- Validators aggregate by path/address scope and obey descendant visibility,
+  disabled, and `includeDisabled` rules.
+- Row identity namespaces nested wizards and interaction metadata, so two
+  projects can both contain a stage named `team` safely.
+
+Dynamic predicates receive the full root value/context/meta plus the fully
+nested local path/address. Keep them deterministic: a predicate or key throw
+diagnoses and omits the affected branch for that evaluation.
+
+## Scoped workflows, not subcontrollers
+
+There is no `subform` node in v1. To validate or submit one project, use its
+row address as controller validation scope, then send the selected value to
+application code:
+
+```ts
+const result = await controller.validate({
+  scope: {
+    address: [
+      { kind: "node", id: "organization" },
+      { kind: "node", id: "projects" },
+      { kind: "row", id: "project-7" },
+    ],
+  },
+  event: "submit",
+  reveal: true,
+});
+```
+
+This preserves a single controlled ownership boundary while providing a
+stable validation boundary after reorder. Reuse schema-building functions in
+application code when several branches need the same node template; Stages
+does not maintain a fieldset/template registry.
+
+## Limits, security, and performance
+
+The node type is recursive and has no documented fixed nesting limit. Current
+conformance tests cover all 84 container sequences through depth three and one
+mixed depth-32 tree. Treat that as evidence, not a promise about arbitrary
+machine depth or schema size.
+
+Normalization and snapshot mapping walk the visible structure. Keep resolver,
+key, transform, and selector work small; use narrow subscriptions in large
+editors. Validate untrusted domain values before acceptance, use safe schema
+IDs, and avoid sensitive values in item keys/diagnostics.
+
+Accessibility remains recursive too: nested regions need a coherent heading
+hierarchy, groups need appropriate fieldset semantics when applicable, rows
+need named controls, and only the active wizard stage should participate in
+keyboard flow.
+
+## What to test
+
+- Assert leaf path/address pairs at each container boundary.
+- Dispatch to the deepest field and accept the proposal.
+- Move outer and inner rows, then verify stable addresses and updated paths.
+- Scope validation to a row and stage address.
+- Serialize/destroy/recreate and compare the active wizard and row metadata.
+- Toggle each ancestor's `when`/`disabled` state.
+- Run adapter keyboard, focus, and issue-announcement tests on the deepest
+  active branch.
+
+Next: revisit [Paths and addresses](/core-concepts/paths-and-addresses) for
+location rules, or implement recursive UI using the current
+[Custom adapters guide](/custom-adapters).
+
+## Evidence
+
+Recursive node types and traversal are defined in
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked worked example is `docs/examples/structures.ts`.
+`packages/core/test/nesting.test.mjs` exhaustively checks all depth-one through
+depth-three permutations and a mixed depth-32 tree across evaluation,
+dispatch, scoped validation, serialization, and recreation.

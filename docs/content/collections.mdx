@@ -1,5 +1,14 @@
 # Collections
 
+This route is retained for existing links. The comprehensive guides are now:
+
+- [Collections](/structures/collections) for the complete array, command,
+  constraint, snapshot, and controlled-acceptance contract;
+- [Collection identity](/structures/collection-identity) for engine and domain
+  keys; and
+- [Discriminated collections](/structures/discriminated-collections) for
+  heterogeneous rows.
+
 Collections model repeated rows without sacrificing stable UI identity. Define
 homogeneous `nodes`, or a `discriminator` with a map of `variants`. Optional
 `min` and `max` constrain structural commands. Supply `itemKey(item, index)`
@@ -11,12 +20,12 @@ when an external owner may reorder or replace arrays independently.
 
 | Event | Collection-target payload | Row-target payload |
 | --- | --- | --- |
-| `collection:add` | `{ value?, index? }`; for a union, `{ variant, index? }` can create defaults | — |
+| `collection:add` | `{ value?, index? }`; for a union, `{ variant, index? }` can create defaults | accepted, but prefer the collection address |
 | `collection:remove` | `{ index }` | no payload |
 | `collection:replace` | `{ index, value }` | `{ value }` |
 | `collection:duplicate` | `{ index, toIndex? }` | `{ toIndex? }` |
 | `collection:move` | `{ from, to }` | `{ to }` |
-| `collection:sort` | `{ order }`, a complete index permutation | — |
+| `collection:sort` | `{ order }`, a complete index permutation | accepted, but prefer the collection address |
 
 Rejected constraints, invalid indexes, unchanged replacements/moves, malformed
 payloads, and invalid sort orders create diagnostics and do not call

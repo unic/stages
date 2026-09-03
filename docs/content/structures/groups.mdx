@@ -1,0 +1,165 @@
+---
+title: Groups
+description: Model object scope, inherited behavior, processing, and scoped validation with group nodes.
+---
+
+# Groups
+
+A group maps a named object branch into the schema tree. Use it to organize
+fields and containers that share a data prefix or behavior; it is structural,
+not a visual fieldset or a second controller.
+
+**For:** schema authors building object-shaped sections and reusable nested flows.  
+**Prerequisites:** [Schemas](/core-concepts/schemas),
+[paths and addresses](/core-concepts/paths-and-addresses), and
+[dynamic configuration](/core-concepts/dynamic-configuration).
+
+## Minimal group
+
+```ts
+export const profileSchema = {
+  id: "profile-editor",
+  version: 1,
+  nodes: [{
+    kind: "group",
+    id: "profile",
+    nodes: [
+      {
+        kind: "field",
+        id: "displayName",
+        type: "text",
+        props: { label: "Display name" },
+      },
+      {
+        kind: "group",
+        id: "location",
+        disabled: ({ value }) => value.profile.displayName === "",
+        nodes: [{
+          kind: "field",
+          id: "city",
+          type: "text",
+          props: { label: "City" },
+        }],
+      },
+    ],
+  }],
+} as const satisfies StagesSchema<ProfileForm, typeof fields>;
+```
+
+The corresponding value is object-shaped:
+
+```ts
+const value: ProfileForm = {
+  profile: {
+    displayName: "Ada",
+    location: { city: "Zürich" },
+  },
+};
+```
+
+The `city` field has data path
+`["profile", "location", "city"]` and address
+`[{node:"profile"}, {node:"location"}, {node:"city"}]` (using compact
+notation). Every group ID contributes one segment to both location systems.
+
+## Complete contract
+
+`GroupNodeConfig<TValue, TFields, TContext>` has `kind: "group"`, a safe
+string `id`, and recursive `nodes`. It also accepts the common node behavior:
+
+- `when` controls whether the entire branch exists in the evaluated/render
+  tree. A false group omits every descendant but does not delete domain data.
+- `disabled` is inherited by all descendants. It blocks field reducers and
+  collection/wizard commands below the group, while the readonly value remains
+  present.
+- `transforms` run when a successful event targets the group or a descendant,
+  in target-to-root order.
+- `validators` run at group scope according to their own `on`, `when`,
+  dependencies, and `includeDisabled` policy.
+
+Predicates and processing callbacks receive the group path/address and the
+current readonly root value. A resolver throw reports
+`schema.resolver-failed`; the group is omitted for that evaluation.
+
+Schema evaluation does not create or coerce the group's object value. Field
+reads below an absent object can therefore be `undefined`. Default construction
+does recursively create `{}` for groups when a collection command adds a row
+without an explicit value.
+
+## Snapshot and state effects
+
+A visible group produces a `ContainerSnapshot` with `kind: "group"`, its
+`path`, `address`, inherited `state.disabled`, `state.visible`, recursive
+`nodes`, and a scoped `validation` summary. Groups own no additional mutable
+metadata. Interaction state remains attached to descendant addresses.
+
+Changing `when` or `disabled` through an owner update reevaluates the tree but
+does not call `onChange`. Dormant domain data stays in the canonical value and
+can reappear when the group becomes visible again.
+
+## Composition
+
+Groups and the other containers are freely recursive:
+
+- a group may contain groups, collections, and wizards;
+- a collection row may contain a group;
+- a wizard stage may contain a group; and
+- group-level predicates, transforms, and validators still use their fully
+  nested path/address.
+
+Adapters decide presentation. Use HTML `fieldset`/`legend`, section headings,
+or design-system panels when that semantics fits; `kind: "group"` alone does
+not create accessibility relationships.
+
+## Scoped validation instead of a subform
+
+There is no special subform node or parent/child-controller validation bridge
+in v1. Keep one controlled value and controller, then validate a group by its
+path or stable address:
+
+```ts
+const result = await controller.validate({
+  scope: {
+    address: [
+      { kind: "node", id: "profile" },
+      { kind: "node", id: "location" },
+    ],
+  },
+  event: "submit",
+  reveal: true,
+});
+```
+
+Address scope is useful when the group sits below a reorderable row. Path
+scope is convenient for fixed object structure. Both aggregate applicable
+descendant validators; neither creates another ownership boundary.
+
+## Failure and edge cases
+
+- Duplicate sibling IDs and unsafe IDs are diagnosed during normalization.
+- A hidden group has no snapshot node, but its value is not removed.
+- A disabled group remains visible and readable unless `when` also hides it.
+- Reusing the same address with a different node kind reports incompatible
+  identity and prunes incompatible metadata.
+- Group-level transforms can patch outside the group. Treat schema callbacks
+  as trusted application code and validate untrusted data at your boundaries.
+
+## What to test
+
+- Assert the exact descendant paths and addresses for nested groups.
+- Toggle parent visibility/disabled inputs and assert inherited snapshots.
+- Scope validation to the group and verify unrelated validators do not run.
+- Verify hidden data remains canonical and returns when the group reappears.
+- In UI tests, check headings/fieldsets, keyboard flow, and issue association
+  supplied by your adapter or application.
+
+Next: combine every container in [Recursive composition](/structures/recursive-composition),
+or add repeatable object rows with [Collections](/structures/collections).
+
+## Evidence
+
+Group configuration and recursive normalization come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+Checked source is in `docs/examples/structures.ts`; nesting tests cover every
+container sequence through depth three plus a mixed depth-32 tree.

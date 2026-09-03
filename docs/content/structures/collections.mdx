@@ -1,0 +1,177 @@
+---
+title: Collections
+description: Build homogeneous array rows and use every controlled collection command safely.
+---
+
+# Collections
+
+A collection maps an array value into stable row containers. Its schema
+describes one homogeneous row shape, while core supplies immutable structural
+commands, constraints, capabilities, and row addresses.
+
+**For:** application developers and adapter authors implementing repeatable rows.  
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values),
+[events and reducers](/core-concepts/events-and-reducers), and
+[paths and addresses](/core-concepts/paths-and-addresses).
+
+## Homogeneous rows
+
+```ts
+export const teamSchema = {
+  id: "team-editor",
+  version: 1,
+  nodes: [{
+    kind: "collection",
+    id: "members",
+    min: 1,
+    max: 12,
+    nodes: [{
+      kind: "field",
+      id: "name",
+      type: "text",
+      props: { label: "Member name" },
+    }],
+  }],
+} as const satisfies StagesSchema<TeamForm, typeof fields>;
+```
+
+The domain branch must be an array when present:
+
+```ts
+const value: TeamForm = {
+  members: [{ id: "member-7", name: "Ada" }],
+};
+```
+
+Each visible element becomes a row snapshot. The first name field has path
+`["members", 0, "name"]`; its address contains the collection node, a stable
+row segment, and the field node. The numeric path is current location. The row
+address is structural identity.
+
+## Snapshot capabilities
+
+The collection `ContainerSnapshot` adds:
+
+| Member | Meaning |
+| --- | --- |
+| `size` | Canonical array length, or zero when the value is not an array. |
+| `canAdd` | Collection is enabled and evaluated row count is below `max` (or no `max`). |
+| `canRemove` | Collection is enabled and evaluated row count is above `min` (or no `min`). |
+| `nodes` | Visible `kind: "row"` containers, each with its own address and indexed path. |
+
+`canAdd` and `canRemove` are UI hints, not authorization tokens. A later
+dispatch is checked again. With no `min`, an empty collection reports
+`canRemove: true`, but remove still needs a valid row/index and will reject
+otherwise.
+
+`min` and `max` must be non-negative safe integers and `min <= max`. They gate
+core commands and capabilities; they do not reject an externally supplied
+canonical array whose length is outside the range. Add a validator when array
+length is also a domain-validity rule.
+
+## Controller command shapes
+
+Use the collection address for every command. Row-oriented commands may
+instead target a current row address and infer the source index. An explicit
+payload `index`/`from` wins over the row target.
+
+```ts
+export function editMembers(
+  controller: StagesController<TeamForm, typeof fields>,
+  rowAddress: NodeAddress,
+) {
+  controller.dispatch(nodeEvent("collection:add", membersAddress, {
+    payload: { value: { id: "member-9", name: "Lin" }, index: 1 },
+  }));
+  controller.dispatch(nodeEvent("collection:replace", rowAddress, {
+    payload: { value: { id: "member-7", name: "Grace" } },
+  }));
+  controller.dispatch(nodeEvent("collection:duplicate", rowAddress));
+  controller.dispatch(nodeEvent("collection:move", rowAddress, {
+    payload: { to: 0 },
+  }));
+  controller.dispatch(nodeEvent("collection:sort", membersAddress, {
+    payload: { order: [1, 0, 2] },
+  }));
+  controller.dispatch(nodeEvent("collection:remove", rowAddress));
+}
+```
+
+Synchronous calls like this share a transaction; each accepted command sees
+the transaction draft. In ordinary UI code, each user action usually emits
+one command.
+
+## Every command
+
+| Event | Controller payload | Pure-helper command | Accepted effect |
+| --- | --- | --- | --- |
+| `collection:add` | `{ value?, index?, variant? }` | `{ name, item, index? }` | Inserts at `index` or appends. Without own `value`, core recursively builds row defaults; a union also needs `variant`. |
+| `collection:remove` | `{ index? }` or row target | `{ name, index }` | Splices the selected item. |
+| `collection:replace` | `{ index?, value }` or row target | `{ name, index, item }` | Assigns a different item at the selected index. |
+| `collection:duplicate` | `{ index?, toIndex? }` or row target | `{ name, index, toIndex? }` | Inserts the same item reference after the source or at `toIndex`. |
+| `collection:move` | `{ from?, to }` or row target | `{ name, from, to }` | Removes then reinserts at an existing item index. |
+| `collection:sort` | `{ order }` | `{ name, order }` | Maps a complete permutation of current indexes. |
+
+Add/duplicate insertion indexes range from zero through current length.
+Remove/replace/duplicate source and move indexes must address existing items.
+Sort requires every current index exactly once. Replace uses `Object.is` to
+reject an unchanged item; identity move/sort operations are also rejected.
+
+Duplicate is deliberately shallow. With engine keys it gets a new row key,
+but the duplicated domain item is the same reference. Clone or generate a new
+domain ID in application code when independent objects are required.
+
+## Controlled effects and processing
+
+An accepted command contributes one root-relative set patch at the collection
+path. It then participates in normal target-to-root transforms, validation,
+and batching. `onChange` receives the proposed full value; the snapshot stays
+canonical until the owner calls `update({ value })`.
+
+A rejected command adds a diagnostic, produces no patches, and skips that
+event's transforms and validation. Common rejections are invalid payloads,
+indexes/orders, disabled/hidden collections, non-array values, `min`/`max`,
+and unchanged operations. See [Standard events](/reference/standard-events)
+for the exact code per command.
+
+Collection-level transforms and validators use the collection path/address.
+Inherited disabled state blocks all collection commands. A false `when`
+removes the collection and rows from the evaluated tree without deleting the
+array.
+
+## External replacement and empty states
+
+Owner updates may replace the entire array with empty, minimum, maximum, or
+new item data. Reevaluation rebuilds row paths and capabilities. A present
+non-array value reports `schema.collection-value`; no row branches are
+available and runtime commands report `collection.value`.
+
+Render an empty-state message from `size === 0`, and disable controls from
+capabilities while still handling rejections. Applications own accessible
+labels, focus movement after add/remove, reorder announcements, keyboard
+alternatives to drag-and-drop, and confirmation for destructive removal.
+
+## What to test
+
+- Accept proposals in the harness before asserting reordered canonical rows.
+- Cover every constraint boundary and malformed index/order.
+- Assert immutable source arrays and expected item-reference reuse.
+- Target a saved row address after a move.
+- Check metadata cleanup after accepted removal and metadata continuity after
+  accepted move.
+- Exercise empty-state and keyboard/focus behavior in the chosen adapter.
+
+Next: choose an identity strategy in
+[Collection identity](/structures/collection-identity), model heterogeneous
+rows with [Discriminated collections](/structures/discriminated-collections),
+or use the [pure collection utility](/reference/core/collection-utilities).
+
+## Evidence
+
+Command parsing and controlled processing come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts);
+immutable operations come from
+[`collections.ts`](https://github.com/unic/stages/blob/master/packages/core/src/collections.ts).
+The checked example is `docs/examples/structures.ts`. Controller, collection,
+property, and nesting tests cover commands, constraints, row targets,
+capabilities, controlled acceptance, and recursive rows.

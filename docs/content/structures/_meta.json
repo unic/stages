@@ -1,0 +1,9 @@
+{
+  "groups": "Groups",
+  "collections": "Collections",
+  "collection-identity": "Collection identity",
+  "discriminated-collections": "Discriminated collections",
+  "wizards": "Wizards",
+  "wizard-validation-and-guards": "Wizard validation and guards",
+  "recursive-composition": "Recursive composition"
+}

@@ -1,0 +1,189 @@
+---
+title: Collection utilities
+description: Exact reduceCollectionCommand, CollectionCommand, and CollectionCommandResult contracts.
+---
+
+# Collection utilities
+
+`reduceCollectionCommand()` is the pure immutable array reducer that underpins
+controller collection commands. Use it in tooling, state adapters, tests, or
+non-controller workflows that need the same positional operations.
+
+**For:** tooling authors, adapter authors, and applications reducing collection commands directly.  
+**Prerequisites:** [Collections](/structures/collections). For controller event
+payloads, also read [Standard events](/reference/standard-events).
+
+Last reviewed against `packages/core/src/collections.ts`: **2026-09-03**.
+
+## Signatures
+
+```ts
+type CollectionCommand =
+  | Readonly<{ name: "collection:add"; item: unknown; index?: number }>
+  | Readonly<{ name: "collection:remove"; index: number }>
+  | Readonly<{ name: "collection:replace"; index: number; item: unknown }>
+  | Readonly<{ name: "collection:duplicate"; index: number; toIndex?: number }>
+  | Readonly<{ name: "collection:move"; from: number; to: number }>
+  | Readonly<{ name: "collection:sort"; order: readonly number[] }>;
+
+type CollectionCommandResult =
+  | Readonly<{ accepted: true; value: readonly unknown[] }>
+  | Readonly<{ accepted: false; code: string; message: string }>;
+
+function reduceCollectionCommand(
+  current: readonly unknown[],
+  command: CollectionCommand,
+  constraints?: Readonly<{ min?: number; max?: number }>,
+): CollectionCommandResult;
+```
+
+| Parameter | Contract |
+| --- | --- |
+| `current` | Source array. It and its items are never mutated. |
+| `command` | One discriminated positional operation. The TypeScript surface is intentionally item-type agnostic. |
+| `constraints` | Optional command gates. Defaults to `{}`; the helper assumes supplied bounds are already valid. |
+
+The result must be narrowed through `accepted`. Success owns a new shallow
+array. Rejection owns a stable code/message and no value member. Rejections are
+ordinary return values, not diagnostics or thrown exceptions.
+
+## Checked example
+
+```ts
+const source = Object.freeze([
+  Object.freeze({ id: "a" }),
+  Object.freeze({ id: "b" }),
+]);
+
+const commands: readonly CollectionCommand[] = [
+  { name: "collection:add", item: { id: "c" }, index: 1 },
+  { name: "collection:remove", index: 0 },
+  { name: "collection:replace", index: 1, item: { id: "replacement" } },
+  { name: "collection:duplicate", index: 0, toIndex: 2 },
+  { name: "collection:move", from: 0, to: 1 },
+  { name: "collection:sort", order: [1, 0] },
+];
+
+const result: CollectionCommandResult = reduceCollectionCommand(
+  source,
+  commands[0]!,
+  { min: 1, max: 4 },
+);
+
+if (result.accepted) {
+  console.log(result.value); // [{ id: "a" }, { id: "c" }, { id: "b" }]
+} else {
+  console.warn(result.code, result.message);
+}
+
+// The source array is unchanged; accepted results are new shallow arrays.
+console.log(source); // [{ id: "a" }, { id: "b" }]
+```
+
+## Command contracts
+
+### `collection:add`
+
+`item` is inserted at `index`; omitted `index` appends. Insertion indexes are
+safe integers from zero through `current.length`. `max` is checked first, so a
+full collection returns `collection.max` even if the supplied index is also
+invalid. Success copies the array and reuses every existing item reference.
+
+### `collection:remove`
+
+`index` must be a safe integer from zero through `current.length - 1`. `min`
+is checked first: a length less than or equal to `min` returns
+`collection.min`. Success copies then splices, shifting later positions left.
+
+### `collection:replace`
+
+`index` must address an existing item. Replacement with an `Object.is`-equal
+`item` returns `collection.unchanged`; otherwise a copied array receives the
+new item at the same index. `min` and `max` do not apply because length does
+not change.
+
+### `collection:duplicate`
+
+`index` must address an existing item. `toIndex` is an insertion index and
+defaults to `index + 1`. `max` is checked first. Success inserts the **same item
+reference**; it does not clone domain data or generate identity.
+
+### `collection:move`
+
+Both `from` and `to` must address existing items; unlike add/duplicate,
+`to === current.length` is invalid. Equal indexes return
+`collection.unchanged`. Success splices the original item into its new index
+and preserves all item references.
+
+### `collection:sort`
+
+`order` must have the same length as `current` and contain every current index
+exactly once. Duplicates, omissions, out-of-range indexes, negative/fractional
+indexes, and extra indexes return `collection.order`. An identity permutation
+returns `collection.unchanged`; otherwise success maps the existing item
+references into a new array.
+
+## Rejection catalog
+
+| Code | Commands | Meaning |
+| --- | --- | --- |
+| `collection.index` | add, remove, replace, duplicate, move | Required item/insertion index is not a safe in-range integer. |
+| `collection.max` | add, duplicate | Current length is already at or above `max`. |
+| `collection.min` | remove | Current length is already at or below `min`. |
+| `collection.order` | sort | Order is not a full valid permutation. |
+| `collection.unchanged` | replace, move, sort | Operation would make no positional/reference change. |
+
+The exported result type uses `code: string` rather than a closed code union;
+the table is the current source-derived set. The docs quality check compares
+that inventory to every `reject()` call in the implementation.
+
+## Identity and mutation guarantees
+
+Every accepted operation returns a different array reference, including add,
+remove, replace, duplicate, move, and sort. The helper never deep-clones or
+freezes. Unaffected items preserve reference identity; duplicate intentionally
+reuses the selected item reference.
+
+No-op operations return rejection rather than the original array. For inputs
+that satisfy the public types, operational failures use
+`CollectionCommandResult`; if plain JavaScript bypasses the type contract with
+malformed objects, validate it before calling the helper.
+
+The helper does not manage row keys, controller metadata, patches,
+transforms, validation, batching, diagnostics, or controlled acceptance. Those
+belong to `StagesController.dispatch()`. It also does not validate that `min`
+and `max` are non-negative or ordered; schema normalization validates
+collection configuration, while direct utility callers must supply sensible
+constraints.
+
+## Pure helper versus controller payloads
+
+| Operation | Pure helper | Controller event |
+| --- | --- | --- |
+| Add/replace item property | `item` | `payload.value` |
+| Source row | Numeric `index`/`from` required | May be inferred from a row address |
+| Union default | No schema knowledge | `payload.variant` can build defaults |
+| Output | Array result or rejection | Controlled full-value proposal or diagnostic |
+
+Use the pure helper when an array is the whole state transition. Use controller
+events when paths, row addresses, default construction, processing, metadata,
+and acceptance are part of the workflow.
+
+## What to test
+
+- Freeze source arrays/items and assert no mutation.
+- Assert accepted array identity and reused item identities.
+- Cover every boundary index and every rejection code.
+- Cover empty and identity permutations.
+- Validate or type-narrow untrusted commands before calling the utility.
+
+Next: see controller command behavior in [Collections](/structures/collections)
+or compare exact payloads in [Standard events](/reference/standard-events).
+
+## Evidence
+
+Signatures, operation order, messages, and codes come from
+[`collections.ts`](https://github.com/unic/stages/blob/master/packages/core/src/collections.ts).
+The checked example is `docs/examples/collection-utilities.ts`.
+`collections.test.mjs` and seeded property tests verify immutability,
+determinism, every operation, constraints, invalid indexes/orders, and no-ops.

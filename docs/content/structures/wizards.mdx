@@ -1,0 +1,194 @@
+---
+title: Wizards
+description: Model staged value branches and metadata-only navigation with visible-stage reconciliation.
+---
+
+# Wizards
+
+A wizard groups stage-shaped data while storing the active stage as controller
+metadata. Navigation selects which visible stage is active; it does not itself
+write the domain value.
+
+**For:** application developers building onboarding, checkout, and review flows.  
+**Prerequisites:** [Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions),
+[events and reducers](/core-concepts/events-and-reducers), and
+[dynamic configuration](/core-concepts/dynamic-configuration).
+
+## A dynamic onboarding wizard
+
+```ts
+export const onboardingSchema = {
+  id: "onboarding",
+  version: 1,
+  nodes: [{
+    kind: "wizard",
+    id: "onboarding",
+    initialStage: "account",
+    navigation: {
+      validateCurrent: true,
+      nonLinear: true,
+      guard: (value, _from, to) => to !== "review" || value.allowReview,
+    },
+    stages: [
+      {
+        id: "account",
+        nodes: [{
+          kind: "field",
+          id: "name",
+          type: "text",
+          props: { label: "Account name" },
+          validators: [{
+            id: "account.name.required",
+            on: "submit",
+            validate: ({ fieldValue, path }) => fieldValue === ""
+              ? [{ id: "account.name.required", code: "required", path, severity: "error" }]
+              : [],
+          }],
+        }],
+      },
+      {
+        id: "profile",
+        nodes: [{
+          kind: "field",
+          id: "bio",
+          type: "text",
+          props: { label: "Biography" },
+        }],
+      },
+      { id: "review", when: ({ value }) => value.allowReview, nodes: [] },
+    ],
+  }],
+} as const satisfies StagesSchema<OnboardingForm, typeof fields>;
+```
+
+Wizard and stage IDs both contribute to the value shape:
+
+```ts
+const value: OnboardingForm = {
+  allowReview: true,
+  onboarding: {
+    account: { name: "Ada" },
+    profile: { bio: "Engineer" },
+    review: {},
+  },
+};
+```
+
+The name field path is `["onboarding", "account", "name"]`; its address is
+the wizard, stage, and field node segments in the same order. Every stage's
+domain data remains in the controlled value regardless of which stage is
+active.
+
+## Stage and wizard contracts
+
+A wizard accepts common node behavior plus `stages`, optional `initialStage`,
+and optional `navigation`. A stage has `id`, recursive `nodes`, optional
+`when`, and optional `disabled`. Unlike a full node, a stage itself has no
+`transforms` or `validators`; attach those to the wizard or nodes inside the
+stage.
+
+`when: false` removes a stage branch from the current evaluated tree.
+`disabled: true` leaves it visible and disables its descendants. Current v1
+navigation treats visibility—not stage disabled state—as target eligibility;
+applications that want to skip disabled stages should hide them with `when`
+or prevent the action in their own policy. Disabling the wizard node itself
+blocks every navigation command.
+
+## Snapshot model
+
+The wizard `ContainerSnapshot` exposes:
+
+| Member | Meaning |
+| --- | --- |
+| `activeStage` | Current visible stage ID, or absent when none is visible. |
+| `visibleStageIds` | Visible IDs in configured order. |
+| `nodes` | One `kind: "stage"` container per visible stage, with `active` true on the selected stage. |
+| `canPrevious` / `canNext` | Wizard enabled and active index has a visible neighbor. |
+| `canGo` | Wizard enabled and `navigation.nonLinear === true`. |
+| `validation` | Validation summary for wizard scope; each stage snapshot also has its scoped summary. |
+
+Capabilities describe position and configuration only. They do not pre-run
+`validateCurrent`, call the guard, or promise that a command will succeed.
+Adapters normally mount/render the active stage while retaining the other
+stage snapshots for progress and validation UI.
+
+## Initial and dynamic active stage
+
+On first evaluation, core chooses the configured `initialStage` if it is
+currently visible, otherwise the first visible stage. An unknown configured ID
+reports `schema.wizard-target` and falls back. With no visible stages there is
+no active ID.
+
+On reevaluation, a still-visible prior active stage wins. If it becomes hidden,
+core falls back to the currently visible configured initial stage and then the
+first visible stage. Active wizard metadata is serialized and restored, but
+the same visibility reconciliation runs against the recreated schema/value.
+
+## Navigation events
+
+Target the wizard node address:
+
+| Event | Payload | Requested stage |
+| --- | --- | --- |
+| `wizard:previous` | none | Previous visible stage. |
+| `wizard:next` | none | Next visible stage. |
+| `wizard:go` | stage string or `{ stage: string }` | Named visible stage; requires `nonLinear: true`. |
+
+Successful navigation updates active-stage metadata, increments revision, and
+publishes a snapshot. It creates no patch and no `onChange` proposal by itself.
+A matching wizard/ancestor/root transform can deliberately turn the event into
+a value proposal.
+
+Boundary navigation, missing/hidden targets, a hidden or disabled wizard,
+disabled non-linear navigation, validation gating, and guard rejection all
+report `wizard.navigation-rejected`. The active stage stays unchanged and the
+rejected event skips transforms and validation.
+
+## Linear, nested, and route-driven flows
+
+For a linear flow, omit `nonLinear` and expose previous/next according to the
+snapshot capabilities. For a review jump, enable it and dispatch `wizard:go`.
+Use stage `when` for optional steps. Wizards can live inside groups or
+collection rows, and stages can contain groups, collections, and nested
+wizards; their full address keeps each instance distinct.
+
+Routing is application-owned. Subscribe to the selected active stage and push
+it to the router; on a route change, dispatch `wizard:go` after validating the
+route parameter against `visibleStageIds`:
+
+```ts
+const unsubscribe = controller.subscribeSelector(
+  snapshot => findWizard(snapshot.nodes, ["onboarding"])?.activeStage,
+  stage => { if (stage !== undefined) router.replace(`/onboarding/${stage}`); },
+);
+```
+
+Avoid a two-way feedback loop by comparing the current route before pushing.
+Core deliberately has no router or URL format.
+
+## Accessibility and testing
+
+Applications own stage headings, progress semantics, focus placement, error
+summaries, previous/next button names, and announcements after transitions.
+Do not rely on hidden inactive DOM alone; ensure inactive controls cannot be
+focused or submitted by the chosen adapter.
+
+Test initial/fallback selection, every boundary, dynamic `when`, serialization
+and recreation, no `onChange` for navigation-only events, and each nested
+wizard address. Test navigation policy separately with the matrix in the next
+guide.
+
+Next: implement safe gating in
+[Wizard validation and guards](/structures/wizard-validation-and-guards), or
+place the flow inside a row in [Recursive composition](/structures/recursive-composition).
+
+## Evidence
+
+Wizard types and normalized stage branches come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+and [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+Navigation and active-stage reconciliation are in
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+The checked schema is in `docs/examples/structures.ts`; controller, validation,
+React, and nesting tests cover metadata-only navigation, dynamic fallback,
+recreation, bindings, and nesting.

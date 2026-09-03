@@ -6,5 +6,6 @@
   "event-types": "Event and processing types",
   "snapshot-types": "Snapshot types",
   "path-utilities": "Path utilities",
+  "collection-utilities": "Collection utilities",
   "schema-utilities": "Schema utilities"
 }

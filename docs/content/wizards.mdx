@@ -1,5 +1,9 @@
 # Wizards
 
+This route is retained for existing links. See the comprehensive
+[Wizards guide](/structures/wizards) and
+[Wizard validation and guards](/structures/wizard-validation-and-guards).
+
 A wizard is an ordered set of recursive stages. Its active location is engine
 metadata, not domain data, so navigation never creates a value proposal by
 itself.
@@ -22,9 +26,10 @@ itself.
 
 Dispatch `wizard:previous`, `wizard:next`, or `wizard:go` to the wizard node
 address. `wizard:go` carries the target stage ID and requires `nonLinear`.
-`validateCurrent` runs the current stage's applicable validators and blocks on
-unknown, pending, or invalid status. Warnings do not make a stage invalid. The
-pure guard runs after validation and may impose additional policy.
+`validateCurrent` checks the current stage's cached validation status; it does
+not run validators. It blocks on unknown, pending, or invalid status. Warnings
+do not make a stage invalid. The pure guard runs after that status check and
+may impose additional policy.
 
 Stage `when` and `disabled` predicates dynamically change navigation. If the
 active stage becomes hidden, the controller reconciles to a visible stage.

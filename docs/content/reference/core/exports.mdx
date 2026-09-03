@@ -21,7 +21,7 @@ Last reviewed against `packages/core/src/index.ts`: **2026-09-03**.
 | Event constructors | [`fieldEvent`, `nodeEvent`, `formEvent`](/reference/core/event-types) |
 | Paths and patches | [`getAtPath`, `setAtPath`, `removeAtPath`, `applyPatches`, `pathsEqual`, `isSafePathSegment`, `assertSafePath`](/reference/core/path-utilities) |
 | Schema tooling | [`evaluateSchema`, `initialFieldValue`](/reference/core/schema-utilities) |
-| Collection tooling | `reduceCollectionCommand` |
+| Collection tooling | [`reduceCollectionCommand`](/reference/core/collection-utilities#signatures) |
 | Persistence | `encodeJson`, `decodeJson`, `validateSerializedState`, `migrateSerializedState`, `SerializationError` |
 
 ## Type exports
@@ -35,7 +35,7 @@ Last reviewed against `packages/core/src/index.ts`: **2026-09-03**.
 | Validation | [`FieldInteractionState`](/reference/core/snapshot-types#fieldinteractionstate), `ValidationContext`, `ValidationCancellationSignal`, `ValidationIssue`, `ValidationFailureContext`, `ValidationFailureIssuePresentation`, `ValidationFailureIssueFactory`, `ValidatorConfig`, [`ValidationSnapshot`](/reference/core/snapshot-types#validationsnapshot), `ValidateOptions` |
 | Schema | [`FieldNodeConfig`, `GroupNodeConfig`, `CollectionVariantConfig`, `CollectionNodeConfig`, `StageNodeConfig`, `WizardNavigationConfig`, `WizardNodeConfig`, `NodeConfig`, `StagesSchema`, `StagesSchemaFactory`, `StagesSchemaInput`, `NormalizedNode`, `NormalizedBranch`, `EvaluatedSchema`](/reference/core/schema-types), [`EvaluateSchemaOptions`](/reference/core/schema-utilities#evaluateschema) |
 | Snapshots and controller | [`FieldSnapshot`, `ContainerSnapshot`, `RenderNodeSnapshot`, `StagesSnapshot`](/reference/core/snapshot-types), `StagesChange`, [`StagesOptions`](/reference/core/controller#stagesoptions), [`StagesUpdate`](/reference/core/controller#update), [`StagesController`](/reference/core/controller#stagescontroller) |
-| Collections | `CollectionCommand`, `CollectionCommandResult` |
+| Collections | [`CollectionCommand`, `CollectionCommandResult`](/reference/core/collection-utilities#signatures) |
 | Persistence | `SerializedStagesState`, `StagesValueCodec`, `StagesExtensionCodec`, `StagesStateMigration` |
 
 `NormalizedNode`, `NormalizedBranch`, `EvaluatedSchema`, and
@@ -47,7 +47,8 @@ this entry point so a new export cannot be added silently.
 
 Next: [`stages()` and `StagesController`](/reference/core/controller), the
 [schema types](/reference/core/schema-types), or the
-[path utilities](/reference/core/path-utilities).
+[path utilities](/reference/core/path-utilities), or the
+[collection utility](/reference/core/collection-utilities).
 
 ## Evidence
 

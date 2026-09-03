@@ -99,6 +99,13 @@ const completePagePaths = [
   "core-concepts/transactions-and-batching.mdx",
   "core-concepts/snapshots-and-subscriptions.mdx",
   "core-concepts/dynamic-configuration.mdx",
+  "structures/groups.mdx",
+  "structures/collections.mdx",
+  "structures/collection-identity.mdx",
+  "structures/discriminated-collections.mdx",
+  "structures/wizards.mdx",
+  "structures/wizard-validation-and-guards.mdx",
+  "structures/recursive-composition.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
@@ -106,6 +113,7 @@ const completePagePaths = [
   "reference/core/event-types.mdx",
   "reference/core/snapshot-types.mdx",
   "reference/core/path-utilities.mdx",
+  "reference/core/collection-utilities.mdx",
   "reference/core/schema-utilities.mdx",
   "reference/standard-events.mdx",
   "project/contributing-to-docs.mdx",
@@ -215,6 +223,34 @@ const collectionRejections = [...collectionSource.matchAll(/reject\(["'](collect
   .map((match) => match[1]);
 assertSameInventory(collectionRejections, manifest.contracts.collectionRejections, "collection rejection codes");
 
+const collectionCommandDeclaration = collectionSource.match(
+  /export type CollectionCommand =([\s\S]*?);\n\nexport type CollectionCommandResult/,
+)?.[1];
+assert.ok(collectionCommandDeclaration, "could not find CollectionCommand declaration");
+const collectionCommands = [...collectionCommandDeclaration.matchAll(
+  /\|\s+Readonly<\{\s*name:\s*["']([^"']+)["'];([\s\S]*?)\}>/g,
+)].map((match) => ({
+  symbol: match[1],
+  fields: [...match[2].matchAll(/(?:^|;)\s*([A-Za-z_$][\w$]*)(\?)?:/g)]
+    .map((field) => `${field[1]}${field[2] ?? ""}`),
+}));
+assertSameInventory(
+  collectionCommands.map(({ symbol, fields }) => `${symbol}:${fields.join(",")}`),
+  manifest.contracts.collectionCommands.map(({ symbol, fields }) => `${symbol}:${fields.join(",")}`),
+  "collection command members",
+);
+const collectionUtilityReference = guideEntries.find(
+  ({ relativePath }) => relativePath === "reference/core/collection-utilities.mdx",
+)?.source;
+assert.ok(collectionUtilityReference, "missing collection utility reference");
+for (const { symbol, fields } of manifest.contracts.collectionCommands) {
+  assert.ok(collectionUtilityReference.includes(`\`${symbol}\``), `collection utility reference is missing ${symbol}`);
+  for (const field of fields) {
+    const name = field.replace(/\?$/, "");
+    assert.ok(collectionUtilityReference.includes(`\`${name}\``), `collection utility reference is missing ${symbol}.${name}`);
+  }
+}
+
 const expectedEvents = [
   "focus", "blur", "reset", "collection:add", "collection:remove", "collection:replace",
   "collection:duplicate", "collection:move", "collection:sort", "wizard:previous",
@@ -247,6 +283,15 @@ const checkedRegions = [
   { fixture: "docs/examples/dynamic-configuration.ts", region: "dynamic-schema", page: "core-concepts/dynamic-configuration.mdx" },
   { fixture: "docs/examples/dynamic-configuration.ts", region: "dynamic-updates", page: "core-concepts/dynamic-configuration.mdx" },
   { fixture: "docs/examples/snapshot-subscriptions.ts", region: "selector-subscriptions", page: "core-concepts/snapshots-and-subscriptions.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "group-schema", page: "structures/groups.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "homogeneous-collection", page: "structures/collections.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "collection-events", page: "structures/collections.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "collection-identity", page: "structures/collection-identity.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "discriminated-collection", page: "structures/discriminated-collections.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "wizard-schema", page: "structures/wizards.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "wizard-navigation", page: "structures/wizard-validation-and-guards.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "recursive-structure", page: "structures/recursive-composition.mdx" },
+  { fixture: "docs/examples/collection-utilities.ts", region: "pure-collection-commands", page: "reference/core/collection-utilities.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);

@@ -22,16 +22,16 @@
         { "symbol": "migrateSerializedState", "kind": "runtime", "status": "partial" },
         { "symbol": "nodeEvent", "kind": "runtime", "guide": "/core-concepts/events-and-reducers", "reference": "/reference/core/event-types#nodeevent", "examples": ["event-constructors"], "status": "complete" },
         { "symbol": "pathsEqual", "kind": "runtime", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#pathsequal", "examples": ["path-utilities"], "status": "complete" },
-        { "symbol": "reduceCollectionCommand", "kind": "runtime", "status": "partial" },
+        { "symbol": "reduceCollectionCommand", "kind": "runtime", "guide": "/structures/collections", "reference": "/reference/core/collection-utilities#signatures", "examples": ["pure-collection-commands"], "status": "complete" },
         { "symbol": "removeAtPath", "kind": "runtime", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#removeatpath", "examples": ["path-utilities"], "status": "complete" },
         { "symbol": "SerializationError", "kind": "runtime", "status": "partial" },
         { "symbol": "setAtPath", "kind": "runtime", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#setatpath", "examples": ["path-utilities"], "status": "complete" },
         { "symbol": "stages", "kind": "runtime", "guide": "/start/first-controller", "reference": "/reference/core/controller#stages", "examples": ["first-controller"], "status": "complete" },
         { "symbol": "validateSerializedState", "kind": "runtime", "status": "partial" },
-        { "symbol": "CollectionCommand", "kind": "type", "status": "partial" },
-        { "symbol": "CollectionCommandResult", "kind": "type", "status": "partial" },
-        { "symbol": "CollectionNodeConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#collection-nodes", "status": "complete" },
-        { "symbol": "CollectionVariantConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#collection-nodes", "status": "complete" },
+        { "symbol": "CollectionCommand", "kind": "type", "guide": "/structures/collections", "reference": "/reference/core/collection-utilities#signatures", "examples": ["pure-collection-commands"], "status": "complete" },
+        { "symbol": "CollectionCommandResult", "kind": "type", "guide": "/structures/collections", "reference": "/reference/core/collection-utilities#signatures", "examples": ["pure-collection-commands"], "status": "complete" },
+        { "symbol": "CollectionNodeConfig", "kind": "type", "guide": "/structures/collections", "reference": "/reference/core/schema-types#collection-nodes", "examples": ["homogeneous-collection"], "status": "complete" },
+        { "symbol": "CollectionVariantConfig", "kind": "type", "guide": "/structures/discriminated-collections", "reference": "/reference/core/schema-types#collection-nodes", "examples": ["discriminated-collection"], "status": "complete" },
         { "symbol": "ContainerSnapshot", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#containersnapshot", "status": "complete" },
         { "symbol": "DataPath", "kind": "type", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#datapath", "status": "complete" },
         { "symbol": "DeepReadonly", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#deepreadonly", "status": "complete" },
@@ -51,19 +51,19 @@
         { "symbol": "FieldSnapshot", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#fieldsnapshot", "status": "complete" },
         { "symbol": "FieldValidationIssue", "kind": "type", "guide": "/core-concepts/field-registry", "reference": "/reference/core/field-types#fieldvalidator", "status": "complete" },
         { "symbol": "FieldValidator", "kind": "type", "guide": "/core-concepts/field-registry", "reference": "/reference/core/field-types#fieldvalidator", "examples": ["field-registry"], "status": "complete" },
-        { "symbol": "GroupNodeConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#field-and-group-nodes", "status": "complete" },
+        { "symbol": "GroupNodeConfig", "kind": "type", "guide": "/structures/groups", "reference": "/reference/core/schema-types#field-and-group-nodes", "examples": ["group-schema"], "status": "complete" },
         { "symbol": "JsonPrimitive", "kind": "type", "status": "partial" },
         { "symbol": "JsonValue", "kind": "type", "status": "partial" },
         { "symbol": "NodeAddress", "kind": "type", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#node-addresses", "status": "complete" },
         { "symbol": "NodeAddressSegment", "kind": "type", "guide": "/core-concepts/paths-and-addresses", "reference": "/reference/core/path-utilities#node-addresses", "status": "complete" },
-        { "symbol": "NodeConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#nodeconfig", "status": "complete" },
+        { "symbol": "NodeConfig", "kind": "type", "guide": "/structures/recursive-composition", "reference": "/reference/core/schema-types#nodeconfig", "examples": ["recursive-structure"], "status": "complete" },
         { "symbol": "NodePredicate", "kind": "type", "guide": "/core-concepts/dynamic-configuration", "reference": "/reference/core/schema-types#dynamic-and-resolver-context", "status": "complete" },
         { "symbol": "NodeResolverContext", "kind": "type", "guide": "/core-concepts/dynamic-configuration", "reference": "/reference/core/schema-types#dynamic-and-resolver-context", "status": "complete" },
         { "symbol": "NormalizedBranch", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#normalized-output", "status": "complete" },
         { "symbol": "NormalizedNode", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#normalized-output", "status": "complete" },
         { "symbol": "RenderNodeSnapshot", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#rendernodesnapshot", "status": "complete" },
         { "symbol": "SerializedStagesState", "kind": "type", "status": "partial" },
-        { "symbol": "StageNodeConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "status": "complete" },
+        { "symbol": "StageNodeConfig", "kind": "type", "guide": "/structures/wizards", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "examples": ["wizard-schema"], "status": "complete" },
         { "symbol": "StagesChange", "kind": "type", "reference": "/reference/core/controller#stageschange", "status": "complete" },
         { "symbol": "StagesController", "kind": "type", "reference": "/reference/core/controller#stagescontroller", "status": "complete" },
         { "symbol": "StagesEvent", "kind": "type", "guide": "/core-concepts/events-and-reducers", "reference": "/reference/core/event-types#stagesevent", "examples": ["event-constructors"], "status": "complete" },
@@ -91,8 +91,8 @@
         { "symbol": "ValidationIssue", "kind": "type", "status": "partial" },
         { "symbol": "ValidationSnapshot", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#validationsnapshot", "status": "complete" },
         { "symbol": "ValidatorConfig", "kind": "type", "status": "partial" },
-        { "symbol": "WizardNavigationConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "status": "complete" },
-        { "symbol": "WizardNodeConfig", "kind": "type", "guide": "/core-concepts/schemas", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "status": "complete" }
+        { "symbol": "WizardNavigationConfig", "kind": "type", "guide": "/structures/wizard-validation-and-guards", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "examples": ["wizard-navigation"], "status": "complete" },
+        { "symbol": "WizardNodeConfig", "kind": "type", "guide": "/structures/wizards", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "examples": ["wizard-schema"], "status": "complete" }
       ]
     },
     {
@@ -204,6 +204,14 @@
     ],
     "collectionRejections": [
       "collection.index", "collection.max", "collection.min", "collection.order", "collection.unchanged"
+    ],
+    "collectionCommands": [
+      { "symbol": "collection:add", "fields": ["item", "index?"] },
+      { "symbol": "collection:remove", "fields": ["index"] },
+      { "symbol": "collection:replace", "fields": ["index", "item"] },
+      { "symbol": "collection:duplicate", "fields": ["index", "toIndex?"] },
+      { "symbol": "collection:move", "fields": ["from", "to"] },
+      { "symbol": "collection:sort", "fields": ["order"] }
     ]
   }
 }

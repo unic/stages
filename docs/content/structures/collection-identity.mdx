@@ -1,0 +1,144 @@
+---
+title: Collection identity
+description: Keep row addresses and UI state stable through controlled reorder, persistence, and external updates.
+---
+
+# Collection identity
+
+Rows have two locations and one UI key: a numeric data path that may move, a
+stable node address used by core metadata, and an adapter key derived from the
+row identity. Choose who owns that identity before relying on reorder state.
+
+**For:** schema authors, adapter authors, and applications with reorderable or persisted rows.  
+**Prerequisites:** [Collections](/structures/collections) and
+[paths and addresses](/core-concepts/paths-and-addresses).
+
+## Two strategies
+
+```ts
+export const engineKeySchema = teamSchema;
+
+export const domainKeySchema = {
+  ...teamSchema,
+  id: "domain-keyed-team",
+  nodes: [{
+    ...teamSchema.nodes[0],
+    // Use a durable domain ID, not the row's current array index.
+    itemKey: item => (item as Member).id,
+  }],
+} as const satisfies StagesSchema<TeamForm, typeof fields>;
+```
+
+| Strategy | Source of row ID | Best fit | Important limit |
+| --- | --- | --- | --- |
+| Engine-owned | Core allocates `row:n` IDs per controller | Local arrays changed through controller commands | An unrelated external reorder cannot reveal which objects moved, so keys remain associated by position. |
+| Application `itemKey` | `itemKey(item, index)` returns a domain string | Server records, external replacement/reorder, collaboration | IDs must be non-empty, unique, stable, and available before accepted evaluation. |
+
+Do not return the current `index` when identity must survive reorder. Domain
+primary keys, client-generated UUIDs, or another immutable record identifier
+are appropriate.
+
+## Path, address, and render key
+
+For member `member-7` at index zero:
+
+```ts
+path: ["members", 0, "name"]
+address: [
+  { kind: "node", id: "members" },
+  { kind: "row", id: "member-7" },
+  { kind: "node", id: "name" },
+]
+reactKey: "member-7" // exposed by the React row binding
+```
+
+After an accepted move to index two, the path's index changes while the row
+segment and adapter key remain stable. Core uses the address for touched,
+visited, revealed-validation, wizard, and validation-record identity. Never
+cache the old path as identity.
+
+## Controlled move timeline
+
+Suppose rows A and B have keys `row:1` and `row:2`:
+
+| Moment | Canonical array | Snapshot row keys | Meaning |
+| --- | --- | --- | --- |
+| Before dispatch | `[A, B]` | `[row:1, row:2]` | Accepted state. |
+| `collection:move` proposal emitted | `[A, B]` | `[row:1, row:2]` | Proposed array/key movement is pending; snapshots remain canonical. |
+| Owner accepts proposed `[B, A]` | `[B, A]` | `[row:2, row:1]` | Paths change and metadata follows each key. |
+| Owner delays | `[A, B]` | `[row:1, row:2]` | Pending intent is not published. |
+| Owner rejects by retaining the old value | `[A, B]` | `[row:1, row:2]` | Canonical keys never move. |
+
+The same acceptance rule covers add, remove, duplicate, move, and sort. A
+replace keeps the engine key at that slot; with `itemKey`, the replacement's
+domain key determines identity. Accepted removal prunes metadata below the
+missing row. Accepted duplicate gets a distinct engine key even though the
+domain item reference is shallowly reused.
+
+## External owner updates
+
+With `itemKey`, a later server reorder is reconstructed from record IDs and
+metadata follows those IDs. Without `itemKey`, core can preserve keys by index
+and array length but cannot infer arbitrary object movement that did not come
+from its own command. Use application identity if external systems reorder or
+replace records independently.
+
+Controller proposals are positional arrays. If the owner normalizes a
+proposal before acceptance, preserve the intended record identity or supply
+`itemKey`; do not expect object equality heuristics to recover it.
+
+## Serialization and recreation
+
+Engine-owned collection keys are stored in serialized controller metadata and
+restored by `stages({ state })`, so row addresses and durable interaction
+state survive recreation. Focus is not serialized. Application-owned keys
+live in the domain value and are derived again by `itemKey`.
+
+Serialize canonical state only: an unaccepted proposal and its provisional key
+changes are not part of the public snapshot/state contract. After recreation,
+use the same compatible schema identity and key strategy.
+
+## Invalid and duplicate keys
+
+`itemKey` is trusted application code but its result is checked:
+
+- throw: `schema.item-key-failed`;
+- non-string or empty string result: `schema.item-key-failed`;
+- repeated current key: `schema.duplicate-row-key`.
+
+A configured `itemKey` value that is not a function (possible from untyped
+JavaScript) reports `schema.item-key` before rows are evaluated.
+
+The affected row branch is omitted from that evaluation and the diagnostic
+contains its path/address context. A controller-generated duplicate combined
+with `itemKey` therefore needs a fresh domain ID before the new value is
+accepted. Prefer an explicit cloned value with a new ID, or normalize the
+proposal in `onChange`.
+
+Keep keys non-sensitive because addresses may appear in diagnostics,
+serialized metadata, logs, or DOM tooling. Never derive them from secrets.
+
+## What to test
+
+- Save a row address, accept a move, and target remove/move with the old saved
+  address.
+- Assert touched/visited/validation metadata follows an accepted row move.
+- Delay and reject controlled proposals; verify snapshot order and keys remain
+  canonical.
+- Serialize, destroy, recreate, and compare row addresses.
+- Feed duplicate, empty, and throwing `itemKey` cases and assert diagnostics.
+- Test direct external reorder separately from controller-command reorder.
+
+Next: apply domain identity to
+[Discriminated collections](/structures/discriminated-collections), or see
+adapter row bindings in the current [React guide](/react).
+
+## Evidence
+
+Key reconciliation and acceptance live in
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts),
+with key derivation in
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked alternatives are in `docs/examples/structures.ts`. Controller and
+serialization tests cover moves, async acceptance, row-address targeting,
+metadata continuity, and recreation; schema tests cover invalid keys.

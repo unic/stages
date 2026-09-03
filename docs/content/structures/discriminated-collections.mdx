@@ -1,0 +1,189 @@
+---
+title: Discriminated collections
+description: Model heterogeneous array rows with safe discriminators, typed variants, defaults, and stable identity.
+---
+
+# Discriminated collections
+
+A discriminated collection chooses a child schema per row from a discriminator
+property in the domain item. It keeps one array and one row identity model while
+allowing structurally different record types.
+
+**For:** schema authors building contacts, payments, content blocks, or other heterogeneous lists.  
+**Prerequisites:** [Collections](/structures/collections),
+[collection identity](/structures/collection-identity), and
+[field registries](/core-concepts/field-registry).
+
+## Typed person and company rows
+
+```ts
+export const contactsSchema = {
+  id: "contacts-editor",
+  version: 1,
+  nodes: [{
+    kind: "collection",
+    id: "contacts",
+    discriminator: "kind",
+    itemKey: item => (item as Contact).id,
+    variants: {
+      person: {
+        nodes: [
+          { kind: "field", id: "name", type: "text", props: { label: "Name" } },
+          { kind: "field", id: "email", type: "text", props: { label: "Email" } },
+        ],
+      },
+      company: {
+        nodes: [{
+          kind: "field",
+          id: "legalName",
+          type: "text",
+          props: { label: "Legal name" },
+        }],
+      },
+    },
+  }],
+} as const satisfies StagesSchema<ContactsForm, typeof fields>;
+
+export function addPerson(
+  controller: StagesController<ContactsForm, typeof fields>,
+) {
+  controller.dispatch(nodeEvent("collection:add", [
+    { kind: "node", id: "contacts" },
+  ], {
+    payload: {
+      value: { id: "contact-12", kind: "person", name: "Ada", email: "ada@example.com" },
+    },
+  }));
+}
+```
+
+The matching union is:
+
+```ts
+type Contact =
+  | { id: string; kind: "person"; name: string; email: string }
+  | { id: string; kind: "company"; legalName: string };
+
+interface ContactsForm {
+  contacts: Contact[];
+}
+```
+
+The collection must use either homogeneous `nodes` or the pair
+`discriminator` + `variants`, never both. Each variant record contains only
+its recursive `nodes`; common `when`, `disabled`, transforms, validators,
+constraints, and `itemKey` belong on the collection or its descendants.
+
+## Evaluation model
+
+For every item, core reads `item[discriminator]` and looks up that string in
+`variants`. The selected nodes are placed directly below the row snapshot.
+There is no extra variant path/address segment:
+
+```ts
+// First person email
+path: ["contacts", 0, "email"]
+address: [
+  { kind: "node", id: "contacts" },
+  { kind: "row", id: "contact-12" },
+  { kind: "node", id: "email" },
+]
+```
+
+Changing an accepted item's discriminator replaces its child schema. If
+`itemKey` remains the same, row identity remains stable but incompatible child
+identities disappear and their metadata is pruned during reconciliation.
+
+## Add with defaults or an explicit value
+
+There are two controller forms:
+
+```ts
+// Core writes { kind: "company", legalName: "" } from field defaults.
+controller.dispatch(nodeEvent("collection:add", contactsAddress, {
+  payload: { variant: "company" },
+}));
+
+// Core inserts exactly this domain item.
+controller.dispatch(nodeEvent("collection:add", contactsAddress, {
+  payload: {
+    value: { id: "contact-13", kind: "company", legalName: "Analytical Engines" },
+  },
+}));
+```
+
+Default construction writes the discriminator and recursively initializes
+variant fields, groups, nested collections, and wizard stage objects. It does
+not invent domain properties that are not represented by nodes. In the
+checked schema, `itemKey` needs `id`, so either supply a complete explicit
+value or have the controlled owner add a unique ID before accepting the
+proposal. Otherwise evaluation diagnoses the invalid key.
+
+An own `value` payload always wins, even if `variant` is also present. The
+command inserts that value as-is; schema evaluation then decides whether its
+discriminator and row shape can be rendered.
+
+## Rendering heterogeneous rows
+
+Core row snapshots already contain only the selected variant's fields, so a
+recursive adapter can render `row.nodes` without a second discriminator
+switch. Application components may still narrow the readonly item for custom
+layout:
+
+```tsx
+const contacts = useStagesCollection(controller, ["contacts"] as const);
+
+return contacts.items.map(item => (
+  <ContactCard key={item.key} kind={item.value.kind}>
+    {item.value.kind === "person"
+      ? <span>{item.value.name}</span>
+      : <span>{item.value.legalName}</span>}
+  </ContactCard>
+));
+```
+
+Use `item.key` for React reconciliation, `item.address` for structural events,
+and the binding's field paths or row snapshot child paths for field events.
+Do not use a display label as identity.
+
+## Failures and recovery
+
+| Problem | Result |
+| --- | --- |
+| Collection value is not an array | `schema.collection-value`; no rows. |
+| Row is not an object or discriminator is not a configured string | `schema.unknown-variant`; that row branch is omitted. |
+| `discriminator` is an unsafe path segment | `schema.unsafe-discriminator`. |
+| Variant name is unsafe | `schema.unsafe-variant`; that variant is excluded. |
+| Variant entry is malformed | `schema.invalid-variant`. |
+| Add defaults without `variant` or with an unknown variant | Runtime `collection.variant`; no proposal. |
+| Explicit value has an unknown variant | Array command may be proposed; accepted reevaluation diagnoses and omits that row branch. |
+
+Unsafe names include `__proto__`, `prototype`, and `constructor`. Treat schema
+configuration as trusted code, but validate API/server payloads before owner
+acceptance so malformed rows do not silently become unusable UI.
+
+## Accessibility and testing
+
+Give each row a variant label in addition to its field labels. Variant chooser
+controls, add menus, and remove/reorder controls need accessible names and
+keyboard operation. Announce structural changes where necessary; core does
+not provide UI or live regions.
+
+Test every configured variant, explicit and default add, a variant switch,
+unknown/malformed discriminators, stable keys through reorder, and the owner
+step that supplies IDs. In React, assert the correct variant fields mount and
+unmount without leaking field metadata.
+
+Next: place variants inside deeper flows with
+[Recursive composition](/structures/recursive-composition), or inspect exact
+event failures in [Standard events](/reference/standard-events).
+
+## Evidence
+
+The discriminated schema union is defined in
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts);
+selection and diagnostics are implemented in
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
+The checked core example is `docs/examples/structures.ts`. Schema, controller,
+React, and nesting tests cover variant selection, default construction,
+identity, rendering, and malformed rows.

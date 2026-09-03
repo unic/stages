@@ -1,0 +1,164 @@
+---
+title: Wizard validation and guards
+description: Gate wizard transitions using explicit scoped validation, cached status, and synchronous domain policy.
+---
+
+# Wizard validation and guards
+
+Wizard policy has two independent gates: `validateCurrent` requires the current
+stage's cached validation status to be exactly valid, and `guard` synchronously
+decides whether a specific transition is allowed.
+
+**For:** applications that must block incomplete, pending, or unauthorized transitions.  
+**Prerequisites:** [Wizards](/structures/wizards) and the current
+[Validation guide](/validation).
+
+## Validate, then navigate
+
+```ts
+export async function validateAndAdvance(
+  controller: StagesController<OnboardingForm, typeof fields>,
+) {
+  // `validateCurrent` reads cached status, so validate the stage explicitly.
+  const result = await controller.validate({
+    scope: { address: accountStageAddress },
+    event: "submit",
+    reveal: true,
+  });
+
+  if (result.status === "valid") {
+    controller.dispatch(nodeEvent("wizard:next", wizardAddress));
+  }
+}
+
+export function openReview(
+  controller: StagesController<OnboardingForm, typeof fields>,
+) {
+  controller.dispatch(nodeEvent("wizard:go", wizardAddress, {
+    payload: { stage: "review" },
+  }));
+}
+```
+
+`validateCurrent: true` does **not** execute validators during dispatch. It
+derives the current stage's status from validation records already held by the
+controller. Explicitly validate the stage when a button should both reveal
+issues and attempt navigation.
+
+Address scope is preferable for a wizard inside a collection row because it
+survives accepted reorder. The awaited result reports the run that just
+completed; dispatch reevaluates current policy, so a dependency change between
+the await and dispatch can invalidate cached status and safely reject.
+
+## Evaluation order
+
+For `wizard:previous`, `wizard:next`, or `wizard:go`, core determines the
+requested visible stage and checks in this order:
+
+1. the wizard node itself is visible and enabled;
+2. the requested target exists in current visible stages;
+3. `wizard:go` has `navigation.nonLinear: true`;
+4. when `validateCurrent` is true, current-stage status is exactly `valid`;
+5. when present, `guard(readonlyValue, from, to)` returns true.
+
+The first failure produces one `wizard.navigation-rejected` diagnostic. A
+guard throw is caught and included in that diagnostic. Guards are synchronous;
+returning a promise is not part of the type or runtime contract. Finish async
+authorization before dispatch and represent the result in value/context when
+necessary.
+
+## Navigation state matrix
+
+| State at dispatch | With `validateCurrent` | Result |
+| --- | --- | --- |
+| Current stage `unknown` | true | Rejected. Run scoped validation first. |
+| Current stage `pending` | true | Rejected. Await the validation promise. |
+| One or more error issues (`invalid`) | true | Rejected. |
+| Warning-only issues (`valid`) | true | Validation gate passes; guard may still reject. |
+| No error/pending/unknown work (`valid`) | true | Validation gate passes; guard may still reject. |
+| Any validation status | false/omitted | Status is not a navigation gate. |
+| Target stage hidden by `when` | either | Rejected as not visible. |
+| Target stage `disabled` | either | Still a visible target in v1; descendants are disabled. Use `when` or a guard to prevent entry. |
+| Wizard hidden or disabled | either | Rejected. |
+| `previous` on first / `next` on last | either | Rejected because no requested visible target exists. |
+| `go` without `nonLinear` | either | Rejected. |
+| Missing or invalid `go` payload | either | Rejected. |
+| Guard false or throws | after earlier gates pass | Rejected. |
+
+`canPrevious`, `canNext`, and `canGo` cover only wizard enabled state,
+position, and non-linear configuration. They intentionally do not predict the
+validation or guard result.
+
+## Guard design
+
+```ts
+navigation: {
+  nonLinear: true,
+  validateCurrent: true,
+  guard(value, from, to) {
+    if (from === "payment" && to === "review") return value.payment.authorized;
+    return true;
+  },
+}
+```
+
+The value is deeply readonly and reflects the transaction draft used for the
+event. Keep guards pure, fast, deterministic, and free of sensitive logging.
+Use validation for explainable data-quality issues and a guard for transition
+policy such as authorization or workflow ordering. If users need a reason,
+render application guidance; diagnostics are developer-facing, not a localized
+validation-message channel.
+
+## State, transforms, and failure behavior
+
+A successful transition updates metadata only. It can still match transforms
+on the wizard, ancestors, and root, and it starts ordinary event-driven
+validation after those transforms. A rejected transition skips both, creates
+no patch, and leaves the active stage unchanged.
+
+Validation records can become unknown again after relevant value,
+dependency, schema, or context changes. Pending work is cancelled or made
+stale according to normal validation rules. Wizard navigation never waits for
+it automatically.
+
+Because active stages serialize but validation results do not, a recreated
+wizard with `validateCurrent` commonly starts with unknown validation. Validate
+again before moving unless `init` policies establish a valid cache.
+
+## Application recipe: guarded review
+
+For checkout review:
+
+1. call `validate({ scope: { address: currentStage }, event: "submit",
+   reveal: true })`;
+2. await pending remote validators;
+3. focus the first visible issue in the adapter if invalid;
+4. dispatch navigation only for a valid result; and
+5. let the guard verify non-validation policy such as payment authorization.
+
+Disable the button while the stage validation snapshot is pending, but still
+handle a runtime rejection because canonical inputs may change before the
+click transaction completes.
+
+## What to test
+
+- Cover unknown, pending, invalid, warning-only, and valid stage states.
+- Assert target visibility, boundary, non-linear, disabled-wizard, and
+  disabled-stage behavior separately.
+- Test guard false and throw without exposing domain values in logs.
+- Assert rejection emits no `onChange`, patches, transforms, or validation run.
+- Recreate serialized state and verify the active stage persists while cached
+  validation does not.
+
+Next: see exact event target/payload behavior in
+[Standard events](/reference/standard-events), or compose guarded wizards in
+[Recursive composition](/structures/recursive-composition).
+
+## Evidence
+
+The gate order and rejection behavior come from
+[`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts).
+The checked workflow is in `docs/examples/structures.ts`. Validation tests
+explicitly cover unknown, pending, invalid, warning-only, valid, hidden target,
+and guard behavior; controller tests cover metadata-only transitions and
+recreation.
