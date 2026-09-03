@@ -303,3 +303,64 @@ test("stage validity is scoped and gates wizard navigation", async () => {
   assert.equal(wizard().activeStage, "second");
   assert.equal(wizard().nodes[0].validation.status, "valid");
 });
+
+test("pending validators are cooperatively cancelled when dependencies change", async () => {
+  let cancellations = 0;
+  const schema = {
+    id: "cooperative-cancellation",
+    version: 1,
+    nodes: [{
+      kind: "field",
+      id: "name",
+      type: "text",
+      validators: [{
+        id: "remote",
+        on: "submit",
+        validate: ({ signal }) => new Promise((resolve) => {
+          signal.onCancel(() => {
+            cancellations += 1;
+            resolve([]);
+          });
+        }),
+      }],
+    }],
+  };
+  const controller = stages({ schema, fields, value: { name: "first" } });
+  const pending = controller.validate({ event: "submit" });
+  assert.equal(controller.getSnapshot().nodes[0].state.validating, true);
+
+  controller.update({ value: { name: "second" } });
+  const result = await pending;
+  assert.equal(cancellations, 1);
+  assert.equal(result.status, "unknown");
+  assert.equal(controller.getSnapshot().nodes[0].state.validating, false);
+});
+
+test("superseding validation and controller teardown cancel per-instance work", () => {
+  let cancellations = 0;
+  const schema = {
+    id: "superseded-cancellation",
+    version: 1,
+    nodes: [{
+      kind: "field",
+      id: "name",
+      type: "text",
+      validators: [{
+        id: "remote",
+        on: "input",
+        validate: ({ signal }) => new Promise((resolve) => {
+          signal.onCancel(() => {
+            cancellations += 1;
+            resolve([]);
+          });
+        }),
+      }],
+    }],
+  };
+  const controller = stages({ schema, fields, value: { name: "" } });
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["name"] }, payload: "first" });
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["name"] }, payload: "second" });
+  assert.equal(cancellations, 1);
+  controller.destroy();
+  assert.equal(cancellations, 2);
+});

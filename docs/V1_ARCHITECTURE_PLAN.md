@@ -34,6 +34,12 @@ native text/number/checkbox field definitions, accessible issue wiring, React
 lifecycle and selector-bound field helpers, and a reusable adapter contract
 harness. Executable Vue-style and Angular-style proofs consume the same opaque
 views, snapshots, subscriptions, and events without core changes.
+Async validators now receive a framework-neutral cooperative cancellation
+signal; dependency invalidation, superseding runs, structural removal, and
+controller teardown cancel pending work in addition to suppressing stale
+results. Invalid dynamic schema revisions retain the previous valid normalized
+tree and publish structured factory, resolver, or root-identity diagnostics
+until configuration recovers.
 
 ## 1. Outcome
 

@@ -36,6 +36,7 @@ import type {
   StagesUpdate,
   ValidateOptions,
   ValidationIssue,
+  ValidationCancellationSignal,
   ValidationSnapshot,
   ValidatorConfig,
 } from "./types.js";
@@ -135,6 +136,7 @@ interface ValidationRecord {
   readonly issues: readonly ValidationIssue[];
   readonly revealed: boolean;
   readonly token: number;
+  readonly cancel: () => void;
 }
 
 function eventNames(value: string | readonly string[] | undefined): readonly string[] {
@@ -144,6 +146,41 @@ function eventNames(value: string | readonly string[] | undefined): readonly str
 
 function validationRecordKey(address: NodeAddress, validatorId: string): string {
   return `${addressKey(address)}#${validatorId.length}:${validatorId}`;
+}
+
+const passiveValidationSignal: ValidationCancellationSignal = {
+  aborted: false,
+  onCancel: () => () => undefined,
+};
+
+function createValidationCancellation(): Readonly<{
+  signal: ValidationCancellationSignal;
+  cancel: () => void;
+}> {
+  let aborted = false;
+  const listeners = new Set<() => void>();
+  const signal: ValidationCancellationSignal = {
+    get aborted() {
+      return aborted;
+    },
+    onCancel(listener) {
+      if (aborted) {
+        listener();
+        return () => undefined;
+      }
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+  return {
+    signal,
+    cancel() {
+      if (aborted) return;
+      aborted = true;
+      for (const listener of [...listeners]) listener();
+      listeners.clear();
+    },
+  };
 }
 
 function pathsIntersect(left: DataPath, right: DataPath): boolean {
@@ -467,6 +504,8 @@ export function stages<TValue, TFields, TContext = unknown>(
   const validationRecords = new Map<string, ValidationRecord>();
   let publishedEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
   let transactionEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
+  let lastValidEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
+  let expectedSchemaIdentity: Readonly<{ id: string; version: number }> | undefined;
   const listeners = new Set<() => void>();
   const selectorListeners = new Set<() => void>();
   const reportedDiagnostics = new Set<string>();
@@ -496,16 +535,54 @@ export function stages<TValue, TFields, TContext = unknown>(
     options.onDiagnostic?.(item);
   }
 
+  function reportSchemaDiagnostic(item: Diagnostic): void {
+    const key = `${item.code}:${JSON.stringify(item.path)}:${item.message}`;
+    if (reportedDiagnostics.has(key)) return;
+    reportedDiagnostics.add(key);
+    options.onDiagnostic?.(item);
+  }
+
   function evaluated(currentValue: TValue) {
     const currentCollectionKeys = transactionCollectionKeys ?? collectionKeys;
-    const result = evaluateSchema({
-      schema: schemaInput,
-      value: readonlyValue(currentValue),
-      context: readonlyValue(context),
-      meta: meta(),
-      fields: options.fields,
-      collectionKeys: new Map([...currentCollectionKeys].map(([key, state]) => [key, state.keys])),
-    });
+    let result: EvaluatedSchema<TValue, TFields, TContext>;
+    try {
+      result = evaluateSchema({
+        schema: schemaInput,
+        value: readonlyValue(currentValue),
+        context: readonlyValue(context),
+        meta: meta(),
+        fields: options.fields,
+        collectionKeys: new Map([...currentCollectionKeys].map(([key, state]) => [key, state.keys])),
+      });
+    } catch (error) {
+      if (lastValidEvaluation === undefined) throw error;
+      const failure: Diagnostic = {
+        code: "schema.factory-failed",
+        message: error instanceof Error ? error.message : String(error),
+        severity: "error",
+        path: [],
+        address: [],
+      };
+      reportSchemaDiagnostic(failure);
+      return {
+        schema: lastValidEvaluation.schema,
+        nodes: lastValidEvaluation.nodes,
+        diagnostics: [failure],
+      };
+    }
+    const expectedIdentity = expectedSchemaIdentity;
+    const identityChanged = expectedIdentity !== undefined
+      && (result.schema.id !== expectedIdentity.id || result.schema.version !== expectedIdentity.version);
+    if (identityChanged && expectedIdentity !== undefined) {
+      const failure: Diagnostic = {
+        code: "schema.identity-changed",
+        message: `Schema factory changed root identity from ${expectedIdentity.id}@${expectedIdentity.version} to ${result.schema.id}@${result.schema.version}.`,
+        severity: "error",
+        path: [],
+        address: [],
+      };
+      result = { ...result, diagnostics: [...result.diagnostics, failure] };
+    }
     if (restored !== undefined && (
       restored.format !== "stages"
       || restored.formatVersion !== 1
@@ -517,11 +594,18 @@ export function stages<TValue, TFields, TContext = unknown>(
       );
     }
     for (const item of result.diagnostics) {
-      const key = `${item.code}:${JSON.stringify(item.path)}:${item.message}`;
-      if (!reportedDiagnostics.has(key)) {
-        reportedDiagnostics.add(key);
-        options.onDiagnostic?.(item);
-      }
+      reportSchemaDiagnostic(item);
+    }
+    if (result.diagnostics.some((item) => item.severity === "error") && lastValidEvaluation !== undefined) {
+      return {
+        schema: lastValidEvaluation.schema,
+        nodes: lastValidEvaluation.nodes,
+        diagnostics: result.diagnostics,
+      };
+    }
+    if (!result.diagnostics.some((item) => item.severity === "error")) {
+      expectedSchemaIdentity ??= { id: result.schema.id, version: result.schema.version };
+      lastValidEvaluation = result;
     }
     return result;
   }
@@ -641,7 +725,13 @@ export function stages<TValue, TFields, TContext = unknown>(
     }
     collectionKeys = retainedCollectionKeys;
     for (const [key, record] of validationRecords) {
-      if (!nextIdentities.has(addressKey(record.address))) validationRecords.delete(key);
+      const identityKey = addressKey(record.address);
+      const previousIdentity = knownIdentities.get(identityKey);
+      const nextIdentity = nextIdentities.get(identityKey);
+      if (nextIdentity === undefined || (previousIdentity !== undefined && previousIdentity !== nextIdentity)) {
+        record.cancel();
+        validationRecords.delete(key);
+      }
     }
     knownIdentities = nextIdentities;
   }
@@ -678,6 +768,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     node: NormalizedNode<TValue, TFields, TContext>,
     currentValue: TValue,
     event: string,
+    signal: ValidationCancellationSignal = passiveValidationSignal,
   ) {
     const key = addressKey(node.address);
     return {
@@ -689,6 +780,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       fieldValue: getAtPath(currentValue, node.path),
       parentValue: getAtPath(currentValue, node.path.slice(0, -1)),
       event,
+      signal,
       fieldState: {
         disabled: node.disabled,
         focused: focused.has(key),
@@ -729,10 +821,17 @@ export function stages<TValue, TFields, TContext = unknown>(
         applicable = true;
       }
       if (!applicable) {
+        record?.cancel();
         validationRecords.delete(key);
         continue;
       }
-      if (record === undefined || !recordIsCurrent(record, node, validator, currentValue)) {
+      if (record === undefined) {
+        unknownCount += 1;
+        continue;
+      }
+      if (!recordIsCurrent(record, node, validator, currentValue)) {
+        record.cancel();
+        validationRecords.delete(key);
         unknownCount += 1;
         continue;
       }
@@ -811,6 +910,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       try {
         applicable = validator.when?.(contextValue) !== false;
       } catch (error) {
+        previous?.cancel();
         validationRecords.set(key, {
           address: node.address,
           validator,
@@ -827,10 +927,12 @@ export function stages<TValue, TFields, TContext = unknown>(
           }],
           revealed: shouldReveal || previous?.revealed === true,
           token: ++validationToken,
+          cancel: () => undefined,
         });
         continue;
       }
       if (!applicable) {
+        previous?.cancel();
         validationRecords.delete(key);
         continue;
       }
@@ -842,8 +944,11 @@ export function stages<TValue, TFields, TContext = unknown>(
       const values = dependencyValues(paths, currentValue);
       const token = ++validationToken;
       const revealed = shouldReveal || previous?.revealed === true;
+      previous?.cancel();
+      const cancellation = createValidationCancellation();
+      const runContext = validationContext(node, currentValue, event, cancellation.signal);
       try {
-        const output = validator.validate(contextValue);
+        const output = validator.validate(runContext);
         if (output !== null && typeof output === "object" && "then" in output) {
           validationRecords.set(key, {
             address: node.address,
@@ -855,6 +960,7 @@ export function stages<TValue, TFields, TContext = unknown>(
             issues: previous !== undefined && recordIsCurrent(previous, node, validator, currentValue) ? previous.issues : [],
             revealed,
             token,
+            cancel: cancellation.cancel,
           });
           const completion = Promise.resolve(output).then(
             (issues) => issues,
@@ -887,6 +993,7 @@ export function stages<TValue, TFields, TContext = unknown>(
             issues: output,
             revealed,
             token,
+            cancel: cancellation.cancel,
           });
         }
       } catch (error) {
@@ -906,6 +1013,7 @@ export function stages<TValue, TFields, TContext = unknown>(
           }],
           revealed,
           token,
+          cancel: cancellation.cancel,
         });
       }
     }
@@ -1010,15 +1118,20 @@ export function stages<TValue, TFields, TContext = unknown>(
       if (publishedEvaluation !== undefined) synchronizeCollectionKeys(publishedEvaluation.nodes, value);
     }
     if (input.context !== undefined) context = input.context;
-    if (input.schema !== undefined) schemaInput = input.schema;
+    if (input.schema !== undefined) {
+      schemaInput = input.schema;
+      expectedSchemaIdentity = undefined;
+    }
     publishedEvaluation = undefined;
     revision += 1;
     validationRun += 1;
     if (invalidateAllValidation) {
+      for (const record of validationRecords.values()) record.cancel();
       validationRecords.clear();
     } else if (input.value !== undefined) {
       for (const [key, record] of validationRecords) {
         if (!deepEqual(record.dependencyValues, dependencyValues(record.dependencyPaths, value))) {
+          record.cancel();
           validationRecords.delete(key);
         }
       }
@@ -1305,6 +1418,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       selectorListeners.clear();
       activeWizards.clear();
       collectionKeys.clear();
+      for (const record of validationRecords.values()) record.cancel();
       validationRecords.clear();
       proposal = undefined;
       transactionEvents = [];
@@ -1312,6 +1426,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       transactionEvaluation = undefined;
       transactionCollectionKeys = undefined;
       publishedEvaluation = undefined;
+      lastValidEvaluation = undefined;
       pendingAcceptance = undefined;
     },
   };

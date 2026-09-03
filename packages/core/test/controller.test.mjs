@@ -548,3 +548,71 @@ test("active wizard stages reconcile when dynamic stages become dormant", async 
   assert.deepEqual(wizard.visibleStageIds, ["first"]);
   assert.equal(wizard.nodes.length, 1);
 });
+
+test("dynamic factory failures preserve the previous valid tree and recover", async () => {
+  const diagnostics = [];
+  const schema = ({ value }) => {
+    if (value.fail) throw new Error("factory exploded");
+    return {
+      id: "resilient-factory",
+      version: 1,
+      nodes: [{ kind: "field", id: "count", type: "number" }],
+    };
+  };
+  const controller = stages({
+    schema,
+    fields,
+    value: { count: 1, fail: false },
+    onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+  });
+  controller.update({ value: { count: 2, fail: true } });
+  await tick();
+  assert.equal(controller.getSnapshot().nodes[0].value, 2);
+  assert.equal(controller.getSnapshot().diagnostics[0].code, "schema.factory-failed");
+  assert.match(controller.getSnapshot().diagnostics[0].message, /factory exploded/);
+
+  controller.update({ value: { count: 3, fail: false } });
+  await tick();
+  assert.equal(controller.getSnapshot().nodes[0].value, 3);
+  assert.deepEqual(controller.getSnapshot().diagnostics, []);
+  assert.equal(diagnostics.some(({ code }) => code === "schema.factory-failed"), true);
+});
+
+test("invalid resolver output and unstable root identity do not replace a valid schema", async () => {
+  const resolverSchema = {
+    id: "stable-resolver",
+    version: 1,
+    nodes: [{
+      kind: "field",
+      id: "count",
+      type: "number",
+      deriveProps: ({ value }) => {
+        if (value.fail) throw new Error("props exploded");
+        return { label: `Count ${value.count}` };
+      },
+    }],
+  };
+  const resolverController = stages({
+    schema: resolverSchema,
+    fields,
+    value: { count: 1, fail: false },
+  });
+  resolverController.update({ value: { count: 2, fail: true } });
+  await tick();
+  assert.deepEqual(resolverController.getSnapshot().nodes[0].props, { label: "Count 1" });
+  assert.equal(resolverController.getSnapshot().diagnostics[0].code, "schema.resolver-failed");
+
+  const identityController = stages({
+    schema: ({ value }) => ({
+      id: value.changeIdentity ? "changed" : "stable",
+      version: 1,
+      nodes: [{ kind: "field", id: "count", type: "number" }],
+    }),
+    fields,
+    value: { count: 1, changeIdentity: false },
+  });
+  identityController.update({ value: { count: 2, changeIdentity: true } });
+  await tick();
+  assert.equal(identityController.serialize().schema.id, "stable");
+  assert.equal(identityController.getSnapshot().diagnostics[0].code, "schema.identity-changed");
+});

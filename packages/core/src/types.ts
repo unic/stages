@@ -130,6 +130,12 @@ export interface ValidationContext<TValue, TContext = unknown>
   extends NodeResolverContext<TValue, TContext> {
   readonly event: string;
   readonly fieldState: Readonly<FieldInteractionState>;
+  readonly signal: ValidationCancellationSignal;
+}
+
+export interface ValidationCancellationSignal {
+  readonly aborted: boolean;
+  onCancel(listener: () => void): () => void;
 }
 
 export interface ValidationIssue {
