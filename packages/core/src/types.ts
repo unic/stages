@@ -296,6 +296,7 @@ export interface ContainerSnapshot {
   readonly size?: number;
   readonly canAdd?: boolean;
   readonly canRemove?: boolean;
+  readonly validation?: ValidationSnapshot;
 }
 
 export type RenderNodeSnapshot = FieldSnapshot | ContainerSnapshot;

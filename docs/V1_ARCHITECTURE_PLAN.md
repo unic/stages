@@ -17,7 +17,10 @@ async-validation protection. Collection events now cover immutable
 add/remove/replace/duplicate/move/sort commands, constraints, union defaults,
 and rejection diagnostics. Nested wizard snapshots expose active stages and
 navigation capabilities, with metadata-only next/previous/go events, guards,
-and durable active-stage recreation.
+and durable active-stage recreation. Validation is indexed by stable validator
+and node identity, with event and reveal policies, selective dependency
+invalidation, conditional exclusion, scoped and per-stage aggregation, async
+race protection, and deterministic rejection issues.
 
 ## 1. Outcome
 

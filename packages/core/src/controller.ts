@@ -139,6 +139,32 @@ interface ActiveWizardState {
   readonly stage: string;
 }
 
+interface ValidationRecord {
+  readonly address: NodeAddress;
+  readonly validator: object;
+  readonly dependencyPaths: readonly DataPath[];
+  readonly dependencyValues: readonly unknown[];
+  readonly context: unknown;
+  readonly status: "pending" | "complete";
+  readonly issues: readonly ValidationIssue[];
+  readonly revealed: boolean;
+  readonly token: number;
+}
+
+function eventNames(value: string | readonly string[] | undefined): readonly string[] {
+  if (value === undefined) return [];
+  return typeof value === "string" ? [value] : value;
+}
+
+function validationRecordKey(address: NodeAddress, validatorId: string): string {
+  return `${addressKey(address)}#${validatorId.length}:${validatorId}`;
+}
+
+function pathsIntersect(left: DataPath, right: DataPath): boolean {
+  const commonLength = Math.min(left.length, right.length);
+  return pathsEqual(left.slice(0, commonLength), right.slice(0, commonLength));
+}
+
 function initialScopeValue<TValue, TFields, TContext>(
   nodes: readonly NodeConfig<TValue, TFields, TContext>[],
   fields: TFields,
@@ -259,9 +285,12 @@ function mapSnapshotNode<TValue, TFields, TContext>(
   fields: TFields,
   interaction: InteractionState,
   issues: readonly ValidationIssue[],
+  visibleIssues: readonly ValidationIssue[],
+  validationByAddress: ReadonlyMap<string, ValidationSnapshot>,
 ): RenderNodeSnapshot {
   const key = addressKey(node.address);
   const nodeIssues = issues.filter((issue) => pathsEqual(issue.path, node.path));
+  const nodeVisibleIssues = visibleIssues.filter((issue) => pathsEqual(issue.path, node.path));
   if (node.config.kind === "field") {
     const definition = fieldDefinition(fields, node.config.type);
     const currentValue = getAtPath(value, node.path);
@@ -285,9 +314,9 @@ function mapSnapshotNode<TValue, TFields, TContext>(
         focused: interaction.focused.has(key),
         touched: interaction.touched.has(key),
         dirty: !deepEqual(currentValue, initialValue),
-        validating: false,
+        validating: (validationByAddress.get(key)?.pendingCount ?? 0) > 0,
         issues: nodeIssues,
-        visibleIssues: nodeIssues,
+        visibleIssues: nodeVisibleIssues,
       },
     };
     return snapshot;
@@ -308,13 +337,16 @@ function mapSnapshotNode<TValue, TFields, TContext>(
           fields,
           interaction,
           issues,
+          visibleIssues,
+          validationByAddress,
           node.config.kind === "wizard"
             ? interaction.activeWizards.get(addressKey(node.address)) === branch.id
             : undefined,
         ))
       : node.children
         .filter((child) => child.visible)
-        .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
+        .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues, visibleIssues, validationByAddress)),
+    validation: validationByAddress.get(key) ?? emptyValidation,
     ...(node.config.kind === "collection" ? {
       size: Array.isArray(getAtPath(value, node.path)) ? (getAtPath(value, node.path) as readonly unknown[]).length : 0,
       canAdd: node.config.max === undefined || node.branches.length < node.config.max,
@@ -343,6 +375,8 @@ function mapSnapshotBranch<TValue, TFields, TContext>(
   fields: TFields,
   interaction: InteractionState,
   issues: readonly ValidationIssue[],
+  visibleIssues: readonly ValidationIssue[],
+  validationByAddress: ReadonlyMap<string, ValidationSnapshot>,
   active: boolean | undefined,
 ): ContainerSnapshot {
   return {
@@ -353,7 +387,8 @@ function mapSnapshotBranch<TValue, TFields, TContext>(
     state: { disabled: branch.disabled, visible: branch.visible },
     nodes: branch.children
       .filter((child) => child.visible)
-      .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
+      .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues, visibleIssues, validationByAddress)),
+    validation: validationByAddress.get(addressKey(branch.address)) ?? emptyValidation,
     ...(active === undefined ? {} : { active }),
   };
 }
@@ -417,6 +452,8 @@ export function stages<TValue, TFields, TContext = unknown>(
   }
   let validation = emptyValidation;
   let validationRun = 0;
+  let validationToken = 0;
+  const validationRecords = new Map<string, ValidationRecord>();
   let publishedEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
   let transactionEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
   const listeners = new Set<() => void>();
@@ -522,7 +559,276 @@ export function stages<TValue, TFields, TContext = unknown>(
     };
     initializeWizards(nodes);
     activeWizards = nextActiveWizards;
+    for (const [key, record] of validationRecords) {
+      if (!nextIdentities.has(addressKey(record.address))) validationRecords.delete(key);
+    }
     knownIdentities = nextIdentities;
+  }
+
+  function validatorPaths(
+    node: NormalizedNode<TValue, TFields, TContext>,
+    validator: ValidatorConfig<TValue, TContext>,
+  ): readonly DataPath[] {
+    const paths: DataPath[] = [node.path];
+    for (const dependency of validator.dependencies ?? []) {
+      if (!paths.some((path) => pathsEqual(path, dependency))) paths.push(dependency);
+    }
+    return paths;
+  }
+
+  function dependencyValues(paths: readonly DataPath[], currentValue: TValue): readonly unknown[] {
+    return paths.map((path) => getAtPath(currentValue, path));
+  }
+
+  function recordIsCurrent(
+    record: ValidationRecord,
+    node: NormalizedNode<TValue, TFields, TContext>,
+    validator: ValidatorConfig<TValue, TContext>,
+    currentValue: TValue,
+  ): boolean {
+    return record.validator === validator
+      && record.context === context
+      && record.dependencyValues.length === record.dependencyPaths.length
+      && deepEqual(record.dependencyValues, dependencyValues(record.dependencyPaths, currentValue))
+      && pathsEqual(record.dependencyPaths[0] ?? [], node.path);
+  }
+
+  function validationContext(
+    node: NormalizedNode<TValue, TFields, TContext>,
+    currentValue: TValue,
+    event: string,
+  ) {
+    const key = addressKey(node.address);
+    return {
+      value: readonlyValue(currentValue),
+      context: readonlyValue(context),
+      meta: meta(),
+      path: node.path,
+      address: node.address,
+      fieldValue: getAtPath(currentValue, node.path),
+      parentValue: getAtPath(currentValue, node.path.slice(0, -1)),
+      event,
+      fieldState: {
+        disabled: node.disabled,
+        focused: focused.has(key),
+        touched: touched.has(key),
+        visited: visited.has(key),
+      },
+    };
+  }
+
+  function inValidationScope(
+    node: NormalizedNode<TValue, TFields, TContext>,
+    scope: ValidateOptions["scope"],
+  ): boolean {
+    if (scope === undefined || scope === "form") return true;
+    return "path" in scope
+      ? pathsEqual(node.path.slice(0, scope.path.length), scope.path)
+      : addressStartsWith(node.address, scope.address);
+  }
+
+  function deriveValidation(
+    result: EvaluatedSchema<TValue, TFields, TContext>,
+    currentValue: TValue,
+    scope: ValidateOptions["scope"] = "form",
+  ): ValidationSnapshot {
+    const issues: ValidationIssue[] = [];
+    const visibleIssues: ValidationIssue[] = [];
+    let pendingCount = 0;
+    let unknownCount = 0;
+
+    for (const { node, validator } of validatorsFor(result.nodes)) {
+      if (!node.visible || !inValidationScope(node, scope)) continue;
+      const key = validationRecordKey(node.address, validator.id);
+      const record = validationRecords.get(key);
+      let applicable = true;
+      try {
+        applicable = validator.when?.(validationContext(node, currentValue, "status")) !== false;
+      } catch {
+        applicable = true;
+      }
+      if (!applicable) {
+        validationRecords.delete(key);
+        continue;
+      }
+      if (record === undefined || !recordIsCurrent(record, node, validator, currentValue)) {
+        unknownCount += 1;
+        continue;
+      }
+      if (record.status === "pending") pendingCount += 1;
+      issues.push(...record.issues);
+      if (record.revealed) visibleIssues.push(...record.issues);
+    }
+
+    const hasErrors = issues.some((issue) => issue.severity === "error");
+    const status = hasErrors
+      ? "invalid"
+      : pendingCount > 0
+        ? "pending"
+        : unknownCount > 0
+          ? "unknown"
+          : "valid";
+    return {
+      status,
+      isValid: status === "valid",
+      issues,
+      visibleIssues,
+      pendingCount,
+      unknownCount,
+    };
+  }
+
+  function validationIndex(
+    result: EvaluatedSchema<TValue, TFields, TContext>,
+    currentValue: TValue,
+  ): ReadonlyMap<string, ValidationSnapshot> {
+    const index = new Map<string, ValidationSnapshot>();
+    const collect = (nodes: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
+      for (const node of nodes) {
+        index.set(
+          addressKey(node.address),
+          deriveValidation(result, currentValue, { address: node.address }),
+        );
+        for (const branch of node.branches) {
+          index.set(
+            addressKey(branch.address),
+            deriveValidation(result, currentValue, { address: branch.address }),
+          );
+        }
+        collect(node.children);
+      }
+    };
+    collect(result.nodes);
+    return index;
+  }
+
+  function runValidation(
+    result: EvaluatedSchema<TValue, TFields, TContext>,
+    currentValue: TValue,
+    event: string,
+    force: boolean,
+    reveal: boolean,
+    scope: ValidateOptions["scope"] = "form",
+    targetAddress?: NodeAddress,
+    affectedPaths: readonly DataPath[] = [],
+  ): Promise<void> {
+    const pending: Promise<void>[] = [];
+    for (const { node, validator } of validatorsFor(result.nodes)) {
+      if (!node.visible || !inValidationScope(node, scope)) continue;
+      const key = validationRecordKey(node.address, validator.id);
+      const previous = validationRecords.get(key);
+      const paths = validatorPaths(node, validator);
+      const relevant = force
+        || targetAddress === undefined
+        || addressStartsWith(targetAddress, node.address)
+        || paths.some((path) => affectedPaths.some((affected) => pathsIntersect(path, affected)));
+      if (!relevant) continue;
+      const shouldReveal = reveal || eventNames(validator.revealOn).includes(event);
+      const shouldRun = force || eventNames(validator.on).includes(event);
+      const contextValue = validationContext(node, currentValue, event);
+      let applicable = true;
+      try {
+        applicable = validator.when?.(contextValue) !== false;
+      } catch (error) {
+        validationRecords.set(key, {
+          address: node.address,
+          validator,
+          dependencyPaths: paths,
+          dependencyValues: dependencyValues(paths, currentValue),
+          context,
+          status: "complete",
+          issues: [{
+            id: `${validator.id}.when-failed`,
+            code: "validator-when-failed",
+            path: node.path,
+            severity: "error",
+            message: error instanceof Error ? error.message : String(error),
+          }],
+          revealed: shouldReveal || previous?.revealed === true,
+          token: ++validationToken,
+        });
+        continue;
+      }
+      if (!applicable) {
+        validationRecords.delete(key);
+        continue;
+      }
+      if (!shouldRun) {
+        if (shouldReveal && previous !== undefined) validationRecords.set(key, { ...previous, revealed: true });
+        continue;
+      }
+
+      const values = dependencyValues(paths, currentValue);
+      const token = ++validationToken;
+      const revealed = shouldReveal || previous?.revealed === true;
+      try {
+        const output = validator.validate(contextValue);
+        if (output !== null && typeof output === "object" && "then" in output) {
+          validationRecords.set(key, {
+            address: node.address,
+            validator,
+            dependencyPaths: paths,
+            dependencyValues: values,
+            context,
+            status: "pending",
+            issues: previous !== undefined && recordIsCurrent(previous, node, validator, currentValue) ? previous.issues : [],
+            revealed,
+            token,
+          });
+          const completion = Promise.resolve(output).then(
+            (issues) => issues,
+            (error: unknown): readonly ValidationIssue[] => [{
+              id: `${validator.id}.rejected`,
+              code: "validator-rejected",
+              path: node.path,
+              severity: "error",
+              message: error instanceof Error ? error.message : String(error),
+            }],
+          ).then((issues) => {
+            if (destroyed) return;
+            const record = validationRecords.get(key);
+            const latestValue = proposal ?? value;
+            if (record?.token !== token || !recordIsCurrent(record, node, validator, latestValue)) return;
+            validationRecords.set(key, { ...record, status: "complete", issues });
+            revision += 1;
+            dirtySnapshot = true;
+            schedule();
+          });
+          pending.push(completion);
+        } else {
+          validationRecords.set(key, {
+            address: node.address,
+            validator,
+            dependencyPaths: paths,
+            dependencyValues: values,
+            context,
+            status: "complete",
+            issues: output,
+            revealed,
+            token,
+          });
+        }
+      } catch (error) {
+        validationRecords.set(key, {
+          address: node.address,
+          validator,
+          dependencyPaths: paths,
+          dependencyValues: values,
+          context,
+          status: "complete",
+          issues: [{
+            id: `${validator.id}.rejected`,
+            code: "validator-rejected",
+            path: node.path,
+            severity: "error",
+            message: error instanceof Error ? error.message : String(error),
+          }],
+          revealed,
+          token,
+        });
+      }
+    }
+    return Promise.all(pending).then(() => undefined);
   }
 
   function snapshot(): StagesSnapshot<TValue> {
@@ -530,6 +836,8 @@ export function stages<TValue, TFields, TContext = unknown>(
     const result = evaluated(value);
     publishedEvaluation = result;
     reconcileInteraction(result.nodes);
+    validation = deriveValidation(result, value);
+    const indexedValidation = validationIndex(result, value);
     const previousNodes = indexSnapshotNodes(cachedSnapshot.nodes);
     const nextNodes = result.nodes
       .filter((node) => node.visible)
@@ -538,7 +846,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         touched,
         visited,
         activeWizards: new Map([...activeWizards].map(([key, state]) => [key, state.stage])),
-      }, validation.issues))
+      }, validation.issues, validation.visibleIssues, indexedValidation))
       .map((node) => shareSnapshotNode(node, previousNodes));
     cachedSnapshot = {
       value: readonlyValue(value),
@@ -598,12 +906,22 @@ export function stages<TValue, TFields, TContext = unknown>(
 
   function update(input: StagesUpdate<TValue, TFields, TContext>): void {
     if (destroyed) return;
+    const invalidateAllValidation = input.context !== undefined || input.schema !== undefined;
     if (input.value !== undefined) value = input.value;
     if (input.context !== undefined) context = input.context;
     if (input.schema !== undefined) schemaInput = input.schema;
     publishedEvaluation = undefined;
     revision += 1;
     validationRun += 1;
+    if (invalidateAllValidation) {
+      validationRecords.clear();
+    } else if (input.value !== undefined) {
+      for (const [key, record] of validationRecords) {
+        if (!deepEqual(record.dependencyValues, dependencyValues(record.dependencyPaths, value))) {
+          validationRecords.delete(key);
+        }
+      }
+    }
     validation = emptyValidation;
     dirtySnapshot = true;
     if (!flushing) schedule();
@@ -692,6 +1010,10 @@ export function stages<TValue, TFields, TContext = unknown>(
       const key = addressKey(target.address);
       const currentStage = activeWizards.get(key)?.stage ?? visibleStages[0]?.id;
       const currentIndex = visibleStages.findIndex((branch) => branch.id === currentStage);
+      const currentBranch = visibleStages[currentIndex];
+      const currentStageValidation = currentBranch === undefined
+        ? emptyValidation
+        : deriveValidation(result, draft, { address: currentBranch.address });
       let requestedStage: string | undefined;
       if (event.name === "wizard:next") requestedStage = visibleStages[currentIndex + 1]?.id;
       if (event.name === "wizard:previous") requestedStage = visibleStages[currentIndex - 1]?.id;
@@ -708,7 +1030,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       if (!target.visible || target.disabled) rejection = "Cannot navigate a hidden or disabled wizard.";
       else if (requestedStage === undefined || !visibleStages.some((branch) => branch.id === requestedStage)) rejection = "Wizard target is not a visible stage.";
       else if (event.name === "wizard:go" && target.config.navigation?.nonLinear !== true) rejection = "Non-linear wizard navigation is disabled.";
-      else if (target.config.navigation?.validateCurrent === true && validation.status !== "valid") rejection = "Current wizard state must be valid before navigation.";
+      else if (target.config.navigation?.validateCurrent === true && currentStageValidation.status !== "valid") rejection = "Current wizard stage must be valid before navigation.";
       else if (currentStage !== undefined && target.config.navigation?.guard !== undefined) {
         try {
           if (!target.config.navigation.guard(readonlyValue(draft), currentStage, requestedStage)) rejection = "Wizard navigation guard rejected the target stage.";
@@ -768,6 +1090,20 @@ export function stages<TValue, TFields, TContext = unknown>(
       patches = [...patches, ...derived];
     }
 
+    if (!commandRejected) {
+      void runValidation(
+        result,
+        nextDraft,
+        event.name,
+        false,
+        false,
+        "form",
+        target?.address,
+        patches.map((patch) => patch.path),
+      );
+      validation = deriveValidation(result, nextDraft);
+    }
+
     if (!Object.is(nextDraft, draft)) proposal = nextDraft;
     transactionEvents.push(event);
     transactionPatches.push(...patches);
@@ -779,60 +1115,24 @@ export function stages<TValue, TFields, TContext = unknown>(
     if (destroyed) return validation;
     const run = ++validationRun;
     const result = publishedEvaluation ?? evaluated(value);
-    const candidates = validatorsFor(result.nodes).filter(({ node }) => {
-      if (!node.visible) return false;
-      if (validateOptions.scope === undefined || validateOptions.scope === "form") return true;
-      return "path" in validateOptions.scope
-        ? pathsEqual(node.path.slice(0, validateOptions.scope.path.length), validateOptions.scope.path)
-        : addressStartsWith(node.address, validateOptions.scope.address);
-    });
-    validation = { ...emptyValidation, status: "pending", pendingCount: candidates.length, unknownCount: 0 };
+    const pending = runValidation(
+      result,
+      value,
+      validateOptions.event ?? "validate",
+      true,
+      validateOptions.reveal === true,
+      validateOptions.scope,
+    );
+    validation = deriveValidation(result, value);
     dirtySnapshot = true;
     schedule();
-    const issueGroups = await Promise.all(candidates.map(async ({ node, validator }): Promise<readonly ValidationIssue[]> => {
-      const contextValue = {
-        value: readonlyValue(value),
-        context: readonlyValue(context),
-        meta: meta(),
-        path: node.path,
-        address: node.address,
-        fieldValue: getAtPath(value, node.path),
-        parentValue: getAtPath(value, node.path.slice(0, -1)),
-        event: validateOptions.event ?? "validate",
-        fieldState: {
-          disabled: node.disabled,
-          focused: focused.has(addressKey(node.address)),
-          touched: touched.has(addressKey(node.address)),
-          visited: visited.has(addressKey(node.address)),
-        },
-      };
-      try {
-        if (validator.when?.(contextValue) === false) return [];
-        return await validator.validate(contextValue);
-      } catch (error) {
-        return [{
-          id: `${validator.id}.rejected`,
-          code: "validator-rejected",
-          path: node.path,
-          severity: "error",
-          message: error instanceof Error ? error.message : String(error),
-        }];
-      }
-    }));
+    await pending;
     if (destroyed || run !== validationRun) return validation;
-    const issues = issueGroups.flat();
-    const hasErrors = issues.some((issue) => issue.severity === "error");
-    validation = {
-      status: hasErrors ? "invalid" : "valid",
-      isValid: !hasErrors,
-      issues,
-      visibleIssues: validateOptions.reveal === false ? [] : issues,
-      pendingCount: 0,
-      unknownCount: 0,
-    };
+    const scopedValidation = deriveValidation(result, value, validateOptions.scope);
+    validation = deriveValidation(result, value);
     revision += 1;
     schedule();
-    return validation;
+    return scopedValidation;
   }
 
   function serialize(): SerializedStagesState {
@@ -902,6 +1202,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       listeners.clear();
       selectorListeners.clear();
       activeWizards.clear();
+      validationRecords.clear();
       proposal = undefined;
       transactionEvents = [];
       transactionPatches = [];
