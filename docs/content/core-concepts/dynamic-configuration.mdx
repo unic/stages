@@ -1,0 +1,242 @@
+---
+title: Dynamic configuration
+description: Derive schema structure, visibility, disabled state, and field props from readonly value, context, metadata, and extensions.
+---
+
+# Dynamic configuration
+
+Dynamic configuration derives the evaluated tree from application-owned
+inputs. It can change structure and presentation policy, but never mutates the
+canonical value or calls `onChange` by itself.
+
+**For:** schema authors implementing permissions, conditional sections, localization, feature flags, or dynamic stages.  
+**Prerequisites:** [Schemas](/core-concepts/schemas),
+[Controlled values](/core-concepts/controlled-values), and
+[Controller lifecycle](/core-concepts/controller-lifecycle).
+
+## Inputs and evaluation boundary
+
+A `StagesSchemaInput` is a static schema or factory. The factory receives:
+
+```ts
+interface DynamicConfigContext<TValue, TContext = unknown> {
+  readonly value: DeepReadonly<TValue>;
+  readonly context: DeepReadonly<TContext>;
+  readonly meta: DeepReadonly<DynamicMetaSnapshot>;
+}
+```
+
+These are current canonical owner inputs at snapshot evaluation. An
+unaccepted transaction proposal is not dynamic configuration state. After the
+owner accepts it with `update({ value })`, the published tree is reevaluated
+against that canonical value.
+
+Within one dispatch transaction, core reuses its evaluated tree while reducers
+and transforms build a draft. This keeps target identity and processing order
+stable until publication.
+
+## Node resolver context
+
+`when`, `disabled`, and field `deriveProps` receive the factory inputs plus:
+
+| Field | Meaning |
+| --- | --- |
+| `path` | Current data path of the schema node/stage |
+| `address` | Current stable structural address |
+| `fieldValue` | Value at `path`; despite the name, available to every resolver |
+| `parentValue` | Value one data-path segment above `path` |
+
+All value/context/meta projections are readonly TypeScript contracts. Core
+does not defensively freeze or clone application objects; mutating them in a
+resolver would mutate owner state and violates the API contract.
+
+## Checked dynamic schema
+
+This fixture combines localized derived props, permission-based disabling,
+dormant nodes, structural feature flags, extension-driven visibility, and a
+dynamic wizard stage:
+
+```ts
+const accountSchema = (({ context }) => ({
+  id: "account",
+  version: 1,
+  nodes: [
+    {
+      kind: "field",
+      id: "name",
+      type: "text",
+      props: { label: "Name" },
+      disabled: !context.canEdit,
+      deriveProps: ({ context: current }) => ({ label: current.messages.name }),
+    },
+    {
+      kind: "group",
+      id: "company",
+      // `when` keeps this identity dormant while the personal plan is active.
+      when: ({ value }) => value.plan === "business",
+      disabled: ({ context: current }) => !current.canEdit,
+      nodes: [{
+        kind: "field",
+        id: "name",
+        type: "text",
+        props: { label: "Company" },
+        deriveProps: ({ context: current }) => ({ label: current.messages.company }),
+      }],
+    },
+    // Factory removal is structural: the notes identity is absent when false.
+    ...(context.enableNotes ? [{
+      kind: "field" as const,
+      id: "notes",
+      type: "text" as const,
+      props: { label: context.messages.notes },
+    }] : []),
+    {
+      kind: "field",
+      id: "advancedCode",
+      type: "text",
+      when: ({ meta }) =>
+        (meta.extensions["draft"] as DraftPreferences | undefined)?.showAdvanced === true,
+      props: { label: "Advanced code" },
+      deriveProps: ({ context: current }) => ({ label: current.messages.advancedCode }),
+    },
+    {
+      kind: "wizard",
+      id: "flow",
+      stages: [
+        { id: "details", nodes: [] },
+        { id: "review", when: ({ context: current }) => current.canReview, nodes: [] },
+      ],
+    },
+  ],
+})) satisfies StagesSchemaFactory<AccountValue, typeof fields, AccountContext>;
+```
+
+`deriveProps` starts with static `props` and then overwrites matching keys with
+its returned object. The resolved object is supplied to intrinsic validators,
+field snapshots, and adapter views.
+
+## `when`, factory structure, and stages
+
+| Mechanism | Evaluated identity | Render snapshot | State when it returns |
+| --- | --- | --- | --- |
+| Ordinary node `when: false` | Kept as a normalized node with `visible: false` | Omitted | Compatible interaction/validation metadata can survive |
+| Node omitted by factory | Absent | Omitted | Previous identity state is discarded |
+| Stage `when: false` | Stage branch and its children are not normalized | Omitted | Active stage reconciles to configured/first visible stage; hidden-stage child state is discarded |
+
+Use `when` for a temporarily dormant ordinary node whose identity should be
+retained. Use factory structure when the node genuinely does not belong to the
+current product/schema shape. Stage visibility is inherently structural
+inside its wizard branch.
+
+Resolvers on dormant ordinary nodes are still evaluated, including
+`deriveProps` and descendants. Do not rely on an ancestor `when: false` to
+guard unsafe resolver code.
+
+## Disabled state
+
+`disabled` accepts a boolean or predicate and inherits from ancestors. A
+disabled node remains visible in the render snapshot.
+
+- Field reducers are skipped.
+- Collection commands and wizard navigation are rejected.
+- Configured validators are excluded unless `includeDisabled: true`.
+- Intrinsic field validators are excluded because they do not expose that
+  opt-in.
+- Generic matching transforms can still run, so give transforms an explicit
+  `when` when disabled policy must suppress them.
+
+Adapters own the actual disabled UI semantics and must reflect
+`snapshot.state.disabled` in interactive controls.
+
+## Dynamic metadata
+
+```ts
+interface DynamicMetaSnapshot {
+  readonly revision: number;
+  readonly isDirty: boolean;
+  readonly touched: readonly NodeAddress[];
+  readonly visited: readonly NodeAddress[];
+  readonly activeWizards: ReadonlyMap<string, string>;
+  readonly extensions: Readonly<Record<string, unknown>>;
+}
+```
+
+`revision` is a controller activity/publication counter, not only a value
+version. `isDirty` compares the canonical root value with its baseline.
+Touched/visited addresses and active wizard stages let presentation policy
+react to interaction. Active-wizard map keys use an internal address encoding;
+treat them as opaque.
+
+Registered `extensions` are for durable engine-adjacent state that should
+drive dynamics without entering the domain value. Extension namespaces require
+creation-time codecs and safe registration; application-only temporary UI
+state can stay outside the controller.
+
+## Updating dynamic inputs
+
+The checked fixture updates each mutable dynamic input:
+
+```ts
+// These replace owner inputs and schedule reevaluation; none calls onChange.
+controller.update({ context: german });
+controller.update({ extensions: { draft: { showAdvanced: true } } });
+controller.update({ schema: accountSchema });
+```
+
+`update()` replaces the supplied input; it does not merge context or extension
+objects. Calls schedule a microtask publication and do not call `onChange`.
+Context, schema, and extension updates invalidate all validation records.
+Value updates selectively invalidate records whose dependency values changed.
+
+Updating `schema` establishes that input as the new root identity expectation,
+so it is the explicit path for intentionally replacing an ID/version. The
+field registry, codecs, migrations, callbacks, and other creation-time options
+cannot be updated; recreate the controller when those change.
+
+## Failure and last-valid recovery
+
+Dynamic functions must be synchronous, deterministic, side-effect-free, and
+total for every supported input. Failures behave as follows:
+
+- A thrown factory becomes `schema.factory-failed` in a controller after an
+  earlier valid evaluation.
+- Invalid structure/behavior, unsafe or changing root identity, failed
+  resolvers, invalid derived props, and failed/duplicate row keys produce
+  `schema.*` diagnostics.
+- When any error diagnostic appears after a valid evaluation, the controller
+  retains the last valid schema tree/props while projecting the latest
+  canonical values through that structure.
+- A later valid input publishes the recovered tree and clears current schema
+  diagnostics.
+
+Incompatible identity reuse is different: changing the kind or field type at
+one otherwise valid address publishes the new evaluated node, emits
+`schema.incompatible-identity`, and discards stale interaction/validation state
+for that address. It is not a last-valid-tree fallback.
+
+Pure `evaluateSchema()` has no prior tree and therefore returns the current
+partial normalized result plus diagnostics (or throws for a failed/non-object
+factory).
+
+## What to test
+
+- Every permission, plan, locale, feature, and extension transition.
+- Dormant `when` state retention versus factory removal.
+- Disabled inheritance and validator/transform policy.
+- Dynamic stage removal while that stage is active.
+- Thrown/non-object resolvers and recovery to a later valid input.
+- Incompatible kind/field-type reuse and metadata reset.
+
+Next: inspect [Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions)
+to render the result, or use the exact
+[schema types](/reference/core/schema-types#dynamic-and-resolver-context).
+
+## Evidence
+
+Dynamic declarations and evaluation come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts),
+[`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts),
+and `controller.ts`. Controller, schema-property, nesting, validation, and
+serialization tests cover dormant/removed identity, inheritance, extensions,
+stage reconciliation, diagnostics, last-valid recovery, and incompatible
+identity cleanup.

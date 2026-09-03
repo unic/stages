@@ -28,13 +28,13 @@ Last reviewed against `packages/core/src/index.ts`: **2026-09-03**.
 
 | Area | Exports |
 | --- | --- |
-| Identity and JSON | [`DataPath`, `NodeAddressSegment`, `NodeAddress`](/reference/core/path-utilities), `JsonPrimitive`, `JsonValue`, `DeepReadonly` |
-| Diagnostics and dynamics | `Diagnostic`, [`DynamicMetaSnapshot`, `DynamicConfigContext`, `NodeResolverContext`, `NodePredicate`, `DerivedProps`](/reference/core/schema-types#dynamic-and-resolver-context) |
+| Identity and JSON | [`DataPath`, `NodeAddressSegment`, `NodeAddress`](/reference/core/path-utilities), `JsonPrimitive`, `JsonValue`, [`DeepReadonly`](/reference/core/snapshot-types#deepreadonly) |
+| Diagnostics and dynamics | `Diagnostic`, [`DynamicMetaSnapshot`](/reference/core/snapshot-types#dynamicmetasnapshot), [`DynamicConfigContext`, `NodeResolverContext`, `NodePredicate`, `DerivedProps`](/reference/core/schema-types#dynamic-and-resolver-context) |
 | Events, reduction, transforms | [`StagesEventSource`, `StagesEvent`, `StagesEventTarget`, `StagesEventInit`](/reference/core/event-types), [`StagesPatch`](/reference/core/path-utilities#stagespatch), [`FieldReduceContext`, `FieldReduceResult`, `FieldEventReducer`](/reference/core/field-types#reducer-types), [`TransformContext`, `TransformConfig`](/reference/core/event-types#transform-types) |
 | Fields | [`FieldDefinition`, `FieldRegistry`, `FieldValidator`, `FieldValidationIssue`](/reference/core/field-types) |
-| Validation | `FieldInteractionState`, `ValidationContext`, `ValidationCancellationSignal`, `ValidationIssue`, `ValidationFailureContext`, `ValidationFailureIssuePresentation`, `ValidationFailureIssueFactory`, `ValidatorConfig`, `ValidationSnapshot`, `ValidateOptions` |
+| Validation | [`FieldInteractionState`](/reference/core/snapshot-types#fieldinteractionstate), `ValidationContext`, `ValidationCancellationSignal`, `ValidationIssue`, `ValidationFailureContext`, `ValidationFailureIssuePresentation`, `ValidationFailureIssueFactory`, `ValidatorConfig`, [`ValidationSnapshot`](/reference/core/snapshot-types#validationsnapshot), `ValidateOptions` |
 | Schema | [`FieldNodeConfig`, `GroupNodeConfig`, `CollectionVariantConfig`, `CollectionNodeConfig`, `StageNodeConfig`, `WizardNavigationConfig`, `WizardNodeConfig`, `NodeConfig`, `StagesSchema`, `StagesSchemaFactory`, `StagesSchemaInput`, `NormalizedNode`, `NormalizedBranch`, `EvaluatedSchema`](/reference/core/schema-types), [`EvaluateSchemaOptions`](/reference/core/schema-utilities#evaluateschema) |
-| Snapshots and controller | `FieldSnapshot`, `ContainerSnapshot`, `RenderNodeSnapshot`, `StagesSnapshot`, `StagesChange`, [`StagesOptions`](/reference/core/controller#stagesoptions), [`StagesUpdate`](/reference/core/controller#update), [`StagesController`](/reference/core/controller#stagescontroller) |
+| Snapshots and controller | [`FieldSnapshot`, `ContainerSnapshot`, `RenderNodeSnapshot`, `StagesSnapshot`](/reference/core/snapshot-types), `StagesChange`, [`StagesOptions`](/reference/core/controller#stagesoptions), [`StagesUpdate`](/reference/core/controller#update), [`StagesController`](/reference/core/controller#stagescontroller) |
 | Collections | `CollectionCommand`, `CollectionCommandResult` |
 | Persistence | `SerializedStagesState`, `StagesValueCodec`, `StagesExtensionCodec`, `StagesStateMigration` |
 

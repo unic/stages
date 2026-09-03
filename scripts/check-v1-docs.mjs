@@ -97,11 +97,14 @@ const completePagePaths = [
   "core-concepts/events-and-reducers.mdx",
   "core-concepts/transforms-and-patches.mdx",
   "core-concepts/transactions-and-batching.mdx",
+  "core-concepts/snapshots-and-subscriptions.mdx",
+  "core-concepts/dynamic-configuration.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
   "reference/core/field-types.mdx",
   "reference/core/event-types.mdx",
+  "reference/core/snapshot-types.mdx",
   "reference/core/path-utilities.mdx",
   "reference/core/schema-utilities.mdx",
   "reference/standard-events.mdx",
@@ -176,6 +179,22 @@ const controllerMethods = [...controllerBody.matchAll(/^\s{2}([A-Za-z_$][\w$]*)(
   .map((match) => `StagesController.${match[1]}`);
 assertSameInventory(controllerMethods, manifest.contracts.controllerMethods, "controller methods");
 
+function readonlyInterfaceMembers(source, interfaceName) {
+  const escapedName = interfaceName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const body = source.match(new RegExp(`(?:export )?interface ${escapedName}(?:<[^\\n]+>)?\\s*\\{([\\s\\S]*?)\\n\\}`))?.[1];
+  assert.ok(body, `could not find ${interfaceName} declaration`);
+  return [...body.matchAll(/^\s{2}readonly\s+([A-Za-z_$][\w$]*)[?:]/gm)].map((match) => match[1]);
+}
+
+const snapshotReference = guideEntries.find(({ relativePath }) => relativePath === "reference/core/snapshot-types.mdx")?.source;
+assert.ok(snapshotReference, "missing snapshot type reference");
+for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts.snapshotMembers)) {
+  assertSameInventory(readonlyInterfaceMembers(controllerTypes, interfaceName), expectedMembers, `${interfaceName} members`);
+  for (const member of expectedMembers) {
+    assert.ok(snapshotReference.includes(`\`${member}\``), `snapshot reference is missing ${interfaceName}.${member}`);
+  }
+}
+
 const [controllerSource, schemaSource, collectionSource, serializationSource] = await Promise.all([
   readRoot("packages/core/src/controller.ts"),
   readRoot("packages/core/src/schema.ts"),
@@ -225,6 +244,9 @@ const checkedRegions = [
   { fixture: "docs/examples/events-and-reducers.ts", region: "reducer-patterns", page: "core-concepts/events-and-reducers.mdx" },
   { fixture: "docs/examples/transforms-and-batching.ts", region: "transform-pipeline", page: "core-concepts/transforms-and-patches.mdx" },
   { fixture: "docs/examples/transforms-and-batching.ts", region: "explicit-batch", page: "core-concepts/transactions-and-batching.mdx" },
+  { fixture: "docs/examples/dynamic-configuration.ts", region: "dynamic-schema", page: "core-concepts/dynamic-configuration.mdx" },
+  { fixture: "docs/examples/dynamic-configuration.ts", region: "dynamic-updates", page: "core-concepts/dynamic-configuration.mdx" },
+  { fixture: "docs/examples/snapshot-subscriptions.ts", region: "selector-subscriptions", page: "core-concepts/snapshots-and-subscriptions.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);
@@ -308,6 +330,8 @@ const packageReadmes = await Promise.all(
 for (const readme of packageReadmes) assert.match(readme, /MIGRATING_TO_V1\.md/);
 
 const exportCount = manifest.packages.reduce((count, item) => count + item.exports.length, 0);
+const snapshotMemberCount = Object.values(manifest.contracts.snapshotMembers)
+  .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

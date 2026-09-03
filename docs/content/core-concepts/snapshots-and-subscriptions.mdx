@@ -1,0 +1,228 @@
+---
+title: Snapshots and subscriptions
+description: Render readonly recursive snapshots efficiently with cached reads, structural sharing, and narrow selector subscriptions.
+---
+
+# Snapshots and subscriptions
+
+Snapshots are the read side of a Stages controller. They expose canonical
+owner state and engine-derived render policy without giving adapters mutation
+authority.
+
+**For:** application renderers, React/DOM/custom adapter authors, and performance-sensitive consumers.  
+**Prerequisites:** [Controller lifecycle](/core-concepts/controller-lifecycle),
+[Schemas](/core-concepts/schemas), and
+[Paths and addresses](/core-concepts/paths-and-addresses).
+
+## Root snapshot
+
+```ts
+interface StagesSnapshot<TValue> {
+  readonly value: DeepReadonly<TValue>;
+  readonly revision: number;
+  readonly nodes: readonly RenderNodeSnapshot[];
+  readonly validation: ValidationSnapshot;
+  readonly diagnostics: readonly Diagnostic[];
+}
+```
+
+`value` is canonical; a pending `onChange` proposal never appears until the
+owner accepts/replaces it through `update({ value })`. `nodes` is a recursive,
+visible-only render tree. Validation and diagnostics are already aggregated so
+adapters do not recreate engine policy.
+
+`revision` advances for controller activity such as dispatches, updates, and
+validation completion. Use it as an invalidation/version signal, not as a
+count of domain value changes.
+
+## Recursive render tree
+
+Narrow each `RenderNodeSnapshot` by `kind`:
+
+- `field` supplies view, resolved props, canonical/current baseline values,
+  path/address, interaction state, and exact-path issues;
+- `group` contains direct visible child nodes;
+- `collection` contains stable `row` containers and size/add/remove
+  capabilities;
+- `row` contains the row's recursive schema nodes;
+- `wizard` contains visible `stage` containers and navigation capabilities;
+- `stage` contains recursive nodes and `active` state.
+
+Every container also carries scoped validation. The exact declarations and an
+annotated tree are in the [snapshot type reference](/reference/core/snapshot-types).
+
+Invisible ordinary nodes remain available to core reconciliation but are not
+in the render snapshot. Therefore an adapter renders the supplied tree instead
+of filtering the schema independently.
+
+## Readonly does not mean cloned
+
+`DeepReadonly<TValue>` prevents mutation in TypeScript. Core does not deep
+freeze or clone the owner value at snapshot boundaries. Mutating
+`snapshot.value` would mutate application-owned data behind the controller's
+back and break change detection, validation dependencies, and structural
+sharing.
+
+Treat all snapshot data as immutable, including node arrays, props, addresses,
+issues, maps, and opaque views. Create application-owned copies before editing.
+
+## Cached reads and structural sharing
+
+`getSnapshot()` returns a cached root object until controller state becomes
+dirty. After a publication, core maps a new root snapshot and recursively
+reuses any previous render node whose address and complete projected content
+are deeply equal.
+
+This means:
+
+- an unaffected field/container can remain `===` across publications;
+- its ancestors can also remain shared when their complete subtree is equal;
+- the root `StagesSnapshot` changes whenever a dirty snapshot is remapped;
+- a row move changes its numeric path, so that row snapshot is new even if its
+  stable address follows the same domain item; and
+- consumers should treat sharing as an optimization, never mutate shared data.
+
+The controller test suite verifies that changing one field retains an
+unaffected sibling field reference and suppresses its selector listener.
+
+## General subscriptions
+
+```ts
+subscribe(listener: () => void): () => void;
+```
+
+`subscribe()` does not call immediately. Render once with `getSnapshot()`, then
+subscribe. The listener receives no arguments and reads the current snapshot.
+It runs once per publication flush, including metadata-only/no-op event
+transactions, until the returned unsubscribe is called.
+
+## Selector subscriptions
+
+```ts
+subscribeSelector<TSelection>(
+  selector: (snapshot: StagesSnapshot<TValue>) => TSelection,
+  listener: (selection: TSelection, previousSelection: TSelection) => void,
+  isEqual?: (left: TSelection, right: TSelection) => boolean,
+): () => void;
+```
+
+The selector runs immediately to capture its initial value, but the listener
+does not. At each publication, core selects again and compares previous/current
+with `Object.is` by default. Only a changed selection calls the listener.
+
+Choose the smallest value that represents the render dependency:
+
+- select a primitive domain value for one control;
+- select a structurally shared field/container snapshot for its complete UI;
+- select validation status/counts for an error summary; or
+- return a derived object with a deliberate custom equality function.
+
+## Checked subscription patterns
+
+This fixture shows the required immediate render, a general subscription, a
+primitive selection, a derived object with custom equality, and teardown:
+
+```ts
+// Read once for an immediate render; subscribe() does not call immediately.
+render(controller.getSnapshot());
+
+const unsubscribeAll = controller.subscribe(() => {
+  render(controller.getSnapshot());
+});
+
+const unsubscribeName = controller.subscribeSelector(
+  snapshot => snapshot.value.profile.name,
+  (name, previousName) => {
+    console.log(`name changed from ${previousName} to ${name}`);
+  },
+);
+
+const unsubscribeValidation = controller.subscribeSelector(
+  selectValidationSummary,
+  summary => renderValidationSummary(summary),
+  (left, right) => left.status === right.status
+    && left.visibleIssueCount === right.visibleIssueCount,
+);
+
+controller.dispatch(fieldEvent("input", ["profile", "name"], {
+  payload: "Grace",
+}));
+
+export function disposeSnapshotExample() {
+  unsubscribeAll();
+  unsubscribeName();
+  unsubscribeValidation();
+  controller.destroy();
+}
+```
+
+Custom equality runs on every publication. Keep it cheap, symmetric, and
+consistent. Do not use deep equality over the whole snapshot; select a stable
+branch or small summary instead.
+
+## Notification order
+
+For one flush, order is:
+
+```text
+onChange (only for a value proposal)
+  → synchronous owner acceptance/replacement
+  → general subscription listeners
+  → selector listeners whose selections changed
+```
+
+A delayed/rejected proposal first publishes the unchanged canonical value.
+Selector listeners whose result still compares equal do not run. A later owner
+`update()` is another publication.
+
+Listeners are controller-local. `destroy()` clears them and makes future
+subscriptions inert; adapters must still call their unsubscribe functions and
+destroy owned controllers during teardown.
+
+## Interaction metadata
+
+| State | Set/derived by | Snapshot exposure | Durability |
+| --- | --- | --- | --- |
+| `focused` | `focus`/`blur` events | Field `state.focused` | Ephemeral |
+| `touched` | `blur` | Field `state.touched`; dynamic meta addresses | Serialized |
+| `visited` | `focus` | Validator `fieldState`; dynamic meta addresses | Serialized |
+| Field `dirty` | Deep comparison with field baseline/default | Field `state.dirty` | Derived after recreation |
+| Form `isDirty` | Deep comparison with root baseline | Dynamic meta only | Derived after recreation |
+| Revealed issues | Reveal policy/explicit validate | `visibleIssues` | Revealed addresses serialized; results rerun |
+| Active wizard stage | Navigation/reconciliation | Wizard/stage fields | Serialized |
+| Engine row key | Collection identity engine | Row `id`/address | Serialized |
+
+Reset clears focus, touched, visited, reveal, active-wizard, and validation
+metadata, while its value proposal remains controlled.
+
+## Collection selection and identity
+
+Never cache a collection row's data path as identity. After an accepted move,
+the row address/key follows the item while its numeric path changes. Select or
+key rows by `row.id`/`row.address`; use the current path only when emitting a
+field event or reading current domain data.
+
+If a selector returns a row snapshot, the move can legitimately produce a new
+object because its path changed even though its address is stable.
+
+## What to test
+
+- One immediate render before subscription.
+- General and selector callback order after synchronous acceptance.
+- No selector callback for an unchanged primitive or shared sibling node.
+- Custom equality for any newly allocated selector result.
+- Row selection through accepted reordering.
+- Unsubscribe and destroy during adapter teardown.
+- No snapshot mutation, including nested owner objects.
+
+Next: inspect every field in the
+[snapshot type reference](/reference/core/snapshot-types), or derive the tree
+with [Dynamic configuration](/core-concepts/dynamic-configuration).
+
+## Evidence
+
+Subscription signatures and snapshot declarations come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+Caching, sharing, selector comparison, and notification order come from
+`controller.ts` and focused controller tests. Persistence and validation tests
+cover durable interaction state, pending work, and issue visibility.

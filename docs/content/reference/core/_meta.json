@@ -4,6 +4,7 @@
   "schema-types": "Schema types",
   "field-types": "Field types",
   "event-types": "Event and processing types",
+  "snapshot-types": "Snapshot types",
   "path-utilities": "Path utilities",
   "schema-utilities": "Schema utilities"
 }

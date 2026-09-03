@@ -80,6 +80,10 @@ getSnapshot(): StagesSnapshot<TValue>;
 Returns the cached readonly canonical value, revision, recursive render nodes,
 aggregate validation, and diagnostics. Do not mutate returned data.
 
+See the [snapshot type reference](/reference/core/snapshot-types) for every
+field, specialized container capability, and readonly/structural-sharing
+contract.
+
 ### `subscribe()`
 
 ```ts
@@ -88,7 +92,7 @@ subscribe(listener: () => void): () => void;
 
 Registers a general publication listener and returns an unsubscribe function.
 There is no immediate call. General listeners run before changed selector
-listeners.
+listeners. Render once with `getSnapshot()` before subscribing.
 
 ### `subscribeSelector()`
 
@@ -103,7 +107,9 @@ subscribeSelector<TSelection>(
 Captures a selection immediately but calls the listener only after a
 publication changes it. Equality defaults to `Object.is`. Select stable,
 structurally shared branches for narrow adapter updates; supply custom equality
-for derived objects when necessary.
+for derived objects when necessary. See
+[Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions) for
+primitive, branch, and derived-object selection patterns.
 
 ### `update()`
 

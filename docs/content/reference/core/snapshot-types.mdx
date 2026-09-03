@@ -1,0 +1,358 @@
+---
+title: Snapshot types
+description: Exact root, field, container, validation, interaction, and dynamic metadata snapshot shapes from @stages/core.
+---
+
+# Snapshot types
+
+Snapshots are readonly projections for rendering and observation. They combine
+the canonical owner value with the current evaluated schema, interaction
+metadata, validation state, capabilities, and diagnostics.
+
+**For:** adapter authors, application renderers, selector authors, and tooling.  
+**Prerequisites:** [Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions).
+
+Last reviewed against `packages/core/src/types.ts` and `controller.ts`:
+**2026-09-03**.
+
+## `DeepReadonly`
+
+```ts
+type DeepReadonly<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends readonly (infer TItem)[]
+    ? readonly DeepReadonly<TItem>[]
+    : T extends object
+      ? { readonly [TKey in keyof T]: DeepReadonly<T[TKey]> }
+      : T;
+```
+
+Functions are preserved, arrays become readonly arrays recursively, object
+properties become readonly recursively, and primitives are unchanged. This is
+a compile-time projection only; it does not freeze or clone runtime values.
+
+## `StagesSnapshot`
+
+```ts
+interface StagesSnapshot<TValue> {
+  readonly value: DeepReadonly<TValue>;
+  readonly revision: number;
+  readonly nodes: readonly RenderNodeSnapshot[];
+  readonly validation: ValidationSnapshot;
+  readonly diagnostics: readonly Diagnostic[];
+}
+```
+
+| Property | Contract |
+| --- | --- |
+| `value` | Current canonical owner value, typed deeply readonly; pending proposals are not exposed. |
+| `revision` | Monotonically increasing controller activity revision. Dispatch, update, and validation completion can advance it; it is not only a value version. |
+| `nodes` | Visible recursive render tree. Dormant `when: false` nodes are omitted. |
+| `validation` | Aggregate form validation state. |
+| `diagnostics` | Current schema diagnostics followed by retained recent runtime diagnostics. |
+
+Repeated `getSnapshot()` calls return the same cached root object until the
+controller becomes dirty. A later publication creates a new root snapshot even
+when only metadata changed, while unchanged render-node branches can retain
+identity.
+
+## `FieldSnapshot`
+
+```ts
+interface FieldSnapshot<TFieldValue = unknown, TView = unknown> {
+  readonly kind: "field";
+  readonly id: string;
+  readonly type: string;
+  readonly view: TView;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly value: TFieldValue;
+  readonly initialValue: TFieldValue;
+  readonly props: Readonly<Record<string, unknown>>;
+  readonly state: SnapshotState;
+}
+```
+
+| Property | Contract |
+| --- | --- |
+| `id` / `type` | Schema field ID and registry definition key. |
+| `view` | Opaque view from the registered field definition. |
+| `path` | Current canonical data location; collection indexes can change. |
+| `address` | Stable structural identity; keyed rows survive reordering. |
+| `value` | Current canonical value at `path`, including `undefined` when missing. |
+| `initialValue` | Baseline value at `path`, or registry default when the baseline path is `undefined`. |
+| `props` | Static props merged with derived props, with derived keys winning. |
+| `state` | Render/interaction/validation state described below. |
+
+`initialValue` is a dirty-comparison baseline; it does not populate a missing
+canonical field.
+
+## Field `SnapshotState`
+
+`SnapshotState` is not exported by name, but its complete readonly shape is
+public through `FieldSnapshot.state`:
+
+```ts
+{
+  readonly disabled: boolean;
+  readonly visible: boolean;
+  readonly focused: boolean;
+  readonly touched: boolean;
+  readonly dirty: boolean;
+  readonly validating: boolean;
+  readonly issues: readonly ValidationIssue[];
+  readonly visibleIssues: readonly ValidationIssue[];
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `disabled` | Resolved/inherited disabled state. |
+| `visible` | Resolved visibility. Controller render trees currently omit false nodes, so emitted field snapshots are visible. |
+| `focused` | Target has received `focus` without a later `blur`; ephemeral. |
+| `touched` | Target has received `blur`; durable until reset/removal/incompatible identity. |
+| `dirty` | Current field value is not deeply equal to `initialValue`. |
+| `validating` | At least one current validator in this field's address scope is pending. |
+| `issues` | Current validation issues whose data path exactly equals this field path. |
+| `visibleIssues` | Revealed subset of `issues`; use this for field error UI. |
+
+Visited state is intentionally not present on `FieldSnapshot.state`. It is
+available to validators through `FieldInteractionState` and to dynamic
+configuration in `DynamicMetaSnapshot.visited`.
+
+## `FieldInteractionState`
+
+```ts
+interface FieldInteractionState {
+  readonly disabled: boolean;
+  readonly focused: boolean;
+  readonly touched: boolean;
+  readonly visited: boolean;
+}
+```
+
+This shape is supplied as `ValidationContext.fieldState`. `visited` becomes
+true on focus, while `touched` becomes true on blur.
+
+## `ContainerSnapshot`
+
+```ts
+interface ContainerSnapshot {
+  readonly kind: "group" | "collection" | "wizard" | "stage" | "row";
+  readonly id: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly state: Pick<SnapshotState, "disabled" | "visible">;
+  readonly nodes: readonly RenderNodeSnapshot[];
+  readonly active?: boolean;
+  readonly activeStage?: string;
+  readonly visibleStageIds?: readonly string[];
+  readonly canPrevious?: boolean;
+  readonly canNext?: boolean;
+  readonly canGo?: boolean;
+  readonly size?: number;
+  readonly canAdd?: boolean;
+  readonly canRemove?: boolean;
+  readonly validation?: ValidationSnapshot;
+}
+```
+
+### Common properties
+
+Every container supplies `kind`, `id`, `path`, `address`, visible/disabled
+state, and recursive `nodes`. The declared `validation` property is optional;
+the current core mapper supplies a scoped `ValidationSnapshot` on every
+container.
+
+| Kind | `nodes` contains | Specialized fields |
+| --- | --- | --- |
+| `group` | Direct visible schema children | None |
+| `collection` | Visible `row` containers | `size`, `canAdd`, `canRemove` |
+| `row` | Visible nodes in that homogeneous/variant row | Stable `id`; numeric-index `path`; row-key `address` |
+| `wizard` | Visible `stage` containers | `activeStage`, `visibleStageIds`, `canPrevious`, `canNext`, `canGo` |
+| `stage` | Visible nodes in that stage | `active` |
+
+Collection capabilities reflect disabled state and evaluated row count against
+current min/max boundaries. Wizard capabilities reflect disabled state, stage
+position, and whether non-linear navigation is configured. They do not pre-run
+validation or guards; a command can still be rejected.
+
+`size` reads the current canonical array length (or zero for a malformed
+non-array value). `activeStage` is absent when no stage is visible. Every
+rendered wizard stage has `active: true` or `false`.
+
+## `RenderNodeSnapshot`
+
+```ts
+type RenderNodeSnapshot = FieldSnapshot | ContainerSnapshot;
+```
+
+Narrow on `kind === "field"`; every other `kind` is a `ContainerSnapshot` with
+recursive `nodes`.
+
+## `ValidationSnapshot`
+
+```ts
+interface ValidationSnapshot {
+  readonly status: "valid" | "invalid" | "pending" | "unknown";
+  readonly isValid: boolean;
+  readonly issues: readonly ValidationIssue[];
+  readonly visibleIssues: readonly ValidationIssue[];
+  readonly pendingCount: number;
+  readonly unknownCount: number;
+}
+```
+
+| Property | Contract |
+| --- | --- |
+| `status` | Aggregate state using the precedence below. |
+| `isValid` | True only when `status === "valid"`. |
+| `issues` | All current issues in declaration/path aggregation order. |
+| `visibleIssues` | Revealed subset intended for current UI presentation. |
+| `pendingCount` | Number of applicable validators with current async work. |
+| `unknownCount` | Number of applicable validators without a current result. |
+
+Status precedence is error issue → `invalid`, then pending work → `pending`,
+then applicable validators without current results → `unknown`, otherwise
+`valid`. Warnings remain in `issues` but do not make status invalid. `isValid`
+is true only for `valid`.
+
+Root validation aggregates the form. Container validation aggregates validators
+in that address subtree. `visibleIssues` contains only revealed issues and may
+be shorter than `issues`.
+
+The internal empty/fallback validation object is `{ status: "unknown",
+isValid: false, issues: [], visibleIssues: [], pendingCount: 0, unknownCount: 1
+}`. Normal snapshot aggregation can immediately be `valid` when no applicable
+validators exist.
+
+## `DynamicMetaSnapshot`
+
+```ts
+interface DynamicMetaSnapshot {
+  readonly revision: number;
+  readonly isDirty: boolean;
+  readonly touched: readonly NodeAddress[];
+  readonly visited: readonly NodeAddress[];
+  readonly activeWizards: ReadonlyMap<string, string>;
+  readonly extensions: Readonly<Record<string, unknown>>;
+}
+```
+
+| Property | Contract |
+| --- | --- |
+| `revision` | Current controller activity revision. |
+| `isDirty` | Deep root comparison against the reset baseline. |
+| `touched` | Durable addresses that received blur. |
+| `visited` | Durable addresses that received focus. |
+| `activeWizards` | Opaque encoded wizard-address keys mapped to stage IDs. |
+| `extensions` | Current registered extension namespace values. |
+
+This is supplied to factories/resolvers, not nested directly in
+`StagesSnapshot`. `isDirty` deeply compares the canonical root with its reset
+baseline. Wizard-map keys use an internal encoded address and are opaque.
+
+## Annotated recursive shape
+
+This abbreviated JSON-like projection shows where every container kind sits;
+it assumes the profile name changed from an empty reset baseline:
+
+```ts
+{
+  value: {
+    profile: { name: "Ada" },
+    members: [{ id: "member-7", name: "Grace" }],
+    flow: { details: { note: "Ready" }, review: {} },
+  },
+  revision: 4,
+  nodes: [
+    {
+      kind: "group", id: "profile",
+      path: ["profile"],
+      address: [{ kind: "node", id: "profile" }],
+      state: { visible: true, disabled: false },
+      nodes: [{
+        kind: "field", id: "name", type: "text", view: TextView,
+        path: ["profile", "name"],
+        address: [
+          { kind: "node", id: "profile" },
+          { kind: "node", id: "name" },
+        ],
+        value: "Ada", initialValue: "", props: { label: "Name" },
+        state: { visible: true, disabled: false, focused: false,
+          touched: true, dirty: true, validating: false,
+          issues: [], visibleIssues: [] },
+      }],
+      validation: { status: "valid", isValid: true, issues: [],
+        visibleIssues: [], pendingCount: 0, unknownCount: 0 },
+    },
+    {
+      kind: "collection", id: "members", size: 1,
+      canAdd: true, canRemove: true,
+      path: ["members"],
+      address: [{ kind: "node", id: "members" }],
+      state: { visible: true, disabled: false },
+      nodes: [{
+        kind: "row", id: "member-7", path: ["members", 0],
+        address: [
+          { kind: "node", id: "members" },
+          { kind: "row", id: "member-7" },
+        ],
+        state: { visible: true, disabled: false }, nodes: [], validation: valid,
+      }],
+      validation: valid,
+    },
+    {
+      kind: "wizard", id: "flow", activeStage: "details",
+      visibleStageIds: ["details", "review"],
+      canPrevious: false, canNext: true, canGo: false,
+      path: ["flow"], address: [{ kind: "node", id: "flow" }],
+      state: { visible: true, disabled: false },
+      nodes: [{
+        kind: "stage", id: "details", active: true,
+        path: ["flow", "details"],
+        address: [
+          { kind: "node", id: "flow" },
+          { kind: "node", id: "details" },
+        ],
+        state: { visible: true, disabled: false }, nodes: [], validation: valid,
+      }],
+      validation: valid,
+    },
+  ],
+  validation: valid,
+  diagnostics: [],
+}
+```
+
+`TextView` and `valid` above are explanatory aliases; snapshots are not JSON
+serialization envelopes and a view can be a function/component.
+
+## Readonly and durability
+
+Readonly is a compile-time API contract, not a runtime freeze or defensive
+clone. In particular, `snapshot.value` is the application-owned canonical
+reference. Never mutate snapshot values, nodes, props, issue arrays, maps, or
+addresses.
+
+| State | Durable through `serialize()`/recreation |
+| --- | --- |
+| Canonical value and reset baseline | Yes |
+| Touched and visited addresses | Yes |
+| Revealed validation addresses | Yes; validation results themselves rerun |
+| Active wizard stages and engine row keys | Yes |
+| Registered extension state | Yes, through its codec |
+| Focus | No |
+| Subscribers, pending proposals, validation promises/results | No |
+
+Next: apply narrow observation patterns in
+[Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions), or
+inspect the [controller methods](/reference/core/controller).
+
+## Evidence
+
+Declarations come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+Mapping, caching, structural sharing, validation aggregation, and capability
+derivation come from `controller.ts`; controller, validation, serialization,
+collection, wizard, and nesting tests cover the described shapes.

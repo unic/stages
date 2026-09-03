@@ -2,7 +2,8 @@
 
 This overview remains available for existing links. Start with
 [Controlled values](/core-concepts/controlled-values), then use the normative
-[controller API reference](/reference/core/controller).
+[controller API reference](/reference/core/controller) and
+[snapshot type reference](/reference/core/snapshot-types).
 
 `stages(options)` creates one isolated, framework-neutral controller. It accepts
 either a controlled `value` for a new instance or serialized `state` for
@@ -22,7 +23,7 @@ possible without special modes.
 
 | Method | Contract |
 | --- | --- |
-| `getSnapshot()` | Returns the current immutable value, render tree, validation, revision, and diagnostics. |
+| `getSnapshot()` | Returns the current readonly canonical value, render tree, validation, revision, and diagnostics. |
 | `subscribe(listener)` | Runs after a published controller change; returns an unsubscribe function. |
 | `subscribeSelector(selector, listener, isEqual?)` | Runs only when the selected result changes. General listeners run first. |
 | `update(input)` | Replaces controlled `value`, `context`, `schema`, or registered `extensions`. |
@@ -44,6 +45,9 @@ Snapshots are readonly and structurally share unchanged branches. Never mutate
 them. A narrow adapter should select the smallest stable branch with
 `subscribeSelector`; pass a custom equality function only when reference
 equality is not the desired contract.
+
+See [Snapshots and subscriptions](/core-concepts/snapshots-and-subscriptions)
+for caching, selector, callback-order, row-identity, and durability details.
 
 ## Change records and ordering
 
