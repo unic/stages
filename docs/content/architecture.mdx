@@ -1,60 +1,8 @@
 # Architecture
 
-Stages v1 separates form semantics from rendering and framework lifecycle.
+This compatibility route now points to the expanded project documentation.
 
-```text
-immutable schema + controlled value + field registry
-                         │
-                         ▼
-                  @stages/core
-                         │
-               snapshot + named events
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-    @stages/dom    @stages/react   custom adapter
-```
-
-## Core responsibilities
-
-The core normalizes and evaluates recursive schemas, assigns stable node and
-row addresses, reduces named events into immutable patches, coordinates
-validation, and exposes subscribable snapshots. It contains no React, DOM,
-browser-global, or styling code.
-
-The application remains the domain-value owner. A controller transaction emits
-one proposed value and one notification; delayed acceptance and rejected
-proposals are valid controlled workflows.
-
-## Recursive schema
-
-Every structural feature is a node:
-
-- fields bind a registry definition to a data path;
-- groups add object scope;
-- collections add homogeneous or discriminated row scope;
-- wizards add explicit stage scope and navigation metadata.
-
-These nodes can be nested in any order. Paths are segment arrays, while node
-addresses also carry stable collection-row identity.
-
-## Events and transforms
-
-Adapters send named field, node, or form events. Field reducers handle local
-input semantics. Node and root transforms return explicit set/remove patches,
-executed from target to root with deterministic ordering. Collection and wizard
-commands use the same event channel.
-
-## Validation
-
-Validators declare execution events separately from reveal events. They may be
-synchronous or asynchronous, depend on other paths, opt into disabled values,
-and participate in form, node, or wizard-stage scopes. Superseded asynchronous
-work is cancelled and cannot publish stale results.
-
-## Adapters
-
-Adapters render opaque field views and translate UI interactions into events.
-They do not reimplement schema, collection, wizard, or validation behavior.
-The DOM adapter is the accessibility reference; React provides lifecycle and
-narrow subscription bindings without prescribing layout.
+Read the [runtime architecture](/project/architecture),
+[core boundaries and deliberate limits](/project/core-boundaries),
+[measured performance budgets](/project/performance), and
+[release status](/project/release-status).

@@ -1,0 +1,100 @@
+# Measured performance budgets
+
+**For:** Maintainers interpreting the release performance gate and application
+teams deciding what it does—and does not—promise.
+
+**Prerequisites:** [Runtime architecture](/project/architecture),
+[batching](/core-concepts/transactions-and-batching), and
+[selector subscriptions](/core-concepts/snapshots-and-subscriptions).
+
+The v1 gate measures built `@stages/core` in Node with conservative elapsed-time
+ceilings and exact work-count assertions. This is the budget object executed by
+`npm run performance:v1`:
+
+```js
+const budgets = Object.freeze({
+  initialization: Object.freeze({
+    fields: 1000,
+    maximumFactoryEvaluations: 2,
+    maximumResolverEvaluationsPerField: 2,
+    maximumMilliseconds: 750,
+  }),
+  batch: Object.freeze({
+    fields: 500,
+    events: 1000,
+    maximumFactoryEvaluations: 1,
+    maximumResolverEvaluationsPerField: 1,
+    maximumChangeCallbacks: 1,
+    maximumNotifications: 1,
+    maximumMilliseconds: 1500,
+  }),
+  selectors: Object.freeze({
+    fields: 1000,
+    maximumChangedSelectors: 1,
+    maximumNotifications: 1,
+    maximumMilliseconds: 1500,
+  }),
+  totalMaximumMilliseconds: 3000,
+});
+```
+
+## What each scenario proves
+
+| Scenario | Workload | Structural assertions | Elapsed ceiling |
+| --- | --- | --- | --- |
+| Initialization | Create a controller with 1,000 number fields, a schema factory, and one `deriveProps` resolver per field | Snapshot has 1,000 nodes; factory runs 1–2 times; every resolver runs 1–2 times | 750 ms |
+| Explicit batch | Dispatch 1,000 input events to one field in a 500-field dynamic schema, then accept the controlled proposal | Final value is event 1,000; exactly one change callback, notification, schema evaluation, and resolver pass over 500 fields | 1,500 ms |
+| Selector fan-out | Register 1,000 field-node selectors over 1,000 fields, then change field 0 | One general notification and exactly one changed selector | 1,500 ms |
+| Combined | Run all three scenarios sequentially | Every assertion above remains true | 3,000 ms |
+
+Work counts are the stronger regression signal. Wide timing ceilings absorb CI
+and event-loop variation, while factory/resolver/callback/selector counts catch
+accidental repeated work even on a fast machine. Batch and selector timing
+includes waiting for the controller's queued publication.
+
+## How to run and read the gate
+
+```sh
+npm run build:v1
+npm run performance:v1
+```
+
+The script exits nonzero when an assertion or ceiling fails. On success it
+prints the budget object and the measured initialization, batch, selector, and
+combined milliseconds for that run. Compare work-count failures first; repeat
+timing-only failures on a representative unloaded CI worker before changing a
+ceiling. Do not lower correctness assertions to accommodate a regression.
+
+## What the numbers do not promise
+
+These values are regression ceilings, not an end-user latency SLA or a
+cross-device benchmark. They cover flat numeric-field schemas in built core
+under Node. They do not measure browser rendering, React reconciliation, DOM
+replacement, memory, bundle parse time, nested collection/wizard depth,
+expensive application resolvers, synchronous validator cost, async validation,
+serialization, network/storage work, or low-powered devices.
+
+Applications should profile their actual schema, adapters, validators, and
+target devices. Keep static schema/registry objects stable, batch related
+events, use selectors for narrow consumers, and move remote or expensive work
+outside synchronous resolvers. Sending context, schema, or extensions through
+`controller.update()` intentionally triggers dynamic reevaluation.
+
+## Changing a budget
+
+Treat a budget edit as an architecture change. Record the reason, compare work
+counts and profiles, keep the workload scale explicit, and run the complete
+release gate. Faster sample output alone is not evidence that a lower ceiling
+is portable; slower output alone is not evidence that a higher ceiling is
+correct.
+
+## Evidence
+
+The exact source-backed budget above and all assertions are in
+`scripts/check-v1-performance.mjs`. Structural-sharing behavior is also covered
+by `packages/core/test/controller.test.mjs`; factory/resolver work counts are
+exercised by `packages/core/test/controller-property.test.mjs`. The root release
+scripts run the performance gate against freshly built package output.
+
+**Next:** Check [release status and gates](/project/release-status) before
+interpreting these budgets as release evidence.

@@ -15,7 +15,10 @@
     "title": "Installation (legacy route)",
     "display": "hidden"
   },
-  "architecture": "Architecture",
+  "architecture": {
+    "title": "Architecture (legacy route)",
+    "display": "hidden"
+  },
   "core": {
     "title": "Controller and snapshots (overview)",
     "display": "hidden"

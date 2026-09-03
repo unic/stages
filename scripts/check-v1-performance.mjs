@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { performance } from "node:perf_hooks";
 import { stages } from "../packages/core/dist/index.js";
 
+// source:start performance-budgets
 const budgets = Object.freeze({
   initialization: Object.freeze({
     fields: 1000,
@@ -26,6 +27,7 @@ const budgets = Object.freeze({
   }),
   totalMaximumMilliseconds: 3000,
 });
+// source:end performance-budgets
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 const numberField = {

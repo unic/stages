@@ -1,0 +1,64 @@
+# Release status and evidence
+
+**For:** Maintainers and adopters deciding whether the current v1 artifacts are
+ready for evaluation or stable production promotion.
+
+**Prerequisites:** [Runtime architecture](/project/architecture) and the
+[measured performance budgets](/project/performance).
+
+The repository manifests currently identify all four packages as
+`1.0.0-alpha.0`. The implemented contracts are strict-built and release-gated,
+but this is not a stable `1.0.0` publication claim.
+
+## Release unit
+
+`@stages/core`, `@stages/dom`, `@stages/react`, and `@stages/test-kit` move
+together at the same prerelease version. DOM, React, and test kit depend on the
+exact matching core version. Packages are public, ESM-only, side-effect-free,
+and ship declaration/source maps, source, README, and license files. React 17
+or newer is a peer dependency of the React adapter.
+
+## Automated evidence
+
+The architecture ledger contains eighteen acceptance criteria. Repository
+automation connects each criterion to source and executable evidence, checks
+strict TypeScript and the absence of explicit `any` escape hatches, verifies
+core dependency/browser-global boundaries, and exercises structural,
+validation, persistence, adapter, migration, and performance behavior.
+
+The full release-candidate command additionally packs all four packages,
+checks tarball allowlists and export maps, installs them offline into an
+isolated consumer, compiles and runs that consumer, runs the complete package
+tests, and builds Studio, docs, and both production examples.
+
+```sh
+npm run release:check:v1
+```
+
+Passing this command proves the repository-defined candidate checks at that
+commit. It does not publish packages and is not a substitute for external use.
+
+## Remaining promotion evidence
+
+Stable promotion still requires maintainers to select an immutable release
+candidate and have at least one real external consumer install and exercise
+those exact artifacts. That result, accessibility acceptance, package metadata,
+and maintainer approval must be recorded before publishing `1.0.0`. A local
+packed-consumer fixture is valuable release evidence but must not be described
+as external adoption.
+
+Publishing and dist-tag changes are explicit maintainer operations. Faulty
+published prereleases should be deprecated and replaced by a new version; a
+published version must never be overwritten.
+
+## Evidence
+
+Current versions and dependency relationships come from the four package
+manifests. The automated ledger is `docs/V1_ACCEPTANCE_REVIEW.md`; commands,
+tarball requirements, publication order, and outstanding promotion work are in
+`docs/V1_RELEASE_CHECKLIST.md`. `scripts/check-v1-acceptance.mjs` verifies the
+ledger-to-evidence mapping.
+
+**Next:** Existing 0.x users should continue with
+[migration](/migration); contributors should read
+[contributing to the docs](/project/contributing-to-docs).

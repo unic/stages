@@ -157,6 +157,10 @@ const completePagePaths = [
   "reference/standard-events.mdx",
   "reference/diagnostics.mdx",
   "reference/serialization-errors.mdx",
+  "project/architecture.mdx",
+  "project/core-boundaries.mdx",
+  "project/performance.mdx",
+  "project/release-status.mdx",
   "project/contributing-to-docs.mdx",
 ];
 for (const relativePath of completePagePaths) {
@@ -324,6 +328,23 @@ assert.ok(testKitPackage, "missing test-kit package coverage record");
 for (const { symbol } of testKitPackage.exports) {
   assert.ok(testKitReference.includes(symbol), `test-kit reference is missing export ${symbol}`);
 }
+
+const architecturePage = guideEntries.find(({ relativePath }) => relativePath === "project/architecture.mdx")?.source;
+const boundaryPage = guideEntries.find(({ relativePath }) => relativePath === "project/core-boundaries.mdx")?.source;
+const releaseStatusPage = guideEntries.find(({ relativePath }) => relativePath === "project/release-status.mdx")?.source;
+assert.ok(architecturePage && boundaryPage && releaseStatusPage, "missing project architecture pages");
+for (const packageRecord of manifest.packages) {
+  assert.ok(architecturePage.includes(`\`${packageRecord.package}\``), `architecture is missing ${packageRecord.package}`);
+}
+for (const nonFeature of manifest.contracts.architectureNonFeatures) {
+  assert.ok(boundaryPage.includes(nonFeature), `core boundaries are missing ${nonFeature}`);
+}
+const packageVersions = await Promise.all(
+  ["core", "dom", "react", "test-kit"].map(async (name) =>
+    JSON.parse(await readRoot(`packages/${name}/package.json`)).version),
+);
+assert.equal(new Set(packageVersions).size, 1, "v1 package versions must stay aligned");
+assert.ok(releaseStatusPage.includes(`\`${packageVersions[0]}\``), "release status has a stale package version");
 
 const [controllerSource, schemaSource, collectionSource, serializationSource] = await Promise.all([
   readRoot("packages/core/src/controller.ts"),
@@ -511,6 +532,7 @@ const checkedRegions = [
   { fixture: "docs/examples/custom-adapter.ts", region: "custom-adapter-tree", page: "adapters/custom/contract.mdx" },
   { fixture: "docs/examples/custom-adapter.ts", region: "framework-mappings", page: "adapters/custom/framework-walkthrough.mdx" },
   { fixture: "docs/examples/custom-adapter.ts", region: "test-kit-harness", page: "adapters/custom/testing-with-test-kit.mdx" },
+  { fixture: "scripts/check-v1-performance.mjs", region: "performance-budgets", page: "project/performance.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);

@@ -206,6 +206,18 @@
     "testKitMembers": {
       "AdapterHarness": ["getSnapshot", "emit", "destroy"]
     },
+    "architectureNonFeatures": [
+      "Built-in visual UI",
+      "URL/hash routing",
+      "Browser storage",
+      "Autosave",
+      "Undo/redo",
+      "Remote option cache",
+      "Special `subform` node",
+      "Runtime fieldset/template registry",
+      "Arbitrary interface-state channel",
+      "Lodash-style string paths"
+    ],
     "events": [
       { "symbol": "focus", "interpretation": "core interaction metadata" },
       { "symbol": "blur", "interpretation": "core interaction metadata" },

@@ -1,0 +1,118 @@
+# Runtime architecture
+
+**For:** Application architects and contributors deciding which layer should own
+a behavior.
+
+**Prerequisites:** [Mental model](/start/mental-model) and
+[adapter overview](/adapters/overview).
+
+Stages separates deterministic form semantics from rendering, framework
+lifecycle, and application policy.
+
+```text
+schema + controlled value/context/extensions
+                    │ update
+                    ▼
+             @stages/core controller
+          ┌─────────┴─────────┐
+ snapshots│                   │events
+          ▼                   ▲
+ DOM / React / custom adapter │
+          │                   │
+          └────── rendered UI ┘
+
+application owner: accepts/replaces/rejects proposals;
+owns routing, storage, network work, and product policy
+```
+
+## Responsibility map
+
+| Layer | Owns | Does not own |
+| --- | --- | --- |
+| Core | Schema evaluation, paths/addresses, event transactions, value proposals, collection/wizard rules, validation, durable state envelope, snapshots | Canonical-value acceptance, UI, framework lifecycle, browser services |
+| Adapter | Snapshot subscription, recursive rendering, view-token mapping, UI-to-event translation, framework focus/accessibility mechanics | Domain policy, duplicate core validation/navigation logic, canonical value |
+| Application | Accepted value, context, registered extension values, routing, storage, remote data, autosave/undo policy, analytics | Core transaction internals |
+
+Adapters and applications may split their responsibilities differently, but
+the controlled handshake remains: core proposes through `onChange`; the owner
+accepts or substitutes through `update({ value })`; the adapter renders the
+next snapshot.
+
+## Pure transformations and the controller shell
+
+The core is built around value-oriented operations:
+
+```text
+schema input + value/context/meta → evaluate and normalize
+event + current draft             → reducer/transforms → patches
+patches + value                   → immutable next value
+evaluated tree + metadata         → validation/snapshot projection
+
+controller shell → queue transactions → call owner/effects → notify subscribers
+```
+
+Public functions such as path operations, collection command reduction,
+schema evaluation, event constructors, and serialization utilities operate
+without retaining controller state; update-style functions return new roots
+while preserving unaffected references. User-supplied factories, resolvers,
+reducers, transforms, validators, codecs, and callbacks can themselves cause
+effects; applications should keep the functions documented as pure free of
+them.
+
+`stages()` is the imperative shell. It coordinates automatic and explicit
+batching, controlled proposals, subscriptions, async validation cancellation,
+diagnostics, and serialization. Each controller owns its own queues, revision,
+snapshot cache, validation records, interaction metadata, wizard locations,
+collection keys, and cancellation tokens. There is no module-global instance
+state shared between controllers.
+
+## Recursive normalization and reconciliation
+
+Every schema revision is evaluated from the current controlled value, context,
+and metadata. Normalization walks fields, groups, collection rows, wizards, and
+stages into exact data paths and stable node addresses while resolving
+visibility, disabled inheritance, derived props, variants, and row identity.
+
+The controller reconciles address-bound state against the evaluated tree.
+Compatible addresses preserve touched/visited state, active stages, and
+collection row identity. Validation records additionally use node address,
+validator identity, and dependency values to decide whether results remain
+current. Removed or incompatibly reused addresses discard state and can
+produce diagnostics. An invalid dynamic revision retains the last valid
+normalized tree when one exists.
+
+Snapshots then omit hidden nodes and project normalized structure plus current
+value and metadata. Unchanged nodes are deeply compared by address and reuse
+their previous object identity, enabling selector subscribers to skip unchanged
+branches. A changed root snapshot does not imply that every nested node object
+changed.
+
+## Immutability boundary
+
+Path and patch operations construct new containers along changed branches and
+reuse unaffected input branches. Core does not mutate supplied schema, value,
+patch, or snapshot objects. Public `readonly` and `DeepReadonly` types express
+that contract to TypeScript; they do not recursively freeze runtime objects.
+Consumers must not mutate an object after handing it to the controller or cast
+away readonly snapshot types.
+
+## Package graph
+
+`@stages/core` has no runtime dependencies and imports only its own modules.
+`@stages/dom` and `@stages/test-kit` depend only on the matching core version.
+`@stages/react` depends on core and declares React 17 or newer as a peer. Core's
+TypeScript library target is `ES2020` without DOM types, and the acceptance gate
+rejects browser globals or non-relative runtime imports in core source.
+
+## Evidence
+
+Package boundaries come from the four package manifests and
+`scripts/check-v1-acceptance.mjs`. Normalization is implemented in
+`packages/core/src/schema.ts`; the per-controller state, reconciliation,
+transaction scheduler, and structural sharing are in
+`packages/core/src/controller.ts`. Immutability, controller isolation, dynamic
+reconciliation, and selector behavior are covered by the core tests cited in
+`docs/V1_ACCEPTANCE_REVIEW.md`.
+
+**Next:** Use [core boundaries and deliberate limits](/project/core-boundaries)
+to place application features at the right layer.

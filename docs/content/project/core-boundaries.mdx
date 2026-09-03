@@ -1,0 +1,83 @@
+# Core boundaries and deliberate limits
+
+**For:** Product and platform teams deciding whether a concern belongs in core,
+an adapter, or application code.
+
+**Prerequisites:** [Runtime architecture](/project/architecture) and
+[controlled values](/core-concepts/controlled-values).
+
+The core deliberately stops at deterministic form semantics. The omissions
+below keep it portable and composable; each has a supported integration path.
+
+| Deliberate non-feature | Supported composition alternative |
+| --- | --- |
+| Built-in visual UI | Choose `@stages/dom`, `@stages/react`, or a custom adapter; keep design-system markup and accessibility policy there. |
+| URL/hash routing | Translate router state to wizard events and observe active-stage snapshots in application code. Prevent feedback loops when synchronizing both directions. |
+| Browser storage | Persist `controller.serialize()` and recreate with the `state` branch; storage errors, quota, consent, encryption, and retention remain application policy. |
+| Autosave | Subscribe or select the state that matters, debounce outside core, serialize, and send through an application storage service. Flush/cancel on lifecycle boundaries explicitly. |
+| Undo/redo | Keep accepted domain values or serialized checkpoints in application history. Feed a chosen value through `update`, or recreate a controller from a selected envelope. Decide whether interaction metadata belongs in each checkpoint. |
+| Remote option cache | Fetch and cache outside resolvers, then pass stable data through `context` or a typed extension namespace. Resolvers stay synchronous and pure. |
+| Special `subform` node | Compose ordinary groups, collections, and wizards recursively; package reusable schema fragments as typed functions. |
+| Runtime fieldset/template registry | Use TypeScript configuration factories for schema reuse and adapter components for fieldset/section markup. |
+| Arbitrary interface-state channel | Keep transient UI state in the adapter/framework. Use a named extension namespace only when core dynamics need the state, and register a codec if it must persist. |
+| Lodash-style string paths | Use segment arrays such as `["people", 0, "name"]` and the safe path utilities. Parse external strings at a trusted application boundary instead of adding ambiguous syntax to core. |
+
+Focus and scrolling are also adapter concerns; analytics and devtools are
+subscribers or application integrations. Core exposes visible issues,
+diagnostics, paths, addresses, snapshots, subscriptions, and serialization so
+those layers do not need access to internal controller state.
+
+## Choosing context, extensions, or adapter state
+
+Use `context` for externally owned, non-serialized inputs such as locale,
+permissions, or fetched option catalogs. Use `extensions` for namespaced state
+that must participate in dynamic configuration and may be serialized through a
+registered extension codec. Use adapter-local state for open menus, drag state,
+modal state, roving focus, and other presentation details that core does not
+need.
+
+Do not put UI-only state into the controlled domain value merely to make it
+observable. Conversely, do not hide business data in adapter state when it
+must be validated, transformed, persisted, or submitted with the form.
+
+## Routing and event loops
+
+Wizard snapshots expose `activeStage`; navigation flows through
+`wizard:previous`, `wizard:next`, and `wizard:go`. A router integration should
+choose one direction as the initiating event, update the other side after the
+controller publishes, and compare current state before writing. Core does not
+read or mutate URLs.
+
+## Persistence and history boundaries
+
+The serialized envelope contains the accepted value, baseline, and registered
+durable metadata. It intentionally excludes callbacks, view tokens, context,
+pending validation, focus, browser handles, storage keys, timestamps, and
+retention rules. Autosave and undo systems must decide when to capture an
+envelope, where to store it, how to handle conflicts, and which schema
+migrations are available when restoring it.
+
+## Remote data boundary
+
+Schema factories and resolvers are synchronous. Start network work in the
+application, represent loading/error/cache state there, and update `context` or
+`extensions` when results arrive. Starting requests from a resolver can repeat
+work during reevaluation and violates the deterministic configuration model.
+
+## Path boundary and safety
+
+Segment arrays preserve numeric indexes and avoid parsing rules. Core rejects
+unsafe prototype-related segments in public path operations and schema IDs.
+If an API accepts a dotted path, convert and validate it before it reaches
+Stages; never split untrusted text and blindly apply it as a patch path.
+
+## Evidence
+
+The scope decisions originate in `docs/V1_ARCHITECTURE_PLAN.md`. Context and
+extension persistence behavior is implemented in core controller and
+serialization code; path safety is covered by `packages/core/src/path.ts` and
+its property tests. Focus, router, storage, and adapter alternatives link to
+their respective guides from the [feature coverage map](/feature-coverage).
+
+**Next:** Read the exact [measured performance budgets](/project/performance),
+or implement one boundary through the relevant feature guide.

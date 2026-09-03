@@ -1,3 +1,7 @@
 {
+  "architecture": "Architecture",
+  "core-boundaries": "Core boundaries",
+  "performance": "Performance",
+  "release-status": "Release status",
   "contributing-to-docs": "Contributing to docs"
 }
