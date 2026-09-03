@@ -440,3 +440,111 @@ test("rejected collection commands do not run transforms or propose changes", as
   assert.equal(changes, 0);
   assert.equal(controller.getSnapshot().value.transformed, false);
 });
+
+test("engine row keys and touched state follow rows through moves and recreation", async () => {
+  const rowFields = {
+    text: {
+      view: "text",
+      initialValue: "",
+      reduce: ({ event }) => event.name === "input" ? { value: event.payload } : undefined,
+    },
+  };
+  const schema = {
+    id: "stable-rows",
+    version: 1,
+    nodes: [{
+      kind: "collection",
+      id: "items",
+      nodes: [{ kind: "field", id: "name", type: "text" }],
+    }],
+  };
+  let controller;
+  controller = stages({
+    schema,
+    fields: rowFields,
+    value: { items: [{ name: "first" }, { name: "second" }] },
+    onChange: ({ value }) => controller.update({ value }),
+  });
+  const collectionAddress = [{ kind: "node", id: "items" }];
+  const initialRows = controller.getSnapshot().nodes[0].nodes;
+  const firstKey = initialRows[0].id;
+  const secondKey = initialRows[1].id;
+  controller.dispatch({ name: "focus", target: { kind: "field", path: ["items", 0, "name"] } });
+  controller.dispatch({ name: "blur", target: { kind: "field", path: ["items", 0, "name"] } });
+  await tick();
+
+  controller.dispatch({
+    name: "collection:move",
+    target: { kind: "node", address: collectionAddress },
+    payload: { from: 0, to: 1 },
+  });
+  await tick();
+  const movedRows = controller.getSnapshot().nodes[0].nodes;
+  assert.deepEqual(movedRows.map(({ id }) => id), [secondKey, firstKey]);
+  assert.equal(movedRows[0].nodes[0].state.touched, false);
+  assert.equal(movedRows[1].nodes[0].state.touched, true);
+
+  const recreated = stages({ schema, fields: rowFields, state: controller.serialize() });
+  const recreatedRows = recreated.getSnapshot().nodes[0].nodes;
+  assert.deepEqual(recreatedRows.map(({ id }) => id), [secondKey, firstKey]);
+  assert.equal(recreatedRows[1].nodes[0].state.touched, true);
+});
+
+test("row key moves remain proposals until asynchronous controlled acceptance", async () => {
+  const schema = {
+    id: "controlled-row-keys",
+    version: 1,
+    nodes: [{ kind: "collection", id: "items", nodes: [] }],
+  };
+  let proposed;
+  const controller = stages({
+    schema,
+    fields: {},
+    value: { items: [{ id: "first" }, { id: "second" }] },
+    onChange: ({ value }) => { proposed = value; },
+  });
+  const target = { kind: "node", address: [{ kind: "node", id: "items" }] };
+  const initialKeys = controller.getSnapshot().nodes[0].nodes.map(({ id }) => id);
+  controller.dispatch({ name: "collection:move", target, payload: { from: 0, to: 1 } });
+  await tick();
+
+  assert.deepEqual(controller.getSnapshot().value.items.map(({ id }) => id), ["first", "second"]);
+  assert.deepEqual(controller.getSnapshot().nodes[0].nodes.map(({ id }) => id), initialKeys);
+
+  controller.update({ value: proposed });
+  await tick();
+  assert.deepEqual(controller.getSnapshot().value.items.map(({ id }) => id), ["second", "first"]);
+  assert.deepEqual(controller.getSnapshot().nodes[0].nodes.map(({ id }) => id), [initialKeys[1], initialKeys[0]]);
+});
+
+test("active wizard stages reconcile when dynamic stages become dormant", async () => {
+  const schema = {
+    id: "conditional-stages",
+    version: 1,
+    nodes: [{
+      kind: "wizard",
+      id: "flow",
+      navigation: { nonLinear: true },
+      stages: [
+        { id: "first", nodes: [] },
+        { id: "second", when: ({ value }) => value.showSecond, nodes: [] },
+      ],
+    }],
+  };
+  const controller = stages({
+    schema,
+    fields: {},
+    value: { showSecond: true, flow: { first: {}, second: {} } },
+  });
+  const target = { kind: "node", address: [{ kind: "node", id: "flow" }] };
+  controller.dispatch({ name: "wizard:go", target, payload: "second" });
+  await tick();
+  assert.equal(controller.getSnapshot().nodes[0].activeStage, "second");
+
+  controller.update({ value: { showSecond: false, flow: { first: {}, second: {} } } });
+  await tick();
+  const wizard = controller.getSnapshot().nodes[0];
+  assert.equal(wizard.activeStage, "first");
+  assert.deepEqual(wizard.visibleStageIds, ["first"]);
+  assert.equal(wizard.nodes.length, 1);
+});

@@ -139,6 +139,11 @@ interface ActiveWizardState {
   readonly stage: string;
 }
 
+interface CollectionKeyState {
+  readonly address: NodeAddress;
+  readonly keys: readonly string[];
+}
+
 interface ValidationRecord {
   readonly address: NodeAddress;
   readonly validator: object;
@@ -422,10 +427,18 @@ export function stages<TValue, TFields, TContext = unknown>(
   let proposal: TValue | undefined;
   let transactionEvents: StagesEvent[] = [];
   let transactionPatches: StagesPatch[] = [];
+  let transactionCollectionKeys: Map<string, CollectionKeyState> | undefined;
   let focused = new Map<string, NodeAddress>();
   let touched = new Map<string, NodeAddress>();
   let visited = new Map<string, NodeAddress>();
   let activeWizards = new Map<string, ActiveWizardState>();
+  let collectionKeys = new Map<string, CollectionKeyState>();
+  let rowKeyCounter = 0;
+  let pendingAcceptance: Readonly<{
+    proposedValue: TValue;
+    previousValue: TValue;
+    collectionKeys: Map<string, CollectionKeyState>;
+  }> | undefined;
   if (restored !== undefined) {
     const serializedTouched = restored.meta["touched"];
     if (Array.isArray(serializedTouched)) {
@@ -447,6 +460,17 @@ export function stages<TValue, TFields, TContext = unknown>(
         if (!Array.isArray(item) || item.length !== 2 || typeof item[1] !== "string") continue;
         const address = parseNodeAddress(item[0]);
         if (address !== undefined) activeWizards.set(addressKey(address), { address, stage: item[1] });
+      }
+    }
+    const serializedCollectionKeys = restored.meta["collectionKeys"];
+    if (Array.isArray(serializedCollectionKeys)) {
+      for (const item of serializedCollectionKeys) {
+        if (!Array.isArray(item) || item.length !== 2 || !Array.isArray(item[1])) continue;
+        const address = parseNodeAddress(item[0]);
+        const keys = item[1];
+        if (address !== undefined && keys.every((key) => typeof key === "string")) {
+          collectionKeys.set(addressKey(address), { address, keys });
+        }
       }
     }
   }
@@ -486,12 +510,14 @@ export function stages<TValue, TFields, TContext = unknown>(
   }
 
   function evaluated(currentValue: TValue) {
+    const currentCollectionKeys = transactionCollectionKeys ?? collectionKeys;
     const result = evaluateSchema({
       schema: schemaInput,
       value: readonlyValue(currentValue),
       context: readonlyValue(context),
       meta: meta(),
       fields: options.fields,
+      collectionKeys: new Map([...currentCollectionKeys].map(([key, state]) => [key, state.keys])),
     });
     if (restored !== undefined && (
       restored.format !== "stages"
@@ -511,6 +537,68 @@ export function stages<TValue, TFields, TContext = unknown>(
       }
     }
     return result;
+  }
+
+  function allocateRowKey(used: ReadonlySet<string>): string {
+    let key: string;
+    do {
+      rowKeyCounter += 1;
+      key = `row:${rowKeyCounter}`;
+    } while (used.has(key));
+    return key;
+  }
+
+  function synchronizeCollectionKeys(
+    nodes: readonly NormalizedNode<TValue, TFields, TContext>[],
+    currentValue: TValue,
+  ): void {
+    const synchronize = (items: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
+      for (const node of items) {
+        if (node.config.kind === "collection" && node.config.itemKey === undefined) {
+          const key = addressKey(node.address);
+          const current = getAtPath(currentValue, node.path);
+          const length = Array.isArray(current) ? current.length : 0;
+          const existing = collectionKeys.get(key)?.keys ?? node.branches.map((branch) => branch.id);
+          const keys = existing.slice(0, length);
+          const used = new Set(keys);
+          while (keys.length < length) {
+            const next = allocateRowKey(used);
+            keys.push(next);
+            used.add(next);
+          }
+          collectionKeys.set(key, { address: node.address, keys });
+        }
+        synchronize(node.children);
+      }
+    };
+    synchronize(nodes);
+  }
+
+  function updateTransactionCollectionKeys(
+    node: NormalizedNode<TValue, TFields, TContext>,
+    command: CollectionCommand,
+  ): void {
+    if (node.config.kind !== "collection" || node.config.itemKey !== undefined) return;
+    const key = addressKey(node.address);
+    const state = transactionCollectionKeys?.get(key) ?? collectionKeys.get(key);
+    const keys = (state?.keys ?? node.branches.map((branch) => branch.id)).slice();
+    const used = new Set(keys);
+    if (command.name === "collection:add") {
+      keys.splice(command.index ?? keys.length, 0, allocateRowKey(used));
+    } else if (command.name === "collection:remove") {
+      keys.splice(command.index, 1);
+    } else if (command.name === "collection:duplicate") {
+      keys.splice(command.toIndex ?? command.index + 1, 0, allocateRowKey(used));
+    } else if (command.name === "collection:move") {
+      const moved = keys.splice(command.from, 1);
+      const movedKey = moved[0];
+      if (movedKey !== undefined) keys.splice(command.to, 0, movedKey);
+    } else if (command.name === "collection:sort") {
+      const sorted = command.order.map((index) => keys[index]).filter((item): item is string => item !== undefined);
+      keys.splice(0, keys.length, ...sorted);
+    }
+    transactionCollectionKeys ??= new Map(collectionKeys);
+    transactionCollectionKeys.set(key, { address: node.address, keys });
   }
 
   function reconcileInteraction(nodes: readonly NormalizedNode<TValue, TFields, TContext>[]): void {
@@ -559,6 +647,12 @@ export function stages<TValue, TFields, TContext = unknown>(
     };
     initializeWizards(nodes);
     activeWizards = nextActiveWizards;
+    synchronizeCollectionKeys(nodes, value);
+    const retainedCollectionKeys = new Map<string, CollectionKeyState>();
+    for (const [key, state] of collectionKeys) {
+      if (nextIdentities.get(key) === "collection") retainedCollectionKeys.set(key, state);
+    }
+    collectionKeys = retainedCollectionKeys;
     for (const [key, record] of validationRecords) {
       if (!nextIdentities.has(addressKey(record.address))) validationRecords.delete(key);
     }
@@ -873,14 +967,24 @@ export function stages<TValue, TFields, TContext = unknown>(
     try {
       if (proposal !== undefined && !Object.is(proposal, value)) {
         const next = proposal;
+        const previousValue = value;
         const change: StagesChange<TValue> = {
           value: next,
-          previousValue: value,
+          previousValue,
           patches: transactionPatches,
           events: transactionEvents,
           source: "user",
           transactionId: ++transactionId,
         };
+        if (transactionCollectionKeys !== undefined) {
+          pendingAcceptance = {
+            proposedValue: next,
+            previousValue,
+            collectionKeys: new Map(transactionCollectionKeys),
+          };
+        } else {
+          pendingAcceptance = undefined;
+        }
         proposal = undefined;
         transactionEvents = [];
         transactionPatches = [];
@@ -893,6 +997,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     } finally {
       flushing = false;
       transactionEvaluation = undefined;
+      transactionCollectionKeys = undefined;
     }
     notify();
   }
@@ -907,7 +1012,16 @@ export function stages<TValue, TFields, TContext = unknown>(
   function update(input: StagesUpdate<TValue, TFields, TContext>): void {
     if (destroyed) return;
     const invalidateAllValidation = input.context !== undefined || input.schema !== undefined;
-    if (input.value !== undefined) value = input.value;
+    if (input.value !== undefined) {
+      if (pendingAcceptance !== undefined) {
+        if (!deepEqual(input.value, pendingAcceptance.previousValue)) {
+          collectionKeys = new Map(pendingAcceptance.collectionKeys);
+        }
+        pendingAcceptance = undefined;
+      }
+      value = input.value;
+      if (publishedEvaluation !== undefined) synchronizeCollectionKeys(publishedEvaluation.nodes, value);
+    }
     if (input.context !== undefined) context = input.context;
     if (input.schema !== undefined) schemaInput = input.schema;
     publishedEvaluation = undefined;
@@ -994,6 +1108,7 @@ export function stages<TValue, TFields, TContext = unknown>(
               ...(target.config.max === undefined ? {} : { max: target.config.max }),
             });
             if (commandResult.accepted) {
+              updateTransactionCollectionKeys(target, parsed.command);
               patches = [{ op: "set", path: target.path, value: commandResult.value }];
             } else {
               commandRejected = true;
@@ -1148,7 +1263,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         touched: toJson([...touched.values()]),
         visited: toJson([...visited.values()]),
         activeWizards: toJson([...activeWizards.values()].map((state) => [state.address, state.stage])),
-        collectionKeys: [],
+        collectionKeys: toJson([...collectionKeys.values()].map((state) => [state.address, state.keys])),
       },
     };
   }
@@ -1202,12 +1317,15 @@ export function stages<TValue, TFields, TContext = unknown>(
       listeners.clear();
       selectorListeners.clear();
       activeWizards.clear();
+      collectionKeys.clear();
       validationRecords.clear();
       proposal = undefined;
       transactionEvents = [];
       transactionPatches = [];
       transactionEvaluation = undefined;
+      transactionCollectionKeys = undefined;
       publishedEvaluation = undefined;
+      pendingAcceptance = undefined;
     },
   };
 }

@@ -45,6 +45,11 @@ export interface EvaluateSchemaOptions<TValue, TFields, TContext> {
   readonly context: DeepReadonly<TContext>;
   readonly meta: DynamicMetaSnapshot;
   readonly fields: TFields;
+  readonly collectionKeys?: ReadonlyMap<string, readonly string[]>;
+}
+
+function addressKey(address: NodeAddress): string {
+  return address.map((segment) => `${segment.kind}:${segment.id.length}:${segment.id}`).join("/");
 }
 
 function diagnostic(
@@ -92,6 +97,7 @@ interface WalkContext<TValue, TFields, TContext> {
   readonly meta: DynamicMetaSnapshot;
   readonly fields: TFields;
   readonly diagnostics: Diagnostic[];
+  readonly collectionKeys: ReadonlyMap<string, readonly string[]>;
 }
 
 function walkNodes<TValue, TFields, TContext>(
@@ -181,10 +187,11 @@ function walkNodes<TValue, TFields, TContext>(
       }
       const rows = Array.isArray(collectionValue) ? collectionValue : [];
       const rowKeys = new Set<string>();
+      const storedRowKeys = walk.collectionKeys.get(addressKey(address));
       const rowChildren: NormalizedNode<TValue, TFields, TContext>[] = [];
       const rowBranches: NormalizedBranch<TValue, TFields, TContext>[] = [];
       rows.forEach((row, index) => {
-        let rowKey = String(index);
+        let rowKey = storedRowKeys?.[index] ?? String(index);
         try {
           rowKey = config.itemKey?.(row, index) ?? rowKey;
         } catch (error) {
@@ -302,6 +309,7 @@ export function evaluateSchema<TValue, TFields, TContext>(
     meta: options.meta,
     fields: options.fields,
     diagnostics,
+    collectionKeys: options.collectionKeys ?? new Map(),
   });
 
   return { schema, nodes, diagnostics };

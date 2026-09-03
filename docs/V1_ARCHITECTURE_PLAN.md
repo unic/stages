@@ -21,6 +21,10 @@ and durable active-stage recreation. Validation is indexed by stable validator
 and node identity, with event and reveal policies, selective dependency
 invalidation, conditional exclusion, scoped and per-stage aggregation, async
 race protection, and deterministic rejection issues.
+Engine-owned collection row keys now follow accepted move/sort/duplicate
+commands, remain isolated from rejected controlled proposals, preserve row
+interaction identity, and round-trip through serialized state. Dynamic wizard
+stage visibility also reconciles the active stage to a valid fallback.
 
 ## 1. Outcome
 
