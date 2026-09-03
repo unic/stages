@@ -20,6 +20,17 @@ export interface NormalizedNode<TValue, TFields, TContext> {
   readonly disabled: boolean;
   readonly props: Readonly<Record<string, unknown>>;
   readonly children: readonly NormalizedNode<TValue, TFields, TContext>[];
+  readonly branches: readonly NormalizedBranch<TValue, TFields, TContext>[];
+}
+
+export interface NormalizedBranch<TValue, TFields, TContext> {
+  readonly kind: "row" | "stage";
+  readonly id: string;
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly visible: boolean;
+  readonly disabled: boolean;
+  readonly children: readonly NormalizedNode<TValue, TFields, TContext>[];
 }
 
 export interface EvaluatedSchema<TValue, TFields, TContext> {
@@ -88,6 +99,7 @@ function walkNodes<TValue, TFields, TContext>(
   parentPath: DataPath,
   parentAddress: NodeAddress,
   parentDisabled: boolean,
+  parentVisible: boolean,
   walk: WalkContext<TValue, TFields, TContext>,
 ): readonly NormalizedNode<TValue, TFields, TContext>[] {
   const siblingIds = new Set<string>();
@@ -113,7 +125,7 @@ function walkNodes<TValue, TFields, TContext>(
     let props: Readonly<Record<string, unknown>> = {};
 
     try {
-      visible = resolveBoolean(config.when, resolverContext, true);
+      visible = parentVisible && resolveBoolean(config.when, resolverContext, true);
       disabled = parentDisabled || resolveBoolean(config.disabled, resolverContext, false);
       if (config.kind === "field") {
         props = { ...(config.props as Readonly<Record<string, unknown>> | undefined) };
@@ -125,16 +137,15 @@ function walkNodes<TValue, TFields, TContext>(
       continue;
     }
 
-    if (!visible) continue;
-
     let children: readonly NormalizedNode<TValue, TFields, TContext>[] = [];
+    let branches: readonly NormalizedBranch<TValue, TFields, TContext>[] = [];
     if (config.kind === "field") {
       if (!hasField(walk.fields, config.type)) {
         walk.diagnostics.push(diagnostic("schema.unknown-field", `Unknown field type \"${config.type}\".`, path, address));
         continue;
       }
     } else if (config.kind === "group") {
-      children = walkNodes(config.nodes, path, address, disabled, walk);
+      children = walkNodes(config.nodes, path, address, disabled, visible, walk);
     } else if (config.kind === "collection") {
       const runtimeConfig = config as Readonly<{
         nodes?: readonly NodeConfig<TValue, TFields, TContext>[];
@@ -171,6 +182,7 @@ function walkNodes<TValue, TFields, TContext>(
       const rows = Array.isArray(collectionValue) ? collectionValue : [];
       const rowKeys = new Set<string>();
       const rowChildren: NormalizedNode<TValue, TFields, TContext>[] = [];
+      const rowBranches: NormalizedBranch<TValue, TFields, TContext>[] = [];
       rows.forEach((row, index) => {
         let rowKey = String(index);
         try {
@@ -198,9 +210,20 @@ function walkNodes<TValue, TFields, TContext>(
             return;
           }
         }
-        rowChildren.push(...walkNodes(rowNodes ?? [], [...path, index], rowAddress, disabled, walk));
+        const normalizedRowNodes = walkNodes(rowNodes ?? [], [...path, index], rowAddress, disabled, visible, walk);
+        rowChildren.push(...normalizedRowNodes);
+        rowBranches.push({
+          kind: "row",
+          id: rowKey,
+          path: [...path, index],
+          address: rowAddress,
+          visible,
+          disabled,
+          children: normalizedRowNodes,
+        });
       });
       children = rowChildren;
+      branches = rowBranches;
     } else {
       const stageIds = new Set<string>();
       for (const stage of config.stages) {
@@ -215,6 +238,7 @@ function walkNodes<TValue, TFields, TContext>(
         walk.diagnostics.push(diagnostic("schema.wizard-target", `Unknown initial stage \"${config.initialStage}\".`, path, address));
       }
       const stageChildren: NormalizedNode<TValue, TFields, TContext>[] = [];
+      const stageBranches: NormalizedBranch<TValue, TFields, TContext>[] = [];
       for (const stage of config.stages) {
         if (!isSafePathSegment(stage.id)) continue;
         const stagePath = [...path, stage.id];
@@ -224,16 +248,27 @@ function walkNodes<TValue, TFields, TContext>(
           const stageVisible = resolveBoolean(stage.when, stageContext, true);
           if (!stageVisible) continue;
           const stageDisabled = disabled || resolveBoolean(stage.disabled, stageContext, false);
-          stageChildren.push(...walkNodes(stage.nodes, stagePath, stageAddress, stageDisabled, walk));
+          const normalizedStageNodes = walkNodes(stage.nodes, stagePath, stageAddress, stageDisabled, stageVisible && visible, walk);
+          stageChildren.push(...normalizedStageNodes);
+          stageBranches.push({
+            kind: "stage",
+            id: stage.id,
+            path: stagePath,
+            address: stageAddress,
+            visible: stageVisible && visible,
+            disabled: stageDisabled,
+            children: normalizedStageNodes,
+          });
         } catch (error) {
           const detail = error instanceof Error ? error.message : String(error);
           walk.diagnostics.push(diagnostic("schema.resolver-failed", `Resolver for stage \"${stage.id}\" failed: ${detail}`, stagePath, stageAddress));
         }
       }
       children = stageChildren;
+      branches = stageBranches;
     }
 
-    normalized.push({ config, path, address, visible, disabled, props, children });
+    normalized.push({ config, path, address, visible, disabled, props, children, branches });
   }
 
   return normalized;
@@ -261,7 +296,7 @@ export function evaluateSchema<TValue, TFields, TContext>(
     diagnostics.push(diagnostic("schema.invalid-version", "Schema version must be a positive safe integer."));
   }
 
-  const nodes = walkNodes(schema.nodes, [], [], false, {
+  const nodes = walkNodes(schema.nodes, [], [], false, true, {
     value: options.value,
     context: options.context,
     meta: options.meta,

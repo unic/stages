@@ -347,6 +347,11 @@ export interface SerializedStagesState {
 export interface StagesController<TValue, TFields = Readonly<Record<string, unknown>>, TContext = unknown> {
   getSnapshot(): StagesSnapshot<TValue>;
   subscribe(listener: () => void): () => void;
+  subscribeSelector<TSelection>(
+    selector: (snapshot: StagesSnapshot<TValue>) => TSelection,
+    listener: (selection: TSelection, previousSelection: TSelection) => void,
+    isEqual?: (left: TSelection, right: TSelection) => boolean,
+  ): () => void;
   update(input: StagesUpdate<TValue, TFields, TContext>): void;
   dispatch(event: StagesEvent): void;
   batch(run: () => void): void;

@@ -52,7 +52,47 @@ test("dynamic schemas and resolvers recursively derive paths and stable row addr
     { kind: "node", id: "name" },
   ]);
   assert.deepEqual(field.props, { label: "Name", length: 3 });
+  assert.equal(result.nodes[0].branches[0].kind, "row");
+  assert.equal(result.nodes[0].branches[0].id, "a");
   assert.deepEqual(result.diagnostics, []);
+});
+
+test("wizard stages remain explicit recursive branches", () => {
+  const result = evaluateSchema({
+    schema: {
+      id: "wizard-form",
+      version: 1,
+      nodes: [{
+        kind: "wizard",
+        id: "flow",
+        stages: [{
+          id: "details",
+          nodes: [{ kind: "field", id: "name", type: "text" }],
+        }],
+      }],
+    },
+    value: { flow: { details: { name: "Ada" } } },
+    context: {},
+    meta,
+    fields,
+  });
+
+  assert.equal(result.nodes[0].branches[0].kind, "stage");
+  assert.deepEqual(result.nodes[0].branches[0].path, ["flow", "details"]);
+  assert.deepEqual(result.nodes[0].branches[0].children[0].path, ["flow", "details", "name"]);
+});
+
+test("evaluation does not mutate frozen schema or values", () => {
+  const field = Object.freeze({ kind: "field", id: "name", type: "text", props: Object.freeze({ label: "Name" }) });
+  const nodes = Object.freeze([field]);
+  const schema = Object.freeze({ id: "frozen", version: 1, nodes });
+  const value = Object.freeze({ name: "Ada" });
+
+  const result = evaluateSchema({ schema, value, context: Object.freeze({}), meta, fields });
+
+  assert.equal(result.nodes[0].config, field);
+  assert.deepEqual(result.nodes[0].props, { label: "Name" });
+  assert.equal(value.name, "Ada");
 });
 
 test("normalization reports unsafe, duplicate, and unknown schema entries", () => {

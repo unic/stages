@@ -1,5 +1,11 @@
 import { applyPatches, getAtPath, pathsEqual } from "./path.js";
-import { evaluateSchema, initialFieldValue, type NormalizedNode } from "./schema.js";
+import {
+  evaluateSchema,
+  initialFieldValue,
+  type EvaluatedSchema,
+  type NormalizedBranch,
+  type NormalizedNode,
+} from "./schema.js";
 import type {
   ContainerSnapshot,
   DataPath,
@@ -67,6 +73,31 @@ function deepEqual(left: unknown, right: unknown): boolean {
   const keys = Object.keys(leftRecord);
   return keys.length === Object.keys(rightRecord).length
     && keys.every((key) => Object.prototype.hasOwnProperty.call(rightRecord, key) && deepEqual(leftRecord[key], rightRecord[key]));
+}
+
+function indexSnapshotNodes(
+  nodes: readonly RenderNodeSnapshot[],
+  index = new Map<string, RenderNodeSnapshot>(),
+): ReadonlyMap<string, RenderNodeSnapshot> {
+  for (const node of nodes) {
+    index.set(addressKey(node.address), node);
+    if (node.kind !== "field") indexSnapshotNodes(node.nodes, index);
+  }
+  return index;
+}
+
+function shareSnapshotNode(
+  next: RenderNodeSnapshot,
+  previous: ReadonlyMap<string, RenderNodeSnapshot>,
+): RenderNodeSnapshot {
+  const previousNode = previous.get(addressKey(next.address));
+  if (next.kind === "field") return previousNode !== undefined && deepEqual(previousNode, next) ? previousNode : next;
+
+  const sharedChildren = next.nodes.map((node) => shareSnapshotNode(node, previous));
+  const candidate: ContainerSnapshot = sharedChildren.every((node, index) => node === next.nodes[index])
+    ? next
+    : { ...next, nodes: sharedChildren };
+  return previousNode !== undefined && deepEqual(previousNode, candidate) ? previousNode : candidate;
 }
 
 function toJson(value: unknown, path: DataPath = [], seen = new Set<object>()): JsonValue {
@@ -146,9 +177,35 @@ function mapSnapshotNode<TValue, TFields, TContext>(
     path: node.path,
     address: node.address,
     state: { disabled: node.disabled, visible: node.visible },
-    nodes: node.children.map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
+    nodes: node.branches.length > 0
+      ? node.branches
+        .filter((branch) => branch.visible)
+        .map((branch) => mapSnapshotBranch(branch, value, baseline, fields, interaction, issues))
+      : node.children
+        .filter((child) => child.visible)
+        .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
   };
   return snapshot;
+}
+
+function mapSnapshotBranch<TValue, TFields, TContext>(
+  branch: NormalizedBranch<TValue, TFields, TContext>,
+  value: TValue,
+  baseline: TValue,
+  fields: TFields,
+  interaction: InteractionState,
+  issues: readonly ValidationIssue[],
+): ContainerSnapshot {
+  return {
+    kind: branch.kind,
+    id: branch.id,
+    path: branch.path,
+    address: branch.address,
+    state: { disabled: branch.disabled, visible: branch.visible },
+    nodes: branch.children
+      .filter((child) => child.visible)
+      .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues)),
+  };
 }
 
 function validatorsFor<TValue, TFields, TContext>(
@@ -185,8 +242,12 @@ export function stages<TValue, TFields, TContext = unknown>(
   let visited = new Map<string, NodeAddress>();
   let validation = emptyValidation;
   let validationRun = 0;
+  let publishedEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
+  let transactionEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
   const listeners = new Set<() => void>();
+  const selectorListeners = new Set<() => void>();
   const reportedDiagnostics = new Set<string>();
+  let knownIdentities = new Map<string, string>();
   let cachedSnapshot: StagesSnapshot<TValue>;
 
   function meta(): DynamicMetaSnapshot {
@@ -228,13 +289,49 @@ export function stages<TValue, TFields, TContext = unknown>(
     return result;
   }
 
+  function reconcileInteraction(nodes: readonly NormalizedNode<TValue, TFields, TContext>[]): void {
+    const nextIdentities = new Map<string, string>();
+    const collect = (items: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
+      for (const node of items) {
+        const key = addressKey(node.address);
+        const signature = node.config.kind === "field"
+          ? `field:${node.config.type}`
+          : node.config.kind;
+        nextIdentities.set(key, signature);
+        collect(node.children);
+      }
+    };
+    collect(nodes);
+
+    const retainCompatible = (entries: Map<string, NodeAddress>): Map<string, NodeAddress> => {
+      const retained = new Map<string, NodeAddress>();
+      for (const [key, address] of entries) {
+        const previous = knownIdentities.get(key);
+        const next = nextIdentities.get(key);
+        if (next !== undefined && (previous === undefined || previous === next)) retained.set(key, address);
+      }
+      return retained;
+    };
+    focused = retainCompatible(focused);
+    touched = retainCompatible(touched);
+    visited = retainCompatible(visited);
+    knownIdentities = nextIdentities;
+  }
+
   function snapshot(): StagesSnapshot<TValue> {
     if (!dirtySnapshot) return cachedSnapshot;
     const result = evaluated(value);
+    publishedEvaluation = result;
+    reconcileInteraction(result.nodes);
+    const previousNodes = indexSnapshotNodes(cachedSnapshot.nodes);
+    const nextNodes = result.nodes
+      .filter((node) => node.visible)
+      .map((node) => mapSnapshotNode(node, value, baseline, options.fields, { focused, touched, visited }, validation.issues))
+      .map((node) => shareSnapshotNode(node, previousNodes));
     cachedSnapshot = {
       value: readonlyValue(value),
       revision,
-      nodes: result.nodes.map((node) => mapSnapshotNode(node, value, baseline, options.fields, { focused, touched, visited }, validation.issues)),
+      nodes: nextNodes,
       validation,
       diagnostics: result.diagnostics,
     };
@@ -246,6 +343,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     dirtySnapshot = true;
     snapshot();
     for (const listener of [...listeners]) listener();
+    for (const listener of [...selectorListeners]) listener();
   }
 
   function flush(): void {
@@ -274,6 +372,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       }
     } finally {
       flushing = false;
+      transactionEvaluation = undefined;
     }
     notify();
   }
@@ -290,7 +389,9 @@ export function stages<TValue, TFields, TContext = unknown>(
     if (input.value !== undefined) value = input.value;
     if (input.context !== undefined) context = input.context;
     if (input.schema !== undefined) schemaInput = input.schema;
+    publishedEvaluation = undefined;
     revision += 1;
+    validationRun += 1;
     validation = emptyValidation;
     dirtySnapshot = true;
     if (!flushing) schedule();
@@ -299,7 +400,8 @@ export function stages<TValue, TFields, TContext = unknown>(
   function dispatch(event: StagesEvent): void {
     if (destroyed) return;
     const draft = proposal ?? value;
-    const result = evaluated(draft);
+    const result = transactionEvaluation ?? publishedEvaluation ?? evaluated(draft);
+    transactionEvaluation = result;
     const allNodes: NormalizedNode<TValue, TFields, TContext>[] = [];
     const collect = (nodes: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
       for (const node of nodes) {
@@ -328,7 +430,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     }
 
     let patches: readonly StagesPatch[] = [];
-    if (target?.config.kind === "field" && !target.disabled) {
+    if (target?.config.kind === "field" && target.visible && !target.disabled) {
       const definition = fieldDefinition(options.fields, target.config.type);
       const reduced = definition?.reduce?.({ value: getAtPath(draft, target.path), event, path: target.path });
       if (reduced !== undefined) {
@@ -389,8 +491,9 @@ export function stages<TValue, TFields, TContext = unknown>(
   async function validate(validateOptions: ValidateOptions = {}): Promise<ValidationSnapshot> {
     if (destroyed) return validation;
     const run = ++validationRun;
-    const result = evaluated(value);
+    const result = publishedEvaluation ?? evaluated(value);
     const candidates = validatorsFor(result.nodes).filter(({ node }) => {
+      if (!node.visible) return false;
       if (validateOptions.scope === undefined || validateOptions.scope === "form") return true;
       return "path" in validateOptions.scope
         ? pathsEqual(node.path.slice(0, validateOptions.scope.path.length), validateOptions.scope.path)
@@ -399,8 +502,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     validation = { ...emptyValidation, status: "pending", pendingCount: candidates.length, unknownCount: 0 };
     dirtySnapshot = true;
     schedule();
-    const issues: ValidationIssue[] = [];
-    await Promise.all(candidates.map(async ({ node, validator }) => {
+    const issueGroups = await Promise.all(candidates.map(async ({ node, validator }): Promise<readonly ValidationIssue[]> => {
       const contextValue = {
         value: readonlyValue(value),
         context: readonlyValue(context),
@@ -417,20 +519,21 @@ export function stages<TValue, TFields, TContext = unknown>(
           visited: visited.has(addressKey(node.address)),
         },
       };
-      if (validator.when?.(contextValue) === false) return;
       try {
-        issues.push(...await validator.validate(contextValue));
+        if (validator.when?.(contextValue) === false) return [];
+        return await validator.validate(contextValue);
       } catch (error) {
-        issues.push({
+        return [{
           id: `${validator.id}.rejected`,
           code: "validator-rejected",
           path: node.path,
           severity: "error",
           message: error instanceof Error ? error.message : String(error),
-        });
+        }];
       }
     }));
     if (destroyed || run !== validationRun) return validation;
+    const issues = issueGroups.flat();
     const hasErrors = issues.some((issue) => issue.severity === "error");
     validation = {
       status: hasErrors ? "invalid" : "valid",
@@ -447,7 +550,7 @@ export function stages<TValue, TFields, TContext = unknown>(
 
   function serialize(): SerializedStagesState {
     const current = snapshot();
-    const evaluatedCurrent = evaluated(value);
+    const evaluatedCurrent = publishedEvaluation ?? evaluated(value);
     return {
       format: "stages",
       formatVersion: 1,
@@ -479,6 +582,19 @@ export function stages<TValue, TFields, TContext = unknown>(
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    subscribeSelector(selector, listener, isEqual = Object.is) {
+      if (destroyed) return () => undefined;
+      let selected = selector(snapshot());
+      const notifySelector = (): void => {
+        const nextSelected = selector(snapshot());
+        if (isEqual(selected, nextSelected)) return;
+        const previousSelected = selected;
+        selected = nextSelected;
+        listener(nextSelected, previousSelected);
+      };
+      selectorListeners.add(notifySelector);
+      return () => selectorListeners.delete(notifySelector);
+    },
     update,
     dispatch,
     batch(run) {
@@ -497,9 +613,12 @@ export function stages<TValue, TFields, TContext = unknown>(
       destroyed = true;
       validationRun += 1;
       listeners.clear();
+      selectorListeners.clear();
       proposal = undefined;
       transactionEvents = [];
       transactionPatches = [];
+      transactionEvaluation = undefined;
+      publishedEvaluation = undefined;
     },
   };
 }

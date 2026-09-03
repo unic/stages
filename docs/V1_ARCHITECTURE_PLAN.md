@@ -10,7 +10,10 @@ and patch primitives, recursive dynamic schema evaluation, diagnostics, and a
 controlled-controller spike. Run `npm run check:v1` for contract checks and
 `npm run test:v1` for the executable core tests. The controller and serialized
 state APIs in this slice are foundations, not a declaration that later phase
-exit criteria are complete.
+exit criteria are complete. The controller foundation now also includes
+explicit row/stage snapshot branches, dynamic metadata reconciliation,
+structurally shared selector subscriptions, per-controller queues, and stale
+async-validation protection.
 
 ## 1. Outcome
 
