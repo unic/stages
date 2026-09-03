@@ -28,6 +28,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "microbundle --jsx React.createElement --jsxFragment React.Fragment --jsxImportSource react --define process.env.NODE_ENV=production --generateTypes",
+    "build:v1": "tsc -p packages/core/tsconfig.build.json",
+    "check:v1": "tsc -p packages/core/tsconfig.json --noEmit",
+    "test:v1": "npm run build:v1 && node --test packages/core/test/*.test.mjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

@@ -1,0 +1,80 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { evaluateSchema } from "../dist/index.js";
+
+const meta = {
+  revision: 0,
+  isDirty: false,
+  touched: [],
+  visited: [],
+  activeWizards: new Map(),
+  extensions: {},
+};
+
+const fields = { text: { view: "input", initialValue: "" } };
+
+test("dynamic schemas and resolvers recursively derive paths and stable row addresses", () => {
+  let factoryCalls = 0;
+  const value = { enabled: true, people: [{ id: "a", identity: { name: "Ada" } }] };
+  const schema = ({ value: current }) => {
+    factoryCalls += 1;
+    return {
+      id: "people-form",
+      version: 1,
+      nodes: current.enabled ? [{
+        kind: "collection",
+        id: "people",
+        itemKey: (item) => item.id,
+        nodes: [{
+          kind: "group",
+          id: "identity",
+          nodes: [{
+            kind: "field",
+            id: "name",
+            type: "text",
+            props: { label: "Name" },
+            deriveProps: ({ fieldValue }) => ({ length: fieldValue.length }),
+          }],
+        }],
+      }] : [],
+    };
+  };
+
+  const result = evaluateSchema({ schema, value, context: {}, meta, fields });
+  const field = result.nodes[0].children[0].children[0];
+
+  assert.equal(factoryCalls, 1);
+  assert.deepEqual(field.path, ["people", 0, "identity", "name"]);
+  assert.deepEqual(field.address, [
+    { kind: "node", id: "people" },
+    { kind: "row", id: "a" },
+    { kind: "node", id: "identity" },
+    { kind: "node", id: "name" },
+  ]);
+  assert.deepEqual(field.props, { label: "Name", length: 3 });
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("normalization reports unsafe, duplicate, and unknown schema entries", () => {
+  const result = evaluateSchema({
+    schema: {
+      id: "invalid",
+      version: 1,
+      nodes: [
+        { kind: "field", id: "same", type: "missing" },
+        { kind: "field", id: "same", type: "text" },
+        { kind: "field", id: "__proto__", type: "text" },
+      ],
+    },
+    value: {},
+    context: {},
+    meta,
+    fields,
+  });
+
+  assert.deepEqual(result.diagnostics.map(({ code }) => code), [
+    "schema.unknown-field",
+    "schema.duplicate-id",
+    "schema.unsafe-id",
+  ]);
+});

@@ -1,8 +1,16 @@
 # Stages v1.0 TypeScript Rewrite — Architecture and Delivery Plan
 
-Status: proposed plan for review
+Status: accepted for implementation; implementation in progress
 
 Baseline: [`CURRENT_IMPLEMENTATION_API.md`](./CURRENT_IMPLEMENTATION_API.md)
+
+Implementation started in [`packages/core`](../packages/core). The first slice
+establishes the strict public contract, compile-time API fixtures, immutable path
+and patch primitives, recursive dynamic schema evaluation, diagnostics, and a
+controlled-controller spike. Run `npm run check:v1` for contract checks and
+`npm run test:v1` for the executable core tests. The controller and serialized
+state APIs in this slice are foundations, not a declaration that later phase
+exit criteria are complete.
 
 ## 1. Outcome
 
