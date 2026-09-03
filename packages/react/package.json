@@ -2,8 +2,23 @@
   "name": "@stages/react",
   "version": "1.0.0-alpha.0",
   "description": "React lifecycle and field bindings for Stages",
+  "license": "MIT",
+  "author": "Fredi Bach",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unic/stages.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/unic/stages#readme",
+  "bugs": {
+    "url": "https://github.com/unic/stages/issues"
+  },
+  "keywords": ["forms", "wizard", "react", "typescript"],
   "type": "module",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@stages/core": "1.0.0-alpha.0"
   },
@@ -16,5 +31,5 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"]
+  "files": ["dist", "src", "LICENSE"]
 }

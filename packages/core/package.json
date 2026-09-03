@@ -2,8 +2,23 @@
   "name": "@stages/core",
   "version": "1.0.0-alpha.0",
   "description": "Framework-agnostic controlled form and wizard engine",
+  "license": "MIT",
+  "author": "Fredi Bach",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unic/stages.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/unic/stages#readme",
+  "bugs": {
+    "url": "https://github.com/unic/stages/issues"
+  },
+  "keywords": ["forms", "wizard", "headless", "typescript"],
   "type": "module",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -11,6 +26,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "LICENSE"
   ]
 }

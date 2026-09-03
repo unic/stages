@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -10,6 +10,8 @@ const temporaryRoot = mkdtempSync(join(tmpdir(), "stages-v1-packages-"));
 const packDirectory = join(temporaryRoot, "packs");
 const consumerDirectory = join(temporaryRoot, "consumer");
 const npmCache = join(temporaryRoot, "npm-cache");
+const coreManifest = JSON.parse(readFileSync(join(repository, "packages/core/package.json"), "utf8"));
+const expectedVersion = coreManifest.version;
 
 function run(command, args, cwd = repository) {
   const result = spawnSync(command, args, {
@@ -25,6 +27,14 @@ function run(command, args, cwd = repository) {
 }
 
 const packageDirectories = ["core", "dom", "react", "test-kit"];
+const expectedRepository = "git+https://github.com/unic/stages.git";
+const rootLicense = readFileSync(join(repository, "LICENSE"), "utf8");
+
+assert.match(
+  expectedVersion,
+  /^1\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/,
+  "v1 packages must use a valid v1 SemVer version.",
+);
 
 try {
   mkdirSync(packDirectory, { recursive: true });
@@ -45,30 +55,68 @@ try {
     const record = records[0];
     assert.equal(record.name, sourceManifest.name);
     assert.equal(record.version, sourceManifest.version);
+    assert.match(record.shasum, /^[a-f0-9]{40}$/);
+    assert.match(record.integrity, /^sha512-/);
+    assert.equal(sourceManifest.version, expectedVersion);
+    assert.equal(sourceManifest.license, "MIT");
+    assert.equal(sourceManifest.author, "Fredi Bach");
+    assert.equal(sourceManifest.repository?.url, expectedRepository);
+    assert.equal(sourceManifest.repository?.directory, `packages/${directory}`);
+    assert.equal(sourceManifest.homepage, "https://github.com/unic/stages#readme");
+    assert.equal(sourceManifest.bugs?.url, "https://github.com/unic/stages/issues");
+    assert.equal(sourceManifest.publishConfig?.access, "public");
+    assert(Array.isArray(sourceManifest.keywords) && sourceManifest.keywords.length >= 4);
 
     const files = record.files.map(({ path }) => path);
     assert(files.includes("package.json"), `${sourceManifest.name} is missing package.json.`);
     assert(files.includes("README.md"), `${sourceManifest.name} is missing README.md.`);
+    assert(files.includes("LICENSE"), `${sourceManifest.name} is missing LICENSE.`);
     assert(files.includes("dist/index.js"), `${sourceManifest.name} is missing its ESM entry.`);
     assert(files.includes("dist/index.d.ts"), `${sourceManifest.name} is missing its declaration entry.`);
     assert(
-      files.every((path) => path === "package.json" || path === "README.md" || path.startsWith("dist/")),
-      `${sourceManifest.name} contains files outside package.json, README.md, and dist/.`,
+      files.every((path) => path === "package.json" || path === "README.md" || path === "LICENSE" || path.startsWith("dist/") || path.startsWith("src/")),
+      `${sourceManifest.name} contains files outside package.json, README.md, LICENSE, dist/, and src/.`,
     );
+    assert.equal(readFileSync(join(packageDirectory, "LICENSE"), "utf8"), rootLicense);
     assert.equal(sourceManifest.type, "module");
     assert.equal(sourceManifest.sideEffects, false);
     assert.equal(sourceManifest.exports?.["."]?.import, "./dist/index.js");
     assert.equal(sourceManifest.exports?.["."]?.types, "./dist/index.d.ts");
+
+    for (const path of files.filter((path) => path.endsWith(".map"))) {
+      const sourceMap = JSON.parse(readFileSync(join(packageDirectory, path), "utf8"));
+      assert(Array.isArray(sourceMap.sources) && sourceMap.sources.length > 0);
+      assert(
+        sourceMap.sources.every((source) => typeof source === "string" && !source.startsWith("/")),
+        `${sourceManifest.name} contains an absolute source-map path in ${path}.`,
+      );
+      if (sourceMap.sourcesContent === undefined) {
+        for (const source of sourceMap.sources) {
+          const mappedPath = posix.normalize(posix.join(posix.dirname(path), source));
+          assert(
+            files.includes(mappedPath),
+            `${sourceManifest.name} source map ${path} points to missing ${mappedPath}.`,
+          );
+        }
+      } else {
+        assert.equal(
+          sourceMap.sourcesContent.length,
+          sourceMap.sources.length,
+          `${sourceManifest.name} source map ${path} must embed every source.`,
+        );
+      }
+    }
     artifacts.set(sourceManifest.name, join(packDirectory, record.filename));
   }
 
-  const coreManifest = JSON.parse(readFileSync(join(repository, "packages/core/package.json"), "utf8"));
   assert.equal(coreManifest.dependencies, undefined, "@stages/core must not have runtime dependencies.");
   const domManifest = JSON.parse(readFileSync(join(repository, "packages/dom/package.json"), "utf8"));
   assert.deepEqual(domManifest.dependencies, { "@stages/core": coreManifest.version });
   const reactManifest = JSON.parse(readFileSync(join(repository, "packages/react/package.json"), "utf8"));
   assert.equal(reactManifest.peerDependencies?.react, ">=17.0.0");
   assert.deepEqual(reactManifest.dependencies, { "@stages/core": coreManifest.version });
+  const testKitManifest = JSON.parse(readFileSync(join(repository, "packages/test-kit/package.json"), "utf8"));
+  assert.deepEqual(testKitManifest.dependencies, { "@stages/core": coreManifest.version });
 
   writeFileSync(join(consumerDirectory, "package.json"), JSON.stringify({
     private: true,
@@ -134,6 +182,57 @@ const recreated = stages({ schema: {
 }, fields, state });
 assert.equal(recreated.getSnapshot().value.name, "Grace");
 recreated.destroy();
+
+const dateCodec = {
+  encode: (value) => ({ created: value.created.toISOString() }),
+  decode: (value) => ({ created: new Date(value.created) }),
+};
+const codecSchema = { id: "packed-codec", version: 1, nodes: [] };
+const codecController = stages({
+  schema: codecSchema,
+  fields: {},
+  value: { created: new Date("2026-09-03T10:11:12.000Z") },
+  codec: dateCodec,
+});
+const codecState = codecController.serialize();
+codecController.destroy();
+const codecRecreated = stages({
+  schema: codecSchema,
+  fields: {},
+  state: codecState,
+  codec: dateCodec,
+});
+assert.equal(codecRecreated.getSnapshot().value.created instanceof Date, true);
+assert.equal(codecRecreated.getSnapshot().value.created.toISOString(), "2026-09-03T10:11:12.000Z");
+codecRecreated.destroy();
+
+const legacyState = {
+  format: "stages",
+  formatVersion: 1,
+  schema: { id: "packed-migration", version: 1 },
+  value: { first: "Ada" },
+  baseline: { first: "Initial" },
+  meta: {},
+};
+const migrated = stages({
+  schema: { id: "packed-migration", version: 2, nodes: [] },
+  fields: {},
+  state: legacyState,
+  migrations: [{
+    schemaId: "packed-migration",
+    fromVersion: 1,
+    toVersion: 2,
+    migrate: (state) => ({
+      ...state,
+      schema: { id: "packed-migration", version: 2 },
+      value: { name: state.value.first },
+      baseline: { name: state.baseline.first },
+    }),
+  }],
+});
+assert.deepEqual(migrated.getSnapshot().value, { name: "Ada" });
+assert.deepEqual(migrated.serialize().baseline, { name: "Initial" });
+migrated.destroy();
 `);
   run(process.execPath, [join(consumerDirectory, "smoke.mjs")], consumerDirectory);
 
@@ -172,7 +271,7 @@ adapter.destroy();
   }, null, 2));
   run(join(repository, "node_modules/.bin/tsc"), ["-p", join(consumerDirectory, "tsconfig.json")], consumerDirectory);
 
-  console.log("Verified 4 package tarballs and an isolated packed runtime/type consumer.");
+  console.log("Verified 4 release-candidate package tarballs and an isolated packed runtime/type consumer.");
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }
