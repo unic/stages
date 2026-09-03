@@ -29,7 +29,7 @@ known correctness bug is preserved.
 | `HashRouter` | Move | An application/router subscriber that dispatches `wizard:go` and observes wizard snapshots. |
 | `Navigation` | Move | Application-owned UI using wizard snapshot capabilities and `useStagesWizard` in React. |
 | `Progression` | Move | Derive progress from visible stages and per-stage validation in the wizard snapshot. |
-| `Actions` | Move | Application-owned buttons that call `validate()`, `dispatch()`, or `reset()`. |
+| `Actions` | Move | Application-owned buttons that call `validate()` or `dispatch()`, including a form-targeted `reset` event. |
 | `Debugger` | Move | A per-controller `subscribe()` devtools adapter; no `window.stagesLogging` hook. |
 | `plainFields` | Replace | `createDomFields()` from `@stages/dom`, or an application field registry. |
 | `get` | Remove | Use `getAtPath(value, ['segment', 0])`; v1 never accepts dotted Lodash paths. |
@@ -164,7 +164,7 @@ whole value transaction and emits a diagnostic.
 | `clearFields` | Replace | A transform returning explicit `remove` patches. |
 | Automatic collection sorting after changes | Remove | Dispatch `collection:sort` explicitly or return a transform patch. |
 | `updateData` bypass path | Replace | `update({ value })` for owner replacement, or normal events/transforms for domain actions. |
-| `handleActionClick` | Replace | Call `validate({ event: 'submit' })`, then application logic; call `reset()` explicitly. |
+| `handleActionClick` | Replace | Call `validate({ event: 'submit' })`, then application logic; dispatch `formEvent('reset')` explicitly when needed. |
 | `customEvents` predicates | Replace | Open event names dispatched explicitly, with validator event policies and transform matching. |
 | `throttleWait` / global throttled change | Move | Debounce in the adapter/application, then dispatch a named event. |
 

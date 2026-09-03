@@ -1,0 +1,135 @@
+# Migrating validation
+
+**For:** Teams replacing 0.x Boolean/error-code rules, validation callbacks,
+and error renderers.
+
+**Prerequisites:** [Processing and events](/migration/processing-and-events)
+and the [validation overview](/validation/overview).
+
+V1 validators return structured issues. Execution policy (`on`) and issue
+presentation (`revealOn`) are independent; status is `unknown`, `pending`,
+`invalid`, or `valid`, and `isValid` is true only for a current, complete,
+error-free result.
+
+```js
+// Historical 0.x only
+const email = {
+  validateOn: "blur",
+  isRequired: true,
+  regexValidation: /@/,
+  customValidation: value => checkEmail(value),
+  errorRenderer: errors => renderErrors(errors),
+};
+```
+
+```ts
+interface MigratedSignup {
+  email: string;
+  confirmation: string;
+}
+
+const confirmationMatches = {
+  id: "confirmation.matches",
+  on: ["input", "submit"],
+  revealOn: ["blur", "submit"],
+  dependencies: [["email"]],
+  validate: ({ value, fieldValue, path }) => fieldValue === value.email
+    ? []
+    : [{
+        id: "confirmation.matches",
+        code: "mismatch",
+        path,
+        severity: "error",
+        message: "Email addresses must match.",
+      }],
+} satisfies ValidatorConfig<MigratedSignup>;
+
+const emailAvailable = {
+  id: "email.available",
+  on: "blur",
+  revealOn: ["blur", "submit"],
+  async validate({ fieldValue, path, signal }) {
+    await Promise.resolve();
+    if (signal.aborted) return [];
+    return fieldValue === "taken@example.com"
+      ? [{
+          id: "email.available",
+          code: "taken",
+          path,
+          severity: "error" as const,
+          message: "That email is already registered.",
+        }]
+      : [];
+  },
+} satisfies ValidatorConfig<MigratedSignup>;
+
+export const migratedValidationSchema = {
+  id: "signup-validation",
+  version: 1,
+  nodes: [
+    { kind: "field", id: "email", type: "text", validators: [emailAvailable] },
+    {
+      kind: "field",
+      id: "confirmation",
+      type: "text",
+      validators: [confirmationMatches],
+    },
+  ],
+} as const satisfies StagesSchema<MigratedSignup, typeof migrationFields>;
+
+export async function validateMigratedSignup(
+  controller: StagesController<MigratedSignup, typeof migrationFields>,
+) {
+  return controller.validate({ scope: "form", event: "submit", reveal: true });
+}
+```
+
+## Validation disposition
+
+| 0.x concept | Decision | v1 replacement |
+| --- | --- | --- |
+| Registry `isValid` | **Replace** | Intrinsic validators on `FieldDefinition`; core supplies the final field path. |
+| `typeValidations` | **Replace** | Reusable registry validators or ordinary field/node/root validators. |
+| `regexValidation` | **Replace** | A validator returning a structured issue; malformed policy is diagnosed. |
+| `customValidation` | **Replace** | A sync/async validator with stable ID and cooperative cancellation signal. |
+| `isRequired` | **Replace** | Explicit validator with domain-specific empty semantics. |
+| `isUnique` / `uniqEntries` | **Replace** | Field or collection validator with explicit dependencies. |
+| `validateOn` and dynamic validation timing | **Replace** | `on`, `revealOn`, and optional `when`. |
+| Dependency strings | **Replace** | `dependencies` containing safe data paths. |
+| `onValidation` | **Replace** | Await `controller.validate()` and/or subscribe to validation snapshots. |
+| `parentRunValidation` | **Remove** | Validate a recursive path/address scope; no subform bridge exists. |
+| `silentlyGetValidationErrors` | **Replace** | Validate with `reveal: false`, or inspect `issues` separately from `visibleIssues`. |
+| `errorRenderer` | **Move** | Render structured visible issues in the adapter/application. |
+| `customRuleHandlers` and collection `rules` | **Remove** | Express count, sum, uniqueness, allow/disallow, and cross-field rules as ordinary validators. |
+
+## Async work and failure
+
+Use `signal.aborted` and `signal.onCancel()` to stop timers/requests where
+possible. Dependency changes, superseding runs, structural removal, and
+controller teardown cancel affected work; stale completions cannot publish.
+Rejected validators or malformed issue output become deterministic system
+issues rather than unhandled promise behavior.
+
+`includeDisabled` is opt-in. Hidden validators are excluded. `when` determines
+applicability, while dependencies determine which accepted value changes make
+a completed result unknown and eligible to rerun.
+
+## Action validation and presentation
+
+Await `validate({ scope, event, reveal })` before a submit action. A scope may be
+the form, data path, or node address. Render field `state.visibleIssues` and
+container/root `validation.visibleIssues`; keep unrevealed issues available for
+logic without prematurely announcing them.
+
+The DOM adapter offers `focusFirstIssue()`. React and custom adapters own error
+summary, focus, fieldset, live-region, and localized message policy.
+
+## Evidence
+
+The checked example is compiled from `docs/examples/migration.ts`. Validator
+state, dependencies, cancellation, failure conversion, disabled behavior, and
+scope are exercised by `packages/core/test/validation.test.mjs` and documented
+in the complete [validation series](/validation/overview).
+
+**Next:** Convert structural actions and navigation in
+[collections and wizards](/migration/collections-and-wizards).

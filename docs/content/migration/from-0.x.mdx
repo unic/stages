@@ -1,0 +1,81 @@
+import { Callout } from 'nextra/components'
+
+# Migrating from `react-stages` 0.x
+
+**For:** Teams replacing `react-stages` 0.8.x with the new v1 package family.
+
+**Prerequisites:** Inventory the routes, field definitions, processors,
+validators, storage, and router behavior in the existing application.
+
+<Callout emoji="⚠️">
+  Stages v1 is intentionally not API-compatible with 0.x. There is no alias,
+  compatibility adapter, or mixed configuration format. Migrate one owned
+  surface at a time.
+</Callout>
+
+Every legacy concept has one of three dispositions:
+
+- **Replace** — v1 supplies a direct but intentionally different contract.
+- **Move** — the behavior remains valid in an adapter or the application, not
+  core.
+- **Remove** — the old behavior is not a v1 contract; compose an explicit
+  alternative only if the product still needs it.
+
+No 0.x module-global state, nested input mutation, undocumented callback order,
+or known correctness bug is preserved.
+
+## Root-export disposition
+
+| 0.x root export | Decision | v1 destination |
+| --- | --- | --- |
+| `Stages` | **Replace** | One `stages()` controller and a recursive `wizard` node when steps are needed. |
+| `Form` | **Replace** | The same controller with field, group, collection, and wizard nodes. |
+| `HashRouter` | **Move** | Application router synchronization using wizard events and snapshots. |
+| `Navigation` | **Move** | Adapter/application controls driven by wizard capabilities. |
+| `Progression` | **Move** | Derive progress from visible stages and per-stage validation. |
+| `Debugger` | **Move** | A per-controller subscription and diagnostic/devtools integration. |
+| `Actions` | **Move** | Application buttons dispatch events or await validation. |
+| `plainFields` | **Replace** | `createDomFields()` or an application-owned typed field registry. |
+| `get` | **Remove** | `getAtPath(value, ["segment", 0])`; core accepts segment arrays only. |
+
+## The migration order
+
+1. Install v1 packages beside the existing package; never alias the old root
+   import to a v1 package.
+2. Define the domain value and context types, then establish explicit
+   controlled `onChange`/`update` ownership.
+3. Replace the `config` and `fields` surface with a versioned schema and typed
+   registry; convert paths and data shape deliberately.
+4. Move filtering, casting, cleanup, precision, computed changes, clear actions,
+   and custom events into reducers and transforms.
+5. Replace Boolean/error-code validation with structured validators and reveal
+   policy.
+6. Convert collection and wizard behavior to recursive nodes and explicit node
+   events.
+7. Move rendering, routing, dynamic data, autosave, undo, and interface state to
+   their documented owners.
+8. Verify rejection, delayed acceptance, async cancellation, stable row
+   identity, serialization, recreation, and adapter accessibility before
+   removing `react-stages` route by route.
+
+## Central contract changes
+
+`data` becomes application-owned `value`; field events only propose immutable
+changes. Dotted paths become `DataPath` segment arrays. Field parsing moves to
+registry reducers. Cross-field processing becomes ordered transforms returning
+explicit patches. Validator execution (`on`) is independent from presentation
+(`revealOn`). Collections and wizards use named node events. Durable state uses
+a versioned serialized envelope rather than implicit browser storage.
+
+Use the focused pages for before/after code and exact recipes. The repository
+file `docs/MIGRATING_TO_V1.md` remains the compact exhaustive inventory used by
+automation; this series is its task-oriented expansion.
+
+## Evidence
+
+The legacy export list is derived from `docs/CURRENT_IMPLEMENTATION_API.md` and
+locked by `scripts/check-v1-docs.mjs`. V1 destinations come from current package
+entry points, tests, and `docs/MIGRATING_TO_V1.md`.
+
+**Next:** Replace package imports, controlled ownership, and rendering in
+[packages and rendering](/migration/packages-and-rendering).

@@ -1,0 +1,130 @@
+# Migrating schemas and data
+
+**For:** Teams converting 0.x config arrays, templates, visibility rules, and
+nested paths.
+
+**Prerequisites:** [Packages and rendering](/migration/packages-and-rendering)
+and [schema concepts](/core-concepts/schemas).
+
+## Before and after
+
+Historical config mixed fields, function entries, templates, and magic
+properties such as `isVisible`, `isDisabled`, `isRendered`, and `labelFn`.
+**Replace** it with one immutable, versioned `StagesSchema`; use a pure schema
+factory and explicit resolvers for dynamic structure and props.
+
+```js
+// Historical 0.x only
+const config = [{
+  id: "billing",
+  type: "group",
+  isVisible: data => data.collectBilling,
+  fields: [{ id: "street", type: "text", defaultValue: "" }],
+}];
+const email = get(data, "contacts.1.email");
+```
+
+```ts
+interface RegistrationValue {
+  account: { name: string };
+  contacts: { id: string; email: string }[];
+  billing: { street: string; city: string };
+}
+
+interface RegistrationContext {
+  readonly collectBilling: boolean;
+}
+
+function addressNodes(): readonly NodeConfig<
+  RegistrationValue,
+  typeof migrationFields,
+  RegistrationContext
+>[] {
+  return [
+    { kind: "field", id: "street", type: "text", props: { label: "Street" } },
+    { kind: "field", id: "city", type: "text", props: { label: "City" } },
+  ];
+}
+
+export const registrationSchema = (({ context }) => ({
+  id: "registration",
+  version: 1,
+  nodes: [
+    {
+      kind: "group",
+      id: "account",
+      nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }],
+    },
+    {
+      kind: "collection",
+      id: "contacts",
+      itemKey: item => (item as RegistrationValue["contacts"][number]).id,
+      nodes: [{ kind: "field", id: "email", type: "text", props: { label: "Email" } }],
+    },
+    {
+      kind: "group",
+      id: "billing",
+      when: context.collectBilling,
+      nodes: addressNodes(),
+    },
+  ],
+})) satisfies StagesSchemaFactory<
+  RegistrationValue,
+  typeof migrationFields,
+  RegistrationContext
+>;
+
+export const accountNamePath = ["account", "name"] as const satisfies DataPath;
+export const secondContactEmailPath = ["contacts", 1, "email"] as const satisfies DataPath;
+```
+
+## Configuration disposition
+
+| 0.x concept | Decision | v1 replacement |
+| --- | --- | --- |
+| `config` array/function and `config.fields` | **Replace** | `StagesSchema` or a pure `StagesSchemaFactory` receiving readonly value, context, and metadata. |
+| Function entries inside arrays | **Replace** | Compose nodes before returning the schema. |
+| `fieldConfigs` and string templates | **Remove** | Typed TypeScript node/configuration factories such as `addressNodes()`. |
+| `fieldsets`, reserved `fieldset`, params/render | **Remove** | Schema composition plus adapter/application fieldset markup. |
+| Reserved `subform` | **Remove** | Recursive group, collection, and wizard nodes already provide nested scope. |
+| `modifyConfig(path, key, action)` | **Remove** | Update controlled value/context/extensions so the schema factory derives a stable result. |
+| `{ id, type }` | **Replace** | `{ kind: "field", id, type }`; the registry constrains `type` and `props`. |
+| `defaultValue` | **Replace** | `FieldDefinition.initialValue`; initialization never mutates owner `data`. |
+| `isVisible` / `isRendered` | **Replace** | Node `when`; application/adapter visibility remains separate. |
+| `isDisabled` | **Replace** | Node `disabled`, inherited recursively. |
+| Form `id` | **Replace** | Stable schema `id` plus positive integer `version`; node IDs are local structural identity. |
+| Config `value` override | **Remove** | Field snapshot values always come from controlled domain value. |
+
+`deriveProps` replaces magic `*Fn` presentation properties. Keep factories,
+`when`, `disabled`, and `deriveProps` synchronous and pure. Fetch remote data
+outside core, then supply settled values through context or extensions.
+
+## Paths and identity
+
+**Replace** dotted/string paths and the 0.x `get` helper with safe `DataPath`
+segment arrays. Use `getAtPath`, `setAtPath`, `removeAtPath`, and `applyPatches`;
+update-style helpers return structurally shared values rather than mutating
+Lodash `set`/`unset` inputs. Unsafe `__proto__`, `prototype`, and `constructor`
+segments and invalid numeric indexes are rejected.
+
+Use paths for value locations and field events. Use `NodeAddress` for stable
+structural identity, especially collection rows whose numeric path changes
+after move/sort. Group, collection, wizard, and stage IDs contribute explicit
+data path segments.
+
+## Dynamic reconciliation
+
+Keep IDs stable for the same logical node. Compatible addresses preserve
+relevant metadata; structural removal or incompatible kind/type reuse discards
+state. Invalid dynamic revisions produce diagnostics and cannot silently become
+a valid empty form; after a valid revision, the controller retains the last
+valid tree until recovery.
+
+## Evidence
+
+Schema and path decisions come from `packages/core/src/schema.ts`, `path.ts`,
+and their focused/property tests. The composition and exact segment paths above
+compile from `docs/examples/migration.ts`.
+
+**Next:** Translate implicit pipelines into
+[processing and events](/migration/processing-and-events).

@@ -1,0 +1,131 @@
+# Migrating collections and wizards
+
+**For:** Teams replacing reserved structural types, collection methods, outer
+`Stages` wizards, and router-coupled navigation.
+
+**Prerequisites:** [Schemas and data](/migration/schemas-and-data),
+[collections](/structures/collections), and [wizards](/structures/wizards).
+
+V1 uses one recursive node model. A collection may contain groups or wizards;
+a wizard stage may contain collections; no special subform boundary is needed.
+
+```jsx
+// Historical 0.x only
+const contacts = { id: "contacts", type: "collection", fields: contactFields };
+<Stages initialStep={0} validateOnStepChange>
+  {children}
+</Stages>
+```
+
+```ts
+interface MigratedJourney {
+  contacts: { id: string; email: string }[];
+  onboarding: {
+    account: { name: string };
+    review: Record<string, never>;
+  };
+}
+
+export const migratedJourneySchema = {
+  id: "journey",
+  version: 1,
+  nodes: [
+    {
+      kind: "collection",
+      id: "contacts",
+      itemKey: item => (item as MigratedJourney["contacts"][number]).id,
+      nodes: [{ kind: "field", id: "email", type: "text" }],
+    },
+    {
+      kind: "wizard",
+      id: "onboarding",
+      initialStage: "account",
+      navigation: { validateCurrent: true, nonLinear: false },
+      stages: [
+        {
+          id: "account",
+          nodes: [{ kind: "field", id: "name", type: "text" }],
+        },
+        { id: "review", nodes: [] },
+      ],
+    },
+  ],
+} as const satisfies StagesSchema<MigratedJourney, typeof migrationFields>;
+
+const contactsAddress = [{ kind: "node", id: "contacts" }] as const;
+const onboardingAddress = [{ kind: "node", id: "onboarding" }] as const;
+
+export function migrateStructuralActions(
+  controller: StagesController<MigratedJourney, typeof migrationFields>,
+  contactRowAddress: NodeAddress,
+) {
+  controller.dispatch(nodeEvent("collection:add", contactsAddress, {
+    payload: { value: { id: "contact-2", email: "grace@example.com" } },
+  }));
+  controller.dispatch(nodeEvent("collection:move", contactRowAddress, {
+    payload: { to: 0 },
+  }));
+  controller.dispatch(nodeEvent("wizard:next", onboardingAddress));
+}
+```
+
+## Structural disposition
+
+| 0.x concept | Decision | v1 replacement |
+| --- | --- | --- |
+| Reserved `group` | **Replace** | Recursive `{ kind: "group", id, nodes }`. |
+| Reserved `collection` | **Replace** | Homogeneous `nodes` or discriminated `variants`, with explicit row identity. |
+| Union `fields` / `__typename` | **Replace** | Collection `variants`, a safe discriminator, and variant initial values. |
+| Reserved `subform` | **Remove** | Recursive nodes and scoped validation. |
+| Reserved `fieldset` | **Remove** | Typed schema composition plus adapter layout. |
+| Reserved no-op `config` node | **Remove** | No equivalent. |
+| Reserved `wizard` / `stage` | **Replace** | Nestable wizard nodes with explicit stage arrays. |
+| Outer `Stages` `children` and embedded `Form` wizards | **Replace** | One structural wizard/controller model. |
+
+## Collection action disposition
+
+| 0.x action | v1 event |
+| --- | --- |
+| `add` | `collection:add` with `{ value?, index? }`, or `{ variant, index? }` for a union default |
+| `remove` | `collection:remove` with `{ index }`, or target a stable row address |
+| `move` | `collection:move` with `{ from, to }`, or `{ to }` at a row address |
+| `sort` | `collection:sort` with a complete index-order permutation |
+| `duplicate` | `collection:duplicate` with `{ index, toIndex? }`, or target a row address |
+| Collection `update` | `collection:replace` for one row; owner `update()` for whole-array replacement |
+
+`min`/`max` constraints reject commands without a value proposal. **Replace**
+0.x collection `init` and `setInitialData` with controlled initial value,
+`FieldDefinition.initialValue`, or a union variant's explicit initial value.
+Declarative `sort.by`/`sort.dir` becomes an application-created order or an
+explicit transform patch.
+
+Use a row `NodeAddress` as the UI key and for identity-bound commands. Its data
+path contains the current numeric index and changes after reorder. Collection
+snapshots expose `size`, `canAdd`, and `canRemove`; render those capabilities
+instead of duplicating constraint logic.
+
+## Wizard disposition
+
+| 0.x concept | Decision | v1 replacement |
+| --- | --- | --- |
+| `initialData` | **Replace** | The controller's controlled initial `value`. |
+| `initialStep` | **Replace** | Schema `initialStage` for a fresh controller; serialized active-stage metadata for recreation. |
+| `validateOnStepChange` | **Replace** | `navigation.validateCurrent`. |
+| `onNav` / `onChangeStep` | **Replace** | Dispatch plus published `activeStage`/stage snapshots. |
+| `Navigation` | **Move** | Application controls driven by `canPrevious`, `canNext`, and `canGo`. |
+| `Progression` | **Move** | Visible stage IDs and per-stage validation. |
+| `HashRouter`, `hashSeparator`, `prefix`, `hashFormat` | **Move** | Router configuration synchronized with wizard IDs/stage IDs outside core. |
+
+Navigation uses `wizard:previous`, `wizard:next`, and `wizard:go` targeted at
+the wizard address. A pure guard may still reject an otherwise enabled action;
+non-linear `go` must be configured. Capabilities do not pre-run guards.
+
+## Evidence
+
+The checked schema/events compile from `docs/examples/migration.ts`.
+`packages/core/test/nesting.test.mjs` covers all supported structural nesting
+permutations; collection, controller, validation, and serialization tests cover
+commands, stable keys, guards, and recreated active stages.
+
+**Next:** Move dynamic resources, routing, persistence, undo, and rollout policy
+with the [rollout checklist](/migration/rollout-checklist).

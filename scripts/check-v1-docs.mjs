@@ -162,6 +162,13 @@ const completePagePaths = [
   "project/performance.mdx",
   "project/release-status.mdx",
   "project/contributing-to-docs.mdx",
+  "migration/from-0.x.mdx",
+  "migration/packages-and-rendering.mdx",
+  "migration/schemas-and-data.mdx",
+  "migration/processing-and-events.mdx",
+  "migration/validation.mdx",
+  "migration/collections-and-wizards.mdx",
+  "migration/rollout-checklist.mdx",
 ];
 for (const relativePath of completePagePaths) {
   const page = guideEntries.find((entry) => entry.relativePath === relativePath);
@@ -533,6 +540,12 @@ const checkedRegions = [
   { fixture: "docs/examples/custom-adapter.ts", region: "framework-mappings", page: "adapters/custom/framework-walkthrough.mdx" },
   { fixture: "docs/examples/custom-adapter.ts", region: "test-kit-harness", page: "adapters/custom/testing-with-test-kit.mdx" },
   { fixture: "scripts/check-v1-performance.mjs", region: "performance-budgets", page: "project/performance.mdx" },
+  { fixture: "docs/examples/migration.ts", region: "migration-controlled", page: "migration/packages-and-rendering.mdx" },
+  { fixture: "docs/examples/migration.ts", region: "migration-schema-data", page: "migration/schemas-and-data.mdx" },
+  { fixture: "docs/examples/migration.ts", region: "migration-processing", page: "migration/processing-and-events.mdx" },
+  { fixture: "docs/examples/migration.ts", region: "migration-validation", page: "migration/validation.mdx" },
+  { fixture: "docs/examples/migration.ts", region: "migration-structures", page: "migration/collections-and-wizards.mdx" },
+  { fixture: "docs/examples/migration.ts", region: "migration-application-boundaries", page: "migration/rollout-checklist.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);
@@ -604,6 +617,19 @@ const legacyConcepts = [
 ];
 const missingMigrationConcepts = legacyConcepts.filter((concept) => !migration.includes(concept));
 assert.deepEqual(missingMigrationConcepts, [], `migration guide is missing 0.x concepts: ${missingMigrationConcepts.join(", ")}`);
+const migrationCorpus = guideEntries
+  .filter(({ relativePath }) => relativePath.startsWith(`migration${path.sep}`))
+  .map(({ source }) => source)
+  .join("\n");
+const missingSiteMigrationConcepts = legacyConcepts.filter((concept) => !migrationCorpus.includes(concept));
+assert.deepEqual(
+  missingSiteMigrationConcepts,
+  [],
+  `migration site is missing 0.x concepts: ${missingSiteMigrationConcepts.join(", ")}`,
+);
+for (const disposition of ["Replace", "Move", "Remove"]) {
+  assert.ok(migrationCorpus.includes(`**${disposition}**`), `migration site is missing ${disposition} dispositions`);
+}
 assert.match(migration, /\*\*Replace\*\*/);
 assert.match(migration, /\*\*Move\*\*/);
 assert.match(migration, /\*\*Remove\*\*/);

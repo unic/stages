@@ -1,0 +1,188 @@
+# Migrating processing and events
+
+**For:** Teams replacing the implicit 0.x filter/cast/cleanup/computation
+pipeline and custom action hooks.
+
+**Prerequisites:** [Schemas and data](/migration/schemas-and-data),
+[events and reducers](/core-concepts/events-and-reducers), and
+[transforms](/core-concepts/transforms-and-patches).
+
+V1 processing has three explicit layers:
+
+1. A field view translates UI output into a named event and payload.
+2. The field registry reducer parses local input into a value or patches.
+3. Node/ancestor/root transforms react to that name and return ordered patches.
+
+A failure in a reducer, transform, or patch application rejects the value work
+for that event and records a diagnostic. Core never mutates the supplied value.
+
+```js
+// Historical 0.x only: behavior depended on an implicit processing order.
+const price = {
+  filter: /[0-9.-]/,
+  cast: { data: Number, field: String },
+  cleanUp: true,
+  precision: 2,
+  computedValue: data => data.quantity * data.price,
+};
+```
+
+## Complete processing translation
+
+This example covers filter/cast parsing, blur precision, blur cleanup, computed
+totals, clearing a dependent field, a custom application action, and explicit
+collection sorting:
+
+```ts
+const migrationCurrency = {
+  view: "currency-input",
+  initialValue: 0,
+  reduce: ({ event }) => {
+    if (event.name !== "input" || typeof event.payload !== "string") return undefined;
+    const filtered = event.payload.replace(/[^0-9.-]/g, "");
+    const parsed = Number(filtered);
+    return { value: Number.isFinite(parsed) ? parsed : 0 };
+  },
+} satisfies FieldDefinition<number>;
+
+const processingFields = {
+  text: migrationText,
+  integer: migrationNumber,
+  currency: migrationCurrency,
+} as const;
+
+const computeTotal = {
+  on: "input",
+  when: ({ path }) => path[0] === "quantity" || path[0] === "price",
+  apply: ({ value }) => [{
+    op: "set",
+    path: ["total"],
+    value: value.quantity * value.price,
+  }],
+} satisfies TransformConfig<MigratedOrder>;
+
+const processingSchema = {
+  id: "processing-migration",
+  version: 1,
+  transforms: [
+    computeTotal,
+    {
+      on: "input",
+      when: ({ path }) => path[0] === "country",
+      apply: () => [{ op: "remove", path: ["region"] }],
+    },
+    {
+      on: "promotion:apply",
+      apply: ({ value, event }) => [{
+        op: "set",
+        path: ["total"],
+        value: value.total * (1 - Number(event.payload) / 100),
+      }],
+    },
+  ],
+  nodes: [
+    { kind: "field", id: "quantity", type: "integer" },
+    {
+      kind: "field",
+      id: "price",
+      type: "currency",
+      transforms: [{
+        on: "blur",
+        apply: ({ path, fieldValue }) => [{
+          op: "set",
+          path,
+          value: Number(Number(fieldValue).toFixed(2)),
+        }],
+      }],
+    },
+    {
+      kind: "field",
+      id: "customer",
+      type: "text",
+      transforms: [{
+        on: "blur",
+        apply: ({ path, fieldValue }) => [{
+          op: "set",
+          path,
+          value: typeof fieldValue === "string" ? fieldValue.trim() : fieldValue,
+        }],
+      }],
+    },
+    { kind: "field", id: "country", type: "text" },
+    { kind: "field", id: "region", type: "text" },
+    { kind: "field", id: "total", type: "currency", disabled: true },
+    {
+      kind: "collection",
+      id: "lines",
+      itemKey: item => (item as MigratedOrder["lines"][number]).id,
+      nodes: [{ kind: "field", id: "label", type: "text" }],
+    },
+  ],
+} as const satisfies StagesSchema<MigratedOrder, typeof processingFields>;
+
+export function applyProcessingActions(
+  controller: StagesController<MigratedOrder, typeof processingFields>,
+) {
+  controller.dispatch(fieldEvent("blur", ["price"]));
+  controller.dispatch(fieldEvent("blur", ["customer"]));
+  controller.dispatch(formEvent("promotion:apply", { payload: 10 }));
+  controller.dispatch(nodeEvent("collection:sort", [{ kind: "node", id: "lines" }], {
+    payload: { order: [1, 0] },
+  }));
+}
+
+export const migratedProcessingSchema = processingSchema;
+```
+
+## Processing disposition
+
+| 0.x concept | Decision | v1 replacement |
+| --- | --- | --- |
+| `filter` | **Replace** | Normalize/narrow the event payload in the field reducer. |
+| `cast.data` | **Replace** | Parse in the reducer and define invalid/empty semantics explicitly. |
+| `cast.field` | **Move** | Format the controlled value in the adapter view or a derived prop. |
+| `transform` | **Replace** | Event-matched node/root transforms returning `set`/`remove` patches. |
+| `cleanUp` | **Replace** | A reducer or transform matched on `blur`. |
+| `precision` | **Replace** | A blur transform using the application's numeric representation and rounding policy. |
+| `computedValue` | **Replace** | A transform that writes an explicit path after the triggering event. |
+| `clearFields` | **Replace** | Explicit `remove` patches; no hidden list-based clearing phase. |
+| Automatic `sort` | **Remove** | Dispatch `collection:sort` with a complete order, or return an explicit array patch. |
+| `updateData` bypass and collection `update` | **Replace** | Owner `update({ value })`, a normal field event, or `collection:replace`, depending on intent. |
+| `handleActionClick` / `Actions` | **Move** | Application buttons dispatch a custom/form event or await `validate()`. |
+| `customEvents` | **Replace** | Open event names with explicit targets, reducers/transforms, and validator policies. |
+| `throttleWait` | **Move** | Debounce at the UI/application boundary, then dispatch a named event. |
+
+## Ordering and batching
+
+Field reduction runs before transforms. Matching transforms run from the target
+toward the root and in declaration order within each scope; later transforms
+see the current draft and may overwrite an earlier path. Use this ordering
+instead of recreating the 0.x fixed pipeline.
+
+Synchronous dispatches in one turn share an automatic microtask transaction;
+`controller.batch(fn)` makes a boundary explicit. One value-changing batch
+produces at most one proposal callback and one general notification. A dispatch
+with no accepted patches can still advance metadata and publish.
+
+There is no `controller.reset()` method. **Replace** form reset calls with
+`controller.dispatch(formEvent("reset"))`; acceptance of the baseline proposal
+still follows the controlled handshake.
+
+## Computed and dynamic options
+
+Use `deriveProps` or a pure selector for synchronous `computedOptions`. Move
+`dynamicOptions` fetching, `loader`, `watchFields`, cache, and
+`onOptionsChange` to an application resource keyed by explicit dependencies;
+feed settled data through context/extensions and dispatch domain changes
+normally. Never start a request or write a replacement value during schema
+render/evaluation.
+
+## Evidence
+
+The displayed fixture compiles from `docs/examples/migration.ts` and mirrors
+the executable assertions in
+`packages/core/test/processing-migration.test.mjs`. Ordering, rollback, and
+batching are covered by controller and transform tests.
+
+**Next:** Replace legacy validation with
+[structured validators and issues](/migration/validation).

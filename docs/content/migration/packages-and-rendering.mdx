@@ -1,0 +1,134 @@
+# Migrating packages and rendering
+
+**For:** Teams creating the first v1-controlled surface beside a 0.x form.
+
+**Prerequisites:** [Migration overview](/migration/from-0.x) and the
+[first-controller tutorial](/start/first-controller).
+
+Install only the adapters that surface needs:
+
+```sh
+npm install @stages/core @stages/react
+# or: npm install @stages/core @stages/dom
+```
+
+V1 packages are public, ESM-only, and versioned together during prerelease.
+`@stages/core` has no runtime dependencies. React is a peer of
+`@stages/react`; custom adapters can use core plus `@stages/test-kit`.
+
+## Before: implicit form/render ownership
+
+Historical 0.x code combined `Form`, `config`, `plainFields`, controlled `data`,
+and renderer callbacks:
+
+```jsx
+<Form
+  config={[{ id: "name", type: "text", label: "Name" }]}
+  fields={plainFields}
+  data={value}
+  onChange={nextValue => setValue(nextValue)}
+  renderFields={renderedFields => renderedFields.name}
+/>
+```
+
+## After: explicit controller ownership
+
+**Replace** the combined component contract with a controller plus the chosen
+adapter. The owner accepts the immutable proposal and returns the accepted
+value through `update`:
+
+```ts
+interface V1Profile {
+  name: string;
+}
+
+interface MigrationTextProps {
+  readonly label: string;
+}
+
+export const migrationText = {
+  view: "text-input",
+  initialValue: "",
+  reduce: ({ event }) => event.name === "input" && typeof event.payload === "string"
+    ? { value: event.payload }
+    : undefined,
+} satisfies FieldDefinition<string, MigrationTextProps, "text-input">;
+
+export const migrationFields = { text: migrationText } as const;
+
+export const migrationProfileSchema = {
+  id: "profile",
+  version: 1,
+  nodes: [{
+    kind: "field",
+    id: "name",
+    type: "text",
+    props: { label: "Name" },
+  }],
+} as const satisfies StagesSchema<V1Profile, typeof migrationFields>;
+
+export function createMigratedProfile(
+  initialValue: V1Profile,
+  onAccepted: (value: V1Profile) => void,
+) {
+  let value = initialValue;
+  let controller!: StagesController<V1Profile, typeof migrationFields>;
+  controller = stages({
+    schema: migrationProfileSchema,
+    fields: migrationFields,
+    value,
+    onChange(change) {
+      value = change.value;
+      onAccepted(value);
+      controller.update({ value });
+    },
+  });
+  return controller;
+}
+```
+
+An owner may instead reject, replace, or delay a proposal. `onChange` receives a
+`StagesChange` object with proposed `value`, `previousValue`, patches, events,
+source, and transaction ID—not the positional 0.x callback arguments.
+
+## Rendering decisions
+
+| 0.x surface | Decision | v1 replacement |
+| --- | --- | --- |
+| `render` / `renderFields` | **Remove** | Subscribe to snapshots through React, DOM, or a custom adapter. |
+| React elements in `fields` | **Replace** | Store an opaque typed `view`; the adapter interprets it. |
+| `FormRenderProps`, `FormFieldProps`, `FormActionProps`, `RenderedFields` | **Remove** | Use exported snapshot and adapter binding types. |
+| `Actions` | **Move** | Application buttons call `dispatch()` or `validate()`. |
+| `Debugger` and `window.stagesLogging` | **Move** | Subscribe to one controller and observe its diagnostics. |
+
+For React, use `useStages`, `useStagesController`, `useStagesField`,
+`StagesField`, `useStagesCollection`, and `useStagesWizard`. For DOM, use
+`mountStages` and optionally `createDomFields`. A custom adapter maps the same
+recursive snapshots and event API.
+
+## Field-library migration
+
+The minimal DOM registry includes `text`, `number`, and `checkbox`. Historical
+`plainFields` keys `email`, `password`, `tel`, `time`, `date`, `select`, `radio`,
+`checkboxGroup`, and `dummy` are not promised v1 built-ins. **Replace** them with
+typed application field definitions/views so parsing, empty values, options,
+disabled options, and accessibility become explicit.
+
+Presentation properties such as `label`, `placeholder`, `prefix`, `suffix`, and
+`secondaryText` can remain typed static or derived props, but core never
+interprets them.
+
+## Teardown
+
+Adapters borrowing a controller only unsubscribe. The creator must destroy the
+controller at real unmount. Do not copy 0.x global instance or throttling state
+into module scope; v1 lifecycle state is per controller.
+
+## Evidence
+
+Package relationships come from the four v1 manifests. Rendering and ownership
+come from core, React, DOM, and test-kit declarations and tests. The v1 example
+above compiles from `docs/examples/migration.ts`.
+
+**Next:** Convert configuration, nested data, and paths in
+[schemas and data](/migration/schemas-and-data).

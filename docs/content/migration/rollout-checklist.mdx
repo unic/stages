@@ -1,0 +1,236 @@
+# Migration rollout checklist
+
+**For:** Teams moving route by route while 0.x and v1 coexist in one product.
+
+**Prerequisites:** Complete the focused migration pages through
+[collections and wizards](/migration/collections-and-wizards), and identify the
+owner of routing, remote resources, persistence, and history.
+
+Do not reproduce 0.x global loaders, implicit browser persistence, or hidden
+interface-state extraction inside core. The example below shows the v1
+application boundaries for derived remote options, two-way wizard routing,
+debounced autosave, and accepted-value undo/redo:
+
+```ts
+export const applicationSchema = (({ context }) => ({
+  id: "application-boundaries",
+  version: 1,
+  nodes: [
+    {
+      kind: "field",
+      id: "country",
+      type: "select",
+      props: { label: "Country", options: context.countries },
+    },
+    {
+      kind: "wizard",
+      id: "checkout",
+      navigation: { nonLinear: true },
+      stages: [
+        { id: "address", nodes: [] },
+        { id: "review", nodes: [] },
+      ],
+    },
+  ],
+})) satisfies StagesSchemaFactory<ApplicationValue, typeof applicationFields, ApplicationContext>;
+
+export function updateRemoteOptions(
+  controller: StagesController<ApplicationValue, typeof applicationFields, ApplicationContext>,
+  countries: readonly Option[],
+) {
+  controller.update({ context: { countries } });
+}
+
+export function applyWizardRoute(
+  controller: StagesController<ApplicationValue, typeof applicationFields, ApplicationContext>,
+  stage: string,
+) {
+  controller.dispatch(nodeEvent("wizard:go", [{ kind: "node", id: "checkout" }], {
+    payload: { stage },
+    source: "user",
+  }));
+}
+
+function activeCheckoutStage(snapshot: StagesSnapshot<ApplicationValue>) {
+  const wizard = snapshot.nodes.find(node => node.kind === "wizard" && node.id === "checkout");
+  return wizard?.kind === "wizard" ? wizard.activeStage : undefined;
+}
+
+export function subscribeWizardRoute(
+  controller: StagesController<ApplicationValue, typeof applicationFields, ApplicationContext>,
+  currentRoute: () => string | undefined,
+  navigate: (stage: string) => void,
+) {
+  return controller.subscribeSelector(activeCheckoutStage, stage => {
+    if (stage !== undefined && stage !== currentRoute()) navigate(stage);
+  });
+}
+
+export function subscribeMigratedAutosave(
+  controller: StagesController<ApplicationValue, typeof applicationFields, ApplicationContext>,
+  save: (state: SerializedStagesState) => Promise<void>,
+  onError: (error: unknown) => void,
+  delayMs = 500,
+) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const unsubscribe = controller.subscribeSelector(
+    snapshot => snapshot.value,
+    () => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(() => {
+        void save(controller.serialize()).catch(onError);
+      }, delayMs);
+    },
+  );
+  return () => {
+    unsubscribe();
+    if (timer !== undefined) clearTimeout(timer);
+  };
+}
+
+export class AcceptedValueHistory<TValue> {
+  readonly #entries: TValue[] = [];
+  #index = -1;
+
+  accept(value: TValue) {
+    this.#entries.splice(this.#index + 1, Infinity, value);
+    this.#index = this.#entries.length - 1;
+  }
+
+  undo(): TValue | undefined {
+    if (this.#index <= 0) return undefined;
+    this.#index -= 1;
+    return this.#entries[this.#index];
+  }
+
+  redo(): TValue | undefined {
+    if (this.#index >= this.#entries.length - 1) return undefined;
+    this.#index += 1;
+    return this.#entries[this.#index];
+  }
+}
+```
+
+Seed history with the initial accepted value, then append only values the owner
+actually accepts. Feed an undo/redo value through the same owner state and
+`controller.update({ value })`; do not replay rejected proposals. If history
+must include touched state, wizard locations, or row keys, store complete
+serialized envelopes and recreate from the chosen checkpoint instead.
+
+The autosave example intentionally selects only domain-value changes. Subscribe
+to a wider snapshot selection when durable metadata changes must also save.
+Production storage should additionally define conflict resolution, in-flight
+ordering/cancellation, retry/backoff, consent, encryption, quota, and final
+flush behavior.
+
+## Application-owned disposition
+
+| 0.x concept | Decision | v1 replacement |
+| --- | --- | --- |
+| `asyncDataLoader` and render `loading` | **Move** | Application resource/data layer; pass settled state through context. |
+| `dynamicOptions.loader`, `watchFields`, `events`, cache | **Move** | Resource keyed by explicit dependencies; update stable context/extensions. |
+| `dynamicOptions.onOptionsChange` | **Replace** | Application resource effect or explicit domain event/transform. |
+| Function-valued options | **Replace** | Synchronous typed `deriveProps`. |
+| `computedOptions` (`source`, `filter`, `sort`, `map`, `initWith`) | **Replace** | Pure selector/`deriveProps`; no render-time value writes. |
+| `isInterfaceState` / `initialInterfaceState` | **Remove** from domain processing | Adapter-local UI state, or a named extension with a codec when core dynamics/persistence need it. |
+| `enableUndo`, `undoMaxDepth`, `handleUndo`, `handleRedo` | **Move** | Application history of accepted values or serialized checkpoints. |
+| `autoSave` / `disableAutoSave` | **Move** | Explicit subscription, serialization, debounce, and storage service. |
+| `id`-derived storage keys | **Remove** | Storage adapter owns safe namespacing, account/tenant scope, and errors. |
+| `HashRouter`, `prefix`, `hashSeparator`, `hashFormat` | **Move** | Router adapter synchronized with current wizard snapshots/events. |
+
+Core owns no fetch, cache, timer, browser storage, URL, framework lifecycle, or
+arbitrary interface-state channel. Context is not serialized. Extension state
+is serialized only through registered codecs. The envelope preserves accepted
+value, baseline, touched/visited addresses, revealed validation addresses,
+wizard locations, collection keys, and registered extensions—not pending work,
+focus, callbacks, views, or browser handles.
+
+## Persistence before and after
+
+Historical 0.x forms could couple identity and persistence policy directly to
+rendering:
+
+```jsx
+// Historical 0.x only
+<Form id="checkout" autoSave data={value} disableAutoSave={readOnly} />
+```
+
+**Move** storage and timing outside core. Serialize explicitly, validate the
+unknown JSON on read, and recreate rather than treating browser storage as a
+hidden controller input:
+
+```ts
+const state = controller.serialize();
+storage.setItem("account:checkout:v1", JSON.stringify(state));
+
+const parsed: unknown = JSON.parse(storage.getItem("account:checkout:v1") ?? "null");
+const restored = stages({
+  schema,
+  fields,
+  state: validateSerializedState(parsed),
+  context,
+});
+```
+
+Use schema migrations before recreation when the saved schema version is old,
+and value/extension codecs for non-JSON domain or extension values. Keep 0.x
+and v1 storage keys separate during coexistence.
+
+## Incremental rollout
+
+1. **Inventory:** Record every 0.x root import, config type, field key,
+   processing hook, validator, structural method, persistence key, and router
+   link for one route.
+2. **Isolate ownership:** Put one boundary around the route's canonical value,
+   context, submit/reset actions, storage, and teardown.
+3. **Install side by side:** Keep `react-stages` and `@stages/*` as distinct
+   imports. Do not share controllers, field registries, or serialized state
+   between versions.
+4. **Convert semantics:** Migrate schema/paths, reducers/transforms, validators,
+   structures, and application-owned effects in that order.
+5. **Add an adapter:** Render the v1 snapshot with React, DOM, or a tested custom
+   adapter; do not wrap a 0.x `Form` around a v1 controller.
+6. **Dual-run only pure comparisons:** In non-production tests, compare selected
+   accepted values or validation outcomes. Avoid dispatching real side effects
+   from both implementations.
+7. **Cut over one route:** Switch rendering and submission together, retain a
+   rollback flag at the route boundary, and keep stored formats namespaced.
+8. **Remove legacy code:** Delete route-specific adapters/config only after the
+   v1 route passes the matrix below. Remove the package after repository-wide
+   import and dependency searches are empty.
+
+## Coexistence test matrix
+
+- Initial and externally replaced values render identically where intended.
+- Accept, replace, reject, and delayed proposal ownership is explicit.
+- Filter/cast, blur cleanup, precision, computed fields, clearing, and custom
+  actions match the chosen product semantics—not accidental 0.x quirks.
+- Validation covers unknown, pending, invalid, valid, warning-only, disabled,
+  hidden, rejected, and cancelled cases with correct reveal timing.
+- Every collection command covers success, min/max rejection, row reorder, and
+  stable focus/touched identity.
+- Wizard previous/next/go covers guards, current-stage validation, conditional
+  stages, non-linear policy, URL back/forward, and refresh/recreation.
+- Persistence tests malformed/old state, migrations, custom codecs, quota or
+  network failure, conflicts, and no accidental cross-version key collision.
+- Adapter tests cover recursive output, disabled controls, keyboard order,
+  labels/descriptions, issue announcements, focus, teardown, and Strict Mode
+  where applicable.
+- Diagnostics and telemetry identify rejected events and invalid dynamic
+  revisions without exposing sensitive values.
+
+Run strict type checks, v1 package tests, relevant application tests, and
+production builds before each cutover. The repository examples and release
+gate are reference evidence, not a substitute for product-specific acceptance.
+
+## Evidence
+
+The application-boundary example compiles from `docs/examples/migration.ts`;
+the persistence guide supplies a fuller checked storage/conflict fixture.
+`scripts/check-v1-apps.mjs` proves active repository applications no longer
+import the retired package, while `scripts/check-v1-docs.mjs` retains the full
+0.x concept inventory. Package verification and production examples exercise
+the final v1 boundary.
+
+**Next:** Use [release status](/project/release-status) to distinguish local
+cutover evidence from stable-package promotion evidence.
