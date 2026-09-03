@@ -1,0 +1,76 @@
+# Multi-step checkout
+
+**For:** Transactional flows combining optional steps, scoped validation,
+warnings, asynchronous checks, non-linear review, and domain guards.
+
+**Prerequisites:** [Wizards](/structures/wizards),
+[wizard validation and guards](/structures/wizard-validation-and-guards), and
+[async validation](/validation/async-and-cancellation).
+
+Model each step as a stage under one wizard. Validate the current stage
+explicitly before navigation: `validateCurrent` consults cached state but does
+not start validators for you.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="multi-step-checkout" filename="checkout-workflow.ts" />
+
+## What composes here
+
+- The delivery step exists only for shipping; changing to pickup makes it
+  dormant without silently deleting the stored address.
+- Required email/address issues block navigation.
+- A test-domain email produces a warning, so `isValid` remains true.
+- Card authorization is awaited and receives the core cancellation signal;
+  stale runs cannot publish.
+- `acceptedTerms` is synchronous domain policy enforced by the wizard guard.
+- `nonLinear` permits `wizard:go`, but visibility, validation state, and guard
+  policy can still reject a requested transition.
+
+The helper focuses only after validation reveals errors. It then dispatches
+`wizard:next`; core reevaluates visibility, cached validation, and guard policy
+at dispatch time. A value/context change in that small interval can still
+produce `wizard.navigation-rejected`, so keep diagnostic handling active and
+do not claim success until the next snapshot shows the target stage.
+
+## Async service contract
+
+`ValidationCancellationSignal` is not an `AbortSignal`. Adapt it to the
+payment client by registering `signal.onCancel`, aborting the client request,
+and unregistering when it settles. Even when the client cannot abort, check
+`signal.aborted` after await; core also prevents superseded runs from
+publishing.
+
+Do not charge a card inside a validator. Validators must be repeatable checks.
+Perform the irreversible order/charge command in application submission code
+after a valid final result, using an idempotency key and the server's canonical
+response.
+
+## Resume, routing, and accessibility
+
+Serialize after accepted changes to retain the active stage and reveal state.
+Validation results are not serialized, so validate again after recreation.
+If the URL identifies a step, use the [wizard routing](/recipes/wizard-routing)
+bridge and reject unknown/hidden steps safely.
+
+Render an ordered step label, current-step state, Back/Continue controls, and
+an error summary. Warning-only results need clear non-blocking semantics. Do
+not use color alone, and keep inactive-stage rendering/focus policy consistent
+with the adapter.
+
+## Test checklist
+
+- Cover ship/pickup transitions, hidden targets, warning-only validation,
+  pending work, cancellation, decline, and transport failure.
+- Assert a guard false/throw leaves the active stage unchanged.
+- Race a dependency change against the await and navigation dispatch.
+- Recreate at every stage and validate again before advancement.
+- Run keyboard and screen-reader checks over errors, warnings, and step labels.
+
+## Evidence
+
+The production composition is strictly compiled from
+`docs/examples/recipes.ts`. Wizard gate order, async staleness, optional stages,
+warnings, serialization, and focus behavior are covered by core and adapter
+tests; the live wizard and async-validation demos exercise the rendered loops.
+
+**Next:** Implement the accessible submission surface in
+[focus an error summary](/recipes/focus-error-summary).

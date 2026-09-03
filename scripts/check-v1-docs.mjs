@@ -26,12 +26,13 @@ function assertSameInventory(actual, expected, label) {
   assert.deepEqual(sorted(actual), sorted(expected), `${label} inventory drifted`);
 }
 
-const [baseline, migration, api, demoSource, exampleSource, mdxComponents, manifestSource] = await Promise.all([
+const [baseline, migration, api, demoSource, exampleSource, checkedSourceComponent, mdxComponents, manifestSource] = await Promise.all([
   readRoot("docs/CURRENT_IMPLEMENTATION_API.md"),
   readRoot("docs/MIGRATING_TO_V1.md"),
   readRoot("docs/V1_API.md"),
   readRoot("docs/components/StagesDemo.jsx"),
   readRoot("docs/components/StagesExample.jsx"),
+  readRoot("docs/components/CheckedSource.jsx"),
   readRoot("docs/mdx-components.jsx"),
   readRoot("docs/content/coverage-manifest.json"),
 ]);
@@ -169,6 +170,21 @@ const completePagePaths = [
   "migration/validation.mdx",
   "migration/collections-and-wizards.mdx",
   "migration/rollout-checklist.mdx",
+  "recipes/index.mdx",
+  "recipes/server-save-and-rejection.mdx",
+  "recipes/async-options.mdx",
+  "recipes/cross-field-calculation.mdx",
+  "recipes/conditional-sections.mdx",
+  "recipes/collection-crud-and-sort.mdx",
+  "recipes/multi-step-checkout.mdx",
+  "recipes/focus-error-summary.mdx",
+  "recipes/localization.mdx",
+  "recipes/persistence-and-resume.mdx",
+  "recipes/schema-upgrades.mdx",
+  "recipes/undo-redo.mdx",
+  "recipes/wizard-routing.mdx",
+  "recipes/observability.mdx",
+  "recipes/ssr-and-teardown.mdx",
 ];
 for (const relativePath of completePagePaths) {
   const page = guideEntries.find((entry) => entry.relativePath === relativePath);
@@ -554,6 +570,68 @@ for (const { fixture, region, page } of checkedRegions) {
   const pageSource = guideEntries.find(({ relativePath }) => relativePath === page)?.source;
   assert.ok(pageSource?.includes(displayedRegion), `${page} drifted from checked source region ${region}`);
 }
+
+const recipePages = [
+  "server-save-and-rejection.mdx",
+  "async-options.mdx",
+  "cross-field-calculation.mdx",
+  "conditional-sections.mdx",
+  "collection-crud-and-sort.mdx",
+  "multi-step-checkout.mdx",
+  "focus-error-summary.mdx",
+  "localization.mdx",
+  "persistence-and-resume.mdx",
+  "schema-upgrades.mdx",
+  "undo-redo.mdx",
+  "wizard-routing.mdx",
+  "observability.mdx",
+  "ssr-and-teardown.mdx",
+];
+assertSameInventory(
+  guideEntries
+    .filter(({ relativePath }) => relativePath.startsWith(`recipes${path.sep}`) && relativePath !== `recipes${path.sep}index.mdx`)
+    .map(({ relativePath }) => path.basename(relativePath)),
+  recipePages,
+  "real-world recipe pages",
+);
+
+const renderedRegions = [
+  { fixture: "docs/examples/recipes.ts", region: "server-save-rejection", page: "recipes/server-save-and-rejection.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "async-options", page: "recipes/async-options.mdx" },
+  { fixture: "docs/examples/transforms-and-batching.ts", region: "transform-pipeline", page: "recipes/cross-field-calculation.mdx" },
+  { fixture: "docs/examples/dynamic-configuration.ts", region: "dynamic-schema", page: "recipes/conditional-sections.mdx" },
+  { fixture: "docs/examples/dynamic-configuration.ts", region: "dynamic-updates", page: "recipes/conditional-sections.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "collection-events", page: "recipes/collection-crud-and-sort.mdx" },
+  { fixture: "docs/examples/structures.ts", region: "collection-identity", page: "recipes/collection-crud-and-sort.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "multi-step-checkout", page: "recipes/multi-step-checkout.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "focus-error-summary", page: "recipes/focus-error-summary.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "localization", page: "recipes/localization.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "storage-and-autosave", page: "recipes/persistence-and-resume.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "serialization-utilities", page: "recipes/persistence-and-resume.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "recreate-controller", page: "recipes/persistence-and-resume.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "state-migrations", page: "recipes/schema-upgrades.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "undo-redo", page: "recipes/undo-redo.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "wizard-routing", page: "recipes/wizard-routing.mdx" },
+  { fixture: "docs/examples/diagnostics.ts", region: "diagnostic-observation", page: "recipes/observability.mdx" },
+  { fixture: "docs/examples/diagnostics.ts", region: "diagnostic-troubleshooting", page: "recipes/observability.mdx" },
+  { fixture: "docs/examples/recipes.ts", region: "ssr-teardown", page: "recipes/ssr-and-teardown.mdx" },
+];
+for (const { fixture, region, page } of renderedRegions) {
+  const fixtureSource = await readRoot(fixture);
+  assert.match(
+    fixtureSource,
+    new RegExp(`// source:start ${region}\\n[\\s\\S]*?\\n// source:end ${region}`),
+    `${fixture} has no ${region} rendered source region`,
+  );
+  const pageSource = guideEntries.find(({ relativePath }) => relativePath === page)?.source;
+  assert.ok(
+    pageSource?.includes(`<CheckedSource fixture="${fixture}" region="${region}"`),
+    `${page} does not render checked source region ${region}`,
+  );
+}
+assert.match(checkedSourceComponent, /source:start/);
+assert.match(checkedSourceComponent, /codeToHtml/);
+assert.match(mdxComponents, /CheckedSource/);
 
 const requiredDemos = [
   "controlled", "collection", "wizard", "transaction", "persistence",

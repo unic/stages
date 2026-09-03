@@ -1155,11 +1155,11 @@ fully referenced and each integration path has a production-style tutorial.
 
 ### Phase 8 — Complete recipes, architecture, and migration
 
-- [ ] Publish the real-world recipe set.
-- [ ] Publish deliberate non-feature alternatives and operational boundaries.
-- [ ] Split and cross-link the 0.x migration guide while preserving exhaustive
+- [x] Publish the real-world recipe set.
+- [x] Publish deliberate non-feature alternatives and operational boundaries.
+- [x] Split and cross-link the 0.x migration guide while preserving exhaustive
   concept coverage.
-- [ ] Document verified performance budgets and release maturity.
+- [x] Document verified performance budgets and release maturity.
 
 Exit criterion: every major “how do I use this in a real application?” task has
 an indexed answer or an explicit boundary statement.

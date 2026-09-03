@@ -1,0 +1,65 @@
+# Async options
+
+**For:** Forms whose selectable choices come from search, permissions, or a
+remote catalog.
+
+**Prerequisites:** [Dynamic configuration](/core-concepts/dynamic-configuration),
+[selector subscriptions](/core-concepts/snapshots-and-subscriptions), and a
+field view that renders loading, empty, and failure states.
+
+Keep I/O outside schema factories and prop resolvers. Subscribe to the accepted
+query value, cancel the previous request, then place the latest result in
+controller context. `deriveProps` projects that context into the select view.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="async-options" filename="remote-country-options.ts" />
+
+## Why context is the right channel
+
+Options affect rendering but are not normally submitted domain data. Context
+can change independently through `controller.update({ context })`, reevaluating
+derived props without emitting `onChange`. The field's selected `country`
+remains part of the controlled value.
+
+Resolvers must be pure and synchronous. Starting a request inside
+`deriveProps`, `when`, a schema factory, or a view render can duplicate work
+and create render/evaluation loops. The application loader owns the request and
+only feeds a completed state back into core.
+
+## Race and selection policy
+
+Abort is cooperative, so the generation number also rejects stale results from
+clients that ignore `AbortSignal`. The loader clears an old error when a new
+request begins and preserves the last option set during loading. Change that
+to an empty list only if the product wants unavailable choices removed
+immediately.
+
+Decide what happens when the accepted selection is absent from a new result:
+
+- preserve it and render a “selected but unavailable” option;
+- clear it by dispatching an explicit application event; or
+- ask for confirmation before changing submitted data.
+
+Do not silently mutate `country` from the context update. Options and the
+selected value have different owners.
+
+## Test and accessibility checklist
+
+- Resolve an earlier request after a newer one and assert its result is
+  ignored.
+- Reject, retry, destroy while pending, and exercise an `AbortSignal`-ignoring
+  client.
+- Assert context updates do not call `onChange`.
+- Expose loading with `aria-busy` or equivalent view markup, announce failures
+  without moving focus, and keep the control's accessible name stable.
+- Cache or debounce in the application if query volume requires it; neither is
+  a core policy.
+
+## Evidence
+
+The complete loader/schema boundary is compiled from
+`docs/examples/recipes.ts`. Context-driven props and selector equality are
+covered by core tests; the recipe adds cancellation, stale-result suppression,
+retry, and teardown ownership.
+
+**Next:** Derive entire sections from accepted data in
+[conditional sections](/recipes/conditional-sections).

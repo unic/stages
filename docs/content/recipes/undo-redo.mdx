@@ -1,0 +1,61 @@
+# Undo and redo
+
+**For:** Editors that need bounded, application-owned history of accepted
+domain values.
+
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values) and a
+product decision about what counts as one undo step.
+
+Record the value inside `onChange` only when the application accepts that
+proposal. Undo and redo select another accepted entry and publish it through
+`controller.update({ value })`; external updates do not re-enter `onChange`.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="undo-redo" filename="undoable-settings.ts" />
+
+## History semantics
+
+The initial accepted value is the first entry. A new accepted edit after undo
+truncates the redo branch. `undoDepth` bounds earlier steps, while the current
+entry consumes one additional slot. Values are retained by reference because
+the controlled contract treats them as immutable.
+
+One `onChange` corresponds to one core transaction, so explicit `batch()` is a
+natural grouping mechanism. Product commands may need a higher-level history
+boundary—for example, many keystrokes can be coalesced by time or blur. Apply
+that policy in the owner without mutating stored entries.
+
+## Decide what enters history
+
+| Change | Typical policy |
+| --- | --- |
+| User edit proposal | Record after acceptance |
+| Server-normalized replacement | Record the server result, not both values |
+| Form reset event | Record as one step or clear history explicitly |
+| Remote collaboration update | Clear/rebase/merge according to collaboration policy |
+| Context, schema, extension, focus, wizard metadata | Not part of value history by default |
+
+This simple recipe tracks values only. If undo must restore wizard position,
+reveal state, or adapter state, store a versioned application command log or
+serialized envelopes and define merge/schema-upgrade behavior. Do not reach
+into controller internals.
+
+## Test and resource checklist
+
+- Cover bounds, redo truncation, depth eviction, batched transactions, reset,
+  and server replacement.
+- Assert undo/redo updates do not generate new history entries.
+- Reconcile or clear history when schema identity changes.
+- Estimate memory from retained immutable graphs; structural sharing helps but
+  does not make history free.
+- Disable controls from `canUndo`/`canRedo`, preserve keyboard conventions,
+  and announce the restored state when it is not visually obvious.
+
+## Evidence
+
+The bounded owner is strictly compiled from `docs/examples/recipes.ts`.
+Controlled update/onChange separation and immutable structural sharing are
+covered by core tests; history grouping and retention remain application
+policy.
+
+**Next:** Keep interface navigation outside value history with
+[wizard routing](/recipes/wizard-routing).

@@ -1,0 +1,64 @@
+# Cross-field calculation
+
+**For:** Forms that normalize one field or compute dependent domain values as
+part of the same accepted change.
+
+**Prerequisites:** [Transforms and patches](/core-concepts/transforms-and-patches)
+and immutable [paths and addresses](/core-concepts/paths-and-addresses).
+
+Use a transform when an event must propose changes outside the targeted field.
+Return explicit patches, keep the calculation pure, and place it at the lowest
+schema ancestor that owns every value it reads and writes.
+
+<CheckedSource fixture="docs/examples/transforms-and-batching.ts" region="transform-pipeline" filename="order-calculations.ts" />
+
+## Pick the right layer
+
+| Need | Owner |
+| --- | --- |
+| Parse or normalize only the edited field | Its registry reducer |
+| Trim on blur or calculate dependent domain data | A field, container, or root transform |
+| Display-only total that must never be submitted | The field view or a memoized selector |
+| Server-authoritative calculated value | Controlled owner after server approval |
+
+The `quantity` and `unitPrice` event is reduced first; `recalculateTotal` sees
+that post-reducer draft and adds `total` to the same proposal. One transaction
+therefore produces one `onChange` call containing the input and calculation
+patches. The disabled total field prevents direct editing; disabled nodes still
+need explicit transform and validation policy where relevant.
+
+Transforms run from the target outward. In the profile branch, `trimName` runs
+before the group-level `updateSlug`, so the slug sees the normalized name.
+Within a node, array order is observable. If two transforms write the same
+path, the later patch wins; treat that as deliberate precedence and test it.
+
+## Removal, precision, and shared references
+
+`remove` deletes an optional key rather than setting it to `undefined`.
+Numeric policy belongs in the calculation: choose integer minor units, decimal
+objects with a codec, or a documented rounding rule instead of relying on
+binary floating-point for money.
+
+`copyBillingAddress` reuses an immutable object reference in the proposed
+value. That is safe only while owners treat values as immutable. Clone at the
+application boundary if later code mutates domain objects.
+
+## Test checklist
+
+- Assert the complete proposal, patch order, event list, and transaction ID.
+- Exercise missing optional paths and rejected unsafe paths.
+- Cover a transform that returns no patches and a transform that throws; the
+  latter reports a diagnostic and suppresses the proposal.
+- Verify calculations after explicit batching and after owner replacement.
+- Keep side effects out of transforms because evaluation and retries must stay
+  deterministic.
+
+## Evidence
+
+The full transform set is loaded from the strictly compiled
+`docs/examples/transforms-and-batching.ts` fixture. Ordering, patch failure,
+structural sharing, batching, and proposal suppression are covered by core
+tests.
+
+**Next:** Use the calculated accepted value to drive
+[conditional sections](/recipes/conditional-sections).

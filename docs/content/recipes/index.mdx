@@ -1,0 +1,52 @@
+# Real-world recipes
+
+**For:** Application teams composing Stages capabilities into production
+workflows.
+
+**Prerequisites:** A working [controlled controller](/core-concepts/controlled-values)
+and the guide for each capability used by the recipe.
+
+These recipes start where focused feature guides stop. Each one assigns work
+to core, an adapter, or application infrastructure; shows a checked production
+pattern; and makes concurrency, failure, accessibility, testing, and teardown
+policy explicit.
+
+## Choose by task
+
+| I need to… | Recipe |
+| --- | --- |
+| wait for a server before accepting a value | [Server save and rejection](/recipes/server-save-and-rejection) |
+| load select choices without racing requests | [Async options](/recipes/async-options) |
+| update dependent values atomically | [Cross-field calculation](/recipes/cross-field-calculation) |
+| show structure from accepted value or context | [Conditional sections](/recipes/conditional-sections) |
+| implement every collection edit with stable rows | [Collection CRUD and sort](/recipes/collection-crud-and-sort) |
+| combine validation, optional steps, warnings, and guards | [Multi-step checkout](/recipes/multi-step-checkout) |
+| announce errors and let users focus a field | [Focus an error summary](/recipes/focus-error-summary) |
+| switch labels, issues, and view formatting | [Localization](/recipes/localization) |
+| autosave and safely resume a draft | [Persistence and resume](/recipes/persistence-and-resume) |
+| upgrade old serialized drafts | [Schema upgrades](/recipes/schema-upgrades) |
+| add bounded undo and redo | [Undo and redo](/recipes/undo-redo) |
+| synchronize a wizard with a URL | [Wizard routing](/recipes/wizard-routing) |
+| export useful telemetry without domain data | [Observability](/recipes/observability) |
+| evaluate on a server and clean up a client graph | [SSR and teardown](/recipes/ssr-and-teardown) |
+
+## Ownership rule
+
+Stages owns deterministic schema evaluation, proposals, validation state,
+collection commands, wizard metadata, snapshots, and serialization. The
+application owns I/O, accepted-value policy, request cancellation, storage,
+routing, history, localized catalogs, telemetry transport, and process or UI
+lifecycle. Adapters own markup, focus mechanics, and accessible field views.
+
+The boundary is intentional: core never starts a fetch, writes storage,
+changes a URL, or retains an undo stack. Those operations need product policy
+and lifecycle coordination that a form engine cannot infer.
+
+## Evidence
+
+Every displayed implementation is loaded at build time from a marked region in
+`docs/examples` and that fixture is compiled in strict mode. The documentation
+gate verifies this 14-recipe inventory and each fixture/region mapping.
+
+**Next:** Start with [server save and rejection](/recipes/server-save-and-rejection),
+or choose the task matching your application boundary above.

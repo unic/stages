@@ -1,0 +1,20 @@
+{
+  "index": {
+    "title": "Recipe index",
+    "display": "hidden"
+  },
+  "server-save-and-rejection": "Server save and rejection",
+  "async-options": "Async options",
+  "cross-field-calculation": "Cross-field calculation",
+  "conditional-sections": "Conditional sections",
+  "collection-crud-and-sort": "Collection CRUD and sort",
+  "multi-step-checkout": "Multi-step checkout",
+  "focus-error-summary": "Focus an error summary",
+  "localization": "Localization",
+  "persistence-and-resume": "Persistence and resume",
+  "schema-upgrades": "Schema upgrades",
+  "undo-redo": "Undo and redo",
+  "wizard-routing": "Wizard routing",
+  "observability": "Observability",
+  "ssr-and-teardown": "SSR and teardown"
+}

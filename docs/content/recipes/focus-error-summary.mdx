@@ -1,0 +1,62 @@
+# Focus an error summary
+
+**For:** Browser forms that must reveal all submission errors, announce a
+summary, and let keyboard users move to each invalid field.
+
+**Prerequisites:** [Validation execution](/validation/execution-and-reveal),
+[DOM focus behavior](/adapters/dom/focus), and a mounted DOM adapter.
+
+Validate with `reveal: true`, filter blocking errors from the returned result,
+render real buttons for the summary links, then move focus to the summary. Each
+button uses the issue's data path to request field focus from the adapter.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="focus-error-summary" filename="error-summary.ts" />
+
+## Why the result drives the summary
+
+Use the awaited `ValidationSnapshot`, not a snapshot captured before
+validation. `visibleIssues` respects reveal policy and aggregation, while
+filtering severity keeps warnings out of the blocking error count. A field can
+still disappear after the result because of a concurrent owner update; in that
+case `mounted.focus(path)` returns `false` and the application should leave
+focus in the summary.
+
+Data paths are correct for validation scope and adapter focus. For a collection
+row, a path contains its current index; rebuild the summary after accepted
+reorder instead of retaining old handlers. Stable node addresses are useful
+for diagnostics and metadata but the DOM adapter's public `focus` method takes
+a `DataPath`.
+
+## Markup policy
+
+Place an initially hidden summary near the form heading and give it a stable
+landmark in surrounding application markup. `role="alert"` announces newly
+rendered contents; programmatic focus makes the heading and list discoverable
+without relying only on a live region. Avoid repeatedly focusing it during
+field-level validation—this recipe is for an explicit submit attempt.
+
+The DOM adapter's native views already connect each visible issue list with
+`aria-invalid`, `aria-errormessage`, and `aria-describedby`. Custom field views
+must implement equivalent naming, error association, focus ID, and
+focus/blur-event behavior.
+
+## Test checklist
+
+- Assert validation runs before summary rendering and that only revealed
+  errors are counted.
+- Verify summary focus, button order, field focus, and the `false` fallback for
+  hidden, disabled, unmounted, or removed fields.
+- Reorder a collection and assert regenerated buttons use current paths.
+- Test one error, multiple errors, warnings only, pending validation, and a
+  successful resubmission that hides and clears the summary.
+- Use browser-level accessibility tests; a DOM tree assertion alone does not
+  prove focus or announcement behavior.
+
+## Evidence
+
+The summary helper is compiled from `docs/examples/recipes.ts`; adapter focus,
+validation reveal, disabled/hidden fields, destroyed mounts, and error ordering
+have executable test coverage.
+
+**Next:** Supply localized summary and issue copy with the
+[localization recipe](/recipes/localization).

@@ -7,6 +7,7 @@
   "persistence": "Persistence and recreation",
   "diagnostics": "Diagnostics and recovery",
   "adapters": "Adapters",
+  "recipes": "Real-world recipes",
   "guides": {
     "type": "separator",
     "title": "Feature guides"

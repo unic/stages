@@ -1,0 +1,64 @@
+# Server save and rejection
+
+**For:** Applications where authorization, normalization, or conflict policy
+must run before a proposed domain value becomes canonical.
+
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values),
+[transactions and batching](/core-concepts/transactions-and-batching), and an
+application-level status/error surface.
+
+Treat `onChange` as a proposal callback. Keep rendering the last accepted
+value while the request is pending, then call `update({ value })` only with the
+server-approved result. A server may accept the proposal unchanged, replace it
+with a normalized value, or reject it.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="server-save-rejection" filename="server-saved-settings.ts" />
+
+## Transaction timeline
+
+| Moment | Canonical snapshot value | Application status | Required action |
+| --- | --- | --- | --- |
+| User event is dispatched | Last accepted value | Idle | Core batches the event. |
+| `onChange` receives proposal | Still the last accepted value | Saving | Start the request; do not call `update` yet. |
+| Server accepts unchanged | Approved value after `update` | Idle | Publish the returned value. |
+| Server normalizes/replaces | Server replacement after `update` | Idle | Publish the replacement, not the stale proposal. |
+| Server rejects | Last accepted value | Rejected | Leave the proposal unaccepted and show the domain reason. |
+| Transport fails | Last accepted value | Failed | Preserve the accepted value and offer retry/recovery. |
+
+The request sequence suppresses late responses. This example uses latest-write
+wins, which is suitable only when each save represents a complete replaceable
+value. For ordered commands, use an application queue or idempotency key.
+Disable conflicting edits while pending if a second proposal would otherwise
+be calculated from an old canonical value.
+
+## Rejection and diagnostics are different channels
+
+A server rejection is an expected domain outcome and belongs in application
+state. A `Diagnostic` describes misuse or runtime recovery inside Stages and is
+routed through `onDiagnostic`. Do not manufacture core diagnostics for a
+normal permission or conflict response, and do not show developer diagnostics
+as localized user errors.
+
+If the server returns field-level problems, translate the response into your
+domain/error state or into a validator dependency that Stages can reveal. Keep
+the original accepted value until product policy explicitly accepts another.
+
+## Test and teardown
+
+- Resolve requests out of order and assert only the newest result calls
+  `update`.
+- Cover unchanged acceptance, normalization, domain rejection, and transport
+  failure separately.
+- Assert a rejected proposal never appears in `snapshot.value`.
+- Destroy while a request is pending and assert the response is ignored.
+- Never log the whole proposal by default; status and diagnostics may contain
+  sensitive account data.
+
+## Evidence
+
+The owner is compiled from `docs/examples/recipes.ts`. Controlled proposal and
+microtask behavior is covered by core controller tests; stale suppression and
+teardown are explicit in the checked recipe.
+
+**Next:** If remote work supplies field choices rather than accepting values,
+use [async options](/recipes/async-options).

@@ -1,0 +1,72 @@
+# Conditional sections
+
+**For:** Forms whose visible or enabled structure depends on accepted domain
+data, permissions, feature flags, locale, or durable interface preferences.
+
+**Prerequisites:** [Dynamic configuration](/core-concepts/dynamic-configuration)
+and [recursive schemas](/core-concepts/schemas).
+
+Use `when` to make an existing identity dormant, a schema factory to add or
+remove identities, `disabled` for inherited interaction state, and
+`deriveProps` for view inputs. All four are synchronous derivations of value,
+context, and metadata.
+
+<CheckedSource fixture="docs/examples/dynamic-configuration.ts" region="dynamic-schema" filename="conditional-account.ts" />
+
+The example deliberately demonstrates four different sources:
+
+- `value.plan` controls a business group;
+- permission and feature flags arrive through application context;
+- copy is derived from the active message catalog; and
+- a registered extension controls a durable advanced-panel preference.
+
+## Preserve or remove?
+
+A false `when` keeps the schema identity known but removes it from the render
+tree. Its domain data is not automatically deleted. Factory removal means the
+identity no longer exists in that evaluated schema revision. Choose based on
+identity semantics, not merely on whether both approaches look hidden.
+
+If hiding a section should clear submitted data, dispatch an explicit event or
+use a transform when the controlling field changes. This makes destructive
+policy reviewable and keeps a UI predicate from mutating data as a side effect.
+
+## Apply owner inputs
+
+<CheckedSource fixture="docs/examples/dynamic-configuration.ts" region="dynamic-updates" filename="conditional-account-updates.ts" />
+
+`update` replaces each supplied top-level input and schedules reevaluation; it
+does not merge nested context or extension objects. Build the complete next
+object in the owner. Context, extensions, and schema updates do not call
+`onChange` because they are not domain-value proposals.
+
+## Failure and accessibility
+
+If a dynamic callback throws or returns an invalid tree, the controller keeps
+the last valid render tree and reports diagnostics. Repairing the owner input
+allows reevaluation to recover. An incompatible identity change can clear
+affected metadata even when the new tree is otherwise valid.
+
+Do not only hide content visually in an adapter. A false `when` removes it from
+the snapshot and therefore from focus/error navigation. When content returns,
+restore focus intentionally if the user's task requires it and explain why a
+selection or error disappeared.
+
+## Test checklist
+
+- Toggle each condition independently and assert both data and render tree.
+- Confirm disabled inheritance and explicit validation `includeDisabled`
+  policy.
+- Switch context while a field is focused and verify adapter focus behavior.
+- Cover callback failure, recovery, and identity incompatibility diagnostics.
+- Recreate registered extension state when a durable preference drives UI.
+
+## Evidence
+
+Both code regions come from the strict
+`docs/examples/dynamic-configuration.ts` fixture. Dynamic predicates, factory
+reconciliation, last-valid recovery, extension replacement, and metadata
+behavior have executable core coverage.
+
+**Next:** Apply recursive identity rules to repeating data in
+[collection CRUD and sort](/recipes/collection-crud-and-sort).

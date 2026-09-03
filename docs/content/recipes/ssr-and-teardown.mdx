@@ -1,0 +1,67 @@
+# SSR and teardown
+
+**For:** Server-rendered applications and client screens that must not leak
+controllers, subscriptions, requests, timers, mounts, or router listeners.
+
+**Prerequisites:** [Controller lifecycle](/core-concepts/controller-lifecycle),
+the lifecycle guide for your adapter, and an inventory of application-owned
+resources started by the screen.
+
+Core has no DOM or framework globals, so it can evaluate a schema during a
+server request. Create one controller per request, read the needed projection,
+and destroy it in `finally`. Never place a mutable controller in module-global
+server state.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="ssr-teardown" filename="request-and-client-lifecycle.ts" />
+
+## What to send across the server/client boundary
+
+Do not treat a `StagesSnapshot` as a persistence or hydration wire format. It
+contains evaluated view tokens and derived runtime state. Send the accepted
+domain value/context needed to construct a fresh client controller, or send a
+validated `SerializedStagesState` when durable interaction metadata must
+resume. Keep secrets and server-only context out of client props.
+
+Server and client schema inputs must produce compatible identities for the
+same initial data. Locale, permission, time, random IDs, or browser-only checks
+that differ during hydration can change the tree. Resolve them before render or
+defer that structure until the client has an explicit owner update.
+
+The React adapter's `useStages` owns a factory-created controller and accounts
+for development Strict Mode effect replay before destroying on a real unmount.
+A controller passed to `useStagesController` remains caller-owned. The DOM
+adapter's `mountStages` returns an independently destroyable mount.
+
+## Teardown order
+
+1. Mark the owner destroyed so late callbacks become no-ops.
+2. Abort requests; clear debounce/retry timers; unsubscribe router, storage,
+   telemetry, and controller selectors.
+3. Destroy the adapter mount or let the owning framework unmount.
+4. Destroy the controller last.
+
+The checked helper groups external work into one cleanup. Make each cleanup
+idempotent because unmount/error paths can converge. `controller.destroy()` is
+also safe to call more than once, but it does not know how to abort
+application-owned I/O or flush an autosave.
+
+## Test checklist
+
+- Run parallel server requests with different values/context and prove there
+  is no shared state.
+- Throw during request evaluation and assert `finally` destroys the controller.
+- Hydrate with matching inputs, then deliberately test a mismatched identity
+  and its diagnostic/recovery policy.
+- Unmount with pending validation, remote options, server save, autosave, and
+  route listeners; assert no later publication or state update.
+- Exercise cleanup twice and framework development replay.
+
+## Evidence
+
+The per-request and client cleanup helpers are compiled from
+`docs/examples/recipes.ts`. Core isolation/destruction, pending-validation
+cancellation, destroyed no-ops, DOM mount teardown, and React Strict Mode
+lifecycle behavior have executable package coverage.
+
+**Next:** Return to the [recipe index](/recipes) or verify operational limits in
+[core boundaries](/project/core-boundaries).

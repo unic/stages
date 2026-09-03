@@ -1,0 +1,71 @@
+# Wizard routing
+
+**For:** Applications whose browser URL must identify the active stage of a
+top-level or nested wizard.
+
+**Prerequisites:** [Wizards](/structures/wizards), stable
+[node addresses](/core-concepts/paths-and-addresses), and a router abstraction
+with read, write, and navigation-subscription operations.
+
+Build a two-way bridge: router navigation dispatches `wizard:go`, while an
+accepted wizard metadata change writes the new stage to the URL. Compare both
+sides before acting to prevent feedback loops.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="wizard-routing" filename="wizard-route-bridge.ts" />
+
+## Route policy belongs to the application
+
+The URL format, history push/replace behavior, base path, query/hash encoding,
+authentication redirects, unknown-stage fallback, and back-button semantics
+are router/product decisions. `WizardRoutePort.write` should implement those
+decisions and its subscription should report external navigation such as
+popstate—not recursively notify for the same no-op write.
+
+The bridge locates a wizard by stable node address, which also works inside a
+domain-keyed collection row. If the row disappears, the selector returns
+`undefined`; the application should redirect to a safe parent route. Do not
+persist an array index in the URL as row identity.
+
+## Rejection and canonicalization
+
+An unknown or hidden route stage, a non-linear-navigation restriction, a
+validation gate, or a guard can reject `wizard:go`. The active snapshot remains
+canonical and core emits `wizard.navigation-rejected`. After a rejected route,
+replace the URL with the actual active stage or render a not-found/blocked
+state according to product policy.
+
+Initialize the bridge after the controller has been recreated so the restored
+wizard state and incoming route can be reconciled deliberately. Decide which
+wins on first load: deep link, resumable draft, or server redirect. The helper
+applies the route first; change that ordering if resume state has priority.
+
+## Autosaved routed wizard
+
+Compose this cleanup function with the autosave cleanup from
+[persistence and resume](/recipes/persistence-and-resume). Accepted value
+changes can trigger debounced saves; metadata-only stage changes require a
+broader subscription if the current stage must be saved immediately. Stop
+router listeners and pending autosave before destroying the adapter/controller.
+
+Define conflict policy when another tab or device changes the draft. Never let
+an arriving remote envelope silently move a user to a different step while
+they are editing without an explicit product decision.
+
+## Test checklist
+
+- Deep-link to every visible stage and cover unknown, hidden, guarded, pending,
+  and invalid targets.
+- Exercise browser Back/Forward and assert no write/dispatch feedback loop.
+- Route to a wizard inside a reordered or removed collection row.
+- Reconcile URL versus serialized active stage under each precedence policy.
+- Destroy the bridge and assert later route events cannot dispatch.
+
+## Evidence
+
+The recursive address lookup and two-way bridge are compiled from
+`docs/examples/recipes.ts`. Wizard metadata, navigation rejection, selector
+subscriptions, stable row addresses, and recreation have executable core
+coverage; URL behavior is intentionally tested in the consuming router.
+
+**Next:** Instrument rejected navigation and recovery with the
+[observability recipe](/recipes/observability).

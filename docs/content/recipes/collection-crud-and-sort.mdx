@@ -1,0 +1,66 @@
+# Collection CRUD and sort
+
+**For:** Editors that add, replace, duplicate, reorder, sort, and remove
+repeating domain rows.
+
+**Prerequisites:** [Collections](/structures/collections) and
+[collection identity](/structures/collection-identity).
+
+Target the collection for operations about the list and a stable row address
+for operations about one row. Let core produce one immutable value proposal;
+the controlled owner still decides whether to accept it.
+
+<CheckedSource fixture="docs/examples/structures.ts" region="collection-events" filename="team-commands.ts" />
+
+## Command map
+
+| Command | Target | Important payload/policy |
+| --- | --- | --- |
+| `collection:add` | Collection | `value`, optional insertion `index`, `max` enforced |
+| `collection:replace` | Row or collection | Replacement `value`; preserve key deliberately |
+| `collection:duplicate` | Row or collection | Optional destination and value override |
+| `collection:move` | Row or collection | Destination `to`; row identity moves with data |
+| `collection:sort` | Collection | Complete index permutation in `order` |
+| `collection:remove` | Row or collection | `min` enforced |
+
+The shown sequence is an API inventory, not a batch that a UI should dispatch
+blindly: each command is calculated from the canonical collection present at
+its transaction. If several commands must be atomic, call `batch()` and build
+later payloads/order arrays for the draft produced by earlier commands.
+
+## Stable identity
+
+<CheckedSource fixture="docs/examples/structures.ts" region="collection-identity" filename="team-identity.ts" />
+
+Use a durable, unique `itemKey` when the domain has one. A row address contains
+that key, so it survives accepted reorder while its numeric data path changes.
+Generated engine keys are suitable for rows without IDs and persist in the
+serialized metadata envelope. Never use a current array index as a durable key.
+
+Replacing or duplicating domain-keyed rows must result in unique keys. Invalid
+commands, limits, indexes, keys, or sort permutations are rejected with a
+collection diagnostic and no value proposal. Drive button availability from
+snapshot capabilities, then still handle rejection because the canonical list
+may change before dispatch.
+
+## Test and accessibility checklist
+
+- Exercise every command at boundaries, plus unchanged/no-op cases.
+- Delay owner acceptance, reorder externally, and recreate serialized state;
+  assert row metadata follows keys.
+- Test duplicate domain IDs and an `itemKey` callback that throws.
+- Announce add/remove/reorder results in application markup without moving
+  focus unexpectedly; provide keyboard controls in addition to drag and drop.
+- After removal, place focus on a predictable neighboring control or the add
+  action.
+
+## Evidence
+
+The commands and identity variants are compiled from
+`docs/examples/structures.ts`. Core collection tests cover every command,
+constraint/rejection code, stable metadata reconciliation, and union rows; the
+live collection demo proves adapter behavior.
+
+**Next:** Compose collections inside every recursive container pairing in
+[recursive composition](/structures/recursive-composition), or add staged
+policy with the [multi-step checkout](/recipes/multi-step-checkout).

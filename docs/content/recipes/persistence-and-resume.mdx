@@ -1,0 +1,76 @@
+# Persistence and resume
+
+**For:** Applications that save an in-progress form and later recreate its
+accepted value, baseline, row identity, wizard stage, reveal state, and
+registered extension metadata.
+
+**Prerequisites:** [Serialize and recreate](/persistence/serialization),
+[durable and ephemeral state](/persistence/durable-and-ephemeral-state), and a
+retention/security policy for stored form data.
+
+Serialize only accepted controller state, then let the application choose the
+storage, schedule, conflict strategy, encryption, and user feedback.
+
+<CheckedSource fixture="docs/examples/persistence.ts" region="storage-and-autosave" filename="draft-storage.ts" />
+
+## Load defensively
+
+Treat stored bytes as untrusted. Parse JSON, validate the envelope, migrate it
+to the current schema version, and supply the registered value/extension
+codecs used by that schema.
+
+<CheckedSource fixture="docs/examples/persistence.ts" region="serialization-utilities" filename="load-draft.ts" />
+
+After a controller already exists, serialize and recreate rather than trying
+to inject an envelope through `update`:
+
+<CheckedSource fixture="docs/examples/persistence.ts" region="recreate-controller" filename="recreate-project.ts" />
+
+## Resume sequence
+
+1. Identify the user, tenant, and schema before reading a draft key.
+2. Parse and validate inside an error boundary; quarantine or discard malformed
+   data according to product policy.
+3. Run every contiguous schema migration before controller construction.
+4. Decode typed domain values and registered extensions with the same codecs
+   used for writes.
+5. Construct one controller from `state`, render it, and validate again when
+   the current task needs fresh results.
+6. Start autosave only after recreation succeeds, and stop it before teardown.
+
+Validation results and focus are intentionally not serialized. Reveal state,
+touched/visited addresses, active wizard stages, collection keys, the reset
+baseline, and registered extensions are durable. A resumed screen therefore
+may show previously revealed issues after validators run again, but must not
+trust an old validity result.
+
+## Conflict and security policy
+
+The remote example uses an ETag and treats HTTP 412 as a conflict. Preserve
+both local and server envelopes until a user or domain-aware merge chooses a
+result. Add idempotency for retries, distinguish offline/auth/quota/conflict
+failures, and show whether the current accepted revision is durable.
+
+Browser storage is synchronous, fallible, origin-readable, and subject to
+eviction. Do not store secrets or regulated values without an approved design.
+Clear drafts on logout and apply retention limits. Schema versioning is not an
+encryption or authorization boundary.
+
+## Test checklist
+
+- Round-trip value, baseline, stable row keys, wizard stage, reveal state, and
+  every registered extension.
+- Corrupt JSON and each envelope boundary; assert a safe recovery path.
+- Recreate every supported older version through all migration steps.
+- Race autosave, navigation, teardown, and multi-tab/server conflicts.
+- Assert autosave observes accepted values, not rejected proposals.
+
+## Evidence
+
+All three implementations are compiled from `docs/examples/persistence.ts`.
+Serialization shape, safe JSON decoding, codecs, metadata recreation,
+migrations, and error codes are covered by core tests; storage and conflict
+policy remain explicitly application-owned.
+
+**Next:** Maintain old drafts through deployments with
+[schema upgrades](/recipes/schema-upgrades).

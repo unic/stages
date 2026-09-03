@@ -1,0 +1,66 @@
+# Schema upgrades
+
+**For:** Teams changing a persisted domain shape while older serialized drafts
+must remain resumable.
+
+**Prerequisites:** [Persistence migrations](/persistence/migrations) and an
+inventory of every stored schema version still inside its retention window.
+
+Write one deterministic migration per adjacent version. Transform both
+`value` and `baseline`, set the exact next schema version, and keep interaction
+metadata only when its paths and addresses still mean the same thing.
+
+<CheckedSource fixture="docs/examples/persistence.ts" region="state-migrations" filename="profile-migrations.ts" />
+
+## Why adjacent steps matter
+
+The chain makes each release transition independently testable and allows a
+v1 draft to travel `1 → 2 → 3` without a bespoke shortcut. Core rejects a
+missing step, duplicate step, wrong schema ID, invalid result, or non-advancing
+version with a structured `SerializationError`.
+
+`validateSerializedState` establishes the safe envelope before migration.
+`migrateSerializedState` then follows only the matching contiguous chain and
+revalidates each result. Domain-specific decode still happens through the
+current `StagesValueCodec` during controller creation.
+
+## Migrate metadata deliberately
+
+When a field ID or container structure changes, old `touched`, `visited`,
+`revealedValidation`, wizard address, or collection-key metadata can point at
+the wrong identity. Rewrite known-safe entries or remove the affected metadata
+so current reconciliation starts clean. Never guess a new row key from an old
+array index when the domain now supplies durable IDs.
+
+Extensions have their own codecs but share the envelope's schema-version
+migration. Update or delete extension payloads inside the same step if their
+wire shape changes.
+
+## Deployment and rollback
+
+- Keep migrations for every version that can still be read from storage.
+- Deploy readers before writers when multiple application versions overlap.
+- Do not emit a schema version that an active older reader cannot understand.
+- Treat migration functions as pure: no fetch, current time, random ID, locale,
+  or mutable global state.
+- Preserve the original bytes when recovery or support investigation may be
+  required; never repeatedly migrate in place without a backup.
+
+## Test checklist
+
+- Golden-test every version to current, including baseline and metadata.
+- Run a migrated envelope through current controller construction and
+  serialization again.
+- Cover malformed input, wrong schema, missing/duplicate steps, and a migration
+  that throws or returns an invalid envelope.
+- Verify determinism by running the same migration twice from identical input.
+- Exercise mixed-version deployment and explicit rollback policy.
+
+## Evidence
+
+The two-step fixture is compiled from `docs/examples/persistence.ts`.
+Migration-chain resolution, envelope revalidation, schema mismatch, failure
+codes, and controller recreation have executable core coverage.
+
+**Next:** Add reversible editing without changing the serialized core contract
+in [undo and redo](/recipes/undo-redo).

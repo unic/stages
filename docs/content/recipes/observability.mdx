@@ -1,0 +1,76 @@
+# Observability
+
+**For:** Teams diagnosing form configuration and runtime failures without
+exporting sensitive domain values.
+
+**Prerequisites:** [Diagnostics overview](/diagnostics/overview), the
+[diagnostic catalog](/reference/diagnostics), and an application telemetry
+client with redaction and rate limiting.
+
+Use `onDiagnostic` for immediate occurrence telemetry and a selector over
+`snapshot.diagnostics` for a current inspector. Project diagnostics to stable,
+structural fields before crossing a logging boundary.
+
+<CheckedSource fixture="docs/examples/diagnostics.ts" region="diagnostic-observation" filename="diagnostic-observer.ts" />
+
+## Recommended event shape
+
+Add application release, schema ID/version, adapter name, route family, and a
+correlation ID that does not identify a person. Keep `code`, `severity`, and a
+sanitized structural location. Avoid snapshot values, event payloads,
+serialized envelopes, validation metadata, extension state, and user-entered
+issue messages by default.
+
+Diagnostic messages can include text from exceptions thrown by application
+schema factories, predicates, reducers, transforms, guards, or presentation
+callbacks. Treat `message` as potentially sensitive and redact it before
+third-party export.
+
+## Locate a failure
+
+<CheckedSource fixture="docs/examples/diagnostics.ts" region="diagnostic-troubleshooting" filename="diagnostic-location.ts" />
+
+A data path identifies the domain location in the failing revision. A node
+address identifies schema nodes and stable collection-row identities. Use both
+when available; after accepted reorder, a historical numeric path must be
+interpreted against that historical revision.
+
+Not every diagnostic means the same effect. Some reject one command or
+proposal, some suppress `onChange`, and schema failures retain the last valid
+tree. `schema.incompatible-identity` can accept a valid new tree while clearing
+stale metadata. Drive alerts and recovery from the catalog's effect, not from
+severity alone.
+
+## Separate operational streams
+
+- Validation issues describe user/domain validity and may be expected product
+  outcomes.
+- Diagnostics describe configuration, event, transform, navigation, or
+  recovery behavior inside a controller lifetime.
+- `SerializationError` and some codec/extension failures throw at the
+  persistence boundary.
+- Server saves, routing, storage, and remote-option failures are application
+  events, not core diagnostics.
+
+Keep those streams joinable by safe correlation metadata, but do not flatten
+them into one user-facing error channel.
+
+## Test and operations checklist
+
+- Generate one known code per subsystem and verify redaction and grouping.
+- Rate-limit repeated code plus structural-location pairs.
+- Alert on unexpected production codes; sample expected constraint rejection
+  if UI prevention already handles it.
+- Assert unsubscribe and controller destruction stop exports.
+- Exercise last-valid recovery and confirm a repaired input clears current
+  schema diagnostics even though occurrence logs remain historical.
+
+## Evidence
+
+Both observer and locator are compiled from `docs/examples/diagnostics.ts`.
+The catalog inventory is source-derived by the docs gate; callback delivery,
+snapshot deduplication, recovery, and all current codes are covered by core
+tests.
+
+**Next:** Close every subscription and external resource using
+[SSR and teardown](/recipes/ssr-and-teardown).

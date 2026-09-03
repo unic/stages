@@ -1,0 +1,68 @@
+# Localization
+
+**For:** Applications that switch field copy, validation messages, option
+labels, and number/date presentation at runtime.
+
+**Prerequisites:** [Dynamic configuration](/core-concepts/dynamic-configuration),
+[validation failures and localization](/validation/failures-and-localization),
+and a locale-aware field adapter.
+
+Pass the active locale, catalog, and formatting identifiers through context.
+Derive field props and issue messages from that context; let the field view
+format typed values for display without changing the canonical domain shape.
+
+<CheckedSource fixture="docs/examples/recipes.ts" region="localization" filename="localized-onboarding.ts" />
+
+## Separate four concerns
+
+| Concern | Recommended representation |
+| --- | --- |
+| Labels, descriptions, placeholders, option labels | Derived field props or application markup |
+| Validation copy | `ValidationIssue.message` from the current context catalog |
+| Stable analytics/business meaning | Locale-independent issue `code` and validator `id` |
+| Number/date display and parsing | Typed field view, with locale/currency/time-zone props |
+
+Keep canonical values typed and locale-neutral. The budget stays a number;
+`Intl.NumberFormat` affects presentation only. A localized numeric input must
+also define parsing and ambiguous-separator behavior in its adapter reducer.
+Dates and time zones need the same explicit domain policy.
+
+`controller.update({ context })` replaces the whole context, reevaluates
+dynamic props, cancels pending validation, and clears cached validation
+records. It does not call `onChange`. Run validation again when the UI should
+show messages in the new locale.
+
+## Catalog and failure policy
+
+Use a catalog lookup that has a deterministic fallback. Missing translations
+should be observable to the application's i18n tooling without throwing from a
+resolver in production. Keep server error codes stable and translate them at
+the application boundary; do not use localized text as an identifier.
+
+`validationFailureIssue` localizes failures thrown by validators or `when`
+callbacks. If that presentation callback itself fails, core uses a
+deterministic fallback issue and reports a diagnostic. That channel is
+separate from normal validation copy.
+
+## Accessibility and testing
+
+- Set the document or form language when the locale changes; translated text
+  alone does not update pronunciation rules.
+- Keep accessible names stable enough that a focused control is not surprising
+  after a locale switch.
+- Test plural forms, long labels, bidirectional layouts, unsupported locales,
+  formatting round trips, and catalog fallback.
+- Assert codes/IDs remain stable across locales and context updates never emit
+  domain-value proposals.
+- Revalidate after switching context and verify pending old-locale results
+  cannot publish.
+
+## Evidence
+
+The context, schema, validator, and view-formatting boundary is compiled from
+`docs/examples/recipes.ts`. Dynamic reevaluation, validation invalidation,
+failure fallback, and adapter prop delivery are covered by core and adapter
+tests.
+
+**Next:** Persist accepted locale-neutral values with
+[persistence and resume](/recipes/persistence-and-resume).
