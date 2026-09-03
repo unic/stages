@@ -20,6 +20,7 @@ import type {
   DeepReadonly,
   DynamicMetaSnapshot,
   FieldDefinition,
+  FieldValidator,
   FieldSnapshot,
   JsonValue,
   NodeAddress,
@@ -448,16 +449,50 @@ interface ValidationTarget {
   readonly disabled: boolean;
 }
 
+interface ValidationCandidate<TValue, TContext> {
+  readonly node: ValidationTarget;
+  readonly validator: ValidatorConfig<TValue, TContext>;
+  readonly identity: object;
+  readonly keyId: string;
+  readonly intrinsic: boolean;
+}
+
 function validatorsFor<TValue, TFields, TContext>(
   nodes: readonly NormalizedNode<TValue, TFields, TContext>[],
+  fields: TFields,
   rootValidators: readonly ValidatorConfig<TValue, TContext>[] = [],
-): readonly Readonly<{ node: ValidationTarget; validator: ValidatorConfig<TValue, TContext> }>[] {
-  const output: Array<Readonly<{ node: ValidationTarget; validator: ValidatorConfig<TValue, TContext> }>> = [];
+): readonly ValidationCandidate<TValue, TContext>[] {
+  const output: ValidationCandidate<TValue, TContext>[] = [];
   const root: ValidationTarget = { path: [], address: [], visible: true, disabled: false };
-  for (const validator of rootValidators) output.push({ node: root, validator });
+  for (const validator of rootValidators) {
+    output.push({ node: root, validator, identity: validator, keyId: `config:${validator.id}`, intrinsic: false });
+  }
   for (const node of nodes) {
-    for (const validator of node.config.validators ?? []) output.push({ node, validator });
-    output.push(...validatorsFor(node.children));
+    for (const validator of node.config.validators ?? []) {
+      output.push({ node, validator, identity: validator, keyId: `config:${validator.id}`, intrinsic: false });
+    }
+    if (node.config.kind === "field") {
+      const definition = fieldDefinition(fields, node.config.type);
+      for (const fieldValidator of definition?.validators ?? []) {
+        const intrinsicValidator = fieldValidator as FieldValidator<unknown, unknown>;
+        const validator: ValidatorConfig<TValue, TContext> = {
+          id: fieldValidator.id,
+          on: [],
+          validate: ({ fieldValue }) => intrinsicValidator.validate(fieldValue, node.props).map((issue) => ({
+            ...issue,
+            path: node.path,
+          })),
+        };
+        output.push({
+          node,
+          validator,
+          identity: fieldValidator,
+          keyId: `field:${fieldValidator.id}`,
+          intrinsic: true,
+        });
+      }
+    }
+    output.push(...validatorsFor(node.children, fields));
   }
   return output;
 }
@@ -799,10 +834,10 @@ export function stages<TValue, TFields, TContext = unknown>(
   function recordIsCurrent(
     record: ValidationRecord,
     node: ValidationTarget,
-    validator: ValidatorConfig<TValue, TContext>,
+    validatorIdentity: object,
     currentValue: TValue,
   ): boolean {
-    return record.validator === validator
+    return record.validator === validatorIdentity
       && record.context === context
       && record.dependencyValues.length === record.dependencyPaths.length
       && deepEqual(record.dependencyValues, dependencyValues(record.dependencyPaths, currentValue))
@@ -855,9 +890,9 @@ export function stages<TValue, TFields, TContext = unknown>(
     let pendingCount = 0;
     let unknownCount = 0;
 
-    for (const { node, validator } of validatorsFor(result.nodes, result.schema.validators)) {
+    for (const { node, validator, identity, keyId } of validatorsFor(result.nodes, options.fields, result.schema.validators)) {
       if (!node.visible || (node.disabled && validator.includeDisabled !== true) || !inValidationScope(node, scope)) continue;
-      const key = validationRecordKey(node.address, validator.id);
+      const key = validationRecordKey(node.address, keyId);
       const record = validationRecords.get(key);
       let applicable = true;
       try {
@@ -874,7 +909,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         unknownCount += 1;
         continue;
       }
-      if (!recordIsCurrent(record, node, validator, currentValue)) {
+      if (!recordIsCurrent(record, node, identity, currentValue)) {
         record.cancel();
         validationRecords.delete(key);
         unknownCount += 1;
@@ -938,9 +973,9 @@ export function stages<TValue, TFields, TContext = unknown>(
     affectedPaths: readonly DataPath[] = [],
   ): Promise<void> {
     const pending: Promise<void>[] = [];
-    for (const { node, validator } of validatorsFor(result.nodes, result.schema.validators)) {
+    for (const { node, validator, identity, keyId, intrinsic } of validatorsFor(result.nodes, options.fields, result.schema.validators)) {
       if (!node.visible || (node.disabled && validator.includeDisabled !== true) || !inValidationScope(node, scope)) continue;
-      const key = validationRecordKey(node.address, validator.id);
+      const key = validationRecordKey(node.address, keyId);
       const previous = validationRecords.get(key);
       const paths = validatorPaths(node, validator);
       const relevant = force
@@ -950,7 +985,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       if (!relevant) continue;
       const revealRequested = reveal || eventNames(validator.revealOn).includes(event);
       const wasRevealed = revealedValidation.has(addressKey(node.address));
-      const shouldRun = force || eventNames(validator.on).includes(event);
+      const shouldRun = force || intrinsic || eventNames(validator.on).includes(event);
       const contextValue = validationContext(node, currentValue, event);
       let applicable = true;
       try {
@@ -960,7 +995,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         previous?.cancel();
         validationRecords.set(key, {
           address: node.address,
-          validator,
+          validator: identity,
           dependencyPaths: paths,
           dependencyValues: dependencyValues(paths, currentValue),
           context,
@@ -1001,12 +1036,12 @@ export function stages<TValue, TFields, TContext = unknown>(
         if (output !== null && typeof output === "object" && "then" in output) {
           validationRecords.set(key, {
             address: node.address,
-            validator,
+            validator: identity,
             dependencyPaths: paths,
             dependencyValues: values,
             context,
             status: "pending",
-            issues: previous !== undefined && recordIsCurrent(previous, node, validator, currentValue) ? previous.issues : [],
+            issues: previous !== undefined && recordIsCurrent(previous, node, identity, currentValue) ? previous.issues : [],
             revealed,
             token,
             cancel: cancellation.cancel,
@@ -1024,7 +1059,7 @@ export function stages<TValue, TFields, TContext = unknown>(
               if (destroyed) return;
               const record = validationRecords.get(key);
               const latestValue = proposal ?? value;
-              if (record?.token !== token || !recordIsCurrent(record, node, validator, latestValue)) return;
+              if (record?.token !== token || !recordIsCurrent(record, node, identity, latestValue)) return;
               validationRecords.set(key, { ...record, status: "complete", issues });
               revision += 1;
               dirtySnapshot = true;
@@ -1034,7 +1069,7 @@ export function stages<TValue, TFields, TContext = unknown>(
         } else {
           validationRecords.set(key, {
             address: node.address,
-            validator,
+            validator: identity,
             dependencyPaths: paths,
             dependencyValues: values,
             context,
@@ -1048,7 +1083,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       } catch (error) {
         validationRecords.set(key, {
           address: node.address,
-          validator,
+          validator: identity,
           dependencyPaths: paths,
           dependencyValues: values,
           context,

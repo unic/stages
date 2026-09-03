@@ -515,3 +515,60 @@ test("malformed sync and async validator results become deterministic issues", a
   assert.match(result.issues[0].message, /array of issues/);
   assert.match(result.issues[1].message, /malformed issue/);
 });
+
+test("registry field validators are reusable, path-aware, and independently keyed", async () => {
+  const calls = [];
+  const intrinsicFields = {
+    text: {
+      view: "text",
+      initialValue: "",
+      reduce: ({ event }) => event.name === "input" ? { value: event.payload } : undefined,
+      validators: [{
+        id: "required",
+        validate: (value, props) => {
+          calls.push([value, props.label]);
+          return value === "" ? [{ id: "required", code: "required", severity: "error" }] : [];
+        },
+      }],
+    },
+  };
+  const schema = {
+    id: "intrinsic-field-validation",
+    version: 1,
+    nodes: [
+      {
+        kind: "field",
+        id: "first",
+        type: "text",
+        props: { label: "First" },
+        validators: [{
+          id: "required",
+          on: "init",
+          validate: ({ path }) => [{ id: "configured", code: "configured", path, severity: "warning" }],
+        }],
+      },
+      { kind: "field", id: "second", type: "text", props: { label: "Second" } },
+    ],
+  };
+  let controller;
+  controller = stages({
+    schema,
+    fields: intrinsicFields,
+    value: { first: "", second: "" },
+    onChange: ({ value }) => controller.update({ value }),
+  });
+
+  assert.deepEqual(calls, [["", "First"], ["", "Second"]]);
+  assert.deepEqual(controller.getSnapshot().validation.issues.map(({ id, path }) => [id, path]), [
+    ["configured", ["first"]],
+    ["required", ["first"]],
+    ["required", ["second"]],
+  ]);
+
+  const revealed = await controller.validate({ reveal: true });
+  assert.equal(revealed.visibleIssues.length, 3);
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["first"] }, payload: "Ada" });
+  await tick();
+  assert.equal(controller.getSnapshot().nodes[0].state.issues.length, 0);
+  assert.deepEqual(controller.getSnapshot().nodes[1].state.issues.map(({ id }) => id), ["required"]);
+});

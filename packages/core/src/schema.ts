@@ -151,6 +151,28 @@ function hasField(fields: unknown, name: string): boolean {
   return fields !== null && typeof fields === "object" && Object.prototype.hasOwnProperty.call(fields, name);
 }
 
+function registeredField(fields: unknown, name: string): unknown {
+  return fields !== null && typeof fields === "object"
+    ? (fields as Readonly<Record<string, unknown>>)[name]
+    : undefined;
+}
+
+function validFieldDefinition(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (value["reduce"] !== undefined && typeof value["reduce"] !== "function") return false;
+  const validators = value["validators"];
+  if (validators === undefined) return true;
+  if (!Array.isArray(validators)) return false;
+  const ids = new Set<string>();
+  return validators.every((validator) => {
+    if (!isRecord(validator)) return false;
+    const id = validator["id"];
+    if (typeof id !== "string" || id.length === 0 || ids.has(id) || typeof validator["validate"] !== "function") return false;
+    ids.add(id);
+    return true;
+  });
+}
+
 interface WalkContext<TValue, TFields, TContext> {
   readonly value: DeepReadonly<TValue>;
   readonly context: DeepReadonly<TContext>;
@@ -232,6 +254,10 @@ function walkNodes<TValue, TFields, TContext>(
       }
       if (!hasField(walk.fields, config.type)) {
         walk.diagnostics.push(diagnostic("schema.unknown-field", `Unknown field type \"${config.type}\".`, path, address));
+        continue;
+      }
+      if (!validFieldDefinition(registeredField(walk.fields, config.type))) {
+        walk.diagnostics.push(diagnostic("schema.invalid-field-definition", `Field type "${config.type}" has an invalid definition.`, path, address));
         continue;
       }
     } else if (config.kind === "group") {

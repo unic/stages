@@ -54,7 +54,9 @@ address and round-trips through recreation without persisting validation
 results or ephemeral focus state. Runtime normalization now also guards every
 structural boundary: unknown kinds, malformed child arrays, union variants,
 wizard stages, and invalid collection item-key results become diagnostics and
-cannot displace a previously valid dynamic tree.
+cannot displace a previously valid dynamic tree. Registry-level field
+validators now run as reusable intrinsic validators with engine-assigned paths
+and independent identities from node-configured validators.
 
 ## 1. Outcome
 
@@ -545,9 +547,28 @@ interface FieldDefinition<TValue, TProps, TView> {
   reduce?: FieldEventReducer<TValue>;
   validators?: readonly FieldValidator<TValue, TProps>[];
 }
+
+type FieldValidationIssue = Omit<ValidationIssue, "path">;
+
+interface FieldValidator<TValue, TProps> {
+  id: string;
+  validate(
+    value: DeepReadonly<TValue>,
+    props: DeepReadonly<TProps>,
+  ): readonly FieldValidationIssue[];
+}
 ```
 
 The registry is passed to `stages()`. Its keys form the allowed `type` union in field configuration, and each entry carries its own value, props, event-payload, and view-token types. Public implementation code uses `unknown` at untrusted boundaries rather than `any`.
+
+Registry validators express synchronous constraints intrinsic to a field type.
+They run on initialization, explicit validation, and relevant field/form events.
+The engine attaches the normalized field path to every returned issue, so one
+definition can be reused at any nesting depth. They use the same result
+validation, disabled-node exclusion, aggregation, and reveal state as schema
+validators, while their cache identity is namespaced separately from node
+validator IDs. Presentation timing beyond explicit `validate({ reveal: true })`
+can be configured with a node validator when needed.
 
 A rendered field snapshot keeps engine state and user props separate:
 
@@ -1669,7 +1690,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 1 — Pure schema and value core | Mostly implemented | Safe segment-array paths, immutable set/remove patches, structural sharing, recursive normalization, dynamic factories and resolvers, stable row/node addresses, schema diagnostics, malformed-structure guards, and last-valid-tree recovery are implemented. | Complete explicit schema-diff reporting for every incompatible identity reuse and add broader reducer/property tests. |
 | Phase 2 — Controller, controlled handshake, and batching | Implemented | Per-instance controlled proposals, synchronous owner acceptance, rejected proposals, microtask transactions, explicit batching, value/context/schema updates, subscriptions, selector equality, reconciliation, reset, and teardown are implemented. | Add packed-package integration coverage and finalize callback-order documentation. |
 | Phase 3 — Events and transforms | Mostly implemented | Field reducers, form/field/node targeting, target-to-root transform ordering, sequential last-writer-wins patches, collection and wizard events, atomic value rejection, and reducer/transform/patch diagnostics are implemented. | Expand typed convenience APIs and migration fixtures for all documented 0.x processing patterns. |
-| Phase 4 — Validation | Mostly implemented | Root and node validators, `init`/event/reveal policies, disabled-node opt-in, dependencies, conditional applicability, scoped and per-stage aggregation, async cancellation, stale-result protection, runtime issue validation, and durable reveal state are implemented. | Integrate registry-level `FieldDefinition.validators`, finalize validation/system-issue customization, and broaden navigation/validation matrix tests. |
+| Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, and serialized identity are implemented. | Add exhaustive tests for every permitted container nesting permutation and finish higher-level adapter collection/wizard bindings. |
 | Phase 6 — Serialization | Mostly implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, and revealed validation addresses are implemented. | Add registered namespaced extension codecs and packed-artifact recreation tests. |
 | Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, and accessible issue relationships. React lifecycle, snapshot, selector, and field bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add focus/error navigation hooks, richer collection/wizard helpers, production examples, and migrate the demo applications to v1. |
@@ -1688,7 +1709,7 @@ currently an alpha foundation, not a release-ready v1 build.
 
 - `npm run check:v1` performs strict type checking for all four packages and
   builds their ESM declaration/output artifacts.
-- `npm run test:v1` builds the packages and currently runs 59 passing executable
+- `npm run test:v1` builds the packages and currently runs 61 passing executable
   tests across core, DOM, React, and the adapter test kit.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 

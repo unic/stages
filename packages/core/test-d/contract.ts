@@ -31,6 +31,12 @@ interface EditorToken { readonly component: "rich-editor" }
 const text: FieldDefinition<string, TextProps, string> = {
   view: "input",
   initialValue: "",
+  validators: [{
+    id: "text.non-empty",
+    validate: (value) => value.length === 0
+      ? [{ id: "text.non-empty", code: "required", severity: "error" }]
+      : [],
+  }],
   reduce({ event }) {
     return event.name === "input" && typeof event.payload === "string"
       ? { value: event.payload }

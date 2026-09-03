@@ -101,8 +101,13 @@ export type FieldRegistry = Readonly<Record<string, FieldDefinition<unknown, unk
 
 export interface FieldValidator<TValue, TProps> {
   readonly id: string;
-  readonly validate: (value: DeepReadonly<TValue>, props: DeepReadonly<TProps>) => readonly ValidationIssue[];
+  readonly validate: (
+    value: DeepReadonly<TValue>,
+    props: DeepReadonly<TProps>,
+  ) => readonly FieldValidationIssue[];
 }
+
+export type FieldValidationIssue = Omit<ValidationIssue, "path">;
 
 type DefinitionProps<TDefinition> = TDefinition extends FieldDefinition<infer _TValue, infer TProps, infer _TView>
   ? TProps

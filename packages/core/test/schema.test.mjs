@@ -209,3 +209,28 @@ test("normalization diagnoses malformed structural node payloads without throwin
     "schema.item-key-failed",
   ]);
 });
+
+test("normalization rejects malformed registry field validators", () => {
+  const result = evaluateSchema({
+    schema: {
+      id: "invalid-field-definition",
+      version: 1,
+      nodes: [{ kind: "field", id: "name", type: "broken" }],
+    },
+    value: { name: "" },
+    context: {},
+    meta,
+    fields: {
+      broken: {
+        view: "broken",
+        validators: [
+          { id: "same", validate: () => [] },
+          { id: "same", validate: () => [] },
+        ],
+      },
+    },
+  });
+
+  assert.deepEqual(result.diagnostics.map(({ code }) => code), ["schema.invalid-field-definition"]);
+  assert.deepEqual(result.nodes, []);
+});
