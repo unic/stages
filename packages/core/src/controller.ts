@@ -416,10 +416,20 @@ function mapSnapshotBranch<TValue, TFields, TContext>(
   };
 }
 
+interface ValidationTarget {
+  readonly path: DataPath;
+  readonly address: NodeAddress;
+  readonly visible: boolean;
+  readonly disabled: boolean;
+}
+
 function validatorsFor<TValue, TFields, TContext>(
   nodes: readonly NormalizedNode<TValue, TFields, TContext>[],
-): readonly Readonly<{ node: NormalizedNode<TValue, TFields, TContext>; validator: ValidatorConfig<TValue, TContext> }>[] {
-  const output: Array<Readonly<{ node: NormalizedNode<TValue, TFields, TContext>; validator: ValidatorConfig<TValue, TContext> }>> = [];
+  rootValidators: readonly ValidatorConfig<TValue, TContext>[] = [],
+): readonly Readonly<{ node: ValidationTarget; validator: ValidatorConfig<TValue, TContext> }>[] {
+  const output: Array<Readonly<{ node: ValidationTarget; validator: ValidatorConfig<TValue, TContext> }>> = [];
+  const root: ValidationTarget = { path: [], address: [], visible: true, disabled: false };
+  for (const validator of rootValidators) output.push({ node: root, validator });
   for (const node of nodes) {
     for (const validator of node.config.validators ?? []) output.push({ node, validator });
     output.push(...validatorsFor(node.children));
@@ -451,6 +461,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   let proposal: TValue | undefined;
   let transactionEvents: StagesEvent[] = [];
   let transactionPatches: StagesPatch[] = [];
+  let transactionSource: StagesChange<TValue>["source"] = "user";
   let transactionCollectionKeys: Map<string, CollectionKeyState> | undefined;
   let focused = new Map<string, NodeAddress>();
   let touched = new Map<string, NodeAddress>();
@@ -673,7 +684,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   }
 
   function reconcileInteraction(nodes: readonly NormalizedNode<TValue, TFields, TContext>[]): void {
-    const nextIdentities = new Map<string, string>();
+    const nextIdentities = new Map<string, string>([[addressKey([]), "root"]]);
     const collect = (items: readonly NormalizedNode<TValue, TFields, TContext>[]): void => {
       for (const node of items) {
         const key = addressKey(node.address);
@@ -737,7 +748,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   }
 
   function validatorPaths(
-    node: NormalizedNode<TValue, TFields, TContext>,
+    node: ValidationTarget,
     validator: ValidatorConfig<TValue, TContext>,
   ): readonly DataPath[] {
     const paths: DataPath[] = [node.path];
@@ -753,7 +764,7 @@ export function stages<TValue, TFields, TContext = unknown>(
 
   function recordIsCurrent(
     record: ValidationRecord,
-    node: NormalizedNode<TValue, TFields, TContext>,
+    node: ValidationTarget,
     validator: ValidatorConfig<TValue, TContext>,
     currentValue: TValue,
   ): boolean {
@@ -765,7 +776,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   }
 
   function validationContext(
-    node: NormalizedNode<TValue, TFields, TContext>,
+    node: ValidationTarget,
     currentValue: TValue,
     event: string,
     signal: ValidationCancellationSignal = passiveValidationSignal,
@@ -791,7 +802,7 @@ export function stages<TValue, TFields, TContext = unknown>(
   }
 
   function inValidationScope(
-    node: NormalizedNode<TValue, TFields, TContext>,
+    node: ValidationTarget,
     scope: ValidateOptions["scope"],
   ): boolean {
     if (scope === undefined || scope === "form") return true;
@@ -810,7 +821,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     let pendingCount = 0;
     let unknownCount = 0;
 
-    for (const { node, validator } of validatorsFor(result.nodes)) {
+    for (const { node, validator } of validatorsFor(result.nodes, result.schema.validators)) {
       if (!node.visible || !inValidationScope(node, scope)) continue;
       const key = validationRecordKey(node.address, validator.id);
       const record = validationRecords.get(key);
@@ -893,7 +904,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     affectedPaths: readonly DataPath[] = [],
   ): Promise<void> {
     const pending: Promise<void>[] = [];
-    for (const { node, validator } of validatorsFor(result.nodes)) {
+    for (const { node, validator } of validatorsFor(result.nodes, result.schema.validators)) {
       if (!node.visible || !inValidationScope(node, scope)) continue;
       const key = validationRecordKey(node.address, validator.id);
       const previous = validationRecords.get(key);
@@ -1068,7 +1079,7 @@ export function stages<TValue, TFields, TContext = unknown>(
           previousValue,
           patches: transactionPatches,
           events: transactionEvents,
-          source: "user",
+          source: transactionSource,
           transactionId: ++transactionId,
         };
         if (transactionCollectionKeys !== undefined) {
@@ -1093,6 +1104,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       flushing = false;
       transactionEvaluation = undefined;
       transactionCollectionKeys = undefined;
+      transactionSource = "user";
     }
     notify();
   }
@@ -1160,6 +1172,17 @@ export function stages<TValue, TFields, TContext = unknown>(
         ? allNodes.find((node) => addressKey(node.address) === addressKey(event.target.kind === "node" ? event.target.address : []))
         : undefined;
     let commandRejected = false;
+    const isReset = event.name === "reset" && event.target.kind === "form";
+
+    if (isReset) {
+      transactionSource = "reset";
+      focused.clear();
+      touched.clear();
+      visited.clear();
+      activeWizards.clear();
+      for (const record of validationRecords.values()) record.cancel();
+      validationRecords.clear();
+    }
 
     if (event.target.kind !== "form" && target === undefined) {
       commandRejected = event.name.startsWith("collection:") || event.name.startsWith("wizard:");
@@ -1184,8 +1207,8 @@ export function stages<TValue, TFields, TContext = unknown>(
       }
     }
 
-    let patches: readonly StagesPatch[] = [];
-    if (target?.config.kind === "field" && target.visible && !target.disabled) {
+    let patches: readonly StagesPatch[] = isReset ? [{ op: "set", path: [], value: baseline }] : [];
+    if (!isReset && target?.config.kind === "field" && target.visible && !target.disabled) {
       const definition = fieldDefinition(options.fields, target.config.type);
       const reduced = definition?.reduce?.({ value: getAtPath(draft, target.path), event, path: target.path });
       if (reduced !== undefined) {
@@ -1376,6 +1399,12 @@ export function stages<TValue, TFields, TContext = unknown>(
     diagnostics: [],
   };
   snapshot();
+  if (publishedEvaluation !== undefined) {
+    void runValidation(publishedEvaluation, value, "init", false, false);
+    validation = deriveValidation(publishedEvaluation, value);
+    dirtySnapshot = true;
+    snapshot();
+  }
 
   return {
     getSnapshot: snapshot,
@@ -1423,6 +1452,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       proposal = undefined;
       transactionEvents = [];
       transactionPatches = [];
+      transactionSource = "user";
       transactionEvaluation = undefined;
       transactionCollectionKeys = undefined;
       publishedEvaluation = undefined;

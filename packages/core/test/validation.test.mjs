@@ -14,6 +14,77 @@ const fields = {
   },
 };
 
+test("root validators participate in form validation and field events", async () => {
+  let calls = 0;
+  const schema = {
+    id: "root-validation",
+    version: 1,
+    validators: [{
+      id: "names-differ",
+      on: ["input", "submit"],
+      validate: ({ value, path, address, fieldValue }) => {
+        calls += 1;
+        assert.deepEqual(path, []);
+        assert.deepEqual(address, []);
+        assert.deepEqual(fieldValue, value);
+        return value.first === value.last
+          ? [{ id: "names-differ", code: "names-differ", path, severity: "error" }]
+          : [];
+      },
+    }],
+    nodes: [
+      { kind: "field", id: "first", type: "text" },
+      { kind: "field", id: "last", type: "text" },
+    ],
+  };
+  let controller;
+  controller = stages({
+    schema,
+    fields,
+    value: { first: "Ada", last: "Lovelace" },
+    onChange: ({ value }) => controller.update({ value }),
+  });
+
+  assert.equal((await controller.validate({ event: "submit" })).status, "valid");
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["last"] }, payload: "Ada" });
+  await tick();
+
+  assert.equal(calls, 2);
+  assert.equal(controller.getSnapshot().validation.status, "invalid");
+  assert.deepEqual(controller.getSnapshot().validation.issues[0].path, []);
+});
+
+test("init validation policies run once during controller creation", async () => {
+  let calls = 0;
+  const controller = stages({
+    schema: {
+      id: "init-validation",
+      version: 1,
+      validators: [{
+        id: "initial-check",
+        on: "init",
+        revealOn: "init",
+        validate: ({ path, event }) => {
+          calls += 1;
+          assert.equal(event, "init");
+          return [{ id: "initial-check", code: "initial-check", path, severity: "error" }];
+        },
+      }],
+      nodes: [],
+    },
+    fields: {},
+    value: { ready: false },
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(controller.getSnapshot().validation.status, "invalid");
+  assert.equal(controller.getSnapshot().validation.visibleIssues.length, 1);
+  controller.update({ value: { ready: true } });
+  await tick();
+  assert.equal(calls, 1);
+  assert.equal(controller.getSnapshot().validation.status, "unknown");
+});
+
 test("event and reveal policies keep issue execution separate from presentation", async () => {
   const schema = {
     id: "presentation",

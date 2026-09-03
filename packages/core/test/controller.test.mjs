@@ -80,6 +80,37 @@ test("synchronous acceptance and validation are deterministic", async () => {
   });
 });
 
+test("form reset proposes the baseline with reset source and clears interaction metadata", async () => {
+  const changes = [];
+  let controller;
+  controller = stages({
+    schema,
+    fields,
+    value: { count: 1 },
+    onChange: (change) => {
+      changes.push(change);
+      controller.update({ value: change.value });
+    },
+  });
+  controller.dispatch({ name: "focus", target: { kind: "field", path: ["count"] } });
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["count"] }, payload: 5 });
+  controller.dispatch({ name: "blur", target: { kind: "field", path: ["count"] } });
+  await tick();
+  assert.equal(controller.getSnapshot().value.count, 5);
+  assert.equal(controller.getSnapshot().nodes[0].state.touched, true);
+
+  controller.dispatch({ name: "reset", target: { kind: "form" } });
+  await tick();
+
+  assert.equal(changes.length, 2);
+  assert.equal(changes[1].source, "reset");
+  assert.deepEqual(changes[1].value, { count: 1 });
+  assert.deepEqual(changes[1].patches, [{ op: "set", path: [], value: { count: 1 } }]);
+  assert.equal(controller.getSnapshot().value.count, 1);
+  assert.equal(controller.getSnapshot().nodes[0].state.focused, false);
+  assert.equal(controller.getSnapshot().nodes[0].state.touched, false);
+});
+
 test("serialization rejects values that JSON would silently lose", () => {
   const controller = stages({ schema, fields, value: { count: Number.NaN } });
   assert.throws(() => controller.serialize(), /Non-finite number at \["count"\]/);

@@ -39,7 +39,10 @@ signal; dependency invalidation, superseding runs, structural removal, and
 controller teardown cancel pending work in addition to suppressing stale
 results. Invalid dynamic schema revisions retain the previous valid normalized
 tree and publish structured factory, resolver, or root-identity diagnostics
-until configuration recovers.
+until configuration recovers. Root validators now share the same indexed
+execution model as node validators, `init` policies run at controller creation,
+and form reset is a controlled baseline proposal with reset transaction
+provenance and cleared interaction metadata.
 
 ## 1. Outcome
 
