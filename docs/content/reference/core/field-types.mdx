@@ -1,6 +1,8 @@
 ---
 title: Field types
 description: Exact field definition, registry, reducer, and intrinsic validator types from @stages/core.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Field types
@@ -75,12 +77,15 @@ type FieldEventReducer<TValue = unknown> = (
 ```
 
 `value` is the current field value and `path` is its current data path. The
-event has an open name and payload, so reducers must narrow both before using
+`event` has an open name and payload, so reducers must narrow both before using
 them.
 
 - Returning `{ value }` proposes a set patch at the current field path.
 - Returning `{ patches }` proposes the listed form-level patches in order.
 - Returning `undefined` means the reducer did not handle the event.
+
+The two handled-result members are `value` and `patches`; they are mutually
+exclusive branches.
 
 A thrown reducer rejects the value transaction and emits
 `field.reducer-failed`. An unsafe returned patch rejects it and emits
@@ -118,6 +123,9 @@ object for that field evaluation. The validator is synchronous and does not
 receive form context, event policy, dependencies, disabled inclusion, or an
 async cancellation signal. Use `ValidatorConfig` on a node or the root when
 those capabilities are required.
+
+The pathless issue retains `id`, `code`, `severity`, optional `message`, and
+optional `meta` from `ValidationIssue`.
 
 Intrinsic field validators and configured node validators use separate
 internal namespaces, so equal validator IDs across the two categories do not

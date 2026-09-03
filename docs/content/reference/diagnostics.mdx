@@ -1,3 +1,10 @@
+---
+title: Diagnostic reference
+description: Exact shape, trigger, effect, location, and recovery for every Stages diagnostic code.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
 # Diagnostic reference
 
 **For:** Developers looking up an exact diagnostic shape, trigger, location,
@@ -25,6 +32,9 @@ interface Diagnostic {
 | `severity` | `"error"` or `"warning"`; every built-in code below currently reports `"error"` |
 | `path` | Domain-data location for the failing revision |
 | `address` | Stable schema-node/row location where one is known |
+
+The public severity literals are `error` and `warning`; all built-in
+diagnostics currently use `error`.
 
 The controller supplies diagnostics through `StagesOptions.onDiagnostic` and
 `StagesSnapshot.diagnostics`. See the guide for callback deduplication and the

@@ -1,3 +1,10 @@
+---
+title: Serialization errors
+description: Stable codes, paths, triggers, and recovery for serialization failures.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
 # Serialization errors
 
 **For:** Developers implementing recovery, telemetry, and user feedback around
@@ -85,5 +92,8 @@ need a separate retry policy.
 The docs gate derives this complete code inventory from core serialization and
 controller source. Focused tests cover JSON safety, envelope validation,
 migration graph failures, and extension codec failures.
+
+See [serialize and recreate](/persistence/serialization) for the checked load
+boundary that handles these codes.
 
 **Next:** Apply these errors in the [storage and autosave guide](/persistence/storage-and-autosave).

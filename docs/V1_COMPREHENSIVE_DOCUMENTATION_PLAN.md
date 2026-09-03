@@ -1166,11 +1166,11 @@ an indexed answer or an explicit boundary statement.
 
 ### Phase 9 — Complete and lock the reference
 
-- [ ] Publish every runtime export, type export, public member, event, code, and
+- [x] Publish every runtime export, type export, public member, event, code, and
   compatibility statement in reference pages.
-- [ ] Make the coverage gate derive exports and fail on omissions.
-- [ ] Add version/review metadata to normative pages.
-- [ ] Review cross-links from guides to reference and reference to examples.
+- [x] Make the coverage gate derive exports and fail on omissions.
+- [x] Add version/review metadata to normative pages.
+- [x] Review cross-links from guides to reference and reference to examples.
 
 Exit criterion: the coverage manifest is 100% complete and the CI check can
 prove that no exported or recognized public contract is undocumented.

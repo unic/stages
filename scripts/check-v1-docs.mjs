@@ -55,9 +55,41 @@ const routeFor = (relativePath) => {
 };
 const routes = new Set(guideEntries.map(({ relativePath }) => routeFor(relativePath)));
 
+function headingAnchor(text) {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/[`*_~]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+function pageAnchors(source) {
+  const anchors = new Set();
+  const occurrences = new Map();
+  for (const match of source.matchAll(/^#{1,6}\s+(.+)$/gm)) {
+    const base = headingAnchor(match[1]);
+    if (base.length === 0) continue;
+    const occurrence = occurrences.get(base) ?? 0;
+    occurrences.set(base, occurrence + 1);
+    anchors.add(occurrence === 0 ? base : `${base}-${occurrence}`);
+  }
+  return anchors;
+}
+
+const anchorsByRoute = new Map(
+  guideEntries.map(({ relativePath, source }) => [routeFor(relativePath), pageAnchors(source)]),
+);
+
 for (const { relativePath, source } of guideEntries) {
-  for (const match of source.matchAll(/\]\((\/[a-zA-Z0-9_./-]+)(?:#[a-zA-Z0-9_-]+)?\)/g)) {
-    assert.ok(routes.has(match[1]), `${relativePath} links to missing route ${match[1]}`);
+  for (const match of source.matchAll(/\]\((\/[a-zA-Z0-9_./-]+)(?:#([a-zA-Z0-9_-]+))?\)/g)) {
+    const [, route, anchor] = match;
+    assert.ok(routes.has(route), `${relativePath} links to missing route ${route}`);
+    if (anchor !== undefined) {
+      assert.ok(anchorsByRoute.get(route)?.has(anchor), `${relativePath} links to missing anchor ${route}#${anchor}`);
+    }
   }
 }
 
@@ -158,6 +190,7 @@ const completePagePaths = [
   "reference/standard-events.mdx",
   "reference/diagnostics.mdx",
   "reference/serialization-errors.mdx",
+  "reference/package-compatibility.mdx",
   "project/architecture.mdx",
   "project/core-boundaries.mdx",
   "project/performance.mdx",
@@ -235,9 +268,17 @@ for (const packageRecord of manifest.packages) {
   assert.equal(new Set(keys).size, keys.length, `${packageRecord.package} has duplicate manifest exports`);
   for (const item of packageRecord.exports) {
     assert.ok(manifest.statusValues.includes(item.status), `${packageRecord.package}:${item.symbol} has invalid status`);
+    assert.equal(item.status, "complete", `${packageRecord.package}:${item.symbol} is not fully documented`);
     const reference = item.reference || packageRecord.defaultReference;
     assert.ok(reference, `${packageRecord.package}:${item.symbol} has no reference route`);
-    assert.ok(routes.has(reference.split("#")[0]), `${packageRecord.package}:${item.symbol} has an invalid reference route ${reference}`);
+    const [referenceRoute, referenceAnchor] = reference.split("#");
+    assert.ok(routes.has(referenceRoute), `${packageRecord.package}:${item.symbol} has an invalid reference route ${reference}`);
+    if (referenceAnchor !== undefined) {
+      assert.ok(
+        anchorsByRoute.get(referenceRoute)?.has(referenceAnchor),
+        `${packageRecord.package}:${item.symbol} has an invalid reference anchor ${reference}`,
+      );
+    }
     if (item.guide) assert.ok(routes.has(item.guide), `${packageRecord.package}:${item.symbol} has an invalid guide route ${item.guide}`);
   }
   const sourceExports = await entrypointExports(packageRecord.entrypoint);
@@ -245,6 +286,39 @@ for (const packageRecord of manifest.packages) {
     sourceExports.map(({ kind, symbol }) => `${kind}:${symbol}`),
     keys,
     `${packageRecord.package} public exports`,
+  );
+}
+
+const referencesByGuide = new Map();
+const guidesByReference = new Map();
+for (const packageRecord of manifest.packages) {
+  for (const item of packageRecord.exports) {
+    if (item.guide === undefined) continue;
+    const referenceRoute = (item.reference || packageRecord.defaultReference).split("#")[0];
+    const guideReferences = referencesByGuide.get(item.guide) ?? new Set();
+    guideReferences.add(referenceRoute);
+    referencesByGuide.set(item.guide, guideReferences);
+    const referenceGuides = guidesByReference.get(referenceRoute) ?? new Set();
+    referenceGuides.add(item.guide);
+    guidesByReference.set(referenceRoute, referenceGuides);
+  }
+}
+for (const [guideRoute, referenceRoutes] of referencesByGuide) {
+  const guideSource = guideEntries.find(({ relativePath }) => routeFor(relativePath) === guideRoute)?.source;
+  assert.ok(guideSource, `missing guide source for ${guideRoute}`);
+  for (const referenceRoute of referenceRoutes) {
+    assert.ok(
+      guideSource.includes(`](${referenceRoute}`),
+      `${guideRoute} does not link to its normative reference ${referenceRoute}`,
+    );
+  }
+}
+for (const [referenceRoute, guideRoutes] of guidesByReference) {
+  const referenceSource = guideEntries.find(({ relativePath }) => routeFor(relativePath) === referenceRoute)?.source;
+  assert.ok(referenceSource, `missing reference source for ${referenceRoute}`);
+  assert.ok(
+    [...guideRoutes].some((guideRoute) => referenceSource.includes(`](${guideRoute}`)),
+    `${referenceRoute} does not link to any checked usage guide`,
   );
 }
 
@@ -362,19 +436,235 @@ for (const packageRecord of manifest.packages) {
 for (const nonFeature of manifest.contracts.architectureNonFeatures) {
   assert.ok(boundaryPage.includes(nonFeature), `core boundaries are missing ${nonFeature}`);
 }
-const packageVersions = await Promise.all(
+const packageManifests = await Promise.all(
   ["core", "dom", "react", "test-kit"].map(async (name) =>
-    JSON.parse(await readRoot(`packages/${name}/package.json`)).version),
+    JSON.parse(await readRoot(`packages/${name}/package.json`))),
 );
+const packageVersions = packageManifests.map(({ version }) => version);
 assert.equal(new Set(packageVersions).size, 1, "v1 package versions must stay aligned");
 assert.ok(releaseStatusPage.includes(`\`${packageVersions[0]}\``), "release status has a stale package version");
+const compatibilityPage = guideEntries.find(
+  ({ relativePath }) => relativePath === "reference/package-compatibility.mdx",
+)?.source;
+assert.ok(compatibilityPage, "missing package compatibility reference");
+for (const packageManifest of packageManifests) {
+  assert.equal(packageManifest.type, "module", `${packageManifest.name} must stay ESM`);
+  assert.equal(packageManifest.sideEffects, false, `${packageManifest.name} sideEffects changed`);
+  assert.equal(packageManifest.exports?.["."]?.types, "./dist/index.d.ts", `${packageManifest.name} types export changed`);
+  assert.equal(packageManifest.exports?.["."]?.import, "./dist/index.js", `${packageManifest.name} import export changed`);
+  assert.ok(compatibilityPage.includes(`\`${packageManifest.name}\``), `compatibility is missing ${packageManifest.name}`);
+  assert.ok(compatibilityPage.includes(`\`${packageManifest.version}\``), `compatibility is missing ${packageManifest.version}`);
+  if (packageManifest.name === "@stages/core") {
+    assert.equal(packageManifest.dependencies, undefined, "core gained a runtime dependency");
+  } else {
+    const coreVersion = packageManifest.dependencies?.["@stages/core"];
+    assert.equal(coreVersion, packageManifest.version, `${packageManifest.name} core dependency is not aligned`);
+    assert.ok(
+      compatibilityPage.includes(`\`@stages/core@${coreVersion}\``),
+      `compatibility is missing ${packageManifest.name} core dependency`,
+    );
+  }
+  for (const [peer, range] of Object.entries(packageManifest.peerDependencies ?? {})) {
+    assert.ok(
+      compatibilityPage.includes(`\`${peer}@${range}\``),
+      `compatibility is missing ${packageManifest.name} peer ${peer}@${range}`,
+    );
+  }
+}
+for (const statement of ["ESM-only", "ES2020", "Browser DOM globals", "CommonJS", "TypeScript"] ) {
+  assert.ok(compatibilityPage.includes(statement), `compatibility is missing ${statement}`);
+}
+assert.match(manifest.reviewed, /^\d{4}-\d{2}-\d{2}$/, "coverage manifest needs an ISO review date");
+const escapedPackageVersion = packageVersions[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const referenceEntries = guideEntries.filter(({ relativePath }) => relativePath.startsWith(`reference${path.sep}`));
+for (const { relativePath, source } of referenceEntries) {
+  const frontmatter = source.match(/^---\n([\s\S]*?)\n---/)?.[1];
+  assert.ok(frontmatter, `${relativePath} has no reference frontmatter`);
+  assert.match(frontmatter, /^title:\s+.+$/m, `${relativePath} has no reference title metadata`);
+  assert.match(frontmatter, /^description:\s+.+$/m, `${relativePath} has no reference description metadata`);
+  assert.match(
+    frontmatter,
+    new RegExp(`^apiVersion:\\s+${escapedPackageVersion}$`, "m"),
+    `${relativePath} does not target the current aligned package version`,
+  );
+  assert.match(
+    frontmatter,
+    new RegExp(`^lastReviewed:\\s+${manifest.reviewed}$`, "m"),
+    `${relativePath} review metadata is stale`,
+  );
+}
 
-const [controllerSource, schemaSource, collectionSource, serializationSource] = await Promise.all([
+const [controllerSource, schemaSource, collectionSource, serializationSource, eventSource] = await Promise.all([
   readRoot("packages/core/src/controller.ts"),
   readRoot("packages/core/src/schema.ts"),
   readRoot("packages/core/src/collections.ts"),
   readRoot("packages/core/src/serialization.ts"),
+  readRoot("packages/core/src/events.ts"),
 ]);
+
+function exportedInterfaceNames(source) {
+  return [...source.matchAll(/\bexport\s+interface\s+([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1]);
+}
+
+function memberReferencePattern(member) {
+  const escapedMember = member.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\\`${escapedMember}(?:\\(\\))?\\\``);
+}
+
+const publicInterfaceSources = [
+  { packageName: "@stages/core", sources: [controllerTypes, schemaSource, eventSource] },
+  { packageName: "@stages/react", sources: [reactSource] },
+  { packageName: "@stages/dom", sources: [domSource] },
+  { packageName: "@stages/test-kit", sources: [testKitSource] },
+];
+let publicInterfaceMemberCount = 0;
+for (const { packageName, sources } of publicInterfaceSources) {
+  const packageRecord = manifest.packages.find(({ package: current }) => current === packageName);
+  assert.ok(packageRecord, `missing package coverage for ${packageName}`);
+  for (const source of sources) {
+    for (const interfaceName of exportedInterfaceNames(source)) {
+      const exportRecord = packageRecord.exports.find(
+        ({ kind, symbol }) => kind === "type" && symbol === interfaceName,
+      );
+      assert.ok(exportRecord, `${packageName}:${interfaceName} has no coverage record`);
+      const members = publicInterfaceMembers(source, interfaceName);
+      const referenceRoute = (exportRecord.reference || packageRecord.defaultReference).split("#")[0];
+      const referenceSource = guideEntries.find(({ relativePath }) => routeFor(relativePath) === referenceRoute)?.source;
+      assert.ok(referenceSource, `${packageName}:${interfaceName} has no readable reference page`);
+      for (const member of members) {
+        assert.match(
+          referenceSource,
+          memberReferencePattern(member),
+          `${referenceRoute} is missing ${interfaceName}.${member}`,
+        );
+        publicInterfaceMemberCount += 1;
+      }
+    }
+  }
+}
+
+function exportedDeclaration(source, name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`\\bexport\\s+(?:type|interface)\\s+${escapedName}\\b`).exec(source);
+  assert.ok(match, `could not find exported declaration ${name}`);
+  const from = match.index;
+  const nextExport = /\nexport\s+(?:type|interface|class|function|const)\s+/.exec(source.slice(from + match[0].length));
+  return nextExport === null
+    ? source.slice(from)
+    : source.slice(from, from + match[0].length + nextExport.index);
+}
+
+const literalSourceByName = new Map([
+  ...["NodeAddressSegment", "Diagnostic", "StagesEventSource", "StagesEventTarget", "StagesPatch",
+    "ValidationIssue", "ValidationSnapshot", "FieldSnapshot", "ContainerSnapshot", "StagesChange"]
+    .map((name) => [name, controllerTypes]),
+  ["NormalizedBranch", schemaSource],
+  ["CollectionCommand", collectionSource],
+]);
+let literalValueCount = 0;
+const corePackage = manifest.packages.find(({ package: packageName }) => packageName === "@stages/core");
+assert.ok(corePackage, "missing core package coverage record");
+for (const [contract, expectedValues] of Object.entries(manifest.contracts.literalValues)) {
+  const [name, member] = contract.split(".");
+  const source = literalSourceByName.get(name);
+  assert.ok(source, `missing literal source mapping for ${contract}`);
+  const declaration = exportedDeclaration(source, name);
+  let literalSource = declaration;
+  if (member !== undefined) {
+    const escapedMember = member.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    literalSource = [...declaration.matchAll(new RegExp(`\\b${escapedMember}\\??\\s*:\\s*([^;\\n}]+)`, "g"))]
+      .map((match) => match[1])
+      .join("\n");
+    assert.ok(literalSource.length > 0, `could not find ${contract}`);
+  }
+  const actualValues = [...literalSource.matchAll(/["']([^"']+)["']/g)].map((match) => match[1]);
+  assertSameInventory(actualValues, expectedValues, `${contract} literal values`);
+  const exportRecord = corePackage.exports.find(({ kind, symbol }) => kind === "type" && symbol === name);
+  assert.ok(exportRecord, `@stages/core:${name} has no coverage record`);
+  const referenceRoute = (exportRecord.reference || corePackage.defaultReference).split("#")[0];
+  const referenceSource = guideEntries.find(({ relativePath }) => routeFor(relativePath) === referenceRoute)?.source;
+  assert.ok(referenceSource, `${name} has no readable reference page`);
+  for (const value of expectedValues) {
+    assert.ok(referenceSource.includes(`\`${value}\``), `${referenceRoute} is missing ${contract} literal ${value}`);
+    literalValueCount += 1;
+  }
+}
+
+function namedDeclaration(source, name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`(?:^|\\n)(?:export\\s+)?(?:type|interface)\\s+${escapedName}\\b`).exec(source);
+  assert.ok(match, `could not find declaration ${name}`);
+  const from = match.index;
+  const remainder = source.slice(from + match[0].length);
+  const next = /\n(?:export\s+)?(?:type|interface|class|function|const)\s+/.exec(remainder);
+  return next === null ? source.slice(from) : source.slice(from, from + match[0].length + next.index);
+}
+
+function declaredObjectMembers(source, name) {
+  return [...namedDeclaration(source, name).matchAll(
+    /(?:\{|;)\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\??\s*:/g,
+  )].map((match) => match[1]);
+}
+
+function exportedTypeAliasNames(source) {
+  return [...source.matchAll(/\bexport\s+type\s+([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1]);
+}
+
+const typeAliasMemberSources = new Map([
+  ["NodeAddressSegment", { declarations: [[controllerTypes, "NodeAddressSegment"]] }],
+  ["StagesEventTarget", { declarations: [[controllerTypes, "StagesEventTarget"]] }],
+  ["StagesPatch", { declarations: [[controllerTypes, "StagesPatch"]] }],
+  ["FieldReduceResult", { declarations: [[controllerTypes, "FieldReduceResult"]] }],
+  ["FieldValidationIssue", { declarations: [[controllerTypes, "ValidationIssue"]], omit: ["path"] }],
+  ["FieldNodeConfig", {
+    declarations: [[controllerTypes, "NodeBehavior"], [controllerTypes, "FieldNodeConfig"]],
+  }],
+  ["CollectionNodeConfig", {
+    declarations: [
+      [controllerTypes, "NodeBehavior"],
+      [controllerTypes, "CollectionNodeBase"],
+      [controllerTypes, "CollectionNodeConfig"],
+    ],
+  }],
+  ["StagesOptions", {
+    declarations: [[controllerTypes, "StagesCommonOptions"], [controllerTypes, "StagesOptions"]],
+  }],
+  ["CollectionCommand", { declarations: [[collectionSource, "CollectionCommand"]] }],
+  ["CollectionCommandResult", { declarations: [[collectionSource, "CollectionCommandResult"]] }],
+]);
+let typeAliasMemberCount = 0;
+const directObjectAliasNames = [controllerTypes, collectionSource]
+  .flatMap((source) => exportedTypeAliasNames(source)
+    .filter((name) => declaredObjectMembers(source, name).length > 0));
+assertSameInventory(
+  [...directObjectAliasNames, "FieldValidationIssue"],
+  Object.keys(manifest.contracts.typeAliasMembers),
+  "public object-union type aliases",
+);
+for (const [name, expectedMembers] of Object.entries(manifest.contracts.typeAliasMembers)) {
+  const config = typeAliasMemberSources.get(name);
+  assert.ok(config, `missing type-alias member source mapping for ${name}`);
+  const omitted = new Set(config.omit ?? []);
+  const actualMembers = config.declarations
+    .flatMap(([source, declarationName]) => declaredObjectMembers(source, declarationName))
+    .filter((member) => !omitted.has(member));
+  assertSameInventory(actualMembers, expectedMembers, `${name} object members`);
+  const exportRecord = corePackage.exports.find(({ kind, symbol }) => kind === "type" && symbol === name);
+  assert.ok(exportRecord, `@stages/core:${name} has no coverage record`);
+  const referenceRoute = (exportRecord.reference || corePackage.defaultReference).split("#")[0];
+  const referenceSource = guideEntries.find(({ relativePath }) => routeFor(relativePath) === referenceRoute)?.source;
+  assert.ok(referenceSource, `${name} has no readable reference page`);
+  for (const member of expectedMembers) {
+    assert.match(
+      referenceSource,
+      memberReferencePattern(member),
+      `${referenceRoute} is missing ${name}.${member}`,
+    );
+    typeAliasMemberCount += 1;
+  }
+}
 const diagnosticCodes = [...`${controllerSource}\n${schemaSource}\n${collectionSource}`.matchAll(
   /["']((?:schema|event|collection|field|transform|validation|wizard)\.[a-z0-9-]+)["']/g,
 )].map((match) => match[1]);
@@ -733,5 +1023,5 @@ const domMemberCount = Object.values(manifest.contracts.domMembers)
 const testKitMemberCount = Object.values(manifest.contracts.testKitMembers)
   .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${reactMemberCount} React members, ${domMemberCount} DOM members, ${testKitMemberCount} test-kit members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${referenceEntries.length} versioned references, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${publicInterfaceMemberCount} public interface members, ${typeAliasMemberCount} public object-union members, ${literalValueCount} literal contract values, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${reactMemberCount} React members, ${domMemberCount} DOM members, ${testKitMemberCount} test-kit members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

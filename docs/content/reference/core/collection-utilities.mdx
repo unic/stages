@@ -1,6 +1,8 @@
 ---
 title: Collection utilities
 description: Exact reduceCollectionCommand, CollectionCommand, and CollectionCommandResult contracts.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Collection utilities
@@ -43,9 +45,15 @@ function reduceCollectionCommand(
 | `command` | One discriminated positional operation. The TypeScript surface is intentionally item-type agnostic. |
 | `constraints` | Optional command gates. Defaults to `{}`; the helper assumes supplied bounds are already valid. |
 
+Every command has a `name` discriminator. Variant payload members are `item`,
+`index`, `toIndex`, `from`, `to`, and `order` as shown in the signature.
+
 The result must be narrowed through `accepted`. Success owns a new shallow
 array. Rejection owns a stable code/message and no value member. Rejections are
 ordinary return values, not diagnostics or thrown exceptions.
+
+The accepted result exposes `value`; the rejected result exposes `code` and
+`message`.
 
 ## Checked example
 

@@ -156,6 +156,32 @@
       "StagesController.serialize",
       "StagesController.destroy"
     ],
+    "literalValues": {
+      "NodeAddressSegment.kind": ["node", "row"],
+      "Diagnostic.severity": ["error", "warning"],
+      "StagesEventSource": ["user", "adapter", "system"],
+      "StagesEventTarget.kind": ["field", "node", "form"],
+      "StagesPatch.op": ["set", "remove"],
+      "ValidationIssue.severity": ["error", "warning"],
+      "ValidationSnapshot.status": ["valid", "invalid", "pending", "unknown"],
+      "FieldSnapshot.kind": ["field"],
+      "ContainerSnapshot.kind": ["group", "collection", "wizard", "stage", "row"],
+      "StagesChange.source": ["user", "external", "restore", "reset"],
+      "NormalizedBranch.kind": ["row", "stage"],
+      "CollectionCommand.name": ["collection:add", "collection:remove", "collection:replace", "collection:duplicate", "collection:move", "collection:sort"]
+    },
+    "typeAliasMembers": {
+      "NodeAddressSegment": ["kind", "id"],
+      "StagesEventTarget": ["kind", "path", "address"],
+      "StagesPatch": ["op", "path", "value"],
+      "FieldReduceResult": ["value", "patches"],
+      "FieldValidationIssue": ["id", "code", "severity", "message", "meta"],
+      "FieldNodeConfig": ["when", "disabled", "transforms", "validators", "kind", "id", "type", "props", "deriveProps"],
+      "CollectionNodeConfig": ["when", "disabled", "transforms", "validators", "kind", "id", "min", "max", "itemKey", "nodes", "discriminator", "variants"],
+      "StagesOptions": ["schema", "fields", "context", "onChange", "onDiagnostic", "validationFailureIssue", "codec", "migrations", "extensionCodecs", "extensions", "value", "state"],
+      "CollectionCommand": ["name", "item", "index", "toIndex", "from", "to", "order"],
+      "CollectionCommandResult": ["accepted", "value", "code", "message"]
+    },
     "snapshotMembers": {
       "StagesSnapshot": ["value", "revision", "nodes", "validation", "diagnostics"],
       "FieldSnapshot": ["kind", "id", "type", "view", "path", "address", "value", "initialValue", "props", "state"],

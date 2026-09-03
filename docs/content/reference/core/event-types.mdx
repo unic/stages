@@ -1,6 +1,8 @@
 ---
 title: Event and processing types
 description: Exact event constructors, event types, targets, sources, reducer links, and transform types for @stages/core.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Event and processing types
@@ -37,6 +39,7 @@ interface StagesEvent<TPayload = unknown> {
 `source` is independent of `StagesChange.source`. It remains attached to the
 event in `change.events`; ordinary proposal changes currently use change source
 `"user"` regardless of whether an event says `"adapter"` or `"system"`.
+The literal source values are `user`, `adapter`, and `system`.
 
 ## `StagesEventTarget`
 
@@ -52,6 +55,8 @@ type StagesEventTarget =
 | `field` | Exact current normalized field at `path` |
 | `node` | Exact normalized node at `address`; collection commands additionally resolve row addresses to their collection/index |
 | `form` | Root scope; no node lookup |
+
+The `kind` discriminator selects exactly one of those three target shapes.
 
 Controller dispatch reports `event.target-missing` for a field/node target that
 cannot resolve. Collection/wizard commands with missing targets reject and skip
@@ -152,10 +157,11 @@ interface TransformConfig<TValue, TContext = unknown> {
 | `when` | Optional synchronous predicate evaluated against the latest transaction draft; exactly `false` skips processing. |
 | `apply` | Synchronous function returning ordered immutable patches. |
 
-The inherited resolver fields (`value`, `context`, `meta`, `path`, `address`,
-`fieldValue`, `parentValue`) describe the current transaction draft and
-resolved event target. `path` and `address` do not change as processing climbs
-through transforms owned by target ancestors.
+The `event` member is the triggering `StagesEvent`. The inherited resolver
+fields (`value`, `context`, `meta`, `path`, `address`, `fieldValue`,
+`parentValue`) describe the current transaction draft and resolved event
+target. `path` and `address` do not change as processing climbs through
+transforms owned by target ancestors.
 
 Transforms run target-to-root and in declaration order within one scope. A
 throw or invalid/unsafe returned patch records `transform.failed` and rolls

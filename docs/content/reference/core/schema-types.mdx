@@ -1,6 +1,8 @@
 ---
 title: Schema types
 description: Exact root, node, resolver, normalized-tree, and evaluation result types for @stages/core schemas.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Schema types
@@ -43,8 +45,8 @@ type StagesSchemaInput<TValue, TFields, TContext = unknown> =
 | `transforms` | Optional form-scope event transforms. |
 | `validators` | Optional form-scope validators. |
 
-A factory is evaluated with the current readonly value, context, and dynamic
-metadata. It must return an object; a throw or non-object return makes
+A factory is evaluated with the current readonly `value`, `context`, and
+dynamic `meta`. It must return an object; a throw or non-object return makes
 `evaluateSchema()` throw `TypeError`.
 
 ## Dynamic and resolver context
@@ -83,8 +85,9 @@ type DerivedProps<TValue, TContext = unknown> = (
 ```
 
 `fieldValue` is the value at `path`; `parentValue` is the value one segment
-above it. Predicates must return a boolean. `DerivedProps` must return an
-object, and its keys overwrite matching static field props.
+above it. `address` identifies the current schema node and stable collection
+rows. Predicates must return a boolean. `DerivedProps` must return an object,
+and its keys overwrite matching static field props.
 
 ## Common node behavior
 
@@ -128,8 +131,12 @@ interface GroupNodeConfig<TValue, TFields, TContext = unknown>
 ```
 
 The mapped field union is what checks `type` and `props` together when a
-concrete `typeof fields` registry is used. A group contributes its `id` to the
-data path and node address, then recursively evaluates `nodes`.
+concrete `typeof fields` registry is used. A group has `kind: "group"`,
+contributes its `id` to the data path and node address, then recursively
+evaluates `nodes`.
+
+A field's named members are `kind`, `id`, `type`, optional `props`, and
+optional `deriveProps`, in addition to the common node behavior above.
 
 ## Collection nodes
 
@@ -181,6 +188,10 @@ The discriminated form reads the named property from each row. Both the
 discriminator name and every variant key must be safe path segments, and each
 runtime discriminator value must name a configured variant.
 
+Homogeneous collections require `nodes` and exclude `discriminator` and
+`variants`; discriminated collections require `discriminator` plus `variants`
+and exclude `nodes`.
+
 ## Stage and wizard nodes
 
 ```ts
@@ -216,8 +227,10 @@ and node address. Unlike a full schema node, a stage only accepts `when` and
 `disabled`; it has no stage-level `transforms` or `validators` properties.
 
 `initialStage` selects the initial visible stage. Navigation can require
-current-stage validation, permit non-linear `wizard:go`, and synchronously
-guard a transition using the readonly form value.
+current-stage validation through `validateCurrent`, permit non-linear
+`wizard:go` through `nonLinear`, and synchronously `guard` a transition using
+the readonly form value. A wizard has `kind: "wizard"`; its `stages` are
+ordered, and its optional `navigation` object holds those policies.
 
 ## `NodeConfig`
 
@@ -268,6 +281,13 @@ Fields and groups use `children`; collections and wizards expose row/stage
 `branches`, whose children recurse again. Inspect `node.config.kind` to narrow
 a normalized node. These types serve tooling and engine adapters; application
 rendering normally consumes `RenderNodeSnapshot` instead.
+
+For `NormalizedNode`, `config` is the source node declaration, `address` is
+the stable structural location, and `visible` is the resolved predicate state.
+For `NormalizedBranch`, `kind` is `row` or `stage`, while `address` and
+`visible` have the same structural and resolved meanings. `EvaluatedSchema`
+returns the normalized root `schema`, recursive nodes, and all `diagnostics`
+reported during that evaluation.
 
 `EvaluateSchemaOptions` and evaluation failure behavior are documented with
 [`evaluateSchema()`](/reference/core/schema-utilities#evaluateschema).

@@ -1,6 +1,8 @@
 ---
 title: Snapshot types
 description: Exact root, field, container, validation, interaction, and dynamic metadata snapshot shapes from @stages/core.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Snapshot types
@@ -83,6 +85,8 @@ interface FieldSnapshot<TFieldValue = unknown, TView = unknown> {
 | `initialValue` | Baseline value at `path`, or registry default when the baseline path is `undefined`. |
 | `props` | Static props merged with derived props, with derived keys winning. |
 | `state` | Render/interaction/validation state described below. |
+
+The `kind` discriminator for this snapshot is `field`.
 
 `initialValue` is a dirty-comparison baseline; it does not populate a missing
 canonical field.

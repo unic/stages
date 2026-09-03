@@ -1,6 +1,8 @@
 ---
 title: Controller API
 description: Exact signatures, options, change records, methods, defaults, lifecycle, and failures for stages().
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # `stages()` and `StagesController`
@@ -62,10 +64,14 @@ interface StagesChange<TValue> {
 }
 ```
 
-`patches` and `events` preserve transaction order. `transactionId` increases
-per controller for value proposals. The record is a proposal; only
+`previousValue` is the canonical input used to produce `value`. `patches` and
+`events` preserve transaction order. `transactionId` increases per controller
+for value proposals. The record is a proposal; only
 `update({ value })` supplies a new canonical value. The current implementation
-uses `user` for ordinary proposals and `reset` for the form reset event.
+uses `source: "user"` for ordinary proposals and `source: "reset"` for the
+form reset event. The `source` union also reserves `external` and `restore` for
+change origins that do not currently produce `onChange` records. Its complete
+literal set is `user`, `external`, `restore`, and `reset`.
 `update()` and recreation do not call `onChange`, so they do not currently emit
 records with the declared `external` or `restore` source values.
 
@@ -228,3 +234,6 @@ Signatures come from
 Behavior and ordering come from
 [`controller.ts`](https://github.com/unic/stages/blob/master/packages/core/src/controller.ts)
 and focused controller/validation tests.
+
+See [build your first controller](/start/first-controller) for the compiled
+owner handshake that uses this surface.

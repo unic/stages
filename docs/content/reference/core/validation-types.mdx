@@ -1,6 +1,8 @@
 ---
 title: Validation types
 description: Exact intrinsic/configured validator, issue, cancellation, failure, snapshot, and validation option contracts.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Validation types
@@ -218,7 +220,8 @@ interface ValidationSnapshot {
 | `unknownCount` | Applicable validators without current records. |
 
 Counts remain populated under higher-precedence status. A warning-only result
-can be valid; an empty issue array can still be pending or unknown.
+can be valid; an empty issue array can still be pending or unknown. The exact
+status literals are `valid`, `invalid`, `pending`, and `unknown`.
 
 ## `ValidateOptions`
 

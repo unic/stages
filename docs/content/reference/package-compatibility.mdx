@@ -1,0 +1,105 @@
+---
+title: Package compatibility
+description: Version alignment, module format, dependencies, runtime environments, and support boundaries for the Stages v1 packages.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
+# Package compatibility
+
+**For:** Adopters, platform teams, and maintainers deciding whether the current
+Stages v1 packages fit a build and runtime environment.
+
+**Prerequisites:** [Installation](/start/installation) and the current
+[release status](/project/release-status).
+
+All four packages currently move as one `1.0.0-alpha.0` release unit. Keep
+their versions exactly aligned; adapter packages declare an exact dependency
+on the matching core version.
+
+## Package matrix
+
+| Package | Runtime dependency | Additional runtime/peer requirement | Intended environment |
+| --- | --- | --- | --- |
+| `@stages/core` | None | ES2020 JavaScript | Framework-neutral application, browser, worker, or server code |
+| `@stages/react` | `@stages/core@1.0.0-alpha.0` | Peer `react@>=17.0.0` | A React renderer and lifecycle |
+| `@stages/dom` | `@stages/core@1.0.0-alpha.0` | Browser DOM globals | Direct native-DOM rendering |
+| `@stages/test-kit` | `@stages/core@1.0.0-alpha.0` | None | Adapter tests or framework-neutral harnesses |
+
+`@stages/core` and `@stages/test-kit` compile without DOM library types.
+`@stages/dom` requires `Document`, `Element`, `HTMLElement`, and focus APIs.
+`@stages/react` is compiled with DOM types because its field IDs and common
+application views target browser React integrations, but core remains the
+portable state engine.
+
+## Module and export contract
+
+Every package is ESM-only (`"type": "module"`) and exposes one root entry:
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false
+}
+```
+
+Use `import`, not CommonJS `require()` or a global script build. The consuming
+toolchain must understand package `exports`, ESM, declaration entry points,
+and ES2020 output, or transpile that output for older targets. The manifests do
+not currently declare a Node `engines` range or a browser support matrix, so
+do not infer one from this page.
+
+`sideEffects: false` permits ordinary tree-shaking assumptions. It is not a
+promise that every call is pure: controllers own mutable lifetime state and
+adapters subscribe, render, and attach listeners when their APIs are invoked.
+
+## TypeScript contract
+
+Packages ship `.d.ts`, declaration maps, JavaScript source maps, and inline
+sources. Repository builds use strict TypeScript settings, including
+`noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. Published
+declarations are the compatibility surface; the repository's pinned compiler
+is verification evidence, not a declared minimum consumer TypeScript version.
+
+Use a modern `moduleResolution` mode that understands conditional exports.
+JavaScript consumers can call the runtime APIs, but TypeScript provides the
+intended registry/schema/value relationships and catches invalid event and
+adapter shapes earlier.
+
+## Version and prerelease policy
+
+`1.0.0-alpha.0` is an evaluation release, not the stable `1.0.0` compatibility
+promise. Pin exact prerelease versions, keep all `@stages/*` packages aligned,
+read release notes, and run integration/accessibility tests for every upgrade.
+Do not alias `react-stages` 0.x imports to these packages; use the explicit
+[0.x migration](/migration/from-0.x).
+
+A published version must never be overwritten. A faulty alpha should be
+deprecated and replaced by a new version. Stable promotion still requires the
+external-consumer and maintainer evidence listed in the release checklist.
+
+## What is not promised
+
+- CommonJS, UMD, global-script, or legacy `react-stages` API compatibility.
+- Built-in UI, CSS, routing, storage, autosave, network clients, or undo state.
+- Support for an undeclared Node/browser/TypeScript version merely because a
+  local build happens to succeed.
+- Independent adapter/core version skew.
+- Server use of the DOM adapter; server evaluation should use pure core APIs
+  and pass safe owner inputs to a client adapter.
+
+## Evidence
+
+Versions, `type`, `exports`, `sideEffects`, exact core dependencies, and the
+React peer range are derived from the four `packages/*/package.json` files.
+Runtime-library boundaries come from package TypeScript configurations and the
+architecture acceptance gate. Packed-consumer verification exercises the
+published entry-point shape offline.
+
+**Next:** Install an aligned set from [installation](/start/installation), or
+review outstanding promotion evidence in [release status](/project/release-status).

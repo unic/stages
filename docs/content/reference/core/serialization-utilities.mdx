@@ -1,3 +1,10 @@
+---
+title: Serialization utilities
+description: Exact JSON, envelope-validation, and migration utility contracts exported by @stages/core.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
 # Serialization utilities
 
 **For:** Developers validating stored input, building codecs, or running
@@ -100,5 +107,9 @@ Signatures and behavior are source-derived from
 `packages/core/src/serialization.ts` and covered by JSON, envelope, and
 migration tests. The boundary example is compiled from
 `docs/examples/persistence.ts`.
+
+See the task-oriented [serialization](/persistence/serialization),
+[value codec](/persistence/value-codecs), and [migration](/persistence/migrations)
+guides for complete checked examples.
 
 **Next:** Handle every stable [serialization error code](/reference/serialization-errors).

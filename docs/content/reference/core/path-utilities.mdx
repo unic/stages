@@ -1,6 +1,8 @@
 ---
 title: Path utilities
 description: Exact signatures, return identity, root behavior, and safety rules for @stages/core path helpers.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
 ---
 
 # Path utilities
@@ -35,7 +37,8 @@ type NodeAddress = readonly NodeAddressSegment[];
 
 These identity types are not inputs to the path helpers. They target
 structural nodes and stable collection rows, while `DataPath` targets current
-domain locations.
+domain locations. A segment `kind` is `node` for schema identity or `row` for
+a stable collection branch; `id` is that node or row's stable string identity.
 
 ## `StagesPatch`
 
@@ -45,7 +48,9 @@ type StagesPatch =
   | Readonly<{ op: "remove"; path: DataPath }>;
 ```
 
-Patches are consumed by `applyPatches()`, field reducers, and transforms.
+Patches are consumed by `applyPatches()`, field reducers, and transforms. The
+`op` discriminator is `set` when a `value` replaces one path and `remove` when
+that path is deleted. In both branches, `path` is the target `DataPath`.
 
 ## `getAtPath()`
 

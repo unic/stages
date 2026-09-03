@@ -28,6 +28,7 @@ source regions.
 | Native fields, accessibility, focus, inactive stages, custom DOM views | [DOM](/adapters/dom/mounting), [reference](/reference/dom) | Five checked TypeScript regions + adapter tests |
 | Framework-neutral adapter contract and test harness | [Custom adapters](/adapters/custom/contract), [reference](/reference/test-kit) | Four checked TypeScript regions + executable Vue/Angular-style proofs |
 | Pure core, responsibility boundaries, deliberate non-features, performance, release maturity | [Architecture](/project/architecture), [limits](/project/core-boundaries), [budgets](/project/performance), [status](/project/release-status) | Acceptance ledger + source-backed performance gate |
+| Package versions, ESM/export maps, dependencies, React peer, runtime boundaries, and prerelease policy | [Package compatibility](/reference/package-compatibility) | Source-derived package-manifest assertions + packed consumer |
 | Complete 0.x disposition, before/after tasks, application moves, and incremental rollout | [Migration](/migration/from-0.x), [rollout](/migration/rollout-checklist) | 85-concept inventory + six checked TypeScript regions |
 | Server ownership, async data, calculations, conditional UI, CRUD, checkout, accessibility, localization, resume, upgrades, history, routing, observability, SSR, and teardown | [Real-world recipes](/recipes) | 14-page inventory + 19 build-rendered strict TypeScript regions |
 | Path, schema, collection, serialization utility exports and public types | [Utilities](/utilities) | Executable package and property tests |
@@ -46,9 +47,13 @@ all diagnostic members, severities, codes, and catalog columns; checks nested
 React and DOM binding members; checks nested navigation routes; verifies displayed
 regions against strict TypeScript fixtures; and rejects known obsolete API
 names in normative pages. It also locks the 14-page recipe inventory and
-verifies every recipe's build-rendered fixture/region pair.
+verifies every recipe's build-rendered fixture/region pair. The reference lock
+now derives 241 public interface members, 59 named object-union members, and 36
+literal contract values; validates every internal and manifest anchor; requires
+version/review metadata on every reference page; checks bidirectional
+guide/reference navigation; and derives the package compatibility matrix from
+the four package manifests.
 
-The manifest freezes exports and recognized code/event catalogs. All current
-package exports now have complete guide/reference coverage; later slices will
-extend member and discriminated-union checks as the remaining documentation
-plan is implemented.
+The manifest freezes exports and recognized code/event catalogs. Every current
+package export must have status `complete`; partial or missing records fail the
+documentation gate.
