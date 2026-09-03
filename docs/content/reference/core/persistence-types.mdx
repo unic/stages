@@ -1,0 +1,143 @@
+# Persistence types
+
+**For:** TypeScript users implementing codecs, migrations, storage, or
+controller recreation.
+
+**Prerequisites:** [Persistence serialization](/persistence/serialization).
+
+These are the exact public data contracts exported by `@stages/core`.
+
+## JSON types
+
+```ts
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue =
+  | JsonPrimitive
+  | readonly JsonValue[]
+  | { readonly [key: string]: JsonValue };
+```
+
+`JsonPrimitive` includes only `string`, finite `number` at runtime, `boolean`,
+and `null`. `JsonValue` recursively adds readonly arrays and string-keyed
+objects. The type cannot alone reject non-finite numbers or unsafe keys;
+`encodeJson()` enforces the runtime boundary.
+
+## SerializedStagesState
+
+```ts
+interface SerializedStagesState {
+  readonly format: "stages";
+  readonly formatVersion: 1;
+  readonly schema: Readonly<{ id: string; version: number }>;
+  readonly value: JsonValue;
+  readonly baseline: JsonValue;
+  readonly meta: Readonly<Record<string, JsonValue>>;
+}
+```
+
+| Member | Contract |
+| --- | --- |
+| `format` | Envelope discriminator; exactly `"stages"` |
+| `formatVersion` | Stages wire-format version; exactly `1` |
+| `schema` | Application schema `id` and positive safe-integer `version` |
+| `value` | Encoded accepted domain value |
+| `baseline` | Encoded immutable reset/dirty baseline |
+| `meta` | JSON object containing recognized durable metadata and extensions |
+
+The controller currently writes these `meta` members:
+
+| Member | Encoded shape |
+| --- | --- |
+| `touched` | Array of `NodeAddress` values |
+| `visited` | Array of `NodeAddress` values |
+| `revealedValidation` | Array of `NodeAddress` values |
+| `activeWizards` | Array of `[NodeAddress, stageId]` tuples |
+| `collectionKeys` | Array of `[NodeAddress, rowKeys]` tuples |
+| `extensions` | Object from registered namespace to encoded value |
+
+These metadata keys describe the current version's output, while `meta` stays
+open for format evolution. Use `validateSerializedState()` rather than casting
+external data to this interface.
+
+```ts
+export const serializedEnvelope = {
+  format: "stages",
+  formatVersion: 1,
+  schema: { id: "project", version: 1 },
+  value: {
+    title: "Documentation",
+    createdAt: "2026-09-03T08:00:00.000Z",
+    schedule: { startsAt: "2026-09-04T08:00:00.000Z", milestones: [] },
+  },
+  baseline: {
+    title: "",
+    createdAt: "2026-09-03T08:00:00.000Z",
+    schedule: { startsAt: "2026-09-04T08:00:00.000Z", milestones: [] },
+  },
+  meta: {
+    touched: [[{ kind: "node", id: "title" }]],
+    visited: [[{ kind: "node", id: "title" }]],
+    revealedValidation: [[{ kind: "node", id: "title" }]],
+    activeWizards: [],
+    collectionKeys: [],
+    extensions: {
+      draft: { panel: "review", updatedAt: "2026-09-03T09:00:00.000Z" },
+    },
+  },
+} as const satisfies SerializedStagesState;
+```
+
+## StagesValueCodec
+
+```ts
+interface StagesValueCodec<TValue> {
+  readonly encode: (value: DeepReadonly<TValue>) => JsonValue;
+  readonly decode: (value: JsonValue) => TValue;
+}
+```
+
+`encode` is called for the accepted value and baseline. `decode` is called for
+both during recreation. The controller does not wrap value-codec exceptions.
+
+## StagesExtensionCodec
+
+```ts
+interface StagesExtensionCodec {
+  readonly encode: (value: unknown) => JsonValue;
+  readonly decode: (value: JsonValue) => unknown;
+}
+```
+
+`encode` and `decode` operate within one registered namespace. The controller
+wraps ordinary failures as `extension.encode` or `extension.decode` errors;
+an existing `SerializationError` from extension `encode` is preserved.
+
+## StagesStateMigration
+
+```ts
+interface StagesStateMigration {
+  readonly schemaId: string;
+  readonly fromVersion: number;
+  readonly toVersion: number;
+  readonly migrate: (state: SerializedStagesState) => SerializedStagesState;
+}
+```
+
+| Member | Contract |
+| --- | --- |
+| `schemaId` | Schema identity this step accepts and must produce |
+| `fromVersion` | Exact input schema version |
+| `toVersion` | Required output version, strictly greater than `fromVersion` |
+| `migrate` | Synchronous encoded-envelope transformation |
+
+Migrations form a single forward chain per schema ID. The output is validated
+after every step.
+
+## Evidence
+
+Signatures and members are derived from `packages/core/src/types.ts`; the docs
+gate compares every interface member with this page. Serialization tests cover
+both codec contracts and migration output.
+
+**Next:** See the exact [serialization utilities](/reference/core/serialization-utilities) and [error codes](/reference/serialization-errors).

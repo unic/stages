@@ -1,0 +1,118 @@
+# Storage and autosave
+
+**For:** Application developers connecting controller state to browser or
+remote persistence.
+
+**Prerequisites:** [Serialize and recreate](/persistence/serialization) and an
+application error/reporting strategy.
+
+Stages produces and consumes a serializable envelope. The application owns the
+storage API, save schedule, authentication, encryption, retention, conflict
+policy, retries, and user feedback.
+
+```ts
+export function writeLocalDraft(
+  storage: Pick<Storage, "setItem">,
+  key: string,
+  controller: StagesController<ProjectValue, typeof fields>,
+): { readonly ok: true } | { readonly ok: false; readonly error: unknown } {
+  try {
+    storage.setItem(key, JSON.stringify(controller.serialize()));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+export async function putRemoteDraft(
+  endpoint: string,
+  state: SerializedStagesState,
+  etag?: string,
+): Promise<string | undefined> {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (etag !== undefined) headers["if-match"] = etag;
+  const response = await fetch(endpoint, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(state),
+  });
+  if (response.status === 412) throw new Error("Draft changed on another client");
+  if (!response.ok) throw new Error(`Draft save failed (${response.status})`);
+  return response.headers.get("etag") ?? undefined;
+}
+
+export function subscribeAutosave(
+  controller: StagesController<ProjectValue, typeof fields>,
+  save: (state: SerializedStagesState) => Promise<void>,
+  onError: (error: unknown) => void,
+  delayMs = 500,
+): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const unsubscribe = controller.subscribeSelector(
+    snapshot => snapshot.value,
+    () => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(() => {
+        void save(controller.serialize()).catch(onError);
+      }, delayMs);
+    },
+  );
+  return () => {
+    unsubscribe();
+    if (timer !== undefined) clearTimeout(timer);
+  };
+}
+```
+
+The selector watches accepted `snapshot.value` changes. It does not save an
+unaccepted controlled proposal. If metadata changes must also trigger a save,
+select a stable projection that includes the relevant snapshot metadata or use
+`subscribe()` and debounce it.
+
+## Browser storage
+
+Guard access during server rendering and catch `getItem`, `setItem`, JSON
+parsing, and recreation errors. Browser storage can be disabled, full, evicted,
+or unavailable in privacy modes. Use a user- and schema-specific key, and
+remove or expire drafts according to the product's retention rules.
+
+`localStorage` is synchronous and visible to scripts on the same origin. Do not
+place secrets or regulated data there merely because the envelope is JSON-safe.
+Use an approved encrypted store where policy requires it. Stages does not
+encrypt serialized state.
+
+Listen for the browser `storage` event if other tabs can edit the same draft.
+Do not automatically overwrite a dirty local controller; apply a deliberate
+last-writer, prompt, merge, or exclusive-lock policy.
+
+## Remote persistence
+
+Associate the envelope with server-side authorization and use optimistic
+concurrency. The example sends an ETag through `If-Match` and treats HTTP 412 as
+a conflict. A version number or compare-and-swap token works too. On conflict,
+retain both the local serialized envelope and the server version until the user
+or a domain-aware merge resolves them.
+
+Deduplicate retries with a request ID when the endpoint is not naturally
+idempotent. Distinguish offline, authentication, validation, quota, and conflict
+failures in user feedback. A successful response should identify the revision
+or concurrency token that is now durable.
+
+## Autosave lifecycle
+
+Debounce bursts, serialize at execution time, and catch asynchronous failures.
+Return one cleanup function that unsubscribes and clears the timer. Before
+navigating away, either flush the final accepted revision or clearly show that
+it is unsaved. Destroying a controller does not flush application-owned saves.
+
+During a schema rollout, the reader must retain migrations for every stored
+version and the writer should only emit a version all active readers understand.
+
+## Evidence
+
+The boundary follows the controlled controller, selector subscription, and
+serialization contracts. The local, ETag, and debounced recipes are compiled
+from `docs/examples/persistence.ts`; storage and conflict policy are explicitly
+application-owned.
+
+**Next:** Use the [persistence type reference](/reference/core/persistence-types) while implementing a storage adapter.

@@ -1,0 +1,92 @@
+# Serialize and recreate a controller
+
+**For:** Application developers implementing draft resume, handoff, or durable
+form sessions.
+
+**Prerequisites:** [Controller lifecycle](/core-concepts/controller-lifecycle)
+and [controlled values](/core-concepts/controlled-values).
+
+`controller.serialize()` takes a synchronous snapshot of the controller's
+accepted, canonical state. It returns a `SerializedStagesState` envelope that
+can cross a JSON boundary. It does not save anything by itself.
+
+## The recreation boundary
+
+Treat a serialized state as input to a new controller, not as a way to mutate
+an existing one:
+
+```ts
+export function recreateProject(
+  controller: StagesController<ProjectValue, typeof fields>,
+) {
+  const state = controller.serialize();
+  controller.destroy();
+
+  return stages({
+    schema: projectSchema,
+    fields,
+    state,
+    codec: projectCodec,
+    extensionCodecs,
+  });
+}
+```
+
+Destroying the old controller releases its listeners and validation work.
+Recreation evaluates the supplied schema, reconciles restored metadata, and
+runs initialization validation for the new controller.
+
+If a controlled proposal is still waiting for the application to call
+`update({ value })`, serialization records the last accepted value—not that
+proposal. Save acknowledgements should therefore describe the revision that
+was actually accepted.
+
+## Restoration order
+
+When `state` is passed to `stages()`, core performs these steps:
+
+1. validate the envelope and its JSON values;
+2. run matching migrations over the encoded envelope;
+3. decode `value`, `baseline`, and registered extensions;
+4. evaluate the current schema;
+5. require the migrated schema ID and version to match exactly; and
+6. reconcile durable addresses, wizard stages, and collection identities.
+
+`formatVersion` versions the Stages envelope. `schema.version` versions your
+application data and schema. They are independent: application migrations
+advance `schema.version`; applications cannot change the supported envelope
+format.
+
+For untrusted JSON, parse to `unknown` and call
+`validateSerializedState()` before inspecting it. Passing the same value as
+`state` to `stages()` performs this validation too, but explicit validation is
+useful at an API or storage boundary.
+
+## Required recreation inputs
+
+The envelope does not contain executable configuration. Supply the current
+`schema` or schema factory, `fields`, application `context`, validation failure
+presentation, codec registrations, and migrations again. If the value uses a
+custom `codec`, use the compatible codec for every save and restore.
+
+Restoring a namespace in `meta.extensions` requires a corresponding entry in
+`extensionCodecs`. Unknown persisted namespaces are rejected instead of being
+silently discarded.
+
+## Failure handling
+
+Keep the saved payload intact until recreation succeeds. A recovery UI can
+then distinguish corrupted JSON, an unsupported `formatVersion`, a missing
+migration, a codec failure, and a schema mismatch. Do not overwrite the only
+copy with a partially repaired state.
+
+Test at least a serialize → JSON stringify/parse → recreate round trip, reset
+after recreation, every historic migration chain, and corrupt or future input.
+
+## Evidence
+
+The sequence and failure behavior are defined by `stages()`, `serialize()`,
+`validateSerializedState()`, and the recreation tests in `@stages/core`. The
+displayed TypeScript is compiled from `docs/examples/persistence.ts`.
+
+**Next:** Learn exactly [which state is durable and which is ephemeral](/persistence/durable-and-ephemeral-state).

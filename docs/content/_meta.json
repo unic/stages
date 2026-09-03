@@ -4,6 +4,7 @@
   "core-concepts": "Core concepts",
   "structures": "Structures",
   "validation": "Validation",
+  "persistence": "Persistence and recreation",
   "guides": {
     "type": "separator",
     "title": "Feature guides"
@@ -29,7 +30,6 @@
     "title": "Wizards (legacy route)",
     "display": "hidden"
   },
-  "persistence": "Persistence and migrations",
   "diagnostics": "Diagnostics and safety",
   "react": "React adapter",
   "dom": "DOM adapter",

@@ -1,0 +1,12 @@
+{
+  "index": {
+    "title": "Persistence overview",
+    "display": "hidden"
+  },
+  "serialization": "Serialize and recreate",
+  "durable-and-ephemeral-state": "Durable and ephemeral state",
+  "value-codecs": "Value codecs",
+  "extension-state": "Extension state",
+  "migrations": "Migrations",
+  "storage-and-autosave": "Storage and autosave"
+}

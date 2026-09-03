@@ -1,0 +1,89 @@
+# Serialization errors
+
+**For:** Developers implementing recovery, telemetry, and user feedback around
+save or resume failures.
+
+**Prerequisites:** [Serialization utilities](/reference/core/serialization-utilities)
+and [migrations](/persistence/migrations).
+
+`SerializationError` extends `TypeError` and exposes a stable `code` and precise
+`path` (`DataPath`). Its message is descriptive and ends with the JSON-encoded
+path. Branch on `code`; show a product-appropriate message while retaining the
+original error for diagnostics.
+
+## JSON boundary codes
+
+| Code | Trigger | Typical recovery |
+| --- | --- | --- |
+| `json.unsupported` | `undefined`, function, symbol, bigint, or another unsupported non-object value | Encode the value explicitly or omit it before saving |
+| `json.non-finite` | `NaN`, `Infinity`, or `-Infinity` | Choose a finite or tagged-string representation |
+| `json.cycle` | An object or array refers back to an active ancestor | Store IDs/references or remove the cycle |
+| `json.object` | A non-plain object such as `Date`, `Map`, `Set`, or class instance | Supply a value/extension codec |
+| `json.unsafe-key` | A string key is `__proto__`, `prototype`, or `constructor` | Reject or rename the external key |
+
+Paths identify the rejected location. Direct utility calls start at `[]` by
+default. Envelope validation prefixes `value`, `baseline`, or `meta`; extension
+encoding prefixes `meta`, `extensions`, and the namespace.
+
+## Envelope codes
+
+| Code | Trigger | Path |
+| --- | --- | --- |
+| `state.envelope` | Top-level input is not a plain object | `[]` |
+| `state.format` | `format` is not exactly `"stages"` | `["format"]` |
+| `state.format-version` | `formatVersion` is not exactly `1` | `["formatVersion"]` |
+| `state.schema` | Schema ID is not a string, or version is not a positive safe integer | `["schema", "id"]` or `["schema", "version"]` |
+| `state.meta` | `meta` is not a plain object | `["meta"]` |
+
+JSON boundary codes can additionally report a missing or invalid `value`,
+`baseline`, or nested `meta` member. An envelope that validates may still fail
+controller recreation because its final schema ID/version does not match, an
+extension namespace is unregistered, or a codec rejects the encoded value;
+those ordinary configuration/codec failures are not all `SerializationError`s.
+
+## Migration codes
+
+| Code | Trigger | Recovery |
+| --- | --- | --- |
+| `migration.ambiguous` | Multiple migrations match one schema ID/from-version | Keep exactly one outgoing step |
+| `migration.version` | `toVersion` is not greater than `fromVersion` | Make the step strictly forward |
+| `migration.output` | Output schema ID or version differs from the declared target | Return the declared identity |
+| `migration.cycle` | A schema version is revisited | Repair the migration graph |
+| `migration.failed` | `migrate()` throws, including another serialization failure | Inspect the included cause detail and repair or quarantine the payload |
+
+Every migrated output is validated, so `state.*` and `json.*` codes can also
+surface directly when a migration returns a malformed envelope.
+
+## Extension codes
+
+| Code | Trigger | Recovery |
+| --- | --- | --- |
+| `extension.encode` | A registered extension codec's `encode()` throws an ordinary value | Fix the codec/value; an existing `SerializationError` is preserved instead |
+| `extension.decode` | A registered extension codec's `decode()` throws any value | Migrate, repair, or reject the stored namespace value |
+
+Both paths are `["meta", "extensions", namespace]`. If extension `encode()`
+returns invalid JSON, the relevant `json.*` code is preserved with a deeper
+path.
+
+## Example handling
+
+```ts
+export function serializationFailure(error: unknown) {
+  return error instanceof SerializationError
+    ? { code: error.code, path: error.path, message: error.message }
+    : undefined;
+}
+```
+
+Do not retry deterministic format, codec, or migration failures in a loop.
+Keep the original stored payload, report the code/path, and offer a safe restart
+or support path. Transient storage/network errors are application errors and
+need a separate retry policy.
+
+## Evidence
+
+The docs gate derives this complete code inventory from core serialization and
+controller source. Focused tests cover JSON safety, envelope validation,
+migration graph failures, and extension codec failures.
+
+**Next:** Apply these errors in the [storage and autosave guide](/persistence/storage-and-autosave).

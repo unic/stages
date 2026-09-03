@@ -1,0 +1,90 @@
+# Durable and ephemeral controller state
+
+**For:** Developers deciding what a resumed workflow should remember.
+
+**Prerequisites:** [Serialize and recreate](/persistence/serialization) and
+[snapshots](/core-concepts/snapshots-and-subscriptions).
+
+The serialized envelope preserves workflow state that must survive controller
+recreation. Runtime machinery and derived results are rebuilt.
+
+```ts
+export const serializedEnvelope = {
+  format: "stages",
+  formatVersion: 1,
+  schema: { id: "project", version: 1 },
+  value: {
+    title: "Documentation",
+    createdAt: "2026-09-03T08:00:00.000Z",
+    schedule: { startsAt: "2026-09-04T08:00:00.000Z", milestones: [] },
+  },
+  baseline: {
+    title: "",
+    createdAt: "2026-09-03T08:00:00.000Z",
+    schedule: { startsAt: "2026-09-04T08:00:00.000Z", milestones: [] },
+  },
+  meta: {
+    touched: [[{ kind: "node", id: "title" }]],
+    visited: [[{ kind: "node", id: "title" }]],
+    revealedValidation: [[{ kind: "node", id: "title" }]],
+    activeWizards: [],
+    collectionKeys: [],
+    extensions: {
+      draft: { panel: "review", updatedAt: "2026-09-03T09:00:00.000Z" },
+    },
+  },
+} as const satisfies SerializedStagesState;
+```
+
+## What survives
+
+| Durable | Meaning after recreation |
+| --- | --- |
+| `value` | The last value accepted by controlled ownership |
+| `baseline` | The immutable reset and dirty-comparison baseline |
+| `touched`, `visited` | Field interaction addresses |
+| `revealedValidation` | Addresses whose current issues may be presented |
+| `activeWizards` | Active stage ID for each wizard address |
+| `collectionKeys` | Engine row identities for collection addresses |
+| `extensions` | Registered, codec-backed namespace values |
+
+The baseline is not changed by ordinary `update({ value })` calls. A form
+`"reset"` event proposes that baseline again through `onChange`; it is still a
+controlled proposal that the application must accept.
+
+Revealed addresses survive, but validation records do not. Initialization
+validation recomputes results after recreation, and only then can restored
+reveal state affect issue presentation.
+
+`collectionKeys` preserve engine-owned row identity. An application-defined
+`itemKey` remains part of the domain value and is handled by the value codec;
+the two identities have different owners.
+
+## What is rebuilt or intentionally omitted
+
+The envelope excludes focus, controller revision, transaction IDs,
+diagnostics, listeners, validation issues and pending validators, unaccepted
+proposals, application context, schema and field functions, registry entries,
+options, browser state, and adapter state. A recreated controller starts fresh
+for each of these.
+
+Known metadata entries that are JSON-safe but structurally unusable are ignored
+during restoration. Reconciliation also prunes addresses, wizard stages, or
+row identities that do not exist in the newly evaluated schema. Do not use
+metadata as an application data store; use the domain value or a registered
+extension namespace.
+
+## Security and privacy
+
+JSON-safe does not mean public or encrypted. The envelope can contain the full
+domain value, baseline, interaction history, and extension data. Apply the
+same access control, retention, redaction, and encryption policy as for the
+underlying form data.
+
+## Evidence
+
+The inventory is derived from the object returned by the core controller's
+`serialize()` implementation and exercised by serialization/recreation tests.
+The envelope above is compiled from `docs/examples/persistence.ts`.
+
+**Next:** Add a [value codec](/persistence/value-codecs) when the domain value is not already JSON.

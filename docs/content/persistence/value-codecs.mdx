@@ -1,0 +1,93 @@
+# Value codecs
+
+**For:** Developers whose domain values contain dates or other values that do
+not cross a strict JSON boundary directly.
+
+**Prerequisites:** [Serialize and recreate](/persistence/serialization) and a
+typed controller value.
+
+A `StagesValueCodec<TValue>` defines one wire representation for both the
+canonical `value` and the reset `baseline`. `encode` receives a deeply readonly
+domain value; `decode` receives untrusted `JsonValue` and must reconstruct and
+validate the domain value.
+
+```ts
+export const projectCodec = {
+  encode(value) {
+    return {
+      title: value.title,
+      createdAt: value.createdAt.toISOString(),
+      schedule: {
+        startsAt: value.schedule.startsAt.toISOString(),
+        milestones: value.schedule.milestones.map(item => ({
+          name: item.name,
+          dueAt: item.dueAt.toISOString(),
+        })),
+      },
+    };
+  },
+  decode(value) {
+    const project = jsonObject(value, "project");
+    const schedule = jsonObject(project["schedule"]!, "schedule");
+    const milestones = schedule["milestones"];
+    if (!Array.isArray(milestones)) throw new TypeError("milestones must be an array");
+    return {
+      title: jsonString(project, "title"),
+      createdAt: isoDate(jsonString(project, "createdAt"), "createdAt"),
+      schedule: {
+        startsAt: isoDate(jsonString(schedule, "startsAt"), "startsAt"),
+        milestones: milestones.map((item, index) => {
+          const milestone = jsonObject(item, `milestones[${index}]`);
+          return {
+            name: jsonString(milestone, "name"),
+            dueAt: isoDate(jsonString(milestone, "dueAt"), `milestones[${index}].dueAt`),
+          };
+        }),
+      },
+    };
+  },
+} satisfies StagesValueCodec<ProjectValue>;
+```
+
+Pass the codec when the controller is first created and whenever it is
+recreated:
+
+```ts
+const controller = stages({ schema, fields, value, codec: projectCodec });
+```
+
+## Design the wire format deliberately
+
+Keep encoded values boring: null, booleans, finite numbers, strings, arrays,
+and plain objects with safe keys. For a `Date`, an ISO string is usually easier
+to inspect and migrate than a tagged internal object. For a compound domain
+value, encode and validate every nested member as the example does.
+
+`serialize()` calls `encode` independently for the accepted value and
+baseline, then applies `encodeJson()` to the result. An invalid returned value
+therefore produces a `json.*` `SerializationError`. An ordinary exception
+thrown by the value codec itself is not wrapped; the same is true of a decode
+exception during recreation. Give those errors actionable messages.
+
+Migrations run before decoding, so they transform the encoded JSON shape—not
+`Date` instances or other rich domain objects. Changing a codec's wire format
+is consequently a schema-version change and needs a migration for stored data.
+
+## Round-trip requirements
+
+For every supported domain value, verify that `decode(encode(value))` preserves
+the semantics needed by the schema. Also round-trip the full serialized
+envelope through `JSON.stringify()` and `JSON.parse()`; testing only the current
+value can miss a broken baseline.
+
+Avoid lossy codecs unless that loss is an explicit product decision. For
+example, a local date-time without an offset cannot be reconstructed reliably
+from an instant unless the required time-zone policy is stored too.
+
+## Evidence
+
+The contract comes from `StagesValueCodec`, controller serialization, and the
+core Date-codec round-trip test. The example is compiled from
+`docs/examples/persistence.ts`.
+
+**Next:** Use [extension state](/persistence/extension-state) for durable controller-adjacent metadata outside the domain value.

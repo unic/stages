@@ -1,0 +1,87 @@
+# Extension state
+
+**For:** Extension and application authors persisting namespaced workflow state
+that is not part of the form value.
+
+**Prerequisites:** [Durable and ephemeral state](/persistence/durable-and-ephemeral-state)
+and [dynamic configuration](/core-concepts/dynamic-configuration).
+
+Extensions provide application-defined metadata to dynamic schema resolvers as
+`meta.extensions`. Every namespace is explicit and must have a
+`StagesExtensionCodec` registered when the controller is created.
+
+```ts
+export const draftExtensionCodec = {
+  encode(value) {
+    const draft = value as DraftExtension;
+    return { panel: draft.panel, updatedAt: draft.updatedAt.toISOString() };
+  },
+  decode(value) {
+    const draft = jsonObject(value, "draft extension");
+    const panel = draft["panel"];
+    if (panel !== "details" && panel !== "review") {
+      throw new TypeError("draft panel is invalid");
+    }
+    return {
+      panel,
+      updatedAt: isoDate(jsonString(draft, "updatedAt"), "draft.updatedAt"),
+    } satisfies DraftExtension;
+  },
+} satisfies StagesExtensionCodec;
+
+export const extensionCodecs = { draft: draftExtensionCodec } as const;
+
+export function showReviewPanel(
+  controller: StagesController<ProjectValue, typeof fields>,
+) {
+  // Extension updates replace the current namespace map and do not call onChange.
+  controller.update({
+    extensions: {
+      draft: { panel: "review", updatedAt: new Date() } satisfies DraftExtension,
+    },
+  });
+}
+```
+
+Register codecs with `extensionCodecs` and optionally provide initial values
+with `extensions`. Namespace names must be non-empty safe path segments, and a
+codec must expose both `encode` and `decode` functions.
+
+## Replacement semantics
+
+`controller.update({ extensions })` replaces the entire current namespace map.
+Include every namespace that should remain. Every supplied namespace must be
+registered; an unknown namespace is a `TypeError`.
+
+Extension changes do not call the domain `onChange`, because they do not
+propose a new form value. They do invalidate dynamic configuration and
+validation, so resolvers and validators can react to the new
+`meta.extensions` on the next evaluation.
+
+On restoration, persisted extension values override same-named initial
+extension values. If the serialized state has no extension block, the initial
+values remain. A persisted namespace without a registered codec is rejected.
+
+## Error behavior
+
+During serialization, an ordinary codec exception becomes a
+`SerializationError` with code `extension.encode` at
+`["meta", "extensions", namespace]`. An existing `SerializationError` is
+preserved, and invalid JSON returned by the codec produces its more specific
+`json.*` error and path.
+
+During restoration, any extension decode failure becomes `extension.decode`
+at the same namespace path. Treat this as incompatible or corrupt persisted
+state; do not silently invent a replacement if the namespace is significant.
+
+Use extension state for durable workflow metadata such as a plugin's current
+mode. Use adapter or application state for transient concerns such as an open
+popover, a DOM node, a request handle, or current focus.
+
+## Evidence
+
+Registration, replacement, dynamic invalidation, round-trip, and error wrapping
+are defined in the core controller and covered by extension serialization
+tests. The example is compiled from `docs/examples/persistence.ts`.
+
+**Next:** Version changing wire shapes with [state migrations](/persistence/migrations).

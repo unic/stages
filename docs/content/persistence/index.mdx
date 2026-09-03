@@ -1,0 +1,16 @@
+# Persistence and recreation
+
+Stages can serialize the accepted controller state into a versioned, JSON-safe
+envelope. The application decides when and where to store that envelope and
+recreates a controller to resume it.
+
+<StagesDemo example="persistence" />
+
+Start with [Serialize and recreate](/persistence/serialization). Continue to
+[durable and ephemeral state](/persistence/durable-and-ephemeral-state), then
+add [value codecs](/persistence/value-codecs) or
+[migrations](/persistence/migrations) when the wire format needs them.
+
+Storage, autosave, encryption, synchronization, and conflict resolution remain
+application concerns. The [storage and autosave guide](/persistence/storage-and-autosave)
+shows safe ownership patterns.

@@ -1,0 +1,91 @@
+# State migrations
+
+**For:** Teams deploying schema or codec changes while older saved drafts still
+exist.
+
+**Prerequisites:** [Serialize and recreate](/persistence/serialization), plus
+the old and new encoded value shapes.
+
+A `StagesStateMigration` is one directed step for one schema ID. It receives a
+validated `SerializedStagesState` and returns the next validated envelope.
+Migrations operate before value and extension decoding.
+
+```ts
+export const profileMigrations = [
+  {
+    schemaId: "profile",
+    fromVersion: 1,
+    toVersion: 2,
+    migrate: state => ({
+      ...state,
+      schema: { id: "profile", version: 2 },
+      value: splitFullName(state.value),
+      baseline: splitFullName(state.baseline),
+    }),
+  },
+  {
+    schemaId: "profile",
+    fromVersion: 2,
+    toVersion: 3,
+    migrate: state => ({
+      ...state,
+      schema: { id: "profile", version: 3 },
+      value: nestProfile(state.value),
+      baseline: nestProfile(state.baseline),
+    }),
+  },
+] as const satisfies readonly StagesStateMigration[];
+
+export function upgradeProfile(input: unknown): SerializedStagesState {
+  return migrateSerializedState(validateSerializedState(input), profileMigrations);
+}
+```
+
+Keep every historic step needed by data that may still be stored. Core finds a
+migration whose `schemaId` and `fromVersion` match the current envelope, then
+continues until no step matches. The resulting ID and version must match the
+schema supplied to `stages()`.
+
+## Migrate the whole contract
+
+Update both `value` and `baseline`. Updating only the current value makes reset
+restore an obsolete shape and makes dirty comparisons misleading.
+
+If a release renames node IDs, changes nesting, replaces collection identity,
+or removes wizard stages, migrate affected metadata addresses and identities
+too. Otherwise reconciliation may prune stale `touched`, `visited`,
+`revealedValidation`, `activeWizards`, or `collectionKeys` entries. Pruning is
+safe, but it may lose resume behavior you intended to preserve.
+
+Because migrations see encoded JSON, match the value codec's wire shape. Keep
+the function deterministic and free of network calls; acquire any external
+data before controller recreation and record the result in a versioned payload.
+
+## Rejected migration graphs
+
+| Code | Cause |
+| --- | --- |
+| `migration.ambiguous` | More than one step matches the same schema ID and version |
+| `migration.version` | A step does not increase the version |
+| `migration.output` | Output has the wrong schema ID or target version |
+| `migration.cycle` | The chain revisits a version |
+| `migration.failed` | The migration function throws |
+
+Validation errors for the returned envelope may also surface as `state.*` or
+`json.*` codes. See the complete [serialization error reference](/reference/serialization-errors).
+
+## Deployment discipline
+
+Read old fixtures in continuous integration, including the oldest supported
+version and every intermediate hop. Deploy code that can read both the existing
+and new version before producers begin saving the new one. Preserve the
+original payload on failure so a rollback or repaired migration remains
+possible.
+
+## Evidence
+
+Traversal, validation, ambiguity, output, version, cycle, and failure behavior
+come from `migrateSerializedState()` and focused core tests. The two-step chain
+is compiled from `docs/examples/persistence.ts`.
+
+**Next:** Connect serialization to application-owned [storage and autosave](/persistence/storage-and-autosave).

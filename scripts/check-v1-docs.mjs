@@ -114,6 +114,12 @@ const completePagePaths = [
   "validation/async-and-cancellation.mdx",
   "validation/disabled-and-conditional.mdx",
   "validation/failures-and-localization.mdx",
+  "persistence/serialization.mdx",
+  "persistence/durable-and-ephemeral-state.mdx",
+  "persistence/value-codecs.mdx",
+  "persistence/extension-state.mdx",
+  "persistence/migrations.mdx",
+  "persistence/storage-and-autosave.mdx",
   "reference/core/exports.mdx",
   "reference/core/controller.mdx",
   "reference/core/schema-types.mdx",
@@ -121,10 +127,13 @@ const completePagePaths = [
   "reference/core/event-types.mdx",
   "reference/core/snapshot-types.mdx",
   "reference/core/validation-types.mdx",
+  "reference/core/persistence-types.mdx",
   "reference/core/path-utilities.mdx",
   "reference/core/collection-utilities.mdx",
+  "reference/core/serialization-utilities.mdx",
   "reference/core/schema-utilities.mdx",
   "reference/standard-events.mdx",
+  "reference/serialization-errors.mdx",
   "project/contributing-to-docs.mdx",
 ];
 for (const relativePath of completePagePaths) {
@@ -233,6 +242,17 @@ for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts
   }
 }
 
+const persistenceReference = guideEntries.find(
+  ({ relativePath }) => relativePath === "reference/core/persistence-types.mdx",
+)?.source;
+assert.ok(persistenceReference, "missing persistence type reference");
+for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts.persistenceMembers)) {
+  assertSameInventory(publicInterfaceMembers(controllerTypes, interfaceName), expectedMembers, `${interfaceName} persistence members`);
+  for (const member of expectedMembers) {
+    assert.ok(persistenceReference.includes(`\`${member}\``), `persistence reference is missing ${interfaceName}.${member}`);
+  }
+}
+
 const [controllerSource, schemaSource, collectionSource, serializationSource] = await Promise.all([
   readRoot("packages/core/src/controller.ts"),
   readRoot("packages/core/src/schema.ts"),
@@ -248,6 +268,41 @@ const serializationCodes = [...`${serializationSource}\n${controllerSource}`.mat
   /["']((?:json|state|migration|extension)\.[a-z0-9-]+)["']/g,
 )].map((match) => match[1]);
 assertSameInventory(serializationCodes, manifest.contracts.serializationErrors, "serialization error codes");
+const serializationErrorReference = guideEntries.find(
+  ({ relativePath }) => relativePath === "reference/serialization-errors.mdx",
+)?.source;
+assert.ok(serializationErrorReference, "missing serialization error reference");
+for (const code of manifest.contracts.serializationErrors) {
+  assert.ok(serializationErrorReference.includes(`\`${code}\``), `serialization error reference is missing ${code}`);
+}
+
+const serializationErrorBody = serializationSource.match(
+  /export class SerializationError extends TypeError \{([\s\S]*?)\n\}/,
+)?.[1];
+assert.ok(serializationErrorBody, "could not find SerializationError declaration");
+const serializationErrorMembers = [...serializationErrorBody.matchAll(
+  /^\s{2}readonly\s+([A-Za-z_$][\w$]*):/gm,
+)].map((match) => match[1]);
+assertSameInventory(
+  serializationErrorMembers,
+  manifest.contracts.serializationErrorMembers,
+  "SerializationError members",
+);
+for (const member of manifest.contracts.serializationErrorMembers) {
+  assert.ok(serializationErrorReference.includes(`\`${member}\``), `serialization error reference is missing SerializationError.${member}`);
+}
+
+const serializedMetaBody = controllerSource.match(
+  /function serialize\(\): SerializedStagesState \{[\s\S]*?\n\s{6}meta: \{([\s\S]*?)\n\s{6}\},\n\s{4}\};/,
+)?.[1];
+assert.ok(serializedMetaBody, "could not find serialized metadata object");
+const serializedMetaMembers = [...serializedMetaBody.matchAll(
+  /^\s{8}([A-Za-z_$][\w$]*):/gm,
+)].map((match) => match[1]);
+assertSameInventory(serializedMetaMembers, manifest.contracts.serializedMetaMembers, "serialized metadata members");
+for (const member of manifest.contracts.serializedMetaMembers) {
+  assert.ok(persistenceReference.includes(`\`${member}\``), `persistence reference is missing serialized meta.${member}`);
+}
 
 const collectionRejections = [...collectionSource.matchAll(/reject\(["'](collection\.[a-z0-9-]+)["']/g)]
   .map((match) => match[1]);
@@ -331,6 +386,14 @@ const checkedRegions = [
   { fixture: "docs/examples/validation.ts", region: "disabled-and-conditional", page: "validation/disabled-and-conditional.mdx" },
   { fixture: "docs/examples/validation.ts", region: "failure-localization", page: "validation/failures-and-localization.mdx" },
   { fixture: "docs/examples/validation.ts", region: "validation-type-usage", page: "reference/core/validation-types.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "recreate-controller", page: "persistence/serialization.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "serialized-envelope", page: "persistence/durable-and-ephemeral-state.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "value-codec", page: "persistence/value-codecs.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "extension-state", page: "persistence/extension-state.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "state-migrations", page: "persistence/migrations.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "storage-and-autosave", page: "persistence/storage-and-autosave.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "serialized-envelope", page: "reference/core/persistence-types.mdx" },
+  { fixture: "docs/examples/persistence.ts", region: "serialization-utilities", page: "reference/core/serialization-utilities.mdx" },
 ];
 for (const { fixture, region, page } of checkedRegions) {
   const fixtureSource = await readRoot(fixture);
@@ -418,6 +481,8 @@ const snapshotMemberCount = Object.values(manifest.contracts.snapshotMembers)
   .reduce((count, members) => count + members.length, 0);
 const validationMemberCount = Object.values(manifest.contracts.validationMembers)
   .reduce((count, members) => count + members.length, 0);
+const persistenceMemberCount = Object.values(manifest.contracts.persistenceMembers)
+  .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

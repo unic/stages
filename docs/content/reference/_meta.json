@@ -1,4 +1,5 @@
 {
   "core": "Core",
-  "standard-events": "Standard events"
+  "standard-events": "Standard events",
+  "serialization-errors": "Serialization errors"
 }

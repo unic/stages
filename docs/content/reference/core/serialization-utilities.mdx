@@ -1,0 +1,104 @@
+# Serialization utilities
+
+**For:** Developers validating stored input, building codecs, or running
+migrations outside controller construction.
+
+**Prerequisites:** [Persistence types](/reference/core/persistence-types).
+
+All utilities below are exported by `@stages/core`.
+
+## Signatures
+
+```ts
+function encodeJson(
+  value: unknown,
+  path?: DataPath,
+  seen?: Set<object>,
+): JsonValue;
+
+function decodeJson(value: JsonValue, path?: DataPath): unknown;
+
+function validateSerializedState(value: unknown): SerializedStagesState;
+
+function migrateSerializedState(
+  input: SerializedStagesState,
+  migrations: readonly StagesStateMigration[],
+): SerializedStagesState;
+
+class SerializationError extends TypeError {
+  readonly code: string;
+  readonly path: DataPath;
+  constructor(code: string, message: string, path?: DataPath);
+}
+```
+
+## encodeJson
+
+`encodeJson(value, path = [], seen = new Set())` returns a cloned JSON tree. It
+accepts `null`, strings, booleans, finite numbers, arrays, and plain objects
+whose prototype is `Object.prototype` or `null`. It rejects unsupported scalar
+values, non-finite numbers, cycles, non-plain objects, and the string keys
+`__proto__`, `prototype`, and `constructor`.
+
+The optional `path` prefixes error locations. The optional `seen` set supports
+recursive callers; most applications should omit both. Shared but non-cyclic
+references are allowed and become separate cloned branches. Enumerable symbol
+properties are outside the string-keyed JSON object model and are not copied.
+
+## decodeJson
+
+`decodeJson(value, path = [])` recursively clones a typed `JsonValue` into
+ordinary arrays and objects and rejects unsafe string keys. It is not a full
+validator for arbitrary `unknown`; call `encodeJson()` for a general JSON-safe
+value or `validateSerializedState()` for an envelope.
+
+## validateSerializedState
+
+This function checks the envelope discriminator and version, schema identity
+shape, positive safe-integer schema version, object metadata, and JSON safety
+of `value`, `baseline`, and `meta`. It returns a normalized cloned envelope and
+discards unknown top-level fields. Recognized metadata contents are reconciled
+later by controller recreation.
+
+## migrateSerializedState
+
+This function first validates `input`, follows matching migrations, validates
+each output, and stops when no step matches. It does not require a particular
+final application schema version; `stages()` performs the exact match against
+the evaluated schema after migration and decoding.
+
+## Boundary example
+
+```ts
+export function parseStoredState(
+  source: string,
+  migrations: readonly StagesStateMigration[],
+): SerializedStagesState {
+  const parsed: unknown = JSON.parse(source);
+  const validated = validateSerializedState(parsed);
+  return migrateSerializedState(validated, migrations);
+}
+
+const encoded: JsonValue = encodeJson({ title: "Safe", rows: [1, 2] });
+const decoded: unknown = decodeJson(encoded);
+
+export function serializationFailure(error: unknown) {
+  return error instanceof SerializationError
+    ? { code: error.code, path: error.path, message: error.message }
+    : undefined;
+}
+
+void decoded;
+```
+
+`SerializationError.message` appends the JSON representation of `path`; use
+the stable `code` and `path` fields for program behavior.
+
+## Evidence
+
+Signatures and behavior are source-derived from
+`packages/core/src/serialization.ts` and covered by JSON, envelope, and
+migration tests. The boundary example is compiled from
+`docs/examples/persistence.ts`.
+
+**Next:** Handle every stable [serialization error code](/reference/serialization-errors).

@@ -22,7 +22,7 @@ source regions.
 | Sync/async validation, policies, scope, dependencies, cancellation, failure handling | [Validation](/validation/overview) | Async validation |
 | Homogeneous/union rows, keys, constraints, every collection command | [Collections](/structures/collections) | Stable collection rows |
 | Stage state, linear/nonlinear navigation, validation gates, guards, dynamic stages | [Wizards](/structures/wizards) | Guarded wizard |
-| JSON boundary, recreation, metadata, value/extension codecs, migrations | [Persistence](/persistence) | Serialized envelope |
+| JSON boundary, recreation, metadata, value/extension codecs, migrations | [Persistence](/persistence/serialization), [types](/reference/core/persistence-types), [errors](/reference/serialization-errors) | Serialized envelope + strict TypeScript fixtures |
 | Diagnostics, invalid revisions, recovery, safe paths, prototype-pollution defense | [Diagnostics](/diagnostics) | Last-valid-tree recovery |
 | React lifecycle, fields, collection/wizard hooks, Strict Mode | [React](/react) | All interactive examples |
 | Native fields, accessibility, focus, inactive stages, custom DOM views | [DOM](/dom) | Reference contract and repository fixture |
@@ -37,10 +37,10 @@ so additions cannot silently disappear.
 
 `npm run check:docs:v1` derives runtime and type exports from all four package
 entry points and compares them with the manifest. It also extracts diagnostic,
-serialization-error, and collection-rejection codes from source, checks nested
-navigation routes, verifies the first-controller displayed region against its
-strict TypeScript fixture, and rejects known obsolete API names in normative
-pages.
+serialization-error, and collection-rejection codes from source; checks exact
+snapshot, validation, persistence, and serialized-metadata members; checks
+nested navigation routes; verifies displayed regions against strict TypeScript
+fixtures; and rejects known obsolete API names in normative pages.
 
 The initial manifest freezes exports and recognized code/event catalogs. Later
 vertical slices will turn the remaining `partial` entries into complete
