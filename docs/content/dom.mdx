@@ -1,42 +1,9 @@
 # DOM adapter
 
-`@stages/dom` is the dependency-free accessibility reference. `createDomFields()`
-provides native `text`, `number`, and `checkbox` definitions; `mountStages()`
-renders recursive snapshots into an element and subscribes to updates.
+This compatibility route now points to the expanded DOM documentation.
 
-```ts
-const fields = createDomFields();
-let value = { name: "", age: undefined, subscribed: false };
-let controller;
-controller = stages({
-  schema, fields, value,
-  onChange(change) {
-    value = change.value;
-    controller.update({ value });
-  },
-});
-const mounted = mountStages(document.querySelector("#form"), controller, {
-  renderInactiveStages: false,
-  onRender: snapshot => updateSummary(snapshot.validation),
-});
-```
-
-Native props are `label`, `description`, `placeholder`, `inputType`, `required`,
-and `autocomplete`. `required` adds browser/assistive semantics but does not
-implicitly create a core validator.
-
-Labels and controls use collision-safe IDs. Descriptions and issue lists compose
-through `aria-describedby`; errors add `aria-invalid`, `aria-errormessage`, and
-alert semantics, while warning-only output uses status semantics. Focus is
-preserved when controller updates replace rendered nodes.
-
-The mounted result exposes `render()`, `focus(path, options?)`,
-`focusFirstIssue(options?)`, and `destroy()`. Focus commands skip disabled,
-hidden, and inactive-stage controls. Set `renderInactiveStages: true` only when
-your UI needs inactive stage DOM; it remains hidden and is still skipped.
-
-## Custom DOM views
-
-A `DomFieldView` implements `render({ document, id, field, emit })` and returns
-an `HTMLElement`. It owns its markup and accessibility while core owns state.
-Call both `mounted.destroy()` and `controller.destroy()` when removing the host.
+Start with [mounting and lifecycle](/adapters/dom/mounting), then see
+[native fields](/adapters/dom/native-fields),
+[custom views](/adapters/dom/custom-views), [focus](/adapters/dom/focus), and
+[accessibility](/adapters/dom/accessibility). Every public export is documented
+in the [DOM API reference](/reference/dom).

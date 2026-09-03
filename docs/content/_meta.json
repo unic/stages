@@ -36,7 +36,10 @@
     "title": "React adapter (legacy route)",
     "display": "hidden"
   },
-  "dom": "DOM adapter",
+  "dom": {
+    "title": "DOM adapter (legacy route)",
+    "display": "hidden"
+  },
   "custom-adapters": "Custom adapters",
   "utilities": "Utilities and type reference",
   "feature-coverage": "Feature coverage",

@@ -121,16 +121,16 @@
       "package": "@stages/dom",
       "entrypoint": "packages/dom/src/index.ts",
       "tests": ["packages/dom/test/dom.test.mjs"],
-      "defaultReference": "/dom",
+      "defaultReference": "/reference/dom",
       "exports": [
-        { "symbol": "createDomFields", "kind": "runtime", "guide": "/start/dom-quickstart", "status": "partial" },
-        { "symbol": "mountStages", "kind": "runtime", "guide": "/start/dom-quickstart", "status": "partial" },
+        { "symbol": "createDomFields", "kind": "runtime", "guide": "/adapters/dom/native-fields", "reference": "/reference/dom#createdomfields", "examples": ["dom-native-fields"], "status": "complete" },
+        { "symbol": "mountStages", "kind": "runtime", "guide": "/adapters/dom/mounting", "reference": "/reference/dom#mountstages", "examples": ["dom-mount-lifecycle"], "status": "complete" },
         { "symbol": "ContainerSnapshot", "kind": "type", "guide": "/core-concepts/snapshots-and-subscriptions", "reference": "/reference/core/snapshot-types#containersnapshot", "status": "complete" },
-        { "symbol": "DomFieldBinding", "kind": "type", "status": "partial" },
-        { "symbol": "DomFieldProps", "kind": "type", "status": "partial" },
-        { "symbol": "DomFieldView", "kind": "type", "status": "partial" },
-        { "symbol": "MountedStages", "kind": "type", "status": "partial" },
-        { "symbol": "MountStagesOptions", "kind": "type", "status": "partial" }
+        { "symbol": "DomFieldBinding", "kind": "type", "guide": "/adapters/dom/custom-views", "reference": "/reference/dom#domfieldbinding", "examples": ["dom-custom-views"], "status": "complete" },
+        { "symbol": "DomFieldProps", "kind": "type", "guide": "/adapters/dom/native-fields", "reference": "/reference/dom#domfieldprops", "examples": ["dom-native-fields"], "status": "complete" },
+        { "symbol": "DomFieldView", "kind": "type", "guide": "/adapters/dom/custom-views", "reference": "/reference/dom#domfieldview", "examples": ["dom-custom-views"], "status": "complete" },
+        { "symbol": "MountedStages", "kind": "type", "guide": "/adapters/dom/mounting", "reference": "/reference/dom#mountedstages", "examples": ["dom-mount-lifecycle", "dom-focus"], "status": "complete" },
+        { "symbol": "MountStagesOptions", "kind": "type", "guide": "/adapters/dom/mounting", "reference": "/reference/dom#mountstagesoptions", "examples": ["dom-mount-lifecycle"], "status": "complete" }
       ]
     },
     {
@@ -195,6 +195,13 @@
       "ReactWizardStageBinding": ["id", "path", "address", "active", "disabled", "validation"],
       "ReactWizardBinding": ["activeStage", "stages", "canPrevious", "canNext", "canGo", "previous", "next", "go"],
       "StagesFieldProps": ["controller", "path", "id"]
+    },
+    "domMembers": {
+      "DomFieldBinding": ["document", "id", "field", "emit"],
+      "DomFieldView": ["render"],
+      "DomFieldProps": ["label", "description", "inputType", "placeholder", "required", "autocomplete"],
+      "MountStagesOptions": ["renderInactiveStages", "onRender"],
+      "MountedStages": ["render", "focus", "focusFirstIssue", "destroy"]
     },
     "events": [
       { "symbol": "focus", "interpretation": "core interaction metadata" },

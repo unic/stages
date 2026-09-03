@@ -25,7 +25,7 @@ source regions.
 | JSON boundary, recreation, metadata, value/extension codecs, migrations | [Persistence](/persistence/serialization), [types](/reference/core/persistence-types), [errors](/reference/serialization-errors) | Serialized envelope + strict TypeScript fixtures |
 | Diagnostics, invalid revisions, recovery, safe paths, prototype-pollution defense | [Diagnostics](/diagnostics/overview), [catalog](/reference/diagnostics) | Last-valid-tree recovery + checked telemetry/safety fixtures |
 | React lifecycle, typed field views, collection/wizard hooks, accessibility, performance, Strict Mode | [React](/adapters/react/lifecycle), [reference](/reference/react) | Live forms + six checked TSX regions + adapter tests |
-| Native fields, accessibility, focus, inactive stages, custom DOM views | [DOM](/dom) | Reference contract and repository fixture |
+| Native fields, accessibility, focus, inactive stages, custom DOM views | [DOM](/adapters/dom/mounting), [reference](/reference/dom) | Five checked TypeScript regions + adapter tests |
 | Framework-neutral adapter contract and test harness | [Custom adapters](/custom-adapters) | Executable Vue/Angular-style test-kit proofs |
 | Path, schema, collection, serialization utility exports and public types | [Utilities](/utilities) | Executable package and property tests |
 | Localization through context, props, issues, and view formatting | [Internationalization](/i18n) | Controlled derived-props pattern |
@@ -40,7 +40,7 @@ entry points and compares them with the manifest. It also extracts diagnostic,
 serialization-error, and collection-rejection codes from source; checks exact
 snapshot, validation, persistence, and serialized-metadata members; checks
 all diagnostic members, severities, codes, and catalog columns; checks nested
-React binding members; checks nested navigation routes; verifies displayed
+React and DOM binding members; checks nested navigation routes; verifies displayed
 regions against strict TypeScript fixtures; and rejects known obsolete API
 names in normative pages.
 

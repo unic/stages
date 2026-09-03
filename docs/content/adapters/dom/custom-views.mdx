@@ -1,0 +1,172 @@
+# Custom DOM field views
+
+**For:** Browser applications integrating native selects, dates, or a custom
+design system with `@stages/dom`.
+
+**Prerequisites:** [Field registry](/core-concepts/field-registry),
+[native DOM fields](/adapters/dom/native-fields), and
+[DOM accessibility](/adapters/dom/accessibility).
+
+A `DomFieldView` has one `render(binding)` method and returns an `HTMLElement`.
+The binding supplies the host `document`, a collision-safe generated `id`, the
+current `FieldSnapshot`, and `emit(name, payload?)`. Views own all markup,
+listeners, value presentation, disabled state, and accessibility.
+
+This checked example adds select and date definitions while retaining the
+native fields. Its shared helper renders labels, descriptions, visible issues,
+and focus/blur interaction state:
+
+```ts
+interface LabeledProps extends DomFieldProps {
+  readonly label: string;
+}
+
+interface SelectProps extends LabeledProps {
+  readonly options: readonly Readonly<{ value: string; label: string }>[];
+}
+
+function issueList(binding: DomFieldBinding): HTMLUListElement | undefined {
+  const { document, id, field } = binding;
+  if (field.state.visibleIssues.length === 0) return undefined;
+  const list = document.createElement("ul");
+  list.id = `${id}-issues`;
+  list.setAttribute("role", field.state.visibleIssues.some(issue => issue.severity === "error")
+    ? "alert"
+    : "status");
+  for (const issue of field.state.visibleIssues) {
+    const item = document.createElement("li");
+    item.textContent = issue.message ?? issue.code;
+    list.append(item);
+  }
+  return list;
+}
+
+function finishCustomControl(
+  binding: DomFieldBinding,
+  control: HTMLInputElement | HTMLSelectElement,
+  props: LabeledProps,
+) {
+  const { document, id, field, emit } = binding;
+  const wrapper = document.createElement("div");
+  const label = document.createElement("label");
+  label.htmlFor = id;
+  label.textContent = props.label;
+  wrapper.append(label, control);
+
+  const describedBy: string[] = [];
+  if (props.description !== undefined) {
+    const description = document.createElement("p");
+    description.id = `${id}-description`;
+    description.textContent = props.description;
+    describedBy.push(description.id);
+    wrapper.append(description);
+  }
+  const issues = issueList(binding);
+  if (issues !== undefined) {
+    describedBy.push(issues.id);
+    wrapper.append(issues);
+  }
+  const hasError = field.state.visibleIssues.some(issue => issue.severity === "error");
+  if (hasError) {
+    control.setAttribute("aria-invalid", "true");
+    control.setAttribute("aria-errormessage", `${id}-issues`);
+  }
+  if (describedBy.length > 0) control.setAttribute("aria-describedby", describedBy.join(" "));
+  control.addEventListener("focus", () => emit("focus"));
+  control.addEventListener("blur", () => emit("blur"));
+  return wrapper;
+}
+
+export const selectView: DomFieldView = {
+  render(binding) {
+    const { document, id, field, emit } = binding;
+    const props = field.props as unknown as SelectProps;
+    const select = document.createElement("select");
+    // mountStages focus helpers look for this exact generated ID.
+    select.id = id;
+    select.disabled = field.state.disabled;
+    for (const option of props.options) {
+      const element = document.createElement("option");
+      element.value = option.value;
+      element.textContent = option.label;
+      select.append(element);
+    }
+    select.value = typeof field.value === "string" ? field.value : "";
+    select.addEventListener("change", () => emit("input", select.value));
+    return finishCustomControl(binding, select, props);
+  },
+};
+
+export const dateView: DomFieldView = {
+  render(binding) {
+    const { document, id, field, emit } = binding;
+    const props = field.props as unknown as LabeledProps;
+    const input = document.createElement("input");
+    input.id = id;
+    input.type = "date";
+    input.disabled = field.state.disabled;
+    input.value = typeof field.value === "string" ? field.value : "";
+    input.addEventListener("input", () => emit("input", input.value));
+    return finishCustomControl(binding, input, props);
+  },
+};
+
+const stringReducer = ({ event }: Parameters<NonNullable<FieldDefinition<string>["reduce"]>>[0]) =>
+  event.name === "input" && typeof event.payload === "string"
+    ? { value: event.payload }
+    : undefined;
+
+export const customDomFields = {
+  ...createDomFields(),
+  select: {
+    view: selectView,
+    initialValue: "",
+    reduce: stringReducer,
+  } satisfies FieldDefinition<string, SelectProps, DomFieldView>,
+  date: {
+    view: dateView,
+    initialValue: "",
+    reduce: stringReducer,
+  } satisfies FieldDefinition<string, LabeledProps, DomFieldView>,
+} as const;
+```
+
+## Binding rules
+
+Use `binding.document` instead of the ambient global so the result belongs to
+the root's owner document. Put `binding.id` on the actual focus target; the
+adapter's focus methods and focus-restoration pass cannot discover a different
+ID. Treat `field.value`, `field.props`, `field.state`, and
+`field.state.visibleIssues` as the complete controlled render input.
+
+`emit()` dispatches a field-targeted event with source `"adapter"`. Omitting the
+second argument omits `payload`; passing `undefined` has the same effect. Event
+names and payload types remain an open field-definition contract, so the view
+and reducer must agree. Emitting does not directly mutate the field value.
+
+Every render replaces the prior result and its subtree. Install listeners on
+the returned tree, avoid retaining old nodes, and do not depend on local DOM
+mutations surviving the next controller publication. Exceptions from
+`render()` propagate; the adapter does not replace them with diagnostics.
+
+If a registry view is `null`, `undefined`, or lacks a callable `render`, that
+field is silently omitted. This is different from the React adapter's missing
+view error. Prefer registry and schema typing so an accidental omission is
+caught before runtime.
+
+## Composite controls
+
+`DomFieldView` returns one wrapper but may contain several controls. The built-in
+focus API recognizes only the element bearing the generated ID. Composite
+widgets must choose a primary focus target or implement their own roving focus
+behavior. They must also aggregate labeling, errors, and disabled state in a
+way appropriate to their ARIA pattern.
+
+## Evidence
+
+The binding, omission behavior, event targeting, and replacement lifecycle come
+from `packages/dom/src/index.ts`. Arbitrary custom output is covered by
+`packages/dom/test/dom.test.mjs`; the complete example above is compiled from
+`docs/examples/dom-adapter.ts`.
+
+**Next:** Understand the [focus contract](/adapters/dom/focus) for custom controls.

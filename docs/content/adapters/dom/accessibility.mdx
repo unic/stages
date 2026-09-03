@@ -1,0 +1,75 @@
+# DOM accessibility
+
+**For:** Browser application teams reviewing the native adapter's guarantees
+and the semantics they still own.
+
+**Prerequisites:** [Native DOM fields](/adapters/dom/native-fields),
+[validation reveal](/validation/execution-and-reveal), and
+[DOM focus](/adapters/dom/focus).
+
+Native fields generate collision-safe IDs from the full node address, including
+stable collection-row identity. A supplied `label` points to the input;
+description and visible-issue IDs compose in `aria-describedby`.
+
+When at least one visible issue is an error, the issue list uses `role="alert"`
+and the input receives `aria-invalid="true"` plus `aria-errormessage`. A
+warning-only list uses `role="status"` and does not mark the input invalid.
+Issue text uses `message` when present and falls back to `code`.
+
+## Submit summary and focus
+
+The adapter presents per-field issues, but the application owns form controls,
+submission, and any error summary or live-region announcement. For example,
+provide `status` as a suitable pre-existing status element:
+
+```ts
+export async function announceDomValidation(
+  controller: StagesController<DomProfile, typeof domFields>,
+  mounted: MountedStages,
+  status: HTMLElement,
+) {
+  const result = await controller.validate({ event: "submit", reveal: true });
+  const errors = result.visibleIssues.filter(
+    (issue: ValidationIssue) => issue.severity === "error",
+  );
+  status.textContent = errors.length === 0
+    ? "Ready to submit."
+    : `${errors.length} ${errors.length === 1 ? "error" : "errors"} to fix.`;
+  if (errors.length > 0) mounted.focusFirstIssue();
+  return result;
+}
+```
+
+## Application checklist
+
+- Give every native or custom field a meaningful label; a placeholder is not a
+  label.
+- Add a core validator for domain requirements. Native `required` alone only
+  adds browser and assistive semantics.
+- Put navigation, submit, collection, and wizard controls outside the generic
+  structural containers and give them correct names and disabled states.
+- Use `renderInactiveStages: false` unless retaining hidden stage DOM serves a
+  deliberate need. Either setting prevents focus helpers from entering an
+  inactive stage.
+- Localize issue `message` values before presentation, or expose stable `code`
+  values that are meaningful in your application.
+- Make custom views reproduce labeling, descriptions, error relationships,
+  disabled state, and focus/blur emission. The adapter does not decorate custom
+  output after `render()` returns.
+- Test keyboard order and announcements in the real browser and assistive
+  technologies you support. The package tests verify markup contracts, not the
+  complete experience of an application shell.
+
+Generic group and wizard wrappers are `<div>` elements, not `fieldset`,
+`section`, tab, or stepper semantics. The application owns those design and
+accessibility decisions.
+
+## Evidence
+
+Generated relationships, severity roles, disabled state, and hidden-stage
+rendering come from `packages/dom/src/index.ts`. The label, description,
+required, warning/error, collision-safe row-ID, and focus cases are covered by
+`packages/dom/test/dom.test.mjs`; the submit example is compiled from
+`docs/examples/dom-adapter.ts`.
+
+**Next:** Use the exact signatures in the [DOM API reference](/reference/dom).

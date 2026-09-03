@@ -1,0 +1,58 @@
+# DOM focus behavior
+
+**For:** Browser applications moving focus to a known field or the first
+revealed validation error.
+
+**Prerequisites:** [DOM mounting](/adapters/dom/mounting) and
+[validation execution](/validation/execution-and-reveal).
+
+Validate and reveal before asking the adapter to find a visible error:
+
+```ts
+export async function focusDomErrors(
+  controller: StagesController<DomProfile, typeof domFields>,
+  mounted: MountedStages,
+) {
+  const result = await controller.validate({ event: "submit", reveal: true });
+  if (!result.isValid) return mounted.focusFirstIssue({ preventScroll: false });
+  return mounted.focus(["name"], { preventScroll: true });
+}
+```
+
+`focus(path, options?)` searches the current visible snapshot recursively for
+the first field whose data path exactly matches `path`. It finds the rendered
+element by the field's generated address-based ID, passes `FocusOptions` to
+`HTMLElement.focus()`, and returns `true` only when that element becomes
+`document.activeElement`.
+
+`focusFirstIssue(options?)` walks fields in snapshot order and selects the first
+field that is visible, enabled, mounted, focusable by the adapter's checks, and
+has a visible issue with severity `error`. Warning-only fields are skipped.
+This is snapshot/tree order, which normally matches rendered DOM order.
+
+## When focus returns false
+
+Both methods return `false` after adapter destruction. A request also fails for
+a missing or schema-hidden field, a disabled control, a control inside a
+`hidden` ancestor, an inactive stage that is omitted or hidden, or an element
+that does not actually accept focus. `focusFirstIssue()` additionally ignores
+unrevealed issues and warnings.
+
+Custom views participate only if the focusable element uses the exact `id`
+received in `DomFieldBinding`. If a composite widget needs another internal
+focus target, the built-in helpers cannot redirect to it; expose a single
+focusable root with that ID or manage composite focus in application code.
+
+Native input focus emits the core `focus` interaction event and can cause a
+controlled rerender. Custom views must emit their own `focus` and `blur` events
+when core interaction metadata should track the browser state.
+
+## Evidence
+
+Path matching, issue filtering, ID lookup, disabled/hidden checks, return values,
+and `FocusOptions` forwarding come from `packages/dom/src/index.ts`. Focus
+preservation, destroyed adapters, disabled controls, inactive stages, and
+first-error ordering are covered by `packages/dom/test/dom.test.mjs`; the
+example is compiled from `docs/examples/dom-adapter.ts`.
+
+**Next:** Review the full [DOM accessibility contract](/adapters/dom/accessibility).

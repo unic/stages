@@ -1,0 +1,181 @@
+# DOM API reference
+
+**For:** Browser adapter users needing the exact `@stages/dom` signatures,
+defaults, return values, and lifecycle behavior.
+
+**Prerequisites:** [DOM mounting](/adapters/dom/mounting) and the
+[core snapshot reference](/reference/core/snapshot-types).
+
+`@stages/dom` is ESM and depends on the matching `@stages/core` release. It has
+no browser-framework runtime dependency.
+
+## Runtime exports
+
+### createDomFields
+
+```ts
+function createDomFields(): {
+  readonly text: FieldDefinition<string, DomFieldProps, DomFieldView>;
+  readonly number: FieldDefinition<number | undefined, DomFieldProps, DomFieldView>;
+  readonly checkbox: FieldDefinition<boolean, DomFieldProps, DomFieldView>;
+};
+```
+
+Returns a new native registry. `text` starts at `""` and accepts string
+`input` payloads. `number` starts at `undefined` and accepts number or
+`undefined`; its native view converts blank and non-finite input to
+`undefined`. `checkbox` starts at `false` and accepts boolean payloads. Other
+event names or incompatible payloads return no reduction.
+
+All views mirror disabled state and emit `input`, `focus`, and `blur`. Their
+labels, descriptions, required state, issues, and generated IDs are detailed
+in [native fields](/adapters/dom/native-fields).
+
+### mountStages
+
+```ts
+function mountStages<TValue, TFields, TContext>(
+  root: Element,
+  controller: StagesController<TValue, TFields, TContext>,
+  options?: MountStagesOptions<TValue>,
+): MountedStages;
+```
+
+Borrows `controller`, subscribes, renders immediately into `root` using its
+`ownerDocument`, and returns a mount handle. It replaces every child of `root`
+on a render. It does not destroy the controller.
+
+Visible field views are called recursively. A field with no callable
+`DomFieldView.render` is omitted without throwing. Exceptions from a callable
+view or `onRender` propagate and are not reported as core diagnostics.
+
+## Field types
+
+### DomFieldBinding
+
+```ts
+interface DomFieldBinding {
+  readonly document: Document;
+  readonly id: string;
+  readonly field: FieldSnapshot;
+  readonly emit: (name: string, payload?: unknown) => void;
+}
+```
+
+- `document` is `root.ownerDocument`, suitable for creating nodes in the mount's
+  document.
+- `id` is a deterministic, collision-safe string derived from the full field
+  address. Put it on the focusable control to participate in focus helpers.
+- `field` is the complete current field snapshot, including resolved `props`,
+  controlled `value`, view token, state, data path, and address.
+- `emit` dispatches `name` and optional `payload` to `field.path` with
+  `source: "adapter"`. An omitted or `undefined` payload is left off the event.
+
+### DomFieldView
+
+```ts
+interface DomFieldView {
+  readonly render: (binding: DomFieldBinding) => HTMLElement;
+}
+```
+
+`render` must build a fresh HTML subtree for the supplied binding. The adapter
+does not decorate the result or reconcile it with the previous result. The
+next root replacement discards it.
+
+### DomFieldProps
+
+```ts
+interface DomFieldProps {
+  readonly label?: string;
+  readonly description?: string;
+  readonly inputType?: string;
+  readonly placeholder?: string;
+  readonly required?: boolean;
+  readonly autocomplete?: string;
+}
+```
+
+`label` creates a `<label>` associated with the input. `description` creates a
+paragraph and adds its ID to `aria-describedby`. `placeholder` and
+`autocomplete` are forwarded to the input. `required: true` sets native
+`required` and `aria-required` but adds no core validator. `inputType` overrides
+only the native text definition's type. Undefined properties add no markup or
+attribute; values are otherwise forwarded without runtime validation.
+
+## Mount types
+
+### MountStagesOptions
+
+```ts
+interface MountStagesOptions<TValue> {
+  readonly renderInactiveStages?: boolean;
+  readonly onRender?: (snapshot: StagesSnapshot<TValue>) => void;
+}
+```
+
+`renderInactiveStages` defaults to false. Inactive stage subtrees are omitted
+when false and rendered under a `hidden` stage wrapper when true. Hidden schema
+nodes are absent either way. `onRender` runs after replacement and focus
+restoration for the initial, subscribed, and manual renders; it receives the
+snapshot used for that render.
+
+### MountedStages
+
+```ts
+interface MountedStages {
+  render(): void;
+  focus(path: DataPath, options?: FocusOptions): boolean;
+  focusFirstIssue(options?: FocusOptions): boolean;
+  destroy(): void;
+}
+```
+
+`render` performs one synchronous render unless the mount is destroyed. Before
+replacement it records the ID of the focused descendant; afterward it attempts
+to focus a same-ID, enabled, non-hidden replacement with
+`{ preventScroll: true }`. Selection and caret state are not restored.
+
+`focus` searches the current visible snapshot for an exact field data `path`,
+finds the element with its generated ID, passes `options` to
+`HTMLElement.focus()`, and returns whether it became active. It returns `false`
+for a destroyed mount, missing or unmounted field, disabled element, hidden
+ancestor, missing generated ID, or element that does not accept focus.
+
+`focusFirstIssue` searches in recursive snapshot order for a visible, enabled,
+mounted field with a visible `error` issue. Warnings and unrevealed issues do
+not qualify. It applies the same focus checks and boolean result as `focus`.
+
+`destroy` is idempotent. It marks the mount destroyed and unsubscribes. It does
+not clear the root, remove its last nodes/listeners, destroy the controller, or
+invoke `onRender`. Afterward `render` is a no-op and focus methods return false.
+
+## Core type re-export
+
+### ContainerSnapshot
+
+`ContainerSnapshot` is re-exported from `@stages/core` for DOM consumers. Its
+members and container-kind semantics are normative in the
+[snapshot type reference](/reference/core/snapshot-types#containersnapshot).
+There is no DOM-specific variant of the type.
+
+## Rendering model
+
+Non-field snapshots render as `<div>` elements with `data-stages-kind` and
+`data-stages-id`. Stages additionally set native `hidden` when inactive.
+The adapter supplies no collection buttons, wizard navigation, headings,
+fieldsets, submission, or application status region.
+
+Native issue lists contain `message ?? code`. Error-containing lists use
+`role="alert"`, `aria-invalid`, and `aria-errormessage`; warning-only lists use
+`role="status"`. Descriptions and issue lists compose in `aria-describedby`.
+
+## Evidence
+
+Every signature and behavior on this page comes from
+`packages/dom/src/index.ts`. Native fields, accessible relationships,
+collision-safe IDs, focus restoration and exclusions, inactive stages, custom
+views, and teardown are exercised by `packages/dom/test/dom.test.mjs`.
+
+**Next:** Return to the [DOM adapter guides](/adapters/dom/mounting) or compare
+the framework-owned model in the [adapter overview](/adapters/overview).

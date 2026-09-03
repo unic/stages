@@ -1,0 +1,97 @@
+# DOM mounting and lifecycle
+
+**For:** Framework-free applications deciding who creates, updates, renders,
+and tears down a DOM-backed controller.
+
+**Prerequisites:** [Controlled values](/core-concepts/controlled-values) and the
+[DOM quickstart](/start/dom-quickstart).
+
+`mountStages(root, controller, options?)` subscribes to a borrowed controller,
+renders immediately, and returns a `MountedStages` handle. The application still
+owns canonical value and the controller lifetime.
+
+```ts
+export function mountDomProfile(root: Element, initialValue: DomProfile) {
+  let value = initialValue;
+  let controller!: StagesController<DomProfile, typeof domFields>;
+  controller = stages({
+    schema: domProfileSchema,
+    fields: domFields,
+    value,
+    onChange(change) {
+      // The DOM adapter proposes events; this owner accepts the next value.
+      value = change.value;
+      controller.update({ value });
+    },
+  });
+
+  const mounted = mountStages(root, controller, {
+    renderInactiveStages: false,
+    onRender(snapshot) {
+      root.setAttribute("data-revision", String(snapshot.revision));
+      root.setAttribute("data-validation", snapshot.validation.status);
+    },
+  });
+
+  return {
+    controller,
+    mounted,
+    render: () => mounted.render(),
+    destroy() {
+      // mountStages borrows the controller, so this owner tears down both.
+      mounted.destroy();
+      controller.destroy();
+    },
+  };
+}
+```
+
+## What a render does
+
+Every controller publication and explicit `mounted.render()` reads one complete
+snapshot, recursively renders its visible nodes into a document fragment, and
+calls `root.replaceChildren(fragment)`. Any unrelated children previously in
+the host are removed. Field views are invoked from their registry token;
+containers become `<div>` elements with `data-stages-kind` and
+`data-stages-id` attributes.
+
+The replacement means element references, listeners installed outside a field
+view, caret position, and text selection do not survive a render. If focus is
+inside the root and that element has an ID, the adapter tries to focus the
+replacement with the same ID using `{ preventScroll: true }`. It preserves focus
+identity, not selection.
+
+`onRender(snapshot)` runs after replacement and focus restoration, including
+the initial render and manual renders. An exception thrown by a custom view or
+`onRender` is not converted into a diagnostic.
+
+## Containers and inactive stages
+
+Groups, collections, rows, wizards, and stages are structural `<div>` elements;
+the DOM adapter does not add headings, fieldsets, collection controls, or wizard
+navigation. Applications needing those semantics should build them around the
+mount or write a custom adapter.
+
+By default, an inactive stage and its descendants are omitted. With
+`renderInactiveStages: true`, it is mounted with the native `hidden` property.
+The elements remain in the DOM but are not focus targets. Schema-hidden nodes
+are absent from the snapshot and cannot be rendered by this option.
+
+## Teardown
+
+`mounted.destroy()` is idempotent and only unsubscribes the adapter. It does not
+destroy the controller, clear the root, call `onRender`, or remove the last
+rendered listeners and nodes. After destruction, `render()` is a no-op and both
+focus methods return `false`. Destroy the controller separately when the same
+owner created it, and clear the host yourself if removal is desired.
+
+## Evidence
+
+Subscription order, replacement, recursion, inactive-stage handling, focus
+restoration, and teardown come from `packages/dom/src/index.ts`. Initial render,
+controlled updates, and post-destroy behavior are covered by
+`packages/dom/test/dom.test.mjs`; the example is compiled from
+`docs/examples/dom-adapter.ts`.
+
+**Next:** Implement application-specific controls with
+[custom DOM views](/adapters/dom/custom-views).

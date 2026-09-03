@@ -1,0 +1,100 @@
+# Native DOM fields
+
+**For:** Browser applications that want the small native input registry shipped
+by `@stages/dom`.
+
+**Prerequisites:** [DOM quickstart](/start/dom-quickstart) and
+[field registries](/core-concepts/field-registry).
+
+`createDomFields()` returns a fresh registry with `text`, `number`, and
+`checkbox` definitions. Each view is controlled: an input event is reduced to a
+proposed value, and the owning application must accept it with
+`controller.update({ value })` before the rendered value changes canonically.
+
+```ts
+export const domFields = createDomFields();
+
+export const domProfileSchema = {
+  id: "dom-profile",
+  version: 1,
+  nodes: [
+    {
+      kind: "field",
+      id: "name",
+      type: "text",
+      props: {
+        label: "Full name",
+        description: "Use the name shown on official documents.",
+        placeholder: "Ada Lovelace",
+        inputType: "text",
+        required: true,
+        autocomplete: "name",
+      },
+      validators: [{
+        id: "name.required",
+        on: "submit",
+        revealOn: "submit",
+        validate: ({ fieldValue, path }) =>
+          typeof fieldValue === "string" && fieldValue.trim().length > 0
+            ? []
+            : [{
+                id: "name.required",
+                code: "required",
+                path,
+                severity: "error",
+                message: "Enter your full name.",
+              }],
+      }],
+    },
+    {
+      kind: "field",
+      id: "age",
+      type: "number",
+      props: { label: "Age", description: "Leave blank if you prefer not to say." },
+    },
+    {
+      kind: "field",
+      id: "subscribed",
+      type: "checkbox",
+      props: { label: "Send product updates" },
+    },
+  ],
+} as const satisfies StagesSchema<DomProfile, typeof domFields>;
+```
+
+## Values and events
+
+| Definition | Initial value | Native control | Accepted `input` payload |
+| --- | --- | --- | --- |
+| `text` | `""` | `<input type={inputType ?? "text"}>` | `string` |
+| `number` | `undefined` | `<input type="number">` | `number` or `undefined` |
+| `checkbox` | `false` | `<input type="checkbox">` | `boolean` |
+
+The native number view emits `undefined` for an empty control or a non-finite
+`valueAsNumber`; a defined value is rendered with `String(value)`. The reducer
+itself accepts any JavaScript `number` payload, so custom emitters should apply
+their own finite-number policy. Text and number use `value`, while checkbox uses
+`checked`. All three mirror `field.state.disabled` and emit `focus` and `blur`
+interaction events. Payloads of the wrong type and event names other than
+`input` produce no field reduction.
+
+## Native properties
+
+All definitions accept `label`, `description`, `placeholder`, `required`, and
+`autocomplete`. `inputType` affects only the text definition; number and
+checkbox always choose their own native type. The adapter forwards these
+strings without maintaining a restricted list, so use valid HTML values.
+
+`required: true` sets both native `required` and `aria-required="true"`. It does
+not add a Stages validator or make `controller.validate()` fail. Define a
+validator explicitly, as the example does, when the requirement belongs to the
+application's validation contract.
+
+## Evidence
+
+Definitions, reducers, input parsing, and property forwarding come from
+`packages/dom/src/index.ts`. Native control, number, validation, and accessible
+relationship behavior are exercised by `packages/dom/test/dom.test.mjs`; the
+example above is compiled from `docs/examples/dom-adapter.ts`.
+
+**Next:** Learn the adapter's [mount and render lifecycle](/adapters/dom/mounting).
