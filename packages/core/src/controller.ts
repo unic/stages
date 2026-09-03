@@ -34,6 +34,7 @@ import type {
   StagesSchemaInput,
   StagesSnapshot,
   StagesUpdate,
+  TransformConfig,
   ValidateOptions,
   ValidationIssue,
   ValidationCancellationSignal,
@@ -1156,6 +1157,9 @@ export function stages<TValue, TFields, TContext = unknown>(
   function dispatch(event: StagesEvent): void {
     if (destroyed) return;
     const draft = proposal ?? value;
+    const previousTransactionCollectionKeys = transactionCollectionKeys === undefined
+      ? undefined
+      : new Map(transactionCollectionKeys);
     const result = transactionEvaluation ?? publishedEvaluation ?? evaluated(draft);
     transactionEvaluation = result;
     const allNodes: NormalizedNode<TValue, TFields, TContext>[] = [];
@@ -1210,9 +1214,19 @@ export function stages<TValue, TFields, TContext = unknown>(
     let patches: readonly StagesPatch[] = isReset ? [{ op: "set", path: [], value: baseline }] : [];
     if (!isReset && target?.config.kind === "field" && target.visible && !target.disabled) {
       const definition = fieldDefinition(options.fields, target.config.type);
-      const reduced = definition?.reduce?.({ value: getAtPath(draft, target.path), event, path: target.path });
-      if (reduced !== undefined) {
-        patches = "patches" in reduced ? reduced.patches : [{ op: "set", path: target.path, value: reduced.value }];
+      try {
+        const reduced = definition?.reduce?.({ value: getAtPath(draft, target.path), event, path: target.path });
+        if (reduced !== undefined) {
+          patches = "patches" in reduced ? reduced.patches : [{ op: "set", path: target.path, value: reduced.value }];
+        }
+      } catch (error) {
+        commandRejected = true;
+        reportRuntimeDiagnostic(
+          "field.reducer-failed",
+          `Reducer for "${target.config.id}" failed: ${error instanceof Error ? error.message : String(error)}`,
+          target.path,
+          target.address,
+        );
       }
     } else if (target?.config.kind === "collection" && event.name.startsWith("collection:")) {
       if (!target.visible || target.disabled) {
@@ -1285,12 +1299,30 @@ export function stages<TValue, TFields, TContext = unknown>(
       }
     }
 
-    let nextDraft = applyPatches(draft, patches);
+    let nextDraft = draft;
+    if (!commandRejected) {
+      try {
+        nextDraft = applyPatches(draft, patches);
+      } catch (error) {
+        commandRejected = true;
+        patches = [];
+        reportRuntimeDiagnostic(
+          "event.patch-failed",
+          `Event patches failed: ${error instanceof Error ? error.message : String(error)}`,
+          target?.path ?? [],
+          target?.address ?? [],
+        );
+      }
+    }
     const matchingNodes = target === undefined || commandRejected
       ? []
       : allNodes.filter((node) => addressStartsWith(target.address, node.address)).sort((left, right) => right.address.length - left.address.length);
-    for (const node of matchingNodes) {
-      for (const transform of node.config.transforms ?? []) {
+    const applyTransforms = (
+      transforms: readonly TransformConfig<TValue, TContext>[],
+      diagnosticPath: DataPath,
+      diagnosticAddress: NodeAddress,
+    ): boolean => {
+      for (const transform of transforms) {
         const names = typeof transform.on === "string" ? [transform.on] : transform.on;
         if (!names.includes(event.name)) continue;
         const transformContext = {
@@ -1303,29 +1335,36 @@ export function stages<TValue, TFields, TContext = unknown>(
           parentValue: target === undefined ? undefined : getAtPath(nextDraft, target.path.slice(0, -1)),
           event,
         };
-        if (transform.when?.(transformContext) === false) continue;
-        const derived = transform.apply(transformContext);
-        nextDraft = applyPatches(nextDraft, derived);
-        patches = [...patches, ...derived];
+        try {
+          if (transform.when?.(transformContext) === false) continue;
+          const derived = transform.apply(transformContext);
+          nextDraft = applyPatches(nextDraft, derived);
+          patches = [...patches, ...derived];
+        } catch (error) {
+          reportRuntimeDiagnostic(
+            "transform.failed",
+            `Transform for event "${event.name}" failed: ${error instanceof Error ? error.message : String(error)}`,
+            diagnosticPath,
+            diagnosticAddress,
+          );
+          return false;
+        }
+      }
+      return true;
+    };
+    for (const node of matchingNodes) {
+      if (!applyTransforms(node.config.transforms ?? [], node.path, node.address)) {
+        commandRejected = true;
+        break;
       }
     }
-    for (const transform of commandRejected ? [] : result.schema.transforms ?? []) {
-      const names = typeof transform.on === "string" ? [transform.on] : transform.on;
-      if (!names.includes(event.name)) continue;
-      const transformContext = {
-        value: readonlyValue(nextDraft),
-        context: readonlyValue(context),
-        meta: meta(),
-        path: target?.path ?? [],
-        address: target?.address ?? [],
-        fieldValue: target === undefined ? undefined : getAtPath(nextDraft, target.path),
-        parentValue: target === undefined ? undefined : getAtPath(nextDraft, target.path.slice(0, -1)),
-        event,
-      };
-      if (transform.when?.(transformContext) === false) continue;
-      const derived = transform.apply(transformContext);
-      nextDraft = applyPatches(nextDraft, derived);
-      patches = [...patches, ...derived];
+    if (!commandRejected && !applyTransforms(result.schema.transforms ?? [], [], [])) {
+      commandRejected = true;
+    }
+    if (commandRejected) {
+      nextDraft = draft;
+      patches = [];
+      transactionCollectionKeys = previousTransactionCollectionKeys;
     }
 
     if (!commandRejected) {

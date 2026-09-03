@@ -42,7 +42,8 @@ tree and publish structured factory, resolver, or root-identity diagnostics
 until configuration recovers. Root validators now share the same indexed
 execution model as node validators, `init` policies run at controller creation,
 and form reset is a controlled baseline proposal with reset transaction
-provenance and cleared interaction metadata.
+provenance and cleared interaction metadata. Reducer and transform failures are
+now isolated as rejected value transactions with structured diagnostics.
 
 ## 1. Outcome
 
@@ -619,6 +620,12 @@ Examples of 0.x behavior expressed as events:
 | custom validation event predicates | dispatch the custom event or use validator `when` |
 
 Transforms run once per matching source event. Derived patches do not recursively retrigger the same transform. If cascading events are later allowed, they must have explicit loop detection and a documented maximum depth.
+
+Patches are applied sequentially: the field reducer first, then target and
+ancestor transforms from nearest to farthest, then root transforms. When paths
+overlap, the later patch observes and writes over the earlier draft. A reducer,
+predicate, transform, or patch failure rejects all value patches from that
+event and publishes a diagnostic; later transforms do not run.
 
 ## 8. Validation model
 

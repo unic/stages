@@ -472,6 +472,105 @@ test("rejected collection commands do not run transforms or propose changes", as
   assert.equal(controller.getSnapshot().value.transformed, false);
 });
 
+test("transforms run target-to-root and later patches win deterministically", async () => {
+  const calls = [];
+  const append = (owner) => ({
+    on: "input",
+    apply: ({ fieldValue, path }) => {
+      calls.push(owner);
+      return [{ op: "set", path, value: `${fieldValue}:${owner}` }];
+    },
+  });
+  const orderedSchema = {
+    id: "transform-order",
+    version: 1,
+    transforms: [append("root")],
+    nodes: [{
+      kind: "group",
+      id: "profile",
+      transforms: [append("group")],
+      nodes: [{ kind: "field", id: "name", type: "text", transforms: [append("field")] }],
+    }],
+  };
+  const textFields = {
+    text: {
+      view: "text",
+      reduce: ({ event }) => event.name === "input" ? { value: event.payload } : undefined,
+    },
+  };
+  const changes = [];
+  const controller = stages({
+    schema: orderedSchema,
+    fields: textFields,
+    value: { profile: { name: "before" } },
+    onChange: (change) => changes.push(change),
+  });
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["profile", "name"] }, payload: "after" });
+  await tick();
+
+  assert.deepEqual(calls, ["field", "group", "root"]);
+  assert.equal(changes[0].value.profile.name, "after:field:group:root");
+  assert.deepEqual(changes[0].patches.map(({ value }) => value), [
+    "after",
+    "after:field",
+    "after:field:group",
+    "after:field:group:root",
+  ]);
+});
+
+test("reducer and transform failures reject value changes and become diagnostics", async () => {
+  const failingFields = {
+    reducer: {
+      view: "reducer",
+      reduce: () => { throw new Error("bad reducer"); },
+    },
+    transform: {
+      view: "transform",
+      reduce: ({ event }) => ({ value: event.payload }),
+    },
+  };
+  let rootTransformCalls = 0;
+  const failingSchema = {
+    id: "event-failures",
+    version: 1,
+    transforms: [{
+      on: "input",
+      apply: () => {
+        rootTransformCalls += 1;
+        return [];
+      },
+    }],
+    nodes: [
+      { kind: "field", id: "first", type: "reducer" },
+      {
+        kind: "field",
+        id: "second",
+        type: "transform",
+        transforms: [{ on: "input", apply: () => { throw new Error("bad transform"); } }],
+      },
+    ],
+  };
+  const changes = [];
+  const controller = stages({
+    schema: failingSchema,
+    fields: failingFields,
+    value: { first: "one", second: "two" },
+    onChange: (change) => changes.push(change),
+  });
+
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["first"] }, payload: "changed" });
+  await tick();
+  assert.equal(controller.getSnapshot().diagnostics.at(-1).code, "field.reducer-failed");
+
+  controller.dispatch({ name: "input", target: { kind: "field", path: ["second"] }, payload: "changed" });
+  await tick();
+  assert.equal(controller.getSnapshot().diagnostics.at(-1).code, "transform.failed");
+  assert.match(controller.getSnapshot().diagnostics.at(-1).message, /bad transform/);
+  assert.equal(rootTransformCalls, 0);
+  assert.equal(changes.length, 0);
+  assert.deepEqual(controller.getSnapshot().value, { first: "one", second: "two" });
+});
+
 test("engine row keys and touched state follow rows through moves and recreation", async () => {
   const rowFields = {
     text: {
