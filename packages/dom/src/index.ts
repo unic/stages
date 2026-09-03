@@ -1,5 +1,6 @@
 import type {
   ContainerSnapshot,
+  DataPath,
   FieldDefinition,
   FieldSnapshot,
   RenderNodeSnapshot,
@@ -31,6 +32,8 @@ export interface MountStagesOptions<TValue> {
 
 export interface MountedStages {
   render(): void;
+  focus(path: DataPath, options?: FocusOptions): boolean;
+  focusFirstIssue(options?: FocusOptions): boolean;
   destroy(): void;
 }
 
@@ -70,7 +73,9 @@ function nativeInputView(kind: "text" | "number" | "checkbox"): DomFieldView {
             : input.value;
         emit("input", payload);
       });
-      input.addEventListener("focus", () => emit("focus"));
+      input.addEventListener("focus", () => {
+        if (!field.state.focused) emit("focus");
+      });
       input.addEventListener("blur", () => emit("blur"));
       wrapper.append(input);
 
@@ -160,8 +165,32 @@ export function mountStages<TValue, TFields, TContext>(
   const document = root.ownerDocument;
   let destroyed = false;
   const compatibleController = controller as StagesController<TValue, unknown, unknown>;
+  const findField = (nodes: readonly RenderNodeSnapshot[], predicate: (field: FieldSnapshot) => boolean): FieldSnapshot | undefined => {
+    for (const node of nodes) {
+      if (node.kind === "field") {
+        if (predicate(node)) return node;
+      } else {
+        const nested = findField(node.nodes, predicate);
+        if (nested !== undefined) return nested;
+      }
+    }
+    return undefined;
+  };
+  const findMountedElement = (id: string): HTMLElement | undefined =>
+    Array.from(root.querySelectorAll<HTMLElement>("[id]")).find((candidate) => candidate.id === id);
+  const focusField = (field: FieldSnapshot | undefined, options?: FocusOptions): boolean => {
+    if (field === undefined || destroyed) return false;
+    const element = findMountedElement(elementId(field));
+    if (element === undefined) return false;
+    element.focus(options);
+    return document.activeElement === element;
+  };
   const render = (): void => {
     if (destroyed) return;
+    const activeElement = document.activeElement;
+    const activeId = activeElement !== null && root.contains(activeElement)
+      ? activeElement.getAttribute("id") ?? undefined
+      : undefined;
     const snapshot = controller.getSnapshot();
     const fragment = document.createDocumentFragment();
     for (const node of snapshot.nodes) {
@@ -169,12 +198,25 @@ export function mountStages<TValue, TFields, TContext>(
       if (rendered !== undefined) fragment.append(rendered);
     }
     root.replaceChildren(fragment);
+    if (activeId !== undefined && activeId.length > 0) {
+      findMountedElement(activeId)?.focus({ preventScroll: true });
+    }
     options.onRender?.(snapshot);
   };
   const unsubscribe = controller.subscribe(render);
   render();
   return {
     render,
+    focus(path, focusOptions) {
+      const field = findField(controller.getSnapshot().nodes, (candidate) =>
+        candidate.path.length === path.length && candidate.path.every((segment, index) => segment === path[index]));
+      return focusField(field, focusOptions);
+    },
+    focusFirstIssue(focusOptions) {
+      const field = findField(controller.getSnapshot().nodes, (candidate) =>
+        !candidate.state.disabled && candidate.state.visibleIssues.some((issue) => issue.severity === "error"));
+      return focusField(field, focusOptions);
+    },
     destroy() {
       if (destroyed) return;
       destroyed = true;

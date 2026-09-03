@@ -79,6 +79,47 @@ test("DOM adapter renders visible validation issues with accessible relationship
   assert.equal(issues.textContent, "Enter a name.");
 });
 
+test("DOM adapter focuses fields and preserves focus across controller renders", async () => {
+  const dom = new JSDOM("<main id='root'></main>", { pretendToBeVisual: true });
+  const root = dom.window.document.querySelector("#root");
+  const fields = createDomFields();
+  const required = (id) => ({
+    id,
+    on: "submit",
+    revealOn: "submit",
+    validate: ({ path }) => [{ id, code: "required", path, severity: "error" }],
+  });
+  const controller = stages({
+    schema: {
+      id: "dom-focus",
+      version: 1,
+      nodes: [
+        { kind: "field", id: "first", type: "text", validators: [required("first.required")] },
+        { kind: "field", id: "second", type: "text", validators: [required("second.required")] },
+      ],
+    },
+    fields,
+    value: { first: "", second: "" },
+  });
+  const mounted = mountStages(root, controller);
+
+  assert.equal(mounted.focus(["second"]), true);
+  await tick();
+  assert.equal(dom.window.document.activeElement, root.querySelectorAll("input")[1]);
+  assert.equal(controller.getSnapshot().nodes[1].state.focused, true);
+
+  await controller.validate({ event: "submit", reveal: true });
+  await tick();
+  assert.equal(mounted.focusFirstIssue(), true);
+  await tick();
+  assert.equal(dom.window.document.activeElement, root.querySelectorAll("input")[0]);
+  assert.equal(controller.getSnapshot().nodes[0].state.focused, true);
+  assert.equal(controller.getSnapshot().nodes[1].state.focused, false);
+
+  mounted.destroy();
+  assert.equal(mounted.focus(["first"]), false);
+});
+
 test("DOM view tokens can render arbitrary custom controls", () => {
   const dom = new JSDOM("<main id='root'></main>");
   const root = dom.window.document.querySelector("#root");

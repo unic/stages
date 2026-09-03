@@ -68,6 +68,9 @@ the React adapter exposes the documented selector-based
 commands. The React `useStagesWizard()` binding exposes visible stage
 descriptors, per-stage validation, navigation capabilities, and guarded
 previous/next/go commands from the same selector-based contract.
+DOM mounts preserve the active field across controller-driven rerenders and
+expose path-based focus plus first-visible-error navigation on their mounted
+handle.
 
 ## 1. Outcome
 
@@ -840,6 +843,12 @@ An adapter supplies:
 - container layouts;
 - DOM IDs, ARIA relationships, focus, and scroll behavior;
 - framework-specific batching integration where needed.
+
+The DOM reference adapter's mounted handle exposes `focus(path, options)` and
+`focusFirstIssue(options)`. Both commands return whether focus reached a
+rendered field. Controller-driven rerenders restore the active field without
+scrolling, while an explicit focus command forwards the caller's browser
+`FocusOptions`.
 
 Suggested package layout:
 
@@ -1751,7 +1760,7 @@ currently an alpha foundation, not a release-ready v1 build.
 | Phase 4 — Validation | Mostly implemented | Root, node, and registry-level field validators; `init`/event/reveal policies; disabled-node opt-in; dependencies; conditional applicability; scoped and per-stage aggregation; async cancellation; stale-result protection; runtime issue validation; and durable reveal state are implemented. | Finalize validation/system-issue customization and broaden navigation/validation matrix tests. |
 | Phase 5 — Collections and nested wizards | Mostly implemented | Immutable add/remove/replace/duplicate/move/sort commands, collection- and stable-row-address targeting, min/max constraints, homogeneous and discriminated rows, controlled row-key proposals, nested snapshots, active-stage metadata, navigation guards, conditional stages, serialized identity, and React collection/wizard bindings are implemented. | Add exhaustive tests for every permitted container nesting permutation. |
 | Phase 6 — Serialization | Implemented | Strict JSON encoding, precise serialization errors, envelope validation, schema/version checks, custom value codecs, ordered migrations, value/baseline recreation, touched/visited metadata, active wizard stages, row keys, revealed validation addresses, and registered namespaced extension codecs are implemented. | Repeat recreation coverage against packed artifacts during Phase 8 release hardening. |
-| Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, and accessible issue relationships. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add focus/error navigation hooks, production examples, and migrate the demo applications to v1. |
+| Phase 7 — Adapters and accessibility reference | Partial | A dependency-free DOM renderer provides native text/number/checkbox fields, custom view support, collision-safe IDs, accessible issue relationships, focus preservation, path-based focus, and first-visible-error navigation. React lifecycle, snapshot, selector, field, typed collection, and wizard bindings are implemented. Vue-style and Angular-style contract proofs use the same core API. | Add production examples and migrate the demo applications to v1. |
 | Phase 8 — Hardening and v1 release | Partial | Strict builds, compile-time fixtures, SSR-safe core boundaries, async race tests, mutation checks, controller-isolation tests, and notification-count performance tests exist. | Add property/fuzz tests, packed export verification, formal performance budgets, complete API and 0.x migration documentation, release packaging, and release-candidate validation. |
 
 ### Current packages
@@ -1767,7 +1776,7 @@ currently an alpha foundation, not a release-ready v1 build.
 
 - `npm run check:v1` performs strict type checking for all four packages and
   builds their ESM declaration/output artifacts.
-- `npm run test:v1` builds the packages and currently runs 67 passing executable
+- `npm run test:v1` builds the packages and currently runs 68 passing executable
   tests across core, DOM, React, and the adapter test kit.
 - Generated package `dist/` directories are build artifacts and are not tracked.
 
