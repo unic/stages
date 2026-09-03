@@ -1,0 +1,9 @@
+{
+  "index": {
+    "title": "Custom adapter overview",
+    "display": "hidden"
+  },
+  "contract": "Adapter contract",
+  "framework-walkthrough": "Framework walkthrough",
+  "testing-with-test-kit": "Testing with test kit"
+}

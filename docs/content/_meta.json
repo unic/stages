@@ -40,7 +40,10 @@
     "title": "DOM adapter (legacy route)",
     "display": "hidden"
   },
-  "custom-adapters": "Custom adapters",
+  "custom-adapters": {
+    "title": "Custom adapters (legacy route)",
+    "display": "hidden"
+  },
   "utilities": "Utilities and type reference",
   "feature-coverage": "Feature coverage",
   "i18n": "Internationalization",

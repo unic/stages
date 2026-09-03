@@ -13,8 +13,8 @@ layout, focus strategy, routing, network calls, and controller acceptance.
 | Path | Package | Choose it when |
 | --- | --- | --- |
 | [React](/adapters/react/lifecycle) | `@stages/react` | Components and hooks own rendering |
-| [DOM](/dom) | `@stages/dom` | Native DOM rendering without a framework |
-| [Custom](/custom-adapters) | Core + `@stages/test-kit` | Binding another UI runtime |
+| [DOM](/adapters/dom/mounting) | `@stages/dom` | Native DOM rendering without a framework |
+| [Custom](/adapters/custom/contract) | Core + `@stages/test-kit` | Binding another UI runtime |
 
 Adapters consume the same recursive snapshot and event contracts. They do not
 change controlled ownership: an emitted field event can propose a value, but
@@ -26,4 +26,6 @@ The boundary follows the package export maps, adapter implementations, and
 shared controller tests. Each adapter guide links to its focused integration
 tests.
 
-**Next:** Follow the [React lifecycle guide](/adapters/react/lifecycle), or choose the [DOM quickstart](/start/dom-quickstart).
+**Next:** Follow the [React lifecycle guide](/adapters/react/lifecycle), choose
+the [DOM mounting guide](/adapters/dom/mounting), or implement a
+[custom adapter](/adapters/custom/contract).

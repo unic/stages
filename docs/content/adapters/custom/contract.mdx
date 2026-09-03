@@ -1,0 +1,145 @@
+# Custom adapter contract
+
+**For:** Framework and design-system authors building a Stages renderer outside
+the first-party React and DOM adapters.
+
+**Prerequisites:** [Adapter overview](/adapters/overview),
+[snapshots](/core-concepts/snapshots-and-subscriptions), and
+[events](/core-concepts/events-and-reducers).
+
+A complete adapter loop is small: subscribe, read the current snapshot, render
+once immediately, dispatch UI events, and unsubscribe during teardown. The
+controller remains borrowed unless the adapter explicitly accepts ownership.
+
+```ts
+export function connectFramework<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  render: (snapshot: StagesSnapshot<TValue>) => void,
+): ConnectedAdapter<TValue> {
+  let active = true;
+  const publish = () => {
+    if (active) render(controller.getSnapshot());
+  };
+  const unsubscribe = controller.subscribe(publish);
+  publish();
+
+  return {
+    getSnapshot: () => controller.getSnapshot(),
+    emit(event) {
+      if (active) controller.dispatch(event);
+    },
+    destroy() {
+      if (!active) return;
+      active = false;
+      unsubscribe();
+    },
+  };
+}
+```
+
+Subscribe before the initial read/render so a change cannot be missed between
+those operations. Core subscriptions are notifications rather than snapshot
+payloads: call `getSnapshot()` inside the listener. Do not mutate a snapshot;
+send a named event through `dispatch()` instead.
+
+## Controlled ownership
+
+An adapter event may run field reducers and transforms and produce an
+`onChange` proposal. It does not make the proposal canonical. The application
+owner accepts, replaces, rejects, or delays it and eventually calls
+`controller.update({ value })`. Render the next controller snapshot rather than
+patching a separate adapter-owned copy of form data.
+
+Destroying a subscription does not destroy its controller. A component that
+created both should tear down both; a component receiving a shared controller
+should unsubscribe only. Keep this distinction explicit in lifecycle APIs.
+
+## Recursive rendering
+
+`snapshot.nodes` is a recursively nested render tree. A field carries its
+opaque registry `view`, controlled value, resolved props, state, path, and
+address. Every other kind is a container with `nodes` and optional specialized
+state. This checked projection shows the decisions a renderer normally makes:
+
+```ts
+export function mapRenderTree(nodes: readonly RenderNodeSnapshot[]): readonly AdapterRenderNode[] {
+  return nodes.flatMap(node => {
+    if (!node.state.visible) return [];
+    const common = {
+      key: addressKey(node.address),
+      id: node.id,
+      kind: node.kind,
+      path: node.path,
+      address: node.address,
+      visible: node.state.visible,
+      disabled: node.state.disabled,
+    };
+    if (node.kind === "field") {
+      return {
+        ...common,
+        view: node.view,
+        value: node.value,
+        issues: node.state.visibleIssues,
+      };
+    }
+    return {
+      ...common,
+      issues: node.validation?.visibleIssues ?? [],
+      children: mapRenderTree(node.nodes),
+      ...(node.kind === "stage" ? { active: node.active === true } : {}),
+      ...(node.kind === "wizard" && node.activeStage !== undefined
+        ? { activeStage: node.activeStage }
+        : {}),
+      ...(node.kind === "collection" ? { size: node.size ?? 0 } : {}),
+      capabilities: node.kind === "collection"
+        ? { add: node.canAdd === true, remove: node.canRemove === true }
+        : node.kind === "wizard"
+          ? {
+              previous: node.canPrevious === true,
+              next: node.canNext === true,
+              go: node.canGo === true,
+            }
+          : {},
+    };
+  });
+}
+```
+
+Current core snapshots already omit schema-hidden nodes; retaining the visible
+check also makes the renderer's policy explicit. Render `visibleIssues`, not all
+`issues`, for current error presentation. Propagate inherited `disabled` state
+to controls and actions.
+
+Use collection `canAdd`/`canRemove` and wizard `canPrevious`/`canNext`/`canGo`
+to disable controls. These are presentation capabilities, not promises that a
+later guard or validation gate will accept navigation.
+
+## Paths, addresses, and keys
+
+Use a field's current data `path` for field-targeted events and data access. A
+collection row path includes its current numeric index and changes when rows
+move. Use the row's `address` as the render key and for identity-bound node
+events; its row-key segment survives reordering. Use collection and wizard
+addresses for their node commands.
+
+Do not derive row identity from array index or cache a field path across a
+reorder. The current snapshot supplies both again on every render.
+
+## Opaque view tokens
+
+Core stores `FieldDefinition.view` without interpreting it and returns the same
+token in `FieldSnapshot.view`. A registry for one adapter may store a component
+type, a template key, or a render callback. The adapter narrows that token and
+maps it to its framework; core does not require React, DOM, Vue, or Angular
+types.
+
+## Evidence
+
+The loop follows `StagesController` in `packages/core/src/types.ts`; recursive
+node contracts come from the same source and controller snapshot mapper.
+Opaque-token behavior is asserted by
+`packages/test-kit/test/adapter-contract.test.mjs`. Both examples above compile
+from `docs/examples/custom-adapter.ts`.
+
+**Next:** Apply the contract in the
+[framework walkthrough](/adapters/custom/framework-walkthrough).

@@ -1,0 +1,99 @@
+# Test-kit API reference
+
+**For:** Custom-adapter authors needing the exact `@stages/test-kit` lifecycle
+and assertion surface.
+
+**Prerequisites:** [Testing custom adapters](/adapters/custom/testing-with-test-kit)
+and the [core controller reference](/reference/core/controller).
+
+`@stages/test-kit` is ESM and depends on the matching `@stages/core` release.
+It has no runtime dependency on a UI framework, DOM, test runner, or assertion
+library.
+
+## Runtime export
+
+### bindAdapter
+
+```ts
+function bindAdapter<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  render: (snapshot: StagesSnapshot<TValue>) => void,
+): AdapterHarness<TValue>;
+```
+
+`bindAdapter` borrows `controller`, subscribes one full-snapshot publisher,
+then calls `render(controller.getSnapshot())` synchronously before returning.
+Later controller publications call `render` again with the current snapshot.
+There is no selector, equality function, event transformation, scheduler, or
+automatic controlled-value acceptance.
+
+The callback's return value is ignored. Exceptions from the initial or a later
+`render` are not caught, converted into diagnostics, or passed to another error
+handler. The harness never calls `controller.destroy()`.
+
+## Type export
+
+### AdapterHarness
+
+```ts
+interface AdapterHarness<TValue> {
+  readonly getSnapshot: () => StagesSnapshot<TValue>;
+  readonly emit: (event: StagesEvent) => void;
+  readonly destroy: () => void;
+}
+```
+
+#### getSnapshot
+
+`getSnapshot` directly calls the borrowed controller's `getSnapshot` and
+returns its current immutable snapshot. It remains available after harness
+`destroy()`; destruction stops the binding, not reads from the controller.
+
+#### emit
+
+`emit` passes the supplied `event` unchanged to `controller.dispatch(event)`
+while the harness is active. It returns `void`, does not await a publication,
+does not add `source: "adapter"`, and does not clone or validate the event. It
+is a no-op after harness destruction.
+
+#### destroy
+
+`destroy` marks the harness inactive and invokes the controller unsubscribe
+function once. Repeated calls are no-ops. Afterward controller publications no
+longer invoke `render`, but the last framework state is not cleared and the
+controller remains owned by its creator.
+
+## Lifecycle sequence
+
+```text
+bindAdapter
+  → subscribe publisher
+  → render current snapshot synchronously
+  → return harness
+
+harness.emit(event)
+  → controller.dispatch(event)
+  → controller processing / owner acceptance
+  → controller publication
+  → render current snapshot
+
+harness.destroy()
+  → mark inactive
+  → unsubscribe once
+```
+
+If the borrowed controller was already destroyed, its subscription is inert;
+the harness still performs the immediate snapshot read/render against the
+controller's last snapshot. Core methods determine all other behavior of that
+controller state.
+
+## Evidence
+
+Both declarations and every lifecycle branch come from
+`packages/test-kit/src/index.ts`. Immediate render, event delivery, opaque view
+tokens, full rerender, and Vue-style/Angular-style consumers are exercised by
+`packages/test-kit/test/adapter-contract.test.mjs`. Published-package import and
+generic inference are also covered by `scripts/verify-v1-packages.mjs`.
+
+**Next:** Apply the [adapter conformance checklist](/adapters/custom/testing-with-test-kit)
+to the real integration.

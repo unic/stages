@@ -137,10 +137,10 @@
       "package": "@stages/test-kit",
       "entrypoint": "packages/test-kit/src/index.ts",
       "tests": ["packages/test-kit/test/adapter-contract.test.mjs"],
-      "defaultReference": "/custom-adapters",
+      "defaultReference": "/reference/test-kit",
       "exports": [
-        { "symbol": "bindAdapter", "kind": "runtime", "status": "partial" },
-        { "symbol": "AdapterHarness", "kind": "type", "status": "partial" }
+        { "symbol": "bindAdapter", "kind": "runtime", "guide": "/adapters/custom/testing-with-test-kit", "reference": "/reference/test-kit#bindadapter", "examples": ["test-kit-harness", "framework-mappings"], "status": "complete" },
+        { "symbol": "AdapterHarness", "kind": "type", "guide": "/adapters/custom/testing-with-test-kit", "reference": "/reference/test-kit#adapterharness", "examples": ["test-kit-harness"], "status": "complete" }
       ]
     }
   ],
@@ -202,6 +202,9 @@
       "DomFieldProps": ["label", "description", "inputType", "placeholder", "required", "autocomplete"],
       "MountStagesOptions": ["renderInactiveStages", "onRender"],
       "MountedStages": ["render", "focus", "focusFirstIssue", "destroy"]
+    },
+    "testKitMembers": {
+      "AdapterHarness": ["getSnapshot", "emit", "destroy"]
     },
     "events": [
       { "symbol": "focus", "interpretation": "core interaction metadata" },

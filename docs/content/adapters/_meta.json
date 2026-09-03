@@ -1,5 +1,6 @@
 {
   "overview": "Adapter overview",
   "react": "React",
-  "dom": "DOM"
+  "dom": "DOM",
+  "custom": "Custom"
 }

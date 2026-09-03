@@ -1,0 +1,120 @@
+# Custom framework walkthrough
+
+**For:** Adapter authors connecting Stages to a reactive framework lifecycle.
+
+**Prerequisites:** [Custom adapter contract](/adapters/custom/contract) and the
+[controller lifecycle](/core-concepts/controller-lifecycle).
+
+The following are framework-style integration patterns, not first-party Vue or
+Angular packages. They deliberately use only structural interfaces so the
+example compiles without either framework dependency.
+
+```ts
+interface WritableRef<T> {
+  value: T;
+}
+
+export function bindVueStyle<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  snapshot: WritableRef<StagesSnapshot<TValue>>,
+): AdapterHarness<TValue> {
+  return bindAdapter(controller, nextSnapshot => {
+    snapshot.value = nextSnapshot;
+  });
+}
+
+interface ChangeDetector {
+  markForCheck(): void;
+}
+
+export class AngularStyleBinding<TValue, TFields, TContext> {
+  snapshot!: StagesSnapshot<TValue>;
+  readonly harness: AdapterHarness<TValue>;
+
+  constructor(
+    controller: StagesController<TValue, TFields, TContext>,
+    changeDetector: ChangeDetector,
+  ) {
+    this.harness = bindAdapter(controller, snapshot => {
+      this.snapshot = snapshot;
+      changeDetector.markForCheck();
+    });
+  }
+
+  emit(event: StagesEvent) {
+    this.harness.emit(event);
+  }
+
+  destroy() {
+    this.harness.destroy();
+  }
+}
+```
+
+## Vue-style mapping
+
+Create the controller at the component or composable ownership boundary. Seed
+a writable shallow ref with `controller.getSnapshot()`, then bind it when the
+framework begins the live lifecycle. Each notification replaces the ref with
+the new immutable snapshot. Destroy the harness from the corresponding unmount
+hook; destroy the controller there only if that composable created it.
+
+Use a component catalog keyed by your opaque `field.view` token. Pass the field
+snapshot's value, props, disabled state, and visible issues as component inputs;
+translate component output into `fieldEvent(...)`. Key recursive row output by
+address, not by array index.
+
+## Angular-style mapping
+
+A directive or component can retain the latest snapshot and call its change
+detector in the render callback. Feed component types or template identifiers
+through opaque view tokens. Destroy the harness from the framework destroy
+lifecycle. With an externally injected controller, do not call
+`controller.destroy()` from every consumer.
+
+## Event mapping
+
+Field controls emit a current field path:
+
+```ts
+harness.emit(fieldEvent("input", field.path, {
+  payload: nextValue,
+  source: "adapter",
+}));
+```
+
+Collection and wizard actions use `nodeEvent(name, node.address, ...)`. Prefer
+the event constructors for target shape and payload inference, though the
+controller accepts equivalent event objects. Preserve validation, guard, and
+rejection handling in core rather than duplicating it in framework components.
+
+## Scheduling and update granularity
+
+`bindAdapter` invokes its render callback immediately, then once for every
+controller publication. Integrate that callback with the framework's required
+scheduler or zone; the test kit does not schedule framework work for you.
+Exceptions are not caught or converted to diagnostics.
+
+The harness is intentionally a full-snapshot contract. A production adapter
+may use `controller.subscribeSelector()` for field components or other narrow
+bindings, with a selector and equality policy appropriate to the runtime. Keep
+one full recursive binding where container structure can change, and measure
+before adding memoization.
+
+## Accessibility boundary
+
+Custom adapters own actual markup. Implement labels and descriptions, visible
+issue announcements, disabled semantics, keyboard order, focus after errors,
+collection control names, wizard headings/progress, and any composite-widget
+ARIA pattern. Snapshot state supplies facts; it does not generate accessible UI.
+
+## Evidence
+
+The two lifecycle mappings are compiled from
+`docs/examples/custom-adapter.ts` and mirror the executable Vue-style ref and
+Angular-style change-detection cases in
+`packages/test-kit/test/adapter-contract.test.mjs`. Event targeting and selector
+behavior are defined by the core controller and event type references.
+
+**Next:** Verify the integration with
+[the test kit and conformance checklist](/adapters/custom/testing-with-test-kit).

@@ -1,0 +1,10 @@
+# Custom adapters
+
+Stages core has no rendering dependency. A custom adapter reads immutable
+snapshots, maps opaque field-view tokens into its UI runtime, emits core events,
+and coordinates subscription teardown with the controller owner.
+
+Start with the [adapter contract](/adapters/custom/contract), continue through
+the [framework walkthrough](/adapters/custom/framework-walkthrough), and verify
+the result with [the test kit](/adapters/custom/testing-with-test-kit). The exact
+package API is in the [test-kit reference](/reference/test-kit).

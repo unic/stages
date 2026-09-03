@@ -1,39 +1,10 @@
 # Custom adapters and test kit
 
-Core has no rendering dependency. An adapter needs only to render snapshots,
-translate UI actions to named events, and unsubscribe/destroy on teardown.
+This compatibility route now points to the expanded custom-adapter
+documentation.
 
-```ts
-const unsubscribe = controller.subscribe(() => {
-  render(controller.getSnapshot());
-});
-
-emitFromView(event => controller.dispatch(event));
-
-// teardown
-unsubscribe();
-controller.destroy();
-```
-
-Field definitions store an opaque `view` token. Core returns that token in the
-field snapshot without interpreting it. A Vue adapter might store a component;
-an Angular adapter a component type; a terminal adapter a rendering function.
-
-Use paths for field value targets and addresses for identity-bound containers,
-rows, and wizards. Honor snapshot `visible` and `disabled` state, render
-`visibleIssues`, preserve stable row address identity, and expose collection and
-wizard capabilities rather than reconstructing policy.
-
-## `@stages/test-kit`
-
-`bindAdapter(controller, render)` immediately renders the current snapshot,
-subscribes to general notifications, and returns:
-
-- `getSnapshot()` for assertions;
-- `emit(event)` to exercise the adapter-to-core boundary;
-- `destroy()` for idempotent teardown.
-
-The repository uses this exact harness for Vue-style refs and Angular-style
-change detection. Framework adapters should additionally test field event
-delivery, controlled acceptance, narrow updates where supported, recursive
-nodes, async validation teardown, stable rows, and accessibility semantics.
+Start with the [adapter contract](/adapters/custom/contract), follow the
+[framework walkthrough](/adapters/custom/framework-walkthrough), then use the
+[test-kit conformance checklist](/adapters/custom/testing-with-test-kit). Every
+public `@stages/test-kit` export is documented in the
+[test-kit API reference](/reference/test-kit).

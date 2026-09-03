@@ -1,0 +1,89 @@
+# Testing custom adapters
+
+**For:** Adapter maintainers proving lifecycle and rendering behavior without
+coupling tests to a specific browser or component framework.
+
+**Prerequisites:** [Framework walkthrough](/adapters/custom/framework-walkthrough)
+and [validation cancellation](/validation/async-and-cancellation).
+
+`@stages/test-kit` exposes the framework-neutral boundary as
+`bindAdapter(controller, render)`. The returned `AdapterHarness` renders the
+current snapshot immediately, forwards events, reads current snapshots for
+assertions, and unsubscribes idempotently.
+
+```ts
+export function exerciseAdapterHarness() {
+  const controller = createProfileController();
+  const rendered: StagesSnapshot<Profile>[] = [];
+  const harness: AdapterHarness<Profile> = bindAdapter(
+    controller,
+    snapshot => rendered.push(snapshot),
+  );
+
+  // bindAdapter has already rendered once here.
+  const initial = harness.getSnapshot();
+  harness.emit(fieldEvent("input", ["name"], {
+    payload: "Grace",
+    source: "adapter",
+  }));
+
+  return {
+    controller,
+    harness,
+    initial,
+    rendered,
+    destroy() {
+      // The harness borrows the controller; its owner destroys both.
+      harness.destroy();
+      controller.destroy();
+    },
+  };
+}
+```
+
+Controller publications are queued, so an event test should await the next
+microtask or your framework's flush helper before asserting the second render.
+Assert both sides of controlled ownership: `onChange` receives a proposal and a
+render exposes it only after the owner calls `update({ value })`.
+
+## Conformance checklist
+
+| Concern | Minimum proof |
+| --- | --- |
+| Initial/full rendering | Binding renders once immediately and recursively handles every node kind. |
+| Controlled acceptance | Accept, replace, reject, and deliberately delayed proposals without keeping a competing adapter value. |
+| Field events | Current paths and narrowed payloads reach the intended reducer; missing targets surface core diagnostics. |
+| Opaque views | Every registered token resolves to the intended framework component, including a missing-token failure policy. |
+| Visibility/disabled state | Hidden nodes are omitted and disabled controls/actions cannot emit user interaction. |
+| Issues and accessibility | Only `visibleIssues` are presented; labels, descriptions, announcements, keyboard behavior, and focus are tested in the real rendered runtime. |
+| Recursive containers | Groups, rows, stages, and nested combinations retain correct hierarchy and inherited state. |
+| Stable collections | Row components are keyed by address and retain identity through move, sort, duplicate, add, and remove. |
+| Collection/wizard capabilities | UI reflects capability flags and still handles core rejections from constraints, validation, or guards. |
+| Narrow updates | If the adapter exposes selector bindings, unrelated publications do not rerender them and custom equality works. |
+| Async teardown | Pending validation completion cannot render through a destroyed binding; decide separately whether the owner also destroys the controller. |
+| Diagnostics | Schema/runtime diagnostics reach application telemetry without replacing the last valid render unexpectedly. |
+| Idempotent teardown | Repeated harness destruction is safe, later `emit` calls do nothing, and no later controller publication invokes `render`. |
+
+Use core package tests for engine behavior and adapter tests for the mapping.
+Do not re-test core algorithms by implementing them a second time in the
+adapter. DOM or framework integration tests remain necessary for focus,
+keyboard, announcement, and component-lifecycle behavior that a snapshot-only
+harness cannot observe.
+
+## Harness boundaries
+
+`getSnapshot()` continues to delegate to the controller after harness teardown;
+it is an assertion/read method, not proof that the binding is live. `emit()` is
+a no-op after teardown. `destroy()` removes only the subscription and never
+destroys the controller. The harness provides no selector binding, fake clock,
+DOM, accessibility assertion, event normalization, or automatic owner update.
+
+## Evidence
+
+The example compiles from `docs/examples/custom-adapter.ts`. Immediate render,
+opaque view tokens, controlled event delivery, two framework-style consumers,
+and teardown are sourced from `packages/test-kit/src/index.ts` and exercised by
+`packages/test-kit/test/adapter-contract.test.mjs`.
+
+**Next:** Consult the exact [test-kit API reference](/reference/test-kit), then
+apply the checklist to your real framework renderer.

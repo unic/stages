@@ -12,9 +12,10 @@
     "paths": {
       "@stages/core": ["../../packages/core/src/index.ts"],
       "@stages/dom": ["../../packages/dom/src/index.ts"],
-      "@stages/react": ["../../packages/react/src/index.tsx"]
+      "@stages/react": ["../../packages/react/src/index.tsx"],
+      "@stages/test-kit": ["../../packages/test-kit/src/index.ts"]
     },
     "skipLibCheck": true
   },
-  "include": ["./**/*.ts", "./**/*.tsx", "../../packages/core/src/**/*.ts", "../../packages/dom/src/**/*.ts", "../../packages/react/src/**/*.tsx"]
+  "include": ["./**/*.ts", "./**/*.tsx", "../../packages/core/src/**/*.ts", "../../packages/dom/src/**/*.ts", "../../packages/react/src/**/*.tsx", "../../packages/test-kit/src/**/*.ts"]
 }
