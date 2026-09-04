@@ -1,5 +1,8 @@
 import { applyPatches, getAtPath, isSafePathSegment, pathsEqual } from "./path.js";
 import { reduceCollectionCommand, type CollectionCommand } from "./collections.js";
+import { addressKey, addressStartsWith, parseNodeAddress } from "./address.js";
+import { deepEqual } from "./equality.js";
+import { getFieldDefinition } from "./fields.js";
 import {
   decodeJson,
   encodeJson,
@@ -11,22 +14,27 @@ import {
   evaluateSchema,
   initialFieldValue,
   type EvaluatedSchema,
-  type NormalizedBranch,
   type NormalizedNode,
 } from "./schema.js";
+import { buildSnapshotNodes, emptyValidation } from "./snapshot.js";
+import {
+  checkedValidationIssues,
+  createValidationCancellation,
+  eventNames,
+  passiveValidationSignal,
+  pathsIntersect,
+  validationRecordKey,
+  validatorsFor,
+  type ValidationTarget,
+} from "./validation.js";
 import type {
-  ContainerSnapshot,
   DataPath,
   Diagnostic,
   DeepReadonly,
   DynamicMetaSnapshot,
-  FieldDefinition,
-  FieldValidator,
-  FieldSnapshot,
   JsonValue,
   NodeAddress,
   NodeConfig,
-  RenderNodeSnapshot,
   SerializedStagesState,
   StagesChange,
   StagesController,
@@ -44,79 +52,8 @@ import type {
   ValidatorConfig,
 } from "./types.js";
 
-const emptyValidation: ValidationSnapshot = {
-  status: "unknown",
-  isValid: false,
-  issues: [],
-  visibleIssues: [],
-  pendingCount: 0,
-  unknownCount: 1,
-};
-
 function readonlyValue<TValue>(value: TValue): DeepReadonly<TValue> {
   return value as DeepReadonly<TValue>;
-}
-
-function addressKey(address: NodeAddress): string {
-  return address.map((segment) => `${segment.kind}:${segment.id.length}:${segment.id}`).join("/");
-}
-
-function addressStartsWith(address: NodeAddress, prefix: NodeAddress): boolean {
-  return prefix.length <= address.length && prefix.every((segment, index) => {
-    const candidate = address[index];
-    return candidate?.kind === segment.kind && candidate.id === segment.id;
-  });
-}
-
-function fieldDefinition(fields: unknown, type: string): FieldDefinition<unknown, unknown, unknown> | undefined {
-  if (fields === null || typeof fields !== "object") return undefined;
-  return (fields as Readonly<Record<string, FieldDefinition<unknown, unknown, unknown>>>)[type];
-}
-
-function deepEqual(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true;
-  if (left === null || right === null || typeof left !== "object" || typeof right !== "object") return false;
-  if (Array.isArray(left) || Array.isArray(right)) {
-    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
-    return left.every((item, index) => deepEqual(item, right[index]));
-  }
-  const leftRecord = left as Readonly<Record<string, unknown>>;
-  const rightRecord = right as Readonly<Record<string, unknown>>;
-  const keys = Object.keys(leftRecord);
-  return keys.length === Object.keys(rightRecord).length
-    && keys.every((key) => Object.prototype.hasOwnProperty.call(rightRecord, key) && deepEqual(leftRecord[key], rightRecord[key]));
-}
-
-function indexSnapshotNodes(
-  nodes: readonly RenderNodeSnapshot[],
-  index = new Map<string, RenderNodeSnapshot>(),
-): ReadonlyMap<string, RenderNodeSnapshot> {
-  for (const node of nodes) {
-    index.set(addressKey(node.address), node);
-    if (node.kind !== "field") indexSnapshotNodes(node.nodes, index);
-  }
-  return index;
-}
-
-function shareSnapshotNode(
-  next: RenderNodeSnapshot,
-  previous: ReadonlyMap<string, RenderNodeSnapshot>,
-): RenderNodeSnapshot {
-  const previousNode = previous.get(addressKey(next.address));
-  if (next.kind === "field") return previousNode !== undefined && deepEqual(previousNode, next) ? previousNode : next;
-
-  const sharedChildren = next.nodes.map((node) => shareSnapshotNode(node, previous));
-  const candidate: ContainerSnapshot = sharedChildren.every((node, index) => node === next.nodes[index])
-    ? next
-    : { ...next, nodes: sharedChildren };
-  return previousNode !== undefined && deepEqual(previousNode, candidate) ? previousNode : candidate;
-}
-
-interface InteractionState {
-  readonly focused: Readonly<{ has(value: string): boolean }>;
-  readonly touched: Readonly<{ has(value: string): boolean }>;
-  readonly visited: Readonly<{ has(value: string): boolean }>;
-  readonly activeWizards: ReadonlyMap<string, string>;
 }
 
 interface ActiveWizardState {
@@ -142,79 +79,6 @@ interface ValidationRecord {
   readonly cancel: () => void;
 }
 
-function eventNames(value: string | readonly string[] | undefined): readonly string[] {
-  if (value === undefined) return [];
-  return typeof value === "string" ? [value] : value;
-}
-
-function validationRecordKey(address: NodeAddress, validatorId: string): string {
-  return `${addressKey(address)}#${validatorId.length}:${validatorId}`;
-}
-
-const passiveValidationSignal: ValidationCancellationSignal = {
-  aborted: false,
-  onCancel: () => () => undefined,
-};
-
-function createValidationCancellation(): Readonly<{
-  signal: ValidationCancellationSignal;
-  cancel: () => void;
-}> {
-  let aborted = false;
-  const listeners = new Set<() => void>();
-  const signal: ValidationCancellationSignal = {
-    get aborted() {
-      return aborted;
-    },
-    onCancel(listener) {
-      if (aborted) {
-        listener();
-        return () => undefined;
-      }
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-  return {
-    signal,
-    cancel() {
-      if (aborted) return;
-      aborted = true;
-      for (const listener of [...listeners]) listener();
-      listeners.clear();
-    },
-  };
-}
-
-function pathsIntersect(left: DataPath, right: DataPath): boolean {
-  const commonLength = Math.min(left.length, right.length);
-  return pathsEqual(left.slice(0, commonLength), right.slice(0, commonLength));
-}
-
-function checkedValidationIssues(value: unknown): readonly ValidationIssue[] {
-  if (!Array.isArray(value)) throw new TypeError("Validator result must be an array of issues.");
-  for (const issue of value) {
-    if (issue === null || typeof issue !== "object" || Array.isArray(issue)) {
-      throw new TypeError("Each validation issue must be an object.");
-    }
-    const candidate = issue as Readonly<Record<string, unknown>>;
-    const path = candidate["path"];
-    const meta = candidate["meta"];
-    if (typeof candidate["id"] !== "string" || candidate["id"].length === 0
-      || typeof candidate["code"] !== "string" || candidate["code"].length === 0
-      || (candidate["severity"] !== "error" && candidate["severity"] !== "warning")
-      || !Array.isArray(path)
-      || !path.every((segment) =>
-        (typeof segment === "string" || typeof segment === "number") && isSafePathSegment(segment),
-      )
-      || (candidate["message"] !== undefined && typeof candidate["message"] !== "string")
-      || (meta !== undefined && (meta === null || typeof meta !== "object" || Array.isArray(meta)))) {
-      throw new TypeError("Validator returned a malformed issue.");
-    }
-  }
-  return value as readonly ValidationIssue[];
-}
-
 function initialScopeValue<TValue, TFields, TContext>(
   nodes: readonly NodeConfig<TValue, TFields, TContext>[],
   fields: TFields,
@@ -222,7 +86,7 @@ function initialScopeValue<TValue, TFields, TContext>(
   const value: Record<string, unknown> = {};
   for (const node of nodes) {
     if (node.kind === "field") {
-      const definition = fieldDefinition(fields, node.type);
+      const definition = getFieldDefinition(fields, node.type);
       value[node.id] = definition === undefined ? undefined : initialFieldValue(definition);
     } else if (node.kind === "group") {
       value[node.id] = initialScopeValue(node.nodes, fields);
@@ -241,19 +105,6 @@ function eventRecord(payload: unknown): Readonly<Record<string, unknown>> | unde
   return payload !== null && typeof payload === "object" && !Array.isArray(payload)
     ? payload as Readonly<Record<string, unknown>>
     : undefined;
-}
-
-function parseNodeAddress(value: unknown): NodeAddress | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const address: Array<Readonly<{ kind: "node" | "row"; id: string }>> = [];
-  for (const candidate of value) {
-    const record = eventRecord(candidate);
-    const kind = record?.["kind"];
-    const id = record?.["id"];
-    if ((kind !== "node" && kind !== "row") || typeof id !== "string") return undefined;
-    address.push({ kind, id });
-  }
-  return address;
 }
 
 type ParsedCollectionCommand =
@@ -330,176 +181,6 @@ function parseCollectionCommand<TValue, TFields, TContext>(
       : { code: "collection.payload", message: "Sort requires a numeric order array." };
   }
   return { code: "collection.event", message: `Unknown collection event \"${event.name}\".` };
-}
-
-function mapSnapshotNode<TValue, TFields, TContext>(
-  node: NormalizedNode<TValue, TFields, TContext>,
-  value: TValue,
-  baseline: TValue,
-  fields: TFields,
-  interaction: InteractionState,
-  issues: readonly ValidationIssue[],
-  visibleIssues: readonly ValidationIssue[],
-  validationByAddress: ReadonlyMap<string, ValidationSnapshot>,
-): RenderNodeSnapshot {
-  const key = addressKey(node.address);
-  const nodeIssues = issues.filter((issue) => pathsEqual(issue.path, node.path));
-  const nodeVisibleIssues = visibleIssues.filter((issue) => pathsEqual(issue.path, node.path));
-  if (node.config.kind === "field") {
-    const definition = fieldDefinition(fields, node.config.type);
-    const currentValue = getAtPath(value, node.path);
-    const baselineValue = getAtPath(baseline, node.path);
-    const initialValue = baselineValue === undefined && definition !== undefined
-      ? initialFieldValue(definition)
-      : baselineValue;
-    const snapshot: FieldSnapshot = {
-      kind: "field",
-      id: node.config.id,
-      type: node.config.type,
-      view: definition?.view,
-      path: node.path,
-      address: node.address,
-      value: currentValue,
-      initialValue,
-      props: node.props,
-      state: {
-        disabled: node.disabled,
-        visible: node.visible,
-        focused: interaction.focused.has(key),
-        touched: interaction.touched.has(key),
-        dirty: !deepEqual(currentValue, initialValue),
-        validating: (validationByAddress.get(key)?.pendingCount ?? 0) > 0,
-        issues: nodeIssues,
-        visibleIssues: nodeVisibleIssues,
-      },
-    };
-    return snapshot;
-  }
-  const snapshot: ContainerSnapshot = {
-    kind: node.config.kind,
-    id: node.config.id,
-    path: node.path,
-    address: node.address,
-    state: { disabled: node.disabled, visible: node.visible },
-    nodes: node.branches.length > 0
-      ? node.branches
-        .filter((branch) => branch.visible)
-        .map((branch) => mapSnapshotBranch(
-          branch,
-          value,
-          baseline,
-          fields,
-          interaction,
-          issues,
-          visibleIssues,
-          validationByAddress,
-          node.config.kind === "wizard"
-            ? interaction.activeWizards.get(addressKey(node.address)) === branch.id
-            : undefined,
-        ))
-      : node.children
-        .filter((child) => child.visible)
-        .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues, visibleIssues, validationByAddress)),
-    validation: validationByAddress.get(key) ?? emptyValidation,
-    ...(node.config.kind === "collection" ? {
-      size: Array.isArray(getAtPath(value, node.path)) ? (getAtPath(value, node.path) as readonly unknown[]).length : 0,
-      canAdd: !node.disabled && (node.config.max === undefined || node.branches.length < node.config.max),
-      canRemove: !node.disabled && (node.config.min === undefined || node.branches.length > node.config.min),
-    } : {}),
-    ...(node.config.kind === "wizard" ? (() => {
-      const visibleStages = node.branches.filter((branch) => branch.visible);
-      const activeStage = interaction.activeWizards.get(addressKey(node.address)) ?? visibleStages[0]?.id;
-      const activeIndex = visibleStages.findIndex((branch) => branch.id === activeStage);
-      return {
-        ...(activeStage === undefined ? {} : { activeStage }),
-        visibleStageIds: visibleStages.map((branch) => branch.id),
-        canPrevious: !node.disabled && activeIndex > 0,
-        canNext: !node.disabled && activeIndex >= 0 && activeIndex < visibleStages.length - 1,
-        canGo: !node.disabled && node.config.navigation?.nonLinear === true,
-      };
-    })() : {}),
-  };
-  return snapshot;
-}
-
-function mapSnapshotBranch<TValue, TFields, TContext>(
-  branch: NormalizedBranch<TValue, TFields, TContext>,
-  value: TValue,
-  baseline: TValue,
-  fields: TFields,
-  interaction: InteractionState,
-  issues: readonly ValidationIssue[],
-  visibleIssues: readonly ValidationIssue[],
-  validationByAddress: ReadonlyMap<string, ValidationSnapshot>,
-  active: boolean | undefined,
-): ContainerSnapshot {
-  return {
-    kind: branch.kind,
-    id: branch.id,
-    path: branch.path,
-    address: branch.address,
-    state: { disabled: branch.disabled, visible: branch.visible },
-    nodes: branch.children
-      .filter((child) => child.visible)
-      .map((child) => mapSnapshotNode(child, value, baseline, fields, interaction, issues, visibleIssues, validationByAddress)),
-    validation: validationByAddress.get(addressKey(branch.address)) ?? emptyValidation,
-    ...(active === undefined ? {} : { active }),
-  };
-}
-
-interface ValidationTarget {
-  readonly path: DataPath;
-  readonly address: NodeAddress;
-  readonly visible: boolean;
-  readonly disabled: boolean;
-}
-
-interface ValidationCandidate<TValue, TContext> {
-  readonly node: ValidationTarget;
-  readonly validator: ValidatorConfig<TValue, TContext>;
-  readonly identity: object;
-  readonly keyId: string;
-  readonly intrinsic: boolean;
-}
-
-function validatorsFor<TValue, TFields, TContext>(
-  nodes: readonly NormalizedNode<TValue, TFields, TContext>[],
-  fields: TFields,
-  rootValidators: readonly ValidatorConfig<TValue, TContext>[] = [],
-): readonly ValidationCandidate<TValue, TContext>[] {
-  const output: ValidationCandidate<TValue, TContext>[] = [];
-  const root: ValidationTarget = { path: [], address: [], visible: true, disabled: false };
-  for (const validator of rootValidators) {
-    output.push({ node: root, validator, identity: validator, keyId: `config:${validator.id}`, intrinsic: false });
-  }
-  for (const node of nodes) {
-    for (const validator of node.config.validators ?? []) {
-      output.push({ node, validator, identity: validator, keyId: `config:${validator.id}`, intrinsic: false });
-    }
-    if (node.config.kind === "field") {
-      const definition = fieldDefinition(fields, node.config.type);
-      for (const fieldValidator of definition?.validators ?? []) {
-        const intrinsicValidator = fieldValidator as FieldValidator<unknown, unknown>;
-        const validator: ValidatorConfig<TValue, TContext> = {
-          id: fieldValidator.id,
-          on: [],
-          validate: ({ fieldValue }) => intrinsicValidator.validate(fieldValue, node.props).map((issue) => ({
-            ...issue,
-            path: node.path,
-          })),
-        };
-        output.push({
-          node,
-          validator,
-          identity: fieldValidator,
-          keyId: `field:${fieldValidator.id}`,
-          intrinsic: true,
-        });
-      }
-    }
-    output.push(...validatorsFor(node.children, fields));
-  }
-  return output;
 }
 
 export function stages<TValue, TFields, TContext = unknown>(
@@ -1215,16 +896,22 @@ export function stages<TValue, TFields, TContext = unknown>(
     reconcileInteraction(result.nodes);
     validation = deriveValidation(result, value);
     const indexedValidation = validationIndex(result, value);
-    const previousNodes = indexSnapshotNodes(cachedSnapshot.nodes);
-    const nextNodes = result.nodes
-      .filter((node) => node.visible)
-      .map((node) => mapSnapshotNode(node, value, baseline, options.fields, {
+    const nextNodes = buildSnapshotNodes({
+      nodes: result.nodes,
+      value,
+      baseline,
+      fields: options.fields,
+      interaction: {
         focused,
         touched,
         visited,
         activeWizards: new Map([...activeWizards].map(([key, state]) => [key, state.stage])),
-      }, validation.issues, validation.visibleIssues, indexedValidation))
-      .map((node) => shareSnapshotNode(node, previousNodes));
+      },
+      issues: validation.issues,
+      visibleIssues: validation.visibleIssues,
+      validationByAddress: indexedValidation,
+      previousNodes: cachedSnapshot.nodes,
+    });
     cachedSnapshot = {
       value: readonlyValue(value),
       revision,
@@ -1402,7 +1089,7 @@ export function stages<TValue, TFields, TContext = unknown>(
 
     let patches: readonly StagesPatch[] = isReset ? [{ op: "set", path: [], value: baseline }] : [];
     if (!isReset && target?.config.kind === "field" && target.visible && !target.disabled) {
-      const definition = fieldDefinition(options.fields, target.config.type);
+      const definition = getFieldDefinition(options.fields, target.config.type);
       try {
         const reduced = definition?.reduce?.({ value: getAtPath(draft, target.path), event, path: target.path });
         if (reduced !== undefined) {

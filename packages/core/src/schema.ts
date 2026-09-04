@@ -1,4 +1,5 @@
 import { getAtPath, isSafePathSegment } from "./path.js";
+import { addressKey } from "./address.js";
 import type {
   DataPath,
   DeepReadonly,
@@ -46,10 +47,6 @@ export interface EvaluateSchemaOptions<TValue, TFields, TContext> {
   readonly meta: DynamicMetaSnapshot;
   readonly fields: TFields;
   readonly collectionKeys?: ReadonlyMap<string, readonly string[]>;
-}
-
-function addressKey(address: NodeAddress): string {
-  return address.map((segment) => `${segment.kind}:${segment.id.length}:${segment.id}`).join("/");
 }
 
 function diagnostic(
