@@ -1,4 +1,4 @@
-import { fieldEvent, formEvent, getAtPath, nodeEvent, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
+import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   createStudioHistory,
@@ -355,19 +355,55 @@ interface PreviewNodeProps {
   readonly expressionContext: StudioExpressionContext;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
   readonly onStructureEvent: (event: StagesEvent) => void;
+  readonly onWizardNavigate: (wizard: ContainerSnapshot, event: StagesEvent, validateCurrent: boolean) => Promise<void>;
+}
+
+function CollectionRowTestControls({ row, index, size, snapshot, canAdd, canRemove, disabled, onStructureEvent }: {
+  readonly row: unknown;
+  readonly index: number;
+  readonly size: number;
+  readonly snapshot: ContainerSnapshot;
+  readonly canAdd: boolean;
+  readonly canRemove: boolean;
+  readonly disabled: boolean;
+  readonly onStructureEvent: (event: StagesEvent) => void;
+}) {
+  const [draft, setDraft] = useState(() => JSON.stringify(row, null, 2));
+  const [error, setError] = useState("");
+  const dispatch = (name: string, payload?: unknown) => onStructureEvent(nodeEvent(name, snapshot.address, payload === undefined ? {} : { payload }));
+  const replace = () => {
+    try {
+      dispatch("collection:replace", { value: JSON.parse(draft) as unknown });
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Replacement must be valid JSON.");
+    }
+  };
+  return <div className="studio-v1-preview__row-tools" aria-label={`Row ${index + 1} test controls`}>
+    <p><small>Stable row key: <code>{snapshot.id}</code> · current index: {index}</small></p>
+    <label className="studio-field"><span>Replacement JSON</span><textarea className="ui-input" rows={3} value={draft} aria-invalid={error.length > 0 || undefined} onChange={(event) => setDraft(event.currentTarget.value)} /></label>
+    {error.length > 0 && <small role="alert">{error}</small>}
+    <button type="button" disabled={disabled} onClick={replace}>Replace row {index + 1}</button>
+    <button type="button" disabled={!canAdd} onClick={() => dispatch("collection:duplicate")}>Duplicate row {index + 1}</button>
+    <button type="button" disabled={disabled || index === 0} onClick={() => dispatch("collection:move", { to: index - 1 })}>Move row {index + 1} up</button>
+    <button type="button" disabled={disabled || index === size - 1} onClick={() => dispatch("collection:move", { to: index + 1 })}>Move row {index + 1} down</button>
+    <button type="button" disabled={!canRemove} onClick={() => dispatch("collection:remove")}>Remove row {index + 1}</button>
+  </div>;
 }
 
 function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRuntimeRenderNode<"collection">; readonly path: DataPath }) {
-  const { form, node, value, snapshotNodes, path, onInput, onStructureEvent } = props;
+  const { form, node, value, snapshotNodes, path, onInput, onStructureEvent, onWizardNavigate } = props;
   const collection = form.nodes[node.uid];
   const snapshot = findPreviewSnapshot(snapshotNodes, path);
   const rows = getAtPath(value, path);
   const values = Array.isArray(rows) ? rows : [];
   return <PreviewLayout node={node}><div className="studio-v1-preview__collection">
+      <p><strong>Collection scope:</strong> {path.join(".")} · size {values.length} · add {snapshot?.kind === "collection" && snapshot.canAdd ? "allowed" : "blocked"} · remove {snapshot?.kind === "collection" && snapshot.canRemove ? "allowed" : "blocked"}</p>
       <div className="studio-v1-preview__collection-actions">
         {collection?.kind === "collection" && isStudioVariantCollection(collection)
           ? collection.variantUids.map((uid) => <button type="button" key={uid} disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:add", snapshot.address, { payload: { variant: runtimeIdFor(form, uid) } }))}>Add {nodeLabel(form, uid)}</button>)
           : <button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:add", snapshot.address))}>Add row</button>}
+        <button type="button" disabled={snapshot?.kind !== "collection" || snapshot.state.disabled || values.length < 2} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:sort", snapshot.address, { payload: { order: values.map((_, index) => values.length - index - 1) } }))}>Reverse row order</button>
       </div>
       {values.map((row, index) => {
       let children = node.children;
@@ -376,32 +412,46 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
         children = node.children.find((child) => child.kind === "variant" && runtimeIdFor(form, child.uid) === variantId)?.children ?? [];
       }
       const rowPath: DataPath = [...path, index];
-      const rowSnapshot = snapshot?.kind === "collection" ? snapshot.nodes[index] : undefined;
-      const rowKey = rowSnapshot?.kind === "row" ? rowSnapshot.id : `unavailable-${JSON.stringify(row)}`;
+      const rowSnapshot = snapshot?.kind === "collection" ? snapshot.nodes.find((candidate) => candidate.kind === "row" && candidate.path.at(-1) === index) : undefined;
+      const rowKey = rowSnapshot?.kind === "row" ? rowSnapshot.id : `unavailable-${rowPath.join("\u0000")}`;
       return <div className="studio-v1-preview__row" data-row-index={index} key={rowKey}>{children.map((child) => (
-        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} expressionContext={{ ...props.expressionContext, row }} onInput={onInput} onStructureEvent={onStructureEvent} />
-      ))}<button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canRemove === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:remove", snapshot.address, { payload: { index } }))}>Remove row {index + 1}</button></div>;
+        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} expressionContext={{ ...props.expressionContext, row }} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
+      ))}{rowSnapshot?.kind === "row" && <CollectionRowTestControls row={row} index={index} size={values.length} snapshot={rowSnapshot} canAdd={snapshot?.kind === "collection" && snapshot.canAdd === true} canRemove={snapshot?.kind === "collection" && snapshot.canRemove === true} disabled={snapshot?.kind !== "collection" || snapshot.state.disabled} onStructureEvent={onStructureEvent} />}</div>;
     })}</div></PreviewLayout>;
 }
 
 function PreviewWizard(props: PreviewNodeProps & { readonly node: StudioRuntimeRenderNode<"wizard">; readonly path: DataPath }) {
-  const { form, node, value, snapshotNodes, path, onInput, onStructureEvent } = props;
+  const { form, node, value, snapshotNodes, path, onInput, onStructureEvent, onWizardNavigate } = props;
   const snapshot = findPreviewSnapshot(snapshotNodes, path);
   const activeStage = snapshot?.kind === "wizard" ? snapshot.activeStage : undefined;
   const stages = activeStage === undefined ? node.children.slice(0, 1) : node.children.filter((child) => runtimeIdFor(form, child.uid) === activeStage);
+  const visibleStageIds = snapshot?.kind === "wizard" ? snapshot.visibleStageIds ?? [] : [];
+  const visibleStageIdSet = new Set(visibleStageIds);
+  const [routeStage, setRouteStage] = useState(activeStage ?? "");
+  useEffect(() => { if (activeStage !== undefined) setRouteStage(activeStage); }, [activeStage]);
+  const documentWizard = form.nodes[node.uid];
+  const navigate = (name: string, target?: string) => snapshot?.kind === "wizard"
+    ? void onWizardNavigate(snapshot, nodeEvent(name, snapshot.address, target === undefined ? {} : { payload: target }), documentWizard?.kind === "wizard" && documentWizard.navigation?.validateCurrent === true)
+    : undefined;
   return <PreviewLayout node={node}><div className="studio-v1-preview__wizard">
       {snapshot?.kind === "wizard" && <nav aria-label={`${nodeLabel(form, node.uid)} stages`}>
-        <button type="button" disabled={snapshot.canPrevious !== true} onClick={() => onStructureEvent(nodeEvent("wizard:previous", snapshot.address))}>Previous</button>
-        {snapshot.canGo === true && node.children.map((stage) => <button type="button" key={stage.uid} aria-current={runtimeIdFor(form, stage.uid) === activeStage ? "step" : undefined} onClick={() => onStructureEvent(nodeEvent("wizard:go", snapshot.address, { payload: runtimeIdFor(form, stage.uid) }))}>{nodeLabel(form, stage.uid)}</button>)}
-        <button type="button" disabled={snapshot.canNext !== true} onClick={() => onStructureEvent(nodeEvent("wizard:next", snapshot.address))}>Next</button>
+        <button type="button" disabled={snapshot.canPrevious !== true} onClick={() => navigate("wizard:previous")}>Previous</button>
+        {snapshot.canGo === true && node.children.flatMap((stage) => visibleStageIdSet.has(runtimeIdFor(form, stage.uid) ?? "") ? [<button type="button" key={stage.uid} aria-current={runtimeIdFor(form, stage.uid) === activeStage ? "step" : undefined} onClick={() => navigate("wizard:go", runtimeIdFor(form, stage.uid))}>{nodeLabel(form, stage.uid)}</button>] : [])}
+        <button type="button" disabled={snapshot.canNext !== true} onClick={() => navigate("wizard:next")}>Next</button>
       </nav>}
+      {snapshot?.kind === "wizard" && <section className="studio-v1-preview__wizard-summary" aria-label={`${nodeLabel(form, node.uid)} scoped summary`}>
+        <p><strong>Wizard scope:</strong> {path.join(".")} · active {activeStage ?? "none"} · visible {visibleStageIds.join(", ") || "none"} · validation {snapshot.validation?.status ?? "unknown"}</p>
+        <label className="studio-field"><span>Simulated route</span><select value={routeStage} onChange={(event) => setRouteStage(event.currentTarget.value)}>{visibleStageIds.map((stageId) => <option key={stageId} value={stageId}>/{path.map(String).join("/")}/{stageId}</option>)}</select></label>
+        <button type="button" disabled={routeStage === activeStage || routeStage === ""} onClick={() => navigate("wizard:go", routeStage)}>Apply simulated route</button>
+        <small>Route simulation is adapter-only Test state; it dispatches the same guarded <code>wizard:go</code> command and is not stored in form data.</small>
+      </section>}
       {stages.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={props.expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={props.expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
     ))}</div></PreviewLayout>;
 }
 
 function PreviewNode(props: PreviewNodeProps) {
-  const { form, node, value, snapshotNodes, runtimePath, expressionContext, onInput, onStructureEvent } = props;
+  const { form, node, value, snapshotNodes, runtimePath, expressionContext, onInput, onStructureEvent, onWizardNavigate } = props;
   if (node.hidden) return null;
   if (node.kind === "block") return <PreviewDynamicBlock form={form} node={node} expressionContext={expressionContext} />;
   const path = runtimePath ?? node.runtimePath;
@@ -409,13 +459,13 @@ function PreviewNode(props: PreviewNodeProps) {
   if (snapshot === undefined || snapshot.state.visible === false) return null;
   if (node.kind === "group") {
     return <PreviewLayout node={node}><fieldset className="studio-v1-preview__group">{node.children.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
     ))}</fieldset></PreviewLayout>;
   }
   if (node.kind === "collection") return <PreviewCollection {...props} node={node} path={path} />;
   if (node.kind === "wizard") return <PreviewWizard {...props} node={node} path={path} />;
   if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
-    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
+    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
   ))}</div></PreviewLayout>;
   return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} onInput={onInput} onBlur={() => onStructureEvent(fieldEvent("blur", path, { source: "adapter" }))} onFocus={() => onStructureEvent(fieldEvent("focus", path, { source: "adapter" }))} /> : null;
 }
@@ -593,7 +643,7 @@ function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { re
   return <section className="studio-v1-dynamic-state" aria-labelledby="studio-v1-dynamic-state-title"><h3 id="studio-v1-dynamic-state-title">Dynamic structure</h3><ul>{items.map((item) => <li key={item.uid}><span>{item.label}</span><strong>{item.state}</strong></li>)}</ul></section>;
 }
 
-function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: {
+export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: {
   readonly form: StudioFormDocument;
   readonly compiled: CompiledStudioForm;
   readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => void;
@@ -641,6 +691,25 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
   const [validationScope, setValidationScope] = useState<string>("form");
   const [validationMessage, setValidationMessage] = useState("Validation has not run.");
   const validationInspection = inspectStudioValidation(preview.snapshot, compiled.sourceMap);
+  const navigateWizard = async (
+    wizard: ContainerSnapshot,
+    event: StagesEvent,
+    validateCurrent: boolean,
+  ) => {
+    if (validateCurrent) {
+      const currentStage = wizard.nodes.find((node) => node.kind === "stage" && node.id === wizard.activeStage);
+      if (currentStage === undefined) {
+        setValidationMessage("The active wizard stage is unavailable; navigation was not attempted.");
+        return;
+      }
+      const result = await preview.controller.validate({ scope: { address: currentStage.address }, event: "submit", reveal: true });
+      setValidationMessage(result.status === "valid"
+        ? "Current wizard stage is valid; navigation was attempted."
+        : `Current wizard stage is ${result.status}; navigation was blocked.`);
+      if (result.status !== "valid") return;
+    }
+    preview.controller.dispatch(event);
+  };
   const dispatchNamedEvent = (definition: StudioEventDefinition, count = 1) => {
     let payload: unknown;
     if (definition.payload !== undefined) {
@@ -725,6 +794,13 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
         </div>}
       </section>
       <DynamicStructurePanel form={form} nodes={compiled.renderPlan.nodes} snapshots={preview.snapshot.nodes} value={value} scenario={scenario} />
+      <section className="studio-v1-runtime-diagnostics" aria-labelledby="studio-v1-runtime-diagnostics-title">
+        <h3 id="studio-v1-runtime-diagnostics-title">Runtime diagnostics</h3>
+        {preview.diagnostics.length === 0 ? <p>No runtime diagnostics.</p> : <ul>{preview.diagnostics.map((diagnostic) => <li key={`${diagnostic.code}:${JSON.stringify(diagnostic.runtimeAddress)}:${diagnostic.message}`}>
+          <strong>{diagnostic.code}</strong> {diagnostic.message}{diagnostic.runtimePath === undefined ? "" : ` · ${diagnostic.runtimePath.join(".") || "form"}`}
+        </li>)}</ul>}
+        <small>Key collisions appear as <code>schema.duplicate-row-key</code>; the conflicting row branch is omitted until the canonical value supplies unique keys.</small>
+      </section>
       <section className="studio-v1-validation-state" aria-labelledby="studio-v1-validation-state-title">
         <h3 id="studio-v1-validation-state-title">Validation state</h3>
         <label className="studio-field"><span>Scope</span><select value={validationScope} onChange={(event) => setValidationScope(event.currentTarget.value)}>
@@ -752,6 +828,7 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
               source: "adapter",
             }))}
             onStructureEvent={(event) => preview.controller.dispatch(event)}
+            onWizardNavigate={navigateWizard}
           />
         ))}
       </div>
@@ -781,6 +858,9 @@ function StructuralInspector({ node, form, onUpdate }: {
         value={node.itemKey?.kind ?? "index"}
         onChange={(event) => onUpdate(node, { itemKey: event.currentTarget.value === "property" ? { kind: "property", property: "id" } : { kind: "index" } }, "Edit item key strategy")}
       ><option value="index">Row index</option><option value="property">Row property</option></select></label>
+      <p><small>{node.itemKey?.kind === "property"
+        ? "Use an immutable, non-sensitive property that is present, unique, and stable before every accepted evaluation. Duplicate commands require a fresh domain key."
+        : "Engine-owned row keys survive Studio commands and controller serialization, but an unrelated external reorder cannot reveal which records moved."}</small></p>
       {node.itemKey?.kind === "property" && <label className="studio-field"><span>Key property</span><input
         className="ui-input"
         value={node.itemKey.property}
@@ -809,6 +889,16 @@ function StructuralInspector({ node, form, onUpdate }: {
     </select></label>
     <label><input type="checkbox" checked={node.navigation?.nonLinear ?? false} onChange={(event) => onUpdate(node, { navigation: { ...node.navigation, nonLinear: event.currentTarget.checked } }, "Edit nonlinear navigation") } /> Allow nonlinear navigation</label>
     <label><input type="checkbox" checked={node.navigation?.validateCurrent ?? false} onChange={(event) => onUpdate(node, { navigation: { ...node.navigation, validateCurrent: event.currentTarget.checked } }, "Edit validation gating") } /> Validate current stage before navigation</label>
+    <label><input type="checkbox" checked={node.navigation?.guard !== undefined} onChange={(event) => onUpdate(node, { navigation: { ...node.navigation, guard: event.currentTarget.checked ? { kind: "literal", value: true } : undefined } }, "Edit wizard guard") } /> Enable synchronous guard</label>
+    {node.navigation?.guard !== undefined && <>
+      <p><small>The guard must return a boolean. Use event.from and event.to for transition-specific policy; failures are reported without changing the active stage.</small></p>
+      <StudioExpressionEditor
+        expression={node.navigation.guard}
+        label="Wizard transition guard"
+        references={[...expressionReferences(form).filter(({ scope }) => scope === "value"), { scope: "event", path: ["from"], label: "Current stage" }, { scope: "event", path: ["to"], label: "Target stage" }]}
+        onChange={(guard) => onUpdate(node, { navigation: { ...node.navigation, guard } }, "Edit wizard guard", `wizard.guard:${node.uid}`)}
+      />
+    </>}
   </fieldset>;
   return null;
 }

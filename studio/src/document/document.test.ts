@@ -171,6 +171,15 @@ describe("Studio document validation", () => {
     expectCode(input, "document.invalid-initial-stage");
     expectCode(input, "document.invalid-navigation");
 
+    const invalidGuard = validProject();
+    const invalidGuardForm = (invalidGuard["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    invalidGuardForm["rootNodeUids"] = ["wizard_flow"];
+    invalidGuardForm["nodes"] = {
+      wizard_flow: { uid: "wizard_flow", kind: "wizard", runtimeId: "flow", stageUids: ["stage_intro"], navigation: { guard: { kind: "call", source: "unsafe()" } } },
+      stage_intro: { uid: "stage_intro", kind: "stage", runtimeId: "intro", childUids: [] },
+    };
+    expectCode(invalidGuard, "document.invalid-navigation");
+
     const misplaced = validProject();
     const misplacedForm = (misplaced["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
     misplacedForm["rootNodeUids"] = ["stage_root"];

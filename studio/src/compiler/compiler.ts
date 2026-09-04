@@ -577,13 +577,34 @@ function compileNode(
   }
   const initialStageNode = node.initialStageUid === undefined ? undefined : context.form.nodes[node.initialStageUid];
   const initialStage = initialStageNode?.kind === "stage" ? initialStageNode.runtimeId : undefined;
+  const guardExpression = node.navigation?.guard;
+  const guardHasUnsupportedScope = guardExpression !== undefined && studioExpressionDependencies(guardExpression)
+    .some(({ scope }) => scope !== "value" && scope !== "event");
+  if (guardHasUnsupportedScope) diagnostic(
+    context,
+    "compiler.invalid-guard-expression",
+    "Wizard guards can reference only form value and event.from/event.to.",
+    { entityUid: node.uid, propertyPath: ["nodes", node.uid, "navigation", "guard"], runtimePath, runtimeAddress },
+  );
+  const navigation = node.navigation === undefined ? undefined : {
+    ...(node.navigation.validateCurrent === undefined ? {} : { validateCurrent: node.navigation.validateCurrent }),
+    ...(node.navigation.nonLinear === undefined ? {} : { nonLinear: node.navigation.nonLinear }),
+    ...(guardExpression === undefined || guardHasUnsupportedScope ? {} : {
+      guard: (value: unknown, from: string, to: string): boolean => {
+        const result = evaluateStudioExpression(guardExpression, { value, event: { from, to } });
+        if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+        if (typeof result.value !== "boolean") throw new TypeError("Wizard guard must evaluate to a boolean.");
+        return result.value;
+      },
+    }),
+  };
   return {
     schema: {
       kind: "wizard",
       id: node.runtimeId,
       stages: children.flatMap((child) => child.stage === undefined ? [] : [child.stage]),
       ...(initialStage === undefined ? {} : { initialStage }),
-      ...(node.navigation === undefined ? {} : { navigation: node.navigation }),
+      ...(navigation === undefined ? {} : { navigation }),
       ...compiledBehavior(node),
       ...transforms,
       ...validation,

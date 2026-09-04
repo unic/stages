@@ -346,7 +346,14 @@ describe("minimal Studio compiler", () => {
         [collectionUid]: { uid: collectionUid, kind: "collection", runtimeId: "contacts", min: 1, max: 3, initialRows: 1, itemKey: { kind: "property", property: "id" }, discriminator: "kind", variantUids: [personUid], initialVariantUid: personUid },
         [personUid]: { uid: personUid, kind: "variant", runtimeId: "person", childUids: [nameUid] },
         [nameUid]: { uid: nameUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Name" } },
-        [wizardUid]: { uid: wizardUid, kind: "wizard", runtimeId: "flow", stageUids: [introUid, reviewUid], initialStageUid: reviewUid, navigation: { nonLinear: true, validateCurrent: true } },
+        [wizardUid]: {
+          uid: wizardUid, kind: "wizard", runtimeId: "flow", stageUids: [introUid, reviewUid], initialStageUid: reviewUid,
+          navigation: {
+            nonLinear: true,
+            validateCurrent: true,
+            guard: { kind: "binary", operator: "===", left: { kind: "reference", scope: "event", path: ["to"] }, right: { kind: "literal", value: "review" } },
+          },
+        },
         [introUid]: { uid: introUid, kind: "stage", runtimeId: "intro", childUids: [] },
         [reviewUid]: { uid: reviewUid, kind: "stage", runtimeId: "review", childUids: [] },
       },
@@ -364,6 +371,20 @@ describe("minimal Studio compiler", () => {
       stages: [{ id: "intro" }, { id: "review" }],
     }]);
     expect((compiled.schema.nodes[0] as { itemKey?: (value: unknown, index: number) => string }).itemKey?.({ id: "contact-1" }, 0)).toBe("contact-1");
+    const navigation = (compiled.schema.nodes[1] as { navigation?: { guard?: (value: unknown, from: string, to: string) => boolean } }).navigation;
+    expect(navigation?.guard?.({}, "intro", "review")).toBe(true);
+    expect(navigation?.guard?.({}, "review", "intro")).toBe(false);
+    const invalidGuard = compileStudioForm({
+      ...form,
+      nodes: {
+        ...form.nodes,
+        [wizardUid]: {
+          ...form.nodes[wizardUid] as Extract<StudioNode, { readonly kind: "wizard" }>,
+          navigation: { guard: { kind: "reference", scope: "context", path: ["permission"] } },
+        },
+      },
+    });
+    expect(invalidGuard.diagnostics).toContainEqual(expect.objectContaining({ code: "compiler.invalid-guard-expression", entityUid: wizardUid }));
     const empty = createEmptyStudioScenarioValue(form);
     expect(empty).toEqual({
       contacts: [{ id: "row-1", kind: "person", name: "" }],

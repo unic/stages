@@ -77,6 +77,12 @@ Execution status:
   author named events, field reducers, target-to-root transforms, safe
   predicates, and ordered set/remove patches with compile-time target checks,
   controlled proposal inspection, and exact transaction evidence
+- Session 21 completed: [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx),
+  [`../studio/src/compiler/compiler.ts`](../studio/src/compiler/compiler.ts), and
+  [`../studio/docs/ADVANCED_COLLECTION_AND_WIZARD_POLICIES.md`](../studio/docs/ADVANCED_COLLECTION_AND_WIZARD_POLICIES.md)
+  expose every collection command, stable-key guidance and collision evidence,
+  safe wizard guards, validate-then-navigate behavior, dynamic scoped summaries,
+  route simulation, and recursive collection/wizard interaction tests
 
 Primary references:
 

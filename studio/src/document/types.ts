@@ -121,6 +121,8 @@ export interface StudioWizardNode extends StudioValidatedNodeBase {
   readonly navigation?: {
     readonly validateCurrent?: boolean;
     readonly nonLinear?: boolean;
+    /** Safe synchronous transition policy. The event scope exposes `from` and `to`. */
+    readonly guard?: StudioExpression;
   };
 }
 

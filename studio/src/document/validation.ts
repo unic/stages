@@ -536,7 +536,8 @@ export function validateStudioProject(
             const navigation = own(node, "navigation");
             if (navigation !== undefined && (!isPlainRecord(navigation)
               || (own(navigation, "validateCurrent") !== undefined && typeof own(navigation, "validateCurrent") !== "boolean")
-              || (own(navigation, "nonLinear") !== undefined && typeof own(navigation, "nonLinear") !== "boolean"))) failures.push(issue("document.invalid-navigation", "navigation flags must be booleans.", [...nodePath, "navigation"], details));
+              || (own(navigation, "nonLinear") !== undefined && typeof own(navigation, "nonLinear") !== "boolean")
+              || (own(navigation, "guard") !== undefined && !isStudioExpression(own(navigation, "guard"))))) failures.push(issue("document.invalid-navigation", "navigation flags must be booleans and guard must be a safe expression AST.", [...nodePath, "navigation"], details));
           } else if (kind === "variant") {
             if (!Array.isArray(own(node, "childUids"))) failures.push(issue("document.invalid-children", "variant childUids must be an array.", [...nodePath, "childUids"], details));
           } else if (kind === "fragment") {
