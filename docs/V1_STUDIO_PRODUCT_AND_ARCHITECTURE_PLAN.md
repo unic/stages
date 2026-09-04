@@ -83,6 +83,13 @@ Execution status:
   expose every collection command, stable-key guidance and collision evidence,
   safe wizard guards, validate-then-navigate behavior, dynamic scoped summaries,
   route simulation, and recursive collection/wizard interaction tests
+- Session 22 completed: [`../studio/src/localization/index.ts`](../studio/src/localization/index.ts),
+  [`../studio/src/document/types.ts`](../studio/src/document/types.ts), and
+  [`../studio/docs/EXTENSIONS_STATE_AND_LOCALIZATION.md`](../studio/docs/EXTENSIONS_STATE_AND_LOCALIZATION.md)
+  separate domain, context, registered durable extensions, runtime, and adapter
+  state; author codec/locale metadata and scenario values; resolve localized
+  props and validator messages with fallback diagnostics; format canonical
+  field values for display; and migrate POC `interfaceState`
 
 Primary references:
 

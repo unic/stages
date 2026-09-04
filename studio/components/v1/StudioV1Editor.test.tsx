@@ -1,12 +1,37 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { compileStudioForm } from "../../src/compiler";
-import { toUid, type StudioFormDocument } from "../../src/document";
+import { toUid, type StudioFormDocument, type StudioResourceCatalog } from "../../src/document";
 import { ControlledPreview } from "./StudioV1Editor";
 
-function renderPreview(form: StudioFormDocument) {
-  return render(<ControlledPreview form={form} compiled={compileStudioForm(form)} onUpdateScenario={() => {}} onAddScenario={() => undefined} />);
+function renderPreview(form: StudioFormDocument, resources?: StudioResourceCatalog, defaultLocale = "en") {
+  return render(<ControlledPreview form={form} compiled={compileStudioForm(form, {}, resources === undefined ? {} : { localization: { defaultLocale, resources } })} {...(resources === undefined ? {} : { resources })} defaultLocale={defaultLocale} onUpdateScenario={() => {}} onAddScenario={() => undefined} />);
 }
+
+describe("Studio extensions, transient state, and localization", () => {
+  it("explains ownership, reports locale fallback, resolves labels, and formats canonical values", async () => {
+    const amountUid = toUid("field_amount");
+    const resources: StudioResourceCatalog = {
+      extensions: { draft: { title: "Draft preferences", version: 1, codec: { key: "json", version: 1 } } },
+      locales: {
+        en: { label: "English", messages: { "field.amount": "Amount" } },
+        de: { label: "Deutsch", messages: { "field.amount": "Betrag" } },
+        "de-CH": { label: "Deutsch (Schweiz)", messages: {} },
+      },
+    };
+    const form: StudioFormDocument = {
+      uid: toUid("form_localized"), title: "Localized", runtime: { schemaId: "localized", schemaVersion: 1 }, rootNodeUids: [amountUid],
+      nodes: { [amountUid]: { uid: amountUid, kind: "field", runtimeId: "amount", definition: { key: "number", version: 1 }, props: { label: "Amount" }, localizedProps: { label: "field.amount" }, format: { kind: "number", options: { minimumFractionDigits: 2 } } } },
+      scenarios: [{ uid: toUid("scenario_localized"), title: "Swiss", value: { amount: 1234.5 }, context: { locale: "de-CH" }, extensions: { draft: { compact: true } } }], settings: {},
+    };
+    renderPreview(form, resources);
+    await waitFor(() => expect(screen.getByRole("spinbutton", { name: /Betrag/ })).toHaveValue(1234.5));
+    expect(screen.getByLabelText("Amount localized value").textContent).toMatch(/^1['’]234\.50$/);
+    expect(screen.getByText("localization.fallback")).toBeInTheDocument();
+    expect(screen.getByText(/Selection, panels, drafts/)).toBeInTheDocument();
+    expect(screen.getByText("Registered extension values JSON")).toBeInTheDocument();
+  });
+});
 
 describe("Studio advanced collection and wizard Test mode", () => {
   it("exposes replace, duplicate, move, sort, remove, and variant-add commands", async () => {

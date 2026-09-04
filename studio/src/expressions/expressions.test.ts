@@ -20,7 +20,7 @@ function legacy(source: string): StudioExpression {
 describe("Studio expressions", () => {
   it("evaluates safe equivalents of the POC visibility and computed-value examples", () => {
     const visibility = legacy("!!interfaceState.showAdvanced");
-    expect(evaluateStudioExpression(visibility, { value: {}, context: { showAdvanced: true } })).toEqual({ ok: true, value: true });
+    expect(evaluateStudioExpression(visibility, { value: {}, extensions: { legacyInterfaceState: { showAdvanced: true } } })).toEqual({ ok: true, value: true });
 
     const computed = legacy("data.summed !== null ? data.summed.num1 + data.summed.num2 : 0");
     expect(evaluateStudioExpression(computed, { value: { summed: { num1: 4, num2: 7 } } })).toEqual({ ok: true, value: 11 });

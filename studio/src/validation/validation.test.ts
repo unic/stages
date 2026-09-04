@@ -77,6 +77,24 @@ describe("Studio synchronous validation", () => {
     expect(result.diagnostics.map(({ code }) => code)).toEqual(["compiler.duplicate-validator-id", "compiler.invalid-validator-pattern"]);
   });
 
+  it("resolves localized validator messages from the shared project catalog", async () => {
+    const compiled = compileStudioValidators([{
+      id: "localized.required", kind: "required", message: { key: "validation.required", default: "Required" },
+    }], { localization: {
+      defaultLocale: "en",
+      resources: { locales: {
+        en: { label: "English", messages: { "validation.required": "Required" } },
+        de: { label: "Deutsch", messages: { "validation.required": "Erforderlich" } },
+      } },
+    } });
+    const controller = stages({
+      schema: { id: "localized-validator", version: 1, nodes: [{ kind: "field", id: "name", type: "text", validators: compiled.validators }] },
+      fields: { text: { view: "text", initialValue: "" } }, value: { name: "" }, context: { locale: "de" },
+    });
+    expect((await controller.validate({ event: "submit", reveal: true })).issues[0]?.message).toBe("Erforderlich");
+    controller.destroy();
+  });
+
   it("rejects malformed persisted policies before compilation", () => {
     const candidate = {
       format: "stages-studio", formatVersion: 1,

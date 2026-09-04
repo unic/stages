@@ -3,6 +3,7 @@ import type { StudioValidatorSpec } from "../document/types";
 import { evaluateStudioExpression } from "../expressions/evaluator";
 import { studioExpressionDependencies } from "../expressions/serialization";
 import type { StudioAsyncServiceBindings, StudioAsyncServiceResult } from "../registry/services";
+import { resolveStudioMessage, type StudioLocalizationOptions } from "../localization";
 
 export const STUDIO_VALIDATOR_CATALOG = Object.freeze({
   required: { displayName: "Required", description: "Requires a present, non-empty value." },
@@ -27,14 +28,20 @@ export interface CompiledStudioValidators {
 
 export interface CompileStudioValidatorsOptions {
   readonly serviceBindings?: StudioAsyncServiceBindings;
+  readonly localization?: StudioLocalizationOptions;
 }
 
-function messageFor(spec: StudioValidatorSpec, context: ValidationContext<unknown, unknown>): string | undefined {
+function messageFor(spec: StudioValidatorSpec, context: ValidationContext<unknown, unknown>, localization?: StudioLocalizationOptions): string | undefined {
   if (typeof spec.message === "string") return spec.message;
   if (spec.message === undefined) return undefined;
   const locale = context.context !== null && typeof context.context === "object"
     ? (context.context as Readonly<Record<string, unknown>>)["locale"]
     : undefined;
+  const requestedLocale = typeof locale === "string" ? locale : localization?.defaultLocale;
+  if (spec.message.key !== undefined && requestedLocale !== undefined && localization !== undefined) {
+    const resolved = resolveStudioMessage(spec.message.key, requestedLocale, localization).value;
+    if (resolved !== undefined) return resolved;
+  }
   return typeof locale === "string" ? spec.message.translations?.[locale] ?? spec.message.default : spec.message.default;
 }
 
@@ -146,9 +153,10 @@ function serviceIssues(
   id: string,
   context: ValidationContext<unknown, unknown>,
   result: StudioAsyncServiceResult,
+  localization?: StudioLocalizationOptions,
 ) {
   if (result.status === "success") return [];
-  const message = result.message ?? messageFor(spec, context);
+  const message = result.message ?? messageFor(spec, context, localization);
   return [{
     id,
     code: result.code?.trim() || spec.code?.trim() || "service-rejected",
@@ -203,11 +211,11 @@ export function compileStudioValidators(
       ? async (context) => {
           const input = spec.request === undefined ? context.fieldValue : evaluate(spec.request, context);
           const result = await serviceBinding!.invoke({ input, validation: context });
-          return serviceIssues(spec, id, context, result);
+          return serviceIssues(spec, id, context, result, options.localization);
         }
       : (context) => {
           if (passes(spec, context, pattern)) return [];
-          const message = messageFor(spec, context);
+          const message = messageFor(spec, context, options.localization);
           return [{ id, code: spec.code?.trim() || spec.kind, path: spec.issuePath ?? context.path, severity: spec.severity ?? "error", ...(message === undefined ? {} : { message }) }];
         };
     validators.push({

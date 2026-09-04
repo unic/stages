@@ -387,7 +387,17 @@ export function importLegacyStudioProject(
       },
     },
     fragments: context.fragments,
-    resources: { migration: { source: "studio-poc" } },
+    resources: {
+      migration: { source: "studio-poc" },
+      extensions: {
+        legacyInterfaceState: {
+          title: "Migrated interface state",
+          description: "Legacy interfaceState used by core dynamics. Move adapter-only controls such as open panels out of this namespace.",
+          version: 1,
+          codec: { key: "json", version: 1 },
+        },
+      },
+    },
   };
   const supportedDefinitions = Object.fromEntries([
     ...options.fieldTypes.map((key) => {

@@ -49,6 +49,8 @@ interface StudioNodeBase {
   readonly uid: Uid;
   readonly presentation?: JsonObject;
   readonly behavior?: StudioNodeBehavior;
+  /** Maps a presentation prop (for example label/helpText/text) to a locale message key. */
+  readonly localizedProps?: Readonly<Record<string, string>>;
   readonly legacy?: JsonObject;
 }
 
@@ -64,6 +66,8 @@ export interface StudioFieldNode extends StudioValidatedNodeBase {
   readonly props: JsonObject;
   readonly computed?: StudioExpression;
   readonly derivedProps?: Readonly<Record<string, StudioExpression>>;
+  /** Optional locale-sensitive read-only presentation of the canonical field value. */
+  readonly format?: { readonly kind: "date" | "number"; readonly options?: JsonObject };
   readonly reducers?: readonly StudioLogicRule[];
 }
 
@@ -158,6 +162,8 @@ export type StudioValidationPath = readonly (number | string)[];
 
 export interface StudioLocalizedValidationMessage {
   readonly default: string;
+  /** Resolves from project locale resources before inline translations/default. */
+  readonly key?: string;
   /** Locale keys are matched against `context.locale` in preview scenarios. */
   readonly translations?: Readonly<Record<string, string>>;
 }
@@ -234,6 +240,24 @@ export interface StudioScenario {
   readonly services?: Readonly<Record<string, StudioServiceScenario>>;
 }
 
+export interface StudioExtensionDefinition extends JsonObject {
+  readonly title: string;
+  readonly description?: string;
+  readonly version: number;
+  /** Declarative metadata only. Executable codecs are supplied by the trusted host. */
+  readonly codec: StudioDefinitionRef & JsonObject;
+}
+
+export interface StudioLocaleResource extends JsonObject {
+  readonly label: string;
+  readonly messages: Readonly<Record<string, string>> & JsonObject;
+}
+
+export interface StudioResourceCatalog extends JsonObject {
+  readonly extensions?: Readonly<Record<string, StudioExtensionDefinition>> & JsonObject;
+  readonly locales?: Readonly<Record<string, StudioLocaleResource>> & JsonObject;
+}
+
 export interface StudioFormDocument {
   readonly uid: Uid;
   readonly title: string;
@@ -254,7 +278,7 @@ export interface StudioProjectDocument {
   readonly forms: Readonly<Record<Uid, StudioFormDocument>>;
   readonly fragments: Readonly<Record<Uid, StudioFragmentDefinition>>;
   /** JSON-safe resources only; executable definitions never live here. */
-  readonly resources: JsonObject;
+  readonly resources: StudioResourceCatalog;
 }
 
 export type DiagnosticPath = readonly (number | string)[];

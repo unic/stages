@@ -31,6 +31,25 @@ const meta: DynamicMetaSnapshot = {
 };
 
 describe("minimal Studio compiler", () => {
+  it("resolves localized field props through locale resources and diagnoses missing defaults", () => {
+    const localized: StudioFormDocument = {
+      uid: formUid, title: "Localized", runtime: { schemaId: "localized", schemaVersion: 1 }, rootNodeUids: [fieldUid],
+      nodes: { [fieldUid]: { uid: fieldUid, kind: "field", runtimeId: "title", definition: { key: "text", version: 1 }, props: { label: "Title", helpText: "Fallback help" }, localizedProps: { label: "field.title", helpText: "field.help" } } },
+      scenarios: [], settings: {},
+    };
+    const resources = { locales: {
+      en: { label: "English", messages: { "field.title": "Title", "field.help": "Enter a title" } },
+      de: { label: "Deutsch", messages: { "field.title": "Titel", "field.help": "Titel eingeben" } },
+    } } as const;
+    const compiled = compileStudioForm(localized, {}, { localization: { defaultLocale: "en", resources } });
+    expect(compiled.diagnostics).toEqual([]);
+    const evaluated = evaluateSchema({ schema: compiled.schemaInput, fields: compiled.fields, value: { title: "" }, context: { locale: "de" }, meta });
+    expect(evaluated.nodes[0]).toMatchObject({ props: { label: "Titel", helpText: "Titel eingeben" } });
+
+    const missing = compileStudioForm({ ...localized, nodes: { [fieldUid]: { ...localized.nodes[fieldUid] as StudioFieldNode, localizedProps: { label: "field.missing" } } } }, {}, { localization: { defaultLocale: "en", resources } });
+    expect(missing.diagnostics).toContainEqual(expect.objectContaining({ code: "compiler.missing-localization-message", entityUid: fieldUid }));
+  });
+
   it("compiles visibility, disabled inheritance, derived props, optional structure, and dynamic stages", () => {
     const companyUid = toUid("group_company");
     const companyNameUid = toUid("field_company_name");

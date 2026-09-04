@@ -1,6 +1,6 @@
 # Studio project document v1
 
-Status: implemented through Session 19
+Status: implemented through Session 22
 
 Date: 2026-09-04
 
@@ -22,7 +22,9 @@ References keep every recursive structure normalized. Fields and blocks carry
 exact trusted-definition key/version requirements. Safe behavior is stored as
 a declarative expression AST; executable functions never enter the document.
 Scenarios keep preview value, context, and extensions separate from the project
-and controller runtime state.
+and controller runtime state. `resources.extensions` declares durable namespace
+title/version and trusted codec binding metadata; `resources.locales` stores
+locale labels and message catalogs. Executable codecs never enter project JSON.
 
 Expressions use a closed set of literal, reference, unary, binary, and
 conditional nodes. References can read form value, current-row value, context,
@@ -49,6 +51,10 @@ Scenario insertion and editing use document commands and therefore participate
 in undo, redo, dirty tracking, and local persistence. Studio registers only
 local JSON identity codecs for scenario extension namespaces; generated
 applications remain responsible for their trusted production extension codecs.
+When an extension catalog is present, validation rejects scenario namespaces
+that are not registered. Locale-sensitive field props bind a prop name to a
+message key; formatting metadata changes preview presentation without changing
+the canonical number or ISO-date value.
 
 Every editable entity UID is globally unique in a project. Map keys must equal
 the entity UID. Runtime IDs remain separately editable and reject the unsafe

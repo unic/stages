@@ -6,7 +6,11 @@ export type LegacyExpressionParseResult =
   | { readonly ok: true; readonly value: StudioExpression }
   | { readonly ok: false; readonly reason: string };
 
-const ROOTS = Object.freeze({ data: "value", interfaceState: "context", itemData: "row" } as const);
+const ROOTS = Object.freeze({
+  data: { scope: "value", prefix: [] },
+  interfaceState: { scope: "extension", prefix: ["legacyInterfaceState"] },
+  itemData: { scope: "row", prefix: [] },
+} as const);
 const PRECEDENCE: Readonly<Record<string, number>> = Object.freeze({
   "??": 1, "||": 2, "&&": 3, "===": 4, "!==": 4, "<": 5, "<=": 5, ">": 5, ">=": 5,
   "+": 6, "-": 6, "*": 7, "/": 7, "%": 7,
@@ -70,16 +74,16 @@ export function parseLegacyExpression(source: string): LegacyExpressionParseResu
     if (token.type !== "identifier") return undefined;
     if (token.value === "true" || token.value === "false") return { kind: "literal", value: token.value === "true" };
     if (token.value === "null") return { kind: "literal", value: null };
-    const scope = ROOTS[token.value as keyof typeof ROOTS];
-    if (!scope) return undefined;
-    const path: string[] = [];
+    const root = ROOTS[token.value as keyof typeof ROOTS];
+    if (!root) return undefined;
+    const path: string[] = [...root.prefix];
     while (peek()?.value === ".") {
       take();
       const segment = take();
       if (!segment || segment.type !== "identifier" || !isSafeObjectKey(segment.value)) return undefined;
       path.push(segment.value);
     }
-    return { kind: "reference", scope, path };
+    return { kind: "reference", scope: root.scope, path };
   };
 
   const parseBinary = (minimum: number): StudioExpression | undefined => {

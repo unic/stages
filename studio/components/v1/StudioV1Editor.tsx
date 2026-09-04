@@ -12,7 +12,8 @@ import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
-import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioEventDefinition, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioLogicRule, type StudioNode, type StudioProjectDocument, type StudioScenario, type StudioValidatorSpec, type Uid } from "../../src/document/types";
+import { validateStudioProject } from "../../src/document/validation";
+import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioEventDefinition, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioLogicRule, type StudioNode, type StudioProjectDocument, type StudioResourceCatalog, type StudioScenario, type StudioValidatorSpec, type Uid } from "../../src/document/types";
 import type { StudioExpression, StudioExpressionContext } from "../../src/expressions/types";
 import { evaluateStudioExpression } from "../../src/expressions/evaluator";
 import {
@@ -42,6 +43,7 @@ import type { StudioProjectRepository } from "../../src/projects/types";
 import { createStudioPreviewHost } from "../../src/runtime/preview-host";
 import { useStudioPreviewHost } from "../../src/runtime/use-studio-preview-host";
 import { focusFirstVisibleValidationError, inspectStudioValidation } from "../../src/validation/inspection";
+import { formatStudioFieldValue, resolveStudioMessage, studioScenarioLocale } from "../../src/localization";
 import {
   createStudioWorkbenchState,
   createStudioOutlineModel,
@@ -289,11 +291,12 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
   />;
 }
 
-function PreviewField({ form, node, snapshot, value, onInput, onBlur, onFocus }: {
+function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, onFocus }: {
   readonly form: StudioFormDocument;
   readonly node: StudioRuntimeRenderNode<"field">;
   readonly snapshot: Extract<RenderNodeSnapshot, { readonly kind: "field" }>;
   readonly value: unknown;
+  readonly locale: string;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
   readonly onBlur: () => void;
   readonly onFocus: () => void;
@@ -305,13 +308,15 @@ function PreviewField({ form, node, snapshot, value, onInput, onBlur, onFocus }:
   const description = typeof snapshot.props["helpText"] === "string" ? snapshot.props["helpText"] : "";
   const issue = snapshot.state.visibleIssues[0];
   const descriptionId = issue === undefined ? (description.length > 0 ? `${node.uid}-help` : undefined) : `${node.uid}-issue`;
+  const currentValue = getAtPath(value, node.runtimePath) ?? definition.value.emptyValue;
+  const formatted = field.format === undefined ? undefined : formatStudioFieldValue(currentValue, field.format, locale);
   return <PreviewLayout node={node}><label className="studio-field">
     <span>{typeof snapshot.props["label"] === "string" ? snapshot.props["label"] : nodeLabel(form, node.uid)}</span>
     <PreviewFieldControl
       definition={definition}
       field={field}
       node={node}
-      currentValue={getAtPath(value, node.runtimePath) ?? definition.value.emptyValue}
+      currentValue={currentValue}
       disabled={snapshot.state.disabled}
       invalid={issue?.severity === "error"}
       {...(descriptionId === undefined ? {} : { descriptionId })}
@@ -320,6 +325,7 @@ function PreviewField({ form, node, snapshot, value, onInput, onBlur, onFocus }:
       onFocus={onFocus}
     />
     {issue ? <small id={`${node.uid}-issue`} role="alert">{issue.message ?? issue.code}</small> : descriptionId && <small id={descriptionId}>{description}</small>}
+    {formatted !== undefined && <output aria-label={`${nodeLabel(form, node.uid)} localized value`}>{formatted}</output>}
   </label></PreviewLayout>;
 }
 
@@ -467,7 +473,10 @@ function PreviewNode(props: PreviewNodeProps) {
   if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
     <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
   ))}</div></PreviewLayout>;
-  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} onInput={onInput} onBlur={() => onStructureEvent(fieldEvent("blur", path, { source: "adapter" }))} onFocus={() => onStructureEvent(fieldEvent("focus", path, { source: "adapter" }))} /> : null;
+  const requestedLocale = expressionContext.context !== null && typeof expressionContext.context === "object"
+    ? (expressionContext.context as Readonly<Record<string, unknown>>)["locale"]
+    : undefined;
+  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} locale={typeof requestedLocale === "string" ? requestedLocale : "en"} onInput={onInput} onBlur={() => onStructureEvent(fieldEvent("blur", path, { source: "adapter" }))} onFocus={() => onStructureEvent(fieldEvent("focus", path, { source: "adapter" }))} /> : null;
 }
 
 function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
@@ -516,6 +525,7 @@ function FieldInspector({ node, onUpdate }: {
     });
     onUpdate(node, { props: nextProps }, `Edit ${definition.displayName} ${control.label.toLowerCase()}`, `props.${control.key}:${node.uid}`);
   };
+  const localizableControls = definition.props.flatMap((control) => control.key === "label" || control.key === "helpText" ? [control] : []);
   return <fieldset className="studio-v1-field-inspector">
     <legend>{definition.displayName} properties</legend>
     {definition.props.map((control) => {
@@ -529,6 +539,20 @@ function FieldInspector({ node, onUpdate }: {
         {errorId && <small id={errorId} role="alert">{errors[control.key]}</small>}
       </label>;
     })}
+    {localizableControls.map((control) => <label className="studio-field" key={`localized:${control.key}`}>
+      <span>{control.label} locale key</span>
+      <input className="ui-input" value={node.localizedProps?.[control.key] ?? ""} placeholder="messages.field.label" onChange={(event) => {
+        const key = event.currentTarget.value.trim();
+        const localizedProps = { ...node.localizedProps };
+        if (key.length === 0) delete localizedProps[control.key];
+        else localizedProps[control.key] = key;
+        onUpdate(node, { localizedProps: Object.keys(localizedProps).length === 0 ? undefined : localizedProps }, `Localize ${control.label.toLowerCase()}`, `localizedProps.${control.key}:${node.uid}`);
+      }} />
+    </label>)}
+    {(definition.value.kind === "number" || definition.key === "date") && <label className="studio-field"><span>Locale-sensitive display</span><select value={node.format?.kind ?? ""} onChange={(event) => {
+      const kind = event.currentTarget.value as "" | "date" | "number";
+      onUpdate(node, { format: kind === "" ? undefined : { kind } }, "Edit localized field format", `format:${node.uid}`);
+    }}><option value="">Canonical value only</option>{definition.value.kind === "number" && <option value="number">Localized number</option>}{definition.key === "date" && <option value="date">Localized date</option>}</select></label>}
   </fieldset>;
 }
 
@@ -607,6 +631,30 @@ function ScenarioObjectEditor({ scenario, property, label, onUpdate }: {
   }} />{error.length > 0 && <small role="alert">{error}</small>}</label>;
 }
 
+function ResourceCatalogEditor({ resources, onUpdate }: {
+  readonly resources: StudioResourceCatalog;
+  readonly onUpdate: (resources: StudioResourceCatalog) => void;
+}) {
+  const [draft, setDraft] = useState(() => JSON.stringify(resources, null, 2));
+  const [error, setError] = useState("");
+  return <section className="studio-v1-palette" aria-labelledby="studio-v1-resources-title">
+    <h2 id="studio-v1-resources-title">Extensions & locales</h2>
+    <p><small>Declare durable namespaces with <code>json@1</code> codec metadata and locale message catalogs. Executable codecs stay in the trusted host.</small></p>
+    <label className="studio-field"><span>Resource catalog JSON</span><textarea className="ui-input" rows={8} value={draft} aria-invalid={error.length > 0 || undefined} onChange={(event) => {
+      const source = event.currentTarget.value;
+      setDraft(source);
+      try {
+        const value = JSON.parse(source) as unknown;
+        if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("Expected a JSON object.");
+        setError("");
+        onUpdate(value as StudioResourceCatalog);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Invalid resource catalog.");
+      }
+    }} />{error.length > 0 && <small role="alert">{error}</small>}</label>
+  </section>;
+}
+
 function dynamicSnapshotMap(nodes: readonly RenderNodeSnapshot[]): ReadonlyMap<string, RenderNodeSnapshot> {
   const output = new Map<string, RenderNodeSnapshot>();
   const visit = (node: RenderNodeSnapshot) => {
@@ -643,9 +691,11 @@ function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { re
   return <section className="studio-v1-dynamic-state" aria-labelledby="studio-v1-dynamic-state-title"><h3 id="studio-v1-dynamic-state-title">Dynamic structure</h3><ul>{items.map((item) => <li key={item.uid}><span>{item.label}</span><strong>{item.state}</strong></li>)}</ul></section>;
 }
 
-export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: {
+export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, resources: resourceCatalog, defaultLocale = "en" }: {
   readonly form: StudioFormDocument;
   readonly compiled: CompiledStudioForm;
+  readonly resources?: StudioResourceCatalog;
+  readonly defaultLocale?: string;
   readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => void;
   readonly onAddScenario: () => StudioScenario | undefined;
 }) {
@@ -660,8 +710,20 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   const [activeEventId, setActiveEventId] = useState(form.events?.[0]?.id ?? "");
   const hostRef = useRef<ReturnType<typeof createStudioPreviewHost> | undefined>(undefined);
   const extensionCodecs = useMemo(() => Object.fromEntries(
-    [...new Set([STUDIO_PREVIEW_SERVICE_EXTENSION, ...form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {}))])].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
-  ), [form.scenarios]);
+    [...new Set([STUDIO_PREVIEW_SERVICE_EXTENSION, ...Object.keys(resourceCatalog?.extensions ?? {}), ...(resourceCatalog?.extensions === undefined ? form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {})) : [])])].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
+  ), [form.scenarios, resourceCatalog?.extensions]);
+  const locale = studioScenarioLocale(scenario?.context, defaultLocale);
+  const localizedKeys = [
+    ...Object.values(form.nodes).flatMap((node) => Object.values(node.localizedProps ?? {})),
+    ...(form.validators ?? []).flatMap((validator) => typeof validator.message === "object" && validator.message.key !== undefined ? [validator.message.key] : []),
+    ...Object.values(form.nodes).flatMap((node) => (node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment")
+      ? (node.validators ?? []).flatMap((validator) => typeof validator.message === "object" && validator.message.key !== undefined ? [validator.message.key] : [])
+      : []),
+  ];
+  const localeDiagnostics = [...new Map(localizedKeys.map((key) => {
+    const result = resolveStudioMessage(key, locale, { defaultLocale, resources: resourceCatalog ?? {} });
+    return [key, result] as const;
+  })).values()].filter(({ code }) => code !== undefined);
   const [host] = useState(() => createStudioPreviewHost({
     compiled,
     value,
@@ -775,10 +837,16 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
           if (added) { setActiveScenarioUid(added.uid); setValue(added.value); }
         }}>Add scenario</Button>
         {scenario && <div key={scenario.uid} className="studio-v1-scenarios__objects">
+          <label className="studio-field"><span>Locale (context-owned)</span><select value={locale} onChange={(event) => onUpdateScenario(scenario, { context: { ...scenario.context, locale: event.currentTarget.value } })}>
+            {Object.entries(resourceCatalog?.locales ?? {}).map(([key, resource]) => <option key={key} value={key}>{resource.label}</option>)}
+            {(resourceCatalog?.locales?.[locale] === undefined) && <option value={locale}>{locale}</option>}
+          </select></label>
           <ScenarioObjectEditor scenario={scenario} property="context" label="Context JSON" onUpdate={onUpdateScenario} />
-          <ScenarioObjectEditor scenario={scenario} property="extensions" label="Feature flags JSON" onUpdate={onUpdateScenario} />
+          <ScenarioObjectEditor scenario={scenario} property="extensions" label="Registered extension values JSON" onUpdate={onUpdateScenario} />
           <ScenarioObjectEditor scenario={scenario} property="services" label="Async service mocks JSON" onUpdate={onUpdateScenario} />
         </div>}
+        <dl><div><dt>Domain value</dt><dd>Submitted business data; controlled by the preview owner.</dd></div><div><dt>Context</dt><dd>Environment inputs such as locale and permissions; replaced, not merged.</dd></div><div><dt>Extensions</dt><dd>Registered engine-adjacent state with durable codec metadata.</dd></div><div><dt>Workbench</dt><dd>Selection, panels, drafts, and route simulation; adapter-only and never serialized by core.</dd></div></dl>
+        {localeDiagnostics.length > 0 && <ul aria-label="Localization diagnostics">{localeDiagnostics.map((diagnostic) => <li key={`${diagnostic.code}:${diagnostic.message}`}><strong>{diagnostic.code}</strong> {diagnostic.message}</li>)}</ul>}
       </section>
       <section className="studio-v1-event-tools" aria-labelledby="studio-v1-event-tools-title">
         <h3 id="studio-v1-event-tools-title">Events and transaction order</h3>
@@ -822,7 +890,7 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
             value={preview.snapshot.value}
             snapshotNodes={preview.snapshot.nodes}
             runtimePath={undefined}
-            expressionContext={{ value, context: scenario?.context, extensions: scenario?.extensions, metadata: { revision: preview.snapshot.revision } }}
+            expressionContext={{ value, context: { locale, ...scenario?.context }, extensions: scenario?.extensions, metadata: { revision: preview.snapshot.revision } }}
             onInput={(renderNode, nextValue) => preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, {
               payload: nextValue,
               source: "adapter",
@@ -1209,7 +1277,10 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     return node === undefined ? [] : [node];
   });
   const formSelected = navigation.workbench.selectedUids.includes(form.uid);
-  const compiled = compileStudioForm(form, history.present.fragments, { serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS });
+  const compiled = compileStudioForm(form, history.present.fragments, {
+    serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
+    localization: { defaultLocale: history.present.project.defaultLocale, resources: history.present.resources },
+  });
 
   const replaceHistory = (nextHistory: StudioHistoryState) => {
     const nextOutline = createStudioOutlineModel(nextHistory.present);
@@ -1337,6 +1408,16 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     const result = dispatchStudioCommand(history, { type: "form.update", formUid: form.uid, changes: { validators } }, { label, coalesceKey: `validators:${form.uid}` });
     if (result.ok) setHistory(result.history);
     else setStatus(result.failure.message);
+  };
+
+  const updateResources = (resources: StudioResourceCatalog) => {
+    const validated = validateStudioProject({ ...history.present, resources }, { supportedDefinitions: STUDIO_SUPPORTED_DEFINITIONS });
+    if (!validated.ok) {
+      setStatus(validated.diagnostics.find(({ propertyPath }) => propertyPath[0] === "resources")?.message ?? "Resource catalog is invalid.");
+      return;
+    }
+    const result = dispatchStudioCommand(history, { type: "project.resources.update", resources }, { label: "Edit extension and locale resources", coalesceKey: "project.resources" });
+    if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
   };
 
   const updateFormEvents = (events: readonly StudioEventDefinition[] | undefined, label: string) => {
@@ -1536,6 +1617,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             <Button variant="outline" disabled={loading || selectedNodes.length === 0} onClick={createFragment}>Create fragment from selection</Button>
             {Object.values(history.present.fragments).map((fragment) => <Button key={fragment.uid} variant="outline" disabled={loading} onClick={() => insertFragment(fragment)}>Insert {fragment.title}</Button>)}
           </section>
+          <ResourceCatalogEditor resources={history.present.resources} onUpdate={updateResources} />
         </div>
         <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
           <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks</span></div>
@@ -1581,7 +1663,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         </aside>
       </div>
       <ProblemsPanel diagnostics={compiled.diagnostics} onNavigate={navigateProblem} />
-      <ControlledPreview form={compiled.expandedForm} compiled={compiled} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
+      <ControlledPreview form={compiled.expandedForm} compiled={compiled} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import type {
   StudioThemeTokens,
 } from "../registry";
 import type { StudioAsyncServiceBindings } from "../registry";
+import type { StudioLocalizationOptions } from "../localization";
 
 export type { StudioFieldRegistry } from "../registry";
 
@@ -86,4 +87,5 @@ export interface CompiledStudioForm {
 
 export interface StudioCompileOptions {
   readonly serviceBindings?: StudioAsyncServiceBindings;
+  readonly localization?: StudioLocalizationOptions;
 }

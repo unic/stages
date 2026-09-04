@@ -1,5 +1,6 @@
 import { isSafeObjectKey, isStudioVariantCollection, isUid } from "../document";
 import type { StudioFormDocument, StudioFragmentDefinition, StudioFragmentNodeOverride, StudioNode, StudioProjectDocument, Uid } from "../document";
+import { validateStudioResourceCatalog } from "../document/validation";
 import type {
   StudioCommand,
   StudioCommandFailure,
@@ -9,7 +10,7 @@ import type {
 
 const UPDATE_KEYS = new Set([
   "runtimeId", "definition", "props", "presentation", "behavior", "legacy",
-  "computed", "derivedProps", "validators", "min", "max", "initialRows", "itemKey",
+  "computed", "derivedProps", "localizedProps", "format", "validators", "min", "max", "initialRows", "itemKey",
   "discriminator", "initialVariantUid", "initialStageUid", "navigation",
   "fragmentUid", "overrides",
 ]);
@@ -360,6 +361,13 @@ function executeSingle(
     index: command.index,
     node: command.instance,
   }, commandPath);
+
+  if (command.type === "project.resources.update") {
+    if (Object.is(project.resources, command.resources)) return { ok: true, document: project, affectedUids: [], changed: false };
+    const diagnostics = validateStudioResourceCatalog(command.resources, project.project.defaultLocale);
+    if (diagnostics.length > 0) return fail("command.invalid-update", diagnostics[0]!.message, commandPath, { entityUid: project.project.uid });
+    return { ok: true, document: { ...project, resources: command.resources }, affectedUids: [project.project.uid], changed: true };
+  }
 
   const form = project.forms[command.formUid];
   if (!form) return fail("command.form-not-found", `Form ${command.formUid} does not exist.`, commandPath, {

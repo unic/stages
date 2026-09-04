@@ -5,6 +5,7 @@ export * as editor from "./editor";
 export * as expressions from "./expressions";
 export * as legacy from "./legacy";
 export * as logic from "./logic";
+export * as localization from "./localization";
 export * as platform from "./platform";
 export * as projects from "./projects";
 export * as registry from "./registry";

@@ -142,6 +142,26 @@ describe("Studio document validation", () => {
     expectCode(invalidDerived, "document.invalid-derived-props");
   });
 
+  it("validates registered extension metadata, locale resources, and scenario namespaces", () => {
+    const input = validProject();
+    input["resources"] = {
+      extensions: { draft: { title: "Draft preferences", version: 1, codec: { key: "json", version: 1 } } },
+      locales: { en: { label: "English", messages: { "field.title": "Title" } } },
+    };
+    const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    const nodes = form["nodes"] as Record<string, Record<string, unknown>>;
+    nodes["field_title"]!["localizedProps"] = { label: "field.title" };
+    nodes["field_title"]!["format"] = { kind: "number", options: {} };
+    form["scenarios"] = [{ uid: "scenario_localized", title: "Localized", value: {}, context: { locale: "en" }, extensions: { draft: { compact: true } } }];
+    expect(validateStudioProject(input, { supportedDefinitions: definitions }).ok).toBe(true);
+
+    ((form["scenarios"] as Record<string, unknown>[])[0]!["extensions"] as Record<string, unknown>)["rogue"] = true;
+    expectCode(input, "document.unregistered-extension");
+    delete ((form["scenarios"] as Record<string, unknown>[])[0]!["extensions"] as Record<string, unknown>)["rogue"];
+    (((input["resources"] as Record<string, unknown>)["extensions"] as Record<string, Record<string, unknown>>)["draft"]!["codec"] as Record<string, unknown>)["key"] = "executable";
+    expectCode(input, "document.unsupported-extension-codec");
+  });
+
   it("validates async service references and transport-free deterministic scenarios", () => {
     const input = validProject();
     const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;

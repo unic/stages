@@ -61,6 +61,21 @@ describe("Studio command engine", () => {
     expect(executeStudioCommand(updated, { type: "scenario.update", formUid, uid: toUid("missing_scenario"), changes: { context: {} } })).toMatchObject({ ok: false, failure: { code: "command.scenario-not-found" } });
   });
 
+  it("updates extension and locale resources as durable document history", () => {
+    const initial = project();
+    const resources = {
+      extensions: { draft: { title: "Draft", version: 1, codec: { key: "json", version: 1 } } },
+      locales: { en: { label: "English", messages: { "field.title": "Title" } } },
+    } as const;
+    const updated = success(initial, { type: "project.resources.update", resources });
+    expect(updated.resources).toBe(resources);
+    expect(updated.forms).toBe(initial.forms);
+    expect(initial.resources).toEqual({});
+    expect(executeStudioCommand(updated, { type: "project.resources.update", resources: { extensions: { draft: { title: "Draft", version: 1, codec: { key: "code", version: 1 } } } } as never })).toMatchObject({
+      ok: false, failure: { code: "command.invalid-update" },
+    });
+  });
+
   it("creates, edits, inserts, overrides, and detaches reusable fragments immutably", () => {
     const initial = project();
     const fragmentUid = toUid("fragment_event");

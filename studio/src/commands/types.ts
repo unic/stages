@@ -7,6 +7,7 @@ import type {
   StudioNode,
   StudioProjectDocument,
   StudioScenario,
+  StudioResourceCatalog,
   StudioStageNode,
   Uid,
 } from "../document";
@@ -14,6 +15,10 @@ import type {
 export type StudioNodeChanges = Readonly<Record<string, unknown>>;
 
 export type StudioCommand =
+  | {
+    readonly type: "project.resources.update";
+    readonly resources: StudioResourceCatalog;
+  }
   | {
     readonly type: "form.update";
     readonly formUid: Uid;

@@ -141,6 +141,10 @@ function validateValidators(
       || (own(message, "translations") !== undefined && (!isPlainRecord(own(message, "translations")) || Object.values(own(message, "translations") as Record<string, unknown>).some((translation) => typeof translation !== "string"))))) {
       failures.push(issue("document.invalid-validator-message", "message must be text or a localized message object.", [...validatorPath, "message"], details));
     }
+    if (isPlainRecord(message) && own(message, "key") !== undefined
+      && (typeof own(message, "key") !== "string" || (own(message, "key") as string).trim().length === 0 || !isSafeObjectKey(own(message, "key") as string))) {
+      failures.push(issue("document.invalid-validator-message", "Localized message key must be a non-empty safe key.", [...validatorPath, "message", "key"], details));
+    }
     if (own(candidate, "when") !== undefined && !isStudioExpression(own(candidate, "when"))) failures.push(issue("document.invalid-expression", "Validator when must be a safe expression AST.", [...validatorPath, "when"], details));
     if (own(candidate, "includeDisabled") !== undefined && typeof own(candidate, "includeDisabled") !== "boolean") failures.push(issue("document.invalid-validator-disabled-policy", "includeDisabled must be boolean.", [...validatorPath, "includeDisabled"], details));
     const dependencies = own(candidate, "dependencies");
@@ -191,6 +195,44 @@ function validateScenarioServices(
     const forbidden = ["endpoint", "credentials", "retries", "cache"].find((name) => Object.prototype.hasOwnProperty.call(scenario, name));
     if (forbidden !== undefined) failures.push(issue("document.forbidden-service-transport", `${forbidden} belongs in a trusted environment binding, not a preview scenario.`, [...servicePath, forbidden], details));
   }
+}
+
+function validateResourceCatalog(
+  value: Record<string, unknown>,
+  defaultLocale: unknown,
+  failures: StudioDocumentDiagnostic[],
+): ReadonlySet<string> | undefined {
+  const extensions = own(value, "extensions");
+  const registered = isPlainRecord(extensions) ? new Set(Object.keys(extensions)) : undefined;
+  if (extensions !== undefined && !isPlainRecord(extensions)) failures.push(issue("document.invalid-extension-catalog", "resources.extensions must be a namespace-keyed object.", ["resources", "extensions"]));
+  if (isPlainRecord(extensions)) for (const [namespace, candidate] of Object.entries(extensions)) {
+    const path = ["resources", "extensions", namespace] as const;
+    if (!isSafeObjectKey(namespace) || namespace.length === 0) failures.push(issue("document.invalid-extension-namespace", "Extension namespaces must be non-empty safe keys.", path));
+    if (!isPlainRecord(candidate)) { failures.push(issue("document.invalid-extension-definition", "Extension definitions must be objects.", path)); continue; }
+    if (typeof own(candidate, "title") !== "string" || (own(candidate, "title") as string).trim().length === 0) failures.push(issue("document.invalid-extension-definition", "Extension title must be non-empty text.", [...path, "title"]));
+    if (!Number.isSafeInteger(own(candidate, "version")) || (own(candidate, "version") as number) < 1) failures.push(issue("document.invalid-extension-definition", "Extension version must be a positive integer.", [...path, "version"]));
+    const codec = own(candidate, "codec");
+    if (!isPlainRecord(codec) || own(codec, "key") !== "json" || own(codec, "version") !== 1) failures.push(issue("document.unsupported-extension-codec", "Studio preview supports declarative json@1 extension codec metadata.", [...path, "codec"]));
+  }
+  const locales = own(value, "locales");
+  if (locales !== undefined && !isPlainRecord(locales)) failures.push(issue("document.invalid-locale-catalog", "resources.locales must be a locale-keyed object.", ["resources", "locales"]));
+  if (isPlainRecord(locales)) for (const [locale, candidate] of Object.entries(locales)) {
+    const path = ["resources", "locales", locale] as const;
+    if (locale.trim().length === 0 || !isSafeObjectKey(locale)) failures.push(issue("document.invalid-locale", "Locale identifiers must be non-empty safe keys.", path));
+    if (!isPlainRecord(candidate)) { failures.push(issue("document.invalid-locale-resource", "Locale resources must be objects.", path)); continue; }
+    if (typeof own(candidate, "label") !== "string" || (own(candidate, "label") as string).trim().length === 0) failures.push(issue("document.invalid-locale-resource", "Locale label must be non-empty text.", [...path, "label"]));
+    const messages = own(candidate, "messages");
+    if (!isPlainRecord(messages) || Object.entries(messages).some(([key, message]) => !isSafeObjectKey(key) || key.length === 0 || typeof message !== "string")) failures.push(issue("document.invalid-locale-messages", "Locale messages must map safe non-empty keys to text.", [...path, "messages"]));
+  }
+  if (isPlainRecord(locales) && typeof defaultLocale === "string" && locales[defaultLocale] === undefined) failures.push(issue("document.missing-default-locale", `Default locale ${defaultLocale} has no resource catalog.`, ["resources", "locales", defaultLocale]));
+  return registered;
+}
+
+export function validateStudioResourceCatalog(value: unknown, defaultLocale: string): readonly StudioDocumentDiagnostic[] {
+  if (!isPlainRecord(value)) return [issue("document.invalid-resources", "resources must be a JSON object.", ["resources"])];
+  const failures: StudioDocumentDiagnostic[] = [];
+  validateResourceCatalog(value, defaultLocale, failures);
+  return Object.freeze(failures);
 }
 
 export function utf8ByteLength(value: string): number {
@@ -440,7 +482,8 @@ export function validateStudioProject(
   if (!isPlainRecord(formsValue)) failures.push(issue("document.invalid-forms", "forms must be a UID-keyed object.", ["forms"]));
   const fragments = own(input, "fragments");
   if (!isPlainRecord(fragments)) failures.push(issue("document.invalid-fragments", "fragments must be a UID-keyed object.", ["fragments"]));
-  if (!isPlainRecord(own(input, "resources"))) failures.push(issue("document.invalid-resources", "resources must be a JSON object.", ["resources"]));
+  const resources = own(input, "resources");
+  if (!isPlainRecord(resources)) failures.push(issue("document.invalid-resources", "resources must be a JSON object.", ["resources"]));
 
   const uids = new Map<string, DiagnosticPath>();
   if (isPlainRecord(projectValue)) {
@@ -448,6 +491,9 @@ export function validateStudioProject(
     if (typeof own(projectValue, "title") !== "string") failures.push(issue("document.invalid-title", "Project title must be a string.", ["project", "title"]));
     if (typeof own(projectValue, "defaultLocale") !== "string" || (own(projectValue, "defaultLocale") as string).length === 0) failures.push(issue("document.invalid-locale", "defaultLocale must be a non-empty string.", ["project", "defaultLocale"]));
   }
+  const registeredExtensions = isPlainRecord(resources)
+    ? validateResourceCatalog(resources, isPlainRecord(projectValue) ? own(projectValue, "defaultLocale") : undefined, failures)
+    : undefined;
   let totalNodes = 0;
   if (isPlainRecord(formsValue)) {
     const formEntries = Object.entries(formsValue);
@@ -491,6 +537,8 @@ export function validateStudioProject(
             if (Object.prototype.hasOwnProperty.call(behavior, "presentWhen") && !isStudioExpression(own(behavior, "presentWhen"))) failures.push(issue("document.invalid-expression", "behavior.presentWhen must be a safe expression AST.", [...nodePath, "behavior", "presentWhen"], details));
           }
           if (Object.prototype.hasOwnProperty.call(node, "legacy") && !isPlainRecord(own(node, "legacy"))) failures.push(issue("document.invalid-legacy-metadata", "legacy must be a JSON object.", [...nodePath, "legacy"], details));
+          const localizedProps = own(node, "localizedProps");
+          if (localizedProps !== undefined && (!isPlainRecord(localizedProps) || Object.entries(localizedProps).some(([key, messageKey]) => !isSafeObjectKey(key) || key.length === 0 || typeof messageKey !== "string" || messageKey.length === 0 || !isSafeObjectKey(messageKey)))) failures.push(issue("document.invalid-localized-props", "localizedProps must map safe prop names to safe message keys.", [...nodePath, "localizedProps"], details));
           if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateValidators(own(node, "validators"), [...nodePath, "validators"], failures, details);
           else if (Object.prototype.hasOwnProperty.call(node, "validators")) failures.push(issue("document.invalid-validator-owner", `${String(kind)} nodes cannot own validators.`, [...nodePath, "validators"], details));
           if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateLogicRules(own(node, "transforms"), [...nodePath, "transforms"], failures, details);
@@ -562,6 +610,8 @@ export function validateStudioProject(
               else if (isPlainRecord(derivedProps)) for (const [key, expression] of Object.entries(derivedProps)) {
                 if (!isSafeObjectKey(key) || !isStudioExpression(expression)) failures.push(issue("document.invalid-expression", `derivedProps.${key} must be a safe expression AST.`, [...nodePath, "derivedProps", key], details));
               }
+              const format = own(node, "format");
+              if (format !== undefined && (!isPlainRecord(format) || (own(format, "kind") !== "number" && own(format, "kind") !== "date") || (own(format, "options") !== undefined && !isPlainRecord(own(format, "options"))))) failures.push(issue("document.invalid-field-format", "format must declare number or date with optional JSON options.", [...nodePath, "format"], details));
             }
           } else failures.push(issue("document.unknown-node-kind", "Unknown node kind.", [...nodePath, "kind"], details));
         }
@@ -579,6 +629,9 @@ export function validateStudioProject(
           if (!Object.prototype.hasOwnProperty.call(scenario, "value")) failures.push(issue("document.missing-scenario-value", "Scenario value is required.", [...scenarioPath, "value"], { formUid }));
           if (Object.prototype.hasOwnProperty.call(scenario, "context") && !isPlainRecord(own(scenario, "context"))) failures.push(issue("document.invalid-context", "Scenario context must be an object.", [...scenarioPath, "context"], { formUid }));
           if (Object.prototype.hasOwnProperty.call(scenario, "extensions") && !isPlainRecord(own(scenario, "extensions"))) failures.push(issue("document.invalid-extensions", "Scenario extensions must be an object.", [...scenarioPath, "extensions"], { formUid }));
+          else if (registeredExtensions !== undefined && isPlainRecord(own(scenario, "extensions"))) for (const namespace of Object.keys(own(scenario, "extensions") as Record<string, unknown>)) {
+            if (!registeredExtensions.has(namespace)) failures.push(issue("document.unregistered-extension", `Scenario extension ${namespace} is not declared in resources.extensions.`, [...scenarioPath, "extensions", namespace], { formUid }));
+          }
           if (validScenarioUid) validateScenarioServices(own(scenario, "services"), [...scenarioPath, "services"], failures, { formUid, entityUid: scenarioUid });
         });
       }

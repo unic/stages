@@ -16,6 +16,7 @@ import {
 import { studioRuntimeAddressKey, studioRuntimePathKey } from "./source-map";
 import { compileStudioValidators } from "../validation/catalog";
 import { compileStudioReducer, compileStudioTransforms } from "../logic/compiler";
+import { resolveStudioMessage } from "../localization";
 import type {
   CompiledStudioForm,
   StudioDiagnostic,
@@ -37,6 +38,7 @@ interface CompileContext {
   readonly presenceByAddress: Map<string, StudioExpression>;
   readonly variantPresence: Map<string, StudioExpression>;
   readonly serviceBindings: StudioCompileOptions["serviceBindings"];
+  readonly localization: StudioCompileOptions["localization"];
   readonly targetPaths: ReadonlyMap<Uid, DataPath>;
   readonly fields: Record<string, StudioRuntimeFieldDefinition>;
 }
@@ -245,7 +247,10 @@ function compiledValidators(
   specs: readonly StudioValidatorSpec[] | undefined,
   owner: { readonly entityUid?: Uid; readonly propertyPath: readonly (number | string)[]; readonly runtimePath: DataPath; readonly runtimeAddress: NodeAddress },
 ) {
-  const result = compileStudioValidators(specs, context.serviceBindings === undefined ? {} : { serviceBindings: context.serviceBindings });
+  const result = compileStudioValidators(specs, {
+    ...(context.serviceBindings === undefined ? {} : { serviceBindings: context.serviceBindings }),
+    ...(context.localization === undefined ? {} : { localization: context.localization }),
+  });
   for (const entry of result.diagnostics) diagnostic(context, entry.code, entry.message, {
     ...owner,
     propertyPath: [...owner.propertyPath, entry.index],
@@ -446,6 +451,12 @@ function compileNode(
         runtimeAddress,
       },
     );
+    if (node.format !== undefined && ((node.format.kind === "number" && definition.value.kind !== "number") || (node.format.kind === "date" && definition.key !== "date"))) diagnostic(
+      context,
+      "compiler.incompatible-field-format",
+      `${node.format.kind} formatting is incompatible with ${definition.key} fields.`,
+      { entityUid: node.uid, propertyPath: ["nodes", node.uid, "format"], runtimePath, runtimeAddress },
+    );
     let type = definition.key as string;
     if (node.reducers !== undefined && node.reducers.length > 0) {
       type = `${definition.key}__studio__${node.uid}`;
@@ -462,6 +473,18 @@ function compileNode(
         }),
       } as FieldDefinition<unknown, JsonObject, string>;
     }
+    const derivedProps = (resolverContext: NodeResolverContext<unknown, unknown>) => ({
+      ...Object.fromEntries(Object.entries(node.derivedProps ?? {}).map(([key, expression]) => [key, expressionValue(expression, resolverContext)])),
+      ...Object.fromEntries(Object.entries(node.localizedProps ?? {}).flatMap(([key, messageKey]) => {
+        if (context.localization === undefined) return [];
+        const rawLocale = resolverContext.context !== null && typeof resolverContext.context === "object"
+          ? (resolverContext.context as Readonly<Record<string, unknown>>)["locale"]
+          : undefined;
+        const locale = typeof rawLocale === "string" ? rawLocale : context.localization.defaultLocale;
+        const localized = resolveStudioMessage(messageKey, locale, context.localization).value;
+        return localized === undefined ? [] : [[key, localized]];
+      })),
+    });
     return {
       schema: {
         kind: "field",
@@ -471,11 +494,7 @@ function compileNode(
         ...compiledBehavior(node),
         ...transforms,
         ...validation,
-        ...(node.derivedProps === undefined ? {} : {
-          deriveProps: (resolverContext: NodeResolverContext<unknown, unknown>) => Object.fromEntries(
-            Object.entries(node.derivedProps ?? {}).map(([key, expression]) => [key, expressionValue(expression, resolverContext)]),
-          ),
-        }),
+        ...(node.derivedProps === undefined && node.localizedProps === undefined ? {} : { deriveProps: derivedProps }),
       },
       render: {
         uid: node.uid,
@@ -716,11 +735,32 @@ export function compileStudioForm(
     presenceByAddress: new Map(),
     variantPresence: new Map(),
     serviceBindings: options.serviceBindings,
+    localization: options.localization,
     targetPaths: indexRuntimePaths(expanded.form),
     fields: { ...STUDIO_RUNTIME_FIELDS },
   };
   recordSource(context, expanded.form.uid, [], []);
   const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);
+  if (context.localization !== undefined) {
+    for (const node of Object.values(expanded.form.nodes)) for (const [property, key] of Object.entries(node.localizedProps ?? {})) {
+      const resolved = resolveStudioMessage(key, context.localization.defaultLocale, context.localization);
+      if (resolved.value === undefined) diagnostic(context, "compiler.missing-localization-message", resolved.message ?? `Message ${key} is missing.`, {
+        entityUid: node.uid,
+        propertyPath: ["nodes", node.uid, "localizedProps", property],
+      });
+    }
+    const inspectMessages = (specs: readonly StudioValidatorSpec[] | undefined, entityUid: Uid, path: readonly (number | string)[]) => specs?.forEach((spec, index) => {
+      const key = typeof spec.message === "object" ? spec.message.key : undefined;
+      if (key === undefined) return;
+      const resolved = resolveStudioMessage(key, context.localization!.defaultLocale, context.localization!);
+      if (resolved.value === undefined) diagnostic(context, "compiler.missing-localization-message", resolved.message ?? `Message ${key} is missing.`, {
+        entityUid,
+        propertyPath: [...path, index, "message", "key"],
+      });
+    });
+    inspectMessages(expanded.form.validators, expanded.form.uid, ["validators"]);
+    for (const node of Object.values(expanded.form.nodes)) inspectMessages(validatorsForNode(node), node.uid, ["nodes", node.uid, "validators"]);
+  }
   for (const uid of Object.keys(expanded.form.nodes) as Uid[]) {
     if (!context.visited.has(uid)) diagnostic(
       context,

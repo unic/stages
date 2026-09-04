@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { fieldEvent, nodeEvent, type StagesChange } from "@stages/core";
+import { fieldEvent, nodeEvent, stages, type JsonValue as CoreJsonValue, type StagesChange } from "@stages/core";
 import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
@@ -30,6 +30,22 @@ async function publish(): Promise<void> {
 }
 
 describe("Studio preview host", () => {
+  it("recreates registered durable extensions without adapter-only workbench state", () => {
+    const artifact = compiled();
+    const extensionCodecs = { draft: { encode: (value: unknown) => value as CoreJsonValue, decode: (value: CoreJsonValue) => value } };
+    const host = createStudioPreviewHost({
+      compiled: artifact,
+      value: initialValue,
+      extensions: { draft: { compact: true } },
+      extensionCodecs,
+    });
+    const serialized = host.controller.serialize();
+    expect(serialized.meta["extensions"]).toEqual({ draft: { compact: true } });
+    expect(serialized).not.toHaveProperty("workbench");
+    const recreated = stages({ schema: artifact.schemaInput, fields: artifact.fields, state: serialized, extensionCodecs });
+    expect(recreated.serialize().meta["extensions"]).toEqual({ draft: { compact: true } });
+  });
+
   it("accepts proposals immediately without an update loop", async () => {
     const proposals: StagesChange<unknown>[] = [];
     let host: StudioPreviewHost;

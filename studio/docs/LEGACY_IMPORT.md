@@ -39,6 +39,13 @@ The restricted parser accepts literals, `data`, `itemData`, and
 comparisons, strict equality, boolean operators, parentheses, and conditional
 expressions. Property paths reject prototype-related keys.
 
+`data` remains domain value and `itemData` remains current-row value. A legacy
+`interfaceState.x` reference that affects core dynamics becomes
+`extensions.legacyInterfaceState.x`, backed by declared `json@1` codec metadata.
+Selection, panel state, drag state, invalid control drafts, and route simulation
+stay in the adapter workbench and are never imported into domain or extension
+state.
+
 Calls, assignment, computed access, arbitrary identifiers, and all other
 JavaScript syntax are rejected. Unsupported strings and function source are
 stored only under `legacy.unsupportedExpressions` and produce a

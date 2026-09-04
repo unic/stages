@@ -72,6 +72,8 @@ describe("legacy Studio project importer", () => {
     const node = form.nodes[form.rootNodeUids[0]!]!;
     expect(node.presentation).toEqual({ label: "Total", blockWidth: { desktop: "medium" } });
     expect(node.behavior).toEqual(expect.objectContaining({ disabled: true }));
+    expect(node.behavior?.when).toEqual(expect.objectContaining({ operand: expect.objectContaining({ operand: { kind: "reference", scope: "extension", path: ["legacyInterfaceState", "showTotal"] } }) }));
+    expect(result.value.resources.extensions?.["legacyInterfaceState"]?.codec).toEqual({ key: "json", version: 1 });
     expect(node.behavior?.when).toEqual(expect.objectContaining({ kind: "unary" }));
     expect(node.kind).toBe("field");
     if (node.kind === "field") {
