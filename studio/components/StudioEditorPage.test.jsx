@@ -175,6 +175,9 @@ describe("StudioEditorPage interactions", () => {
     expect(startup).toBeTruthy();
     expect(startup).toHaveAttribute("data-studio-project-format", "stages-studio");
     expect(startup).toHaveAttribute("data-studio-import-errors", "0");
+    expect(screen.getByRole("region", { name: "Canvas" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Canvas" })).toBeNull();
+    expect(screen.queryByText(/click to select · drag/)).toBeNull();
   });
 
   it("hydrates before reading the legacy local-storage migration preview", async () => {

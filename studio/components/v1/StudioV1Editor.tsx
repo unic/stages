@@ -2084,8 +2084,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           </>}
         </aside>}
         {surface === "design" ? <>
-          <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
-            <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks · click to select · drag ⠿ to move</span></div>
+          <section className="studio-v1-canvas" aria-label="Canvas">
             <ControlledPreview
               form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources}
               defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem}
