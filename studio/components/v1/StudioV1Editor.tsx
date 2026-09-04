@@ -34,7 +34,9 @@ import {
   type StudioPropControl,
   type StudioWidth,
   STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
+  STUDIO_PREVIEW_CODEC_BINDINGS,
   STUDIO_PREVIEW_SERVICE_EXTENSION,
+  type StudioCodecBindings,
   studioPreviewServiceExtensions,
 } from "../../src/registry";
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
@@ -69,11 +71,6 @@ import {
 interface StudioV1EditorProps {
   readonly repository?: StudioProjectRepository;
 }
-
-const STUDIO_JSON_EXTENSION_CODEC = Object.freeze({
-  encode: (extensionValue: unknown) => extensionValue as JsonValue,
-  decode: (extensionValue: JsonValue) => extensionValue,
-});
 
 function firstForm(project: StudioHistoryState["present"]): StudioFormDocument | undefined {
   return Object.values(project.forms)[0];
@@ -642,6 +639,25 @@ function ScenarioObjectEditor({ scenario, property, label, onUpdate }: {
   }} />{error.length > 0 && <small role="alert">{error}</small>}</label>;
 }
 
+function ScenarioValueEditor({ scenario, onUpdate }: {
+  readonly scenario: StudioScenario;
+  readonly onUpdate: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "value">>) => void;
+}) {
+  const [draft, setDraft] = useState(() => JSON.stringify(scenario.value, null, 2));
+  const [error, setError] = useState("");
+  return <label className="studio-field"><span>Domain value JSON</span><textarea className="ui-input" rows={6} value={draft} aria-invalid={error.length > 0 || undefined} onChange={(event) => {
+    const source = event.currentTarget.value;
+    setDraft(source);
+    try {
+      const value = JSON.parse(source) as JsonValue;
+      setError("");
+      onUpdate(scenario, { value });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Invalid JSON value.");
+    }
+  }} />{error.length > 0 && <small role="alert">{error}</small>}</label>;
+}
+
 function ResourceCatalogEditor({ resources, onUpdate }: {
   readonly resources: StudioResourceCatalog;
   readonly onUpdate: (resources: StudioResourceCatalog) => void;
@@ -702,14 +718,15 @@ function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { re
   return <section className="studio-v1-dynamic-state" aria-labelledby="studio-v1-dynamic-state-title"><h3 id="studio-v1-dynamic-state-title">Dynamic structure</h3><ul>{items.map((item) => <li key={item.uid}><span>{item.label}</span><strong>{item.state}</strong></li>)}</ul></section>;
 }
 
-export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, onNavigateProblem, project, resources: resourceCatalog, defaultLocale = "en" }: {
+export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, onNavigateProblem, project, resources: resourceCatalog, defaultLocale = "en", codecBindings = STUDIO_PREVIEW_CODEC_BINDINGS }: {
   readonly form: StudioFormDocument;
   readonly compiled: CompiledStudioForm;
   readonly project?: StudioProjectDocument["project"];
   readonly resources?: StudioResourceCatalog;
   readonly defaultLocale?: string;
+  readonly codecBindings?: StudioCodecBindings;
   readonly onNavigateProblem?: (diagnostic: StudioProblem) => void;
-  readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => void;
+  readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "title" | "value" | "context" | "extensions" | "services">>) => void;
   readonly onAddScenario: () => StudioScenario | undefined;
 }) {
   const previewRef = useRef<HTMLElement>(null);
@@ -722,9 +739,23 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   const [eventMessage, setEventMessage] = useState("No named event dispatched.");
   const [activeEventId, setActiveEventId] = useState(form.events?.[0]?.id ?? "");
   const hostRef = useRef<ReturnType<typeof createStudioPreviewHost> | undefined>(undefined);
-  const extensionCodecs = useMemo(() => Object.fromEntries(
-    [...new Set([STUDIO_PREVIEW_SERVICE_EXTENSION, ...Object.keys(resourceCatalog?.extensions ?? {}), ...(resourceCatalog?.extensions === undefined ? form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {})) : [])])].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
-  ), [form.scenarios, resourceCatalog?.extensions]);
+  const valueCodec = useMemo(() => codecBindings.resolveValue(form.runtime), [codecBindings, form.runtime]);
+  const extensionCodecs = useMemo(() => {
+    const codecs: Record<string, NonNullable<ReturnType<StudioCodecBindings["resolveExtension"]>>> = {};
+    const register = (namespace: string, reference: Readonly<{ key: string; version: number }>) => {
+      const codec = codecBindings.resolveExtension(reference);
+      if (codec !== undefined) codecs[namespace] = codec;
+    };
+    register(STUDIO_PREVIEW_SERVICE_EXTENSION, { key: "json", version: 1 });
+    for (const [namespace, definition] of Object.entries(resourceCatalog?.extensions ?? {})) register(namespace, definition.codec);
+    if (resourceCatalog?.extensions === undefined) for (const item of form.scenarios) {
+      for (const namespace of Object.keys(item.extensions ?? {})) register(namespace, { key: "json", version: 1 });
+    }
+    return codecs;
+  }, [codecBindings, form.scenarios, resourceCatalog?.extensions]);
+  const durableExtensionNamespaces = useMemo(() => resourceCatalog?.extensions === undefined
+    ? [...new Set(form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {})))]
+    : Object.keys(resourceCatalog.extensions), [form.scenarios, resourceCatalog?.extensions]);
   const locale = studioScenarioLocale(scenario?.context, defaultLocale);
   const localizedKeys = [
     ...Object.values(form.nodes).flatMap((node) => Object.values(node.localizedProps ?? {})),
@@ -742,7 +773,9 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     value,
     ...(initialScenario?.context === undefined ? {} : { context: initialScenario.context }),
     extensions: studioPreviewServiceExtensions(initialScenario?.extensions, initialScenario?.services),
+    ...(valueCodec === undefined ? {} : { codec: valueCodec }),
     extensionCodecs,
+    durableExtensionNamespaces,
     onProposal: (proposal) => { setLastProposal(proposal); setValue(proposal.value); },
   }));
   const onProposal = useCallback((proposal: Parameters<NonNullable<Parameters<typeof createStudioPreviewHost>[0]["onProposal"]>>[0]) => {
@@ -759,12 +792,17 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     value,
     ...(scenario?.context === undefined ? {} : { context: scenario.context }),
     extensions: studioPreviewServiceExtensions(scenario?.extensions, scenario?.services),
+    ...(valueCodec === undefined ? {} : { codec: valueCodec }),
     extensionCodecs,
+    durableExtensionNamespaces,
     onProposal,
-  }), [compiled, extensionCodecs, onProposal, scenario?.context, scenario?.extensions, scenario?.services, value]);
+  }), [compiled, durableExtensionNamespaces, extensionCodecs, onProposal, scenario?.context, scenario?.extensions, scenario?.services, value, valueCodec]);
   const preview = useStudioPreviewHost(host, input);
   const [validationScope, setValidationScope] = useState<string>("form");
+  const [validationPath, setValidationPath] = useState("");
   const [validationMessage, setValidationMessage] = useState("Validation has not run.");
+  const [savedRuntime, setSavedRuntime] = useState<ReturnType<typeof host.serialize> | undefined>();
+  const [runtimePersistenceMessage, setRuntimePersistenceMessage] = useState("No runtime envelope saved.");
   const validationInspection = inspectStudioValidation(preview.snapshot, compiled.sourceMap);
   const problems: readonly StudioProblem[] = [...compiled.diagnostics, ...preview.diagnostics];
   const runtimeInspection = inspectStudioRuntime(preview.snapshot, preview.host.acceptedRevision, preview.host.pendingProposal);
@@ -836,15 +874,47 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     });
     setEventMessage(`${definition.title} dispatched${count > 1 ? ` ${count} times in one batch` : ""}.`);
   };
-  const validate = async () => {
-    const entry = validationScope === "form" ? undefined : compiled.sourceMap.byUid.get(toUid(validationScope));
+  const validate = async (scopeKind: "form" | "stage" | "path") => {
+    const entry = scopeKind === "stage" ? compiled.sourceMap.byUid.get(toUid(validationScope)) : undefined;
+    const path = validationPath.trim() === "" ? [] : validationPath.split(".").map((segment) => /^\d+$/.test(segment) ? Number(segment) : segment);
     const result = await preview.controller.validate({
-      scope: entry === undefined ? "form" : { address: entry.runtimeAddress },
+      scope: scopeKind === "form" ? "form" : scopeKind === "path" ? { path } : entry === undefined ? "form" : { address: entry.runtimeAddress },
       event: "submit",
       reveal: true,
     });
     setValidationMessage(result.isValid ? "Selected scope is valid." : `${result.visibleIssues.length} visible issue${result.visibleIssues.length === 1 ? "" : "s"}.`);
     if (!result.isValid) requestAnimationFrame(() => { if (previewRef.current) focusFirstVisibleValidationError(previewRef.current); });
+  };
+  const resetPreview = () => {
+    const resetValue = scenario?.value ?? createEmptyStudioScenarioValue(form);
+    try {
+      preview.host.reset({
+        value: resetValue,
+        ...(scenario?.context === undefined ? {} : { context: scenario.context }),
+        extensions: studioPreviewServiceExtensions(scenario?.extensions, scenario?.services),
+      });
+      setValue(resetValue);
+      setLastProposal(undefined);
+      setRuntimePersistenceMessage(`Reset to ${scenario?.title ?? "generated empty value"}.`);
+    } catch (error) {
+      setRuntimePersistenceMessage(error instanceof Error ? error.message : "The scenario could not create a fresh preview.");
+    }
+  };
+  const saveRuntime = () => {
+    try {
+      const state = preview.host.serialize();
+      setSavedRuntime(state);
+      setRuntimePersistenceMessage(`Runtime envelope saved at accepted revision ${preview.host.acceptedRevision}.`);
+    } catch (error) {
+      setRuntimePersistenceMessage(error instanceof Error ? error.message : "Runtime serialization failed.");
+    }
+  };
+  const recreatePreview = () => {
+    if (savedRuntime === undefined) return;
+    preview.host.recreate(savedRuntime);
+    setValue(preview.host.canonicalValue);
+    setLastProposal(undefined);
+    setRuntimePersistenceMessage("Preview recreated from the saved runtime envelope.");
   };
   const themeStyle = {
     "--studio-preview-background": compiled.renderPlan.theme.background,
@@ -867,13 +937,23 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
         <h3 id="studio-v1-scenarios-title">Scenario</h3>
         <label className="studio-field"><span>Named scenario</span><select value={scenario?.uid ?? ""} onChange={(event) => {
           const next = form.scenarios.find(({ uid }) => uid === event.currentTarget.value);
-          if (next) { setActiveScenarioUid(next.uid); setValue(next.value); }
+          if (next) {
+            setActiveScenarioUid(next.uid);
+            setValue(next.value);
+            setLastProposal(undefined);
+          }
         }}><option value="">Generated empty value</option>{form.scenarios.map((item) => <option key={item.uid} value={item.uid}>{item.title}</option>)}</select></label>
         <Button variant="outline" size="sm" onClick={() => {
           const added = onAddScenario();
-          if (added) { setActiveScenarioUid(added.uid); setValue(added.value); }
+          if (added) {
+            setActiveScenarioUid(added.uid);
+            setValue(added.value);
+            setLastProposal(undefined);
+          }
         }}>Add scenario</Button>
         {scenario && <div key={scenario.uid} className="studio-v1-scenarios__objects">
+          <label className="studio-field"><span>Scenario name</span><input className="ui-input" value={scenario.title} onChange={(event) => onUpdateScenario(scenario, { title: event.currentTarget.value })} /></label>
+          <ScenarioValueEditor scenario={scenario} onUpdate={onUpdateScenario} />
           <label className="studio-field"><span>Locale (context-owned)</span><select value={locale} onChange={(event) => onUpdateScenario(scenario, { context: { ...scenario.context, locale: event.currentTarget.value } })}>
             {Object.entries(resourceCatalog?.locales ?? {}).map(([key, resource]) => <option key={key} value={key}>{resource.label}</option>)}
             {(resourceCatalog?.locales?.[locale] === undefined) && <option value={locale}>{locale}</option>}
@@ -884,6 +964,15 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
         </div>}
         <dl><div><dt>Domain value</dt><dd>Submitted business data; controlled by the preview owner.</dd></div><div><dt>Context</dt><dd>Environment inputs such as locale and permissions; replaced, not merged.</dd></div><div><dt>Extensions</dt><dd>Registered engine-adjacent state with durable codec metadata.</dd></div><div><dt>Workbench</dt><dd>Selection, panels, drafts, and route simulation; adapter-only and never serialized by core.</dd></div></dl>
         {localeDiagnostics.length > 0 && <ul aria-label="Localization diagnostics">{localeDiagnostics.map((diagnostic) => <li key={`${diagnostic.code}:${diagnostic.message}`}><strong>{diagnostic.code}</strong> {diagnostic.message}</li>)}</ul>}
+      </section>
+      <section className="studio-v1-runtime-persistence" aria-labelledby="studio-v1-runtime-persistence-title">
+        <h3 id="studio-v1-runtime-persistence-title">Runtime persistence</h3>
+        <Button type="button" variant="outline" size="sm" onClick={resetPreview}>Reset to scenario</Button>
+        <Button type="button" variant="outline" size="sm" onClick={saveRuntime}>Save runtime envelope</Button>
+        <Button type="button" variant="outline" size="sm" disabled={savedRuntime === undefined} onClick={recreatePreview}>Recreate preview</Button>
+        <p role="status" aria-live="polite">{runtimePersistenceMessage}</p>
+        {savedRuntime !== undefined && <label className="studio-field"><span>Serialized runtime envelope</span><textarea className="ui-input" rows={8} readOnly value={JSON.stringify(savedRuntime, null, 2)} /></label>}
+        <small>The envelope contains accepted domain state and controller metadata. Context, workbench state, browser state, and service fixtures remain outside it.</small>
       </section>
       <section className="studio-v1-event-tools" aria-labelledby="studio-v1-event-tools-title">
         <h3 id="studio-v1-event-tools-title">Events and transaction order</h3>
@@ -920,11 +1009,14 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
       </section>
       <section className="studio-v1-validation-state" aria-labelledby="studio-v1-validation-state-title">
         <h3 id="studio-v1-validation-state-title">Validation state</h3>
-        <label className="studio-field"><span>Scope</span><select value={validationScope} onChange={(event) => setValidationScope(event.currentTarget.value)}>
-          <option value="form">Whole form</option>
-          {[...compiled.sourceMap.byUid.values()].filter((entry) => entry.uid !== form.uid).map((entry) => <option key={entry.uid} value={entry.uid}>{nodeLabel(form, entry.uid)}</option>)}
+        <label className="studio-field"><span>Stage</span><select value={validationScope} onChange={(event) => setValidationScope(event.currentTarget.value)}>
+          <option value="form">Choose a stage</option>
+          {[...compiled.sourceMap.byUid.values()].filter((entry) => form.nodes[entry.uid]?.kind === "stage").map((entry) => <option key={entry.uid} value={entry.uid}>{nodeLabel(form, entry.uid)}</option>)}
         </select></label>
-        <Button type="button" size="sm" onClick={() => void validate()}>Validate and reveal</Button>
+        <label className="studio-field"><span>Data path</span><input className="ui-input" value={validationPath} placeholder="profile.email" onChange={(event) => setValidationPath(event.currentTarget.value)} /></label>
+        <Button type="button" size="sm" onClick={() => void validate("form")}>Validate form</Button>
+        <Button type="button" size="sm" disabled={validationScope === "form"} onClick={() => void validate("stage")}>Validate stage</Button>
+        <Button type="button" size="sm" disabled={validationPath.trim() === ""} onClick={() => void validate("path")}>Validate path</Button>
         <p role="status" aria-live="polite">{validationMessage} Status: {validationInspection.status}. Pending: {validationInspection.pendingCount}.</p>
         {validationInspection.issues.length > 0 && <ul>{validationInspection.issues.map(({ issue, targetUid, visible }) => <li key={`${targetUid ?? "form"}:${issue.id}:${JSON.stringify(issue.path)}`}>
           <strong>{issue.severity}</strong> {issue.message ?? issue.code} <small>{visible ? "visible" : "hidden"}{targetUid === undefined ? "" : ` · ${nodeLabel(form, targetUid)}`}</small>
@@ -1531,7 +1623,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     return scenario;
   };
 
-  const updateScenario = (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => {
+  const updateScenario = (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "title" | "value" | "context" | "extensions" | "services">>) => {
     const result = dispatchStudioCommand(history, { type: "scenario.update", formUid: form.uid, uid: scenario.uid, changes }, { label: `Edit ${scenario.title}`, coalesceKey: `scenario:${scenario.uid}:${Object.keys(changes)[0] ?? "settings"}` });
     if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
   };

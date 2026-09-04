@@ -1,7 +1,9 @@
 import {
   stages,
   type Diagnostic,
+  type JsonValue,
   type StagesChange,
+  type SerializedStagesState,
 } from "@stages/core";
 import type { CompiledStudioForm, StudioFieldRegistry } from "../compiler/types";
 import type { JsonObject } from "../document";
@@ -12,6 +14,7 @@ import type {
   StudioPreviewCreationOptions,
   StudioPreviewHost,
   StudioPreviewHostOptions,
+  StudioPreviewReset,
   StudioPreviewHostUpdate,
   StudioRuntimeDiagnostic,
   StudioTelemetryEvent,
@@ -31,6 +34,7 @@ function creationFrom(input: StudioPreviewCreationOptions): StudioPreviewCreatio
     ...(input.codec === undefined ? {} : { codec: input.codec }),
     ...(input.migrations === undefined ? {} : { migrations: input.migrations }),
     ...(input.extensionCodecs === undefined ? {} : { extensionCodecs: input.extensionCodecs }),
+    ...(input.durableExtensionNamespaces === undefined ? {} : { durableExtensionNamespaces: input.durableExtensionNamespaces }),
     ...(input.validationFailureIssue === undefined ? {} : { validationFailureIssue: input.validationFailureIssue }),
   };
 }
@@ -42,6 +46,7 @@ function creationChanged(
   return previous.codec !== next.codec
     || !sameArray(previous.migrations, next.migrations)
     || !sameRecord(previous.extensionCodecs, next.extensionCodecs)
+    || !sameArray(previous.durableExtensionNamespaces, next.durableExtensionNamespaces)
     || previous.validationFailureIssue !== next.validationFailureIssue;
 }
 
@@ -183,6 +188,50 @@ class PreviewHost implements StudioPreviewHost {
     this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
   }
 
+  reset(input: StudioPreviewReset): void {
+    if (this.destroyedValue) return;
+    const previousValue = this.canonicalValueValue;
+    const previousContext = this.contextValue;
+    const previousExtensions = this.extensionsValue;
+    const previousProposal = this.pendingProposalValue;
+    this.pendingProposalValue = undefined;
+    this.canonicalValueValue = input.value;
+    this.contextValue = input.context ?? EMPTY_OBJECT;
+    this.extensionsValue = input.extensions ?? EMPTY_OBJECT;
+    try {
+      this.replaceController();
+    } catch (error) {
+      this.canonicalValueValue = previousValue;
+      this.contextValue = previousContext;
+      this.extensionsValue = previousExtensions;
+      this.pendingProposalValue = previousProposal;
+      throw error;
+    }
+  }
+
+  serialize(): SerializedStagesState {
+    const state = this.controllerValue.serialize();
+    const durable = this.creationValue.durableExtensionNamespaces;
+    if (durable === undefined) return state;
+    const serializedExtensions = state.meta["extensions"];
+    const extensionRecord = serializedExtensions !== null && typeof serializedExtensions === "object" && !Array.isArray(serializedExtensions)
+      ? serializedExtensions as Readonly<Record<string, JsonValue>>
+      : undefined;
+    const extensions = extensionRecord !== undefined
+      ? Object.fromEntries(durable.flatMap((namespace) => Object.prototype.hasOwnProperty.call(extensionRecord, namespace)
+        ? [[namespace, extensionRecord[namespace]!]]
+        : []))
+      : {};
+    return { ...state, meta: { ...state.meta, extensions } };
+  }
+
+  recreate(state: SerializedStagesState): void {
+    if (this.destroyedValue) return;
+    this.pendingProposalValue = undefined;
+    this.replaceController(state);
+    this.canonicalValueValue = this.controllerValue.getSnapshot().value;
+  }
+
   destroy(): void {
     if (this.destroyedValue) return;
     this.destroyedValue = true;
@@ -193,12 +242,12 @@ class PreviewHost implements StudioPreviewHost {
     this.pendingProposalValue = undefined;
   }
 
-  private createController(): StudioPreviewController {
+  private createController(state?: SerializedStagesState): StudioPreviewController {
     const creation = this.creationValue;
     const options = {
       schema: this.compiledValue.schemaInput,
       fields: this.compiledValue.fields,
-      value: this.canonicalValueValue,
+      ...(state === undefined ? { value: this.canonicalValueValue } : { state }),
       context: this.contextValue,
       extensions: this.extensionsValue,
       ...(creation.codec === undefined ? {} : { codec: creation.codec }),
@@ -215,10 +264,11 @@ class PreviewHost implements StudioPreviewHost {
     this.controllerUnsubscribe = this.controllerValue.subscribe(() => this.notify());
   }
 
-  private replaceController(): void {
+  private replaceController(state?: SerializedStagesState): void {
     const previous = this.controllerValue;
+    const next = this.createController(state);
     this.controllerUnsubscribe?.();
-    this.controllerValue = this.createController();
+    this.controllerValue = next;
     this.observeController();
     previous.destroy();
     this.callbacksValue.onControllerChange?.(this.controllerValue);

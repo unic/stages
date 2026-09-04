@@ -3,6 +3,7 @@ import type { JsonObject, JsonValue, StudioDefinitionRef, StudioFieldNode } from
 
 export * from "./presentation";
 export * from "./services";
+export * from "./codecs";
 
 export type StudioFieldKey = "checkbox" | "choice" | "date" | "number" | "text" | "textarea";
 export type StudioFieldValueKind = "boolean" | "number" | "string";

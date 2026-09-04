@@ -90,6 +90,19 @@ Execution status:
   state; author codec/locale metadata and scenario values; resolve localized
   props and validator messages with fallback diagnostics; format canonical
   field values for display; and migrate POC `interfaceState`
+- Session 23 completed: [`../studio/src/runtime/observability.ts`](../studio/src/runtime/observability.ts),
+  [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx),
+  and [`../studio/docs/PROBLEMS_INSPECTION_AND_OBSERVABILITY.md`](../studio/docs/PROBLEMS_INSPECTION_AND_OBSERVABILITY.md)
+  combine navigable compiler/runtime problems, stale and accepted revisions,
+  transaction/validation/stage/row inspection, redacted support reports, and
+  metadata-only telemetry ports
+- Session 24 completed: [`../studio/src/registry/codecs.ts`](../studio/src/registry/codecs.ts),
+  [`../studio/src/runtime/preview-host.ts`](../studio/src/runtime/preview-host.ts),
+  and [`../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md`](../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md)
+  provide editable named value/context/extension scenarios, form/stage/path
+  validation actions, fresh reset, accepted-state serialization, controller
+  recreation, and exact-version trusted value/extension codec bindings with
+  contract evidence for durable runtime metadata and excluded application state
 
 Primary references:
 

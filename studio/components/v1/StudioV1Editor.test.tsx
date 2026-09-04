@@ -33,6 +33,41 @@ describe("Studio extensions, transient state, and localization", () => {
   });
 });
 
+describe("Studio test data and runtime persistence", () => {
+  it("resets, serializes, and recreates accepted scenario state", async () => {
+    const fieldUid = toUid("field_title");
+    const form: StudioFormDocument = {
+      uid: toUid("form_persistence"), title: "Persistence", runtime: { schemaId: "persistence", schemaVersion: 1 }, rootNodeUids: [fieldUid],
+      nodes: { [fieldUid]: { uid: fieldUid, kind: "field", runtimeId: "title", definition: { key: "text", version: 1 }, props: { label: "Title" } } },
+      scenarios: [{ uid: toUid("scenario_named"), title: "Named baseline", value: { title: "Initial" }, context: { locale: "en", permission: "editor" }, extensions: { draft: { panel: "details" } }, services: { lookup: { outcome: "success" } } }],
+      settings: {},
+    };
+    renderPreview(form);
+
+    expect(screen.getByLabelText("Scenario name")).toHaveValue("Named baseline");
+    expect(screen.getByLabelText("Domain value JSON")).toHaveValue(JSON.stringify(form.scenarios[0]!.value, null, 2));
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Accepted" } });
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue("Accepted"));
+    fireEvent.click(screen.getByRole("button", { name: "Save runtime envelope" }));
+    const envelope = JSON.parse((screen.getByLabelText("Serialized runtime envelope") as HTMLTextAreaElement).value) as Record<string, unknown>;
+    expect(envelope["value"]).toEqual({ title: "Accepted" });
+    expect((envelope["meta"] as Record<string, unknown>)["extensions"]).toEqual({ draft: { panel: "details" } });
+    expect(envelope).not.toHaveProperty("context");
+    expect(envelope).not.toHaveProperty("workbench");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Later" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reset to scenario" }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue("Initial"));
+    fireEvent.click(screen.getByRole("button", { name: "Recreate preview" }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue("Accepted"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Validate form" }));
+    fireEvent.change(screen.getByLabelText("Data path"), { target: { value: "title" } });
+    fireEvent.click(screen.getByRole("button", { name: "Validate path" }));
+    await waitFor(() => expect(screen.getByText(/Selected scope is valid/)).toBeInTheDocument());
+  });
+});
+
 describe("Studio advanced collection and wizard Test mode", () => {
   it("exposes replace, duplicate, move, sort, remove, and variant-add commands", async () => {
     const collectionUid = toUid("collection_people");
@@ -118,6 +153,9 @@ describe("Studio advanced collection and wizard Test mode", () => {
     };
     renderPreview(form);
 
+    fireEvent.change(screen.getByLabelText("Stage"), { target: { value: firstUid } });
+    fireEvent.click(screen.getByRole("button", { name: "Validate stage" }));
+    await waitFor(() => expect(screen.getByText(/1 visible issue/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => expect(screen.getByText(/Current wizard stage is invalid; navigation was blocked/)).toBeInTheDocument());
     expect(screen.getByText(/active first/)).toBeInTheDocument();

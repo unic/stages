@@ -30,6 +30,60 @@ async function publish(): Promise<void> {
 }
 
 describe("Studio preview host", () => {
+  it("resets and recreates accepted controller state with durable metadata only", async () => {
+    const wizardUid = toUid("wizard_flow");
+    const firstUid = toUid("stage_first");
+    const secondUid = toUid("stage_second");
+    const collectionUid = toUid("collection_people");
+    const nameUid = toUid("field_name");
+    const form: StudioFormDocument = {
+      uid: formUid, title: "Runtime persistence", runtime: { schemaId: "runtime-persistence", schemaVersion: 1 }, rootNodeUids: [wizardUid],
+      nodes: {
+        [wizardUid]: { uid: wizardUid, kind: "wizard", runtimeId: "flow", stageUids: [firstUid, secondUid] },
+        [firstUid]: { uid: firstUid, kind: "stage", runtimeId: "first", childUids: [collectionUid] },
+        [secondUid]: { uid: secondUid, kind: "stage", runtimeId: "second", childUids: [] },
+        [collectionUid]: { uid: collectionUid, kind: "collection", runtimeId: "people", childUids: [nameUid] },
+        [nameUid]: { uid: nameUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Name" } },
+      },
+      scenarios: [], settings: {},
+    };
+    const artifact = compileStudioForm(form);
+    const initial = { flow: { first: { people: [{ name: "Ada" }, { name: "Lin" }] }, second: {} } };
+    const extensions = { draft: { panel: "review" } };
+    const extensionCodecs = { draft: { encode: (value: unknown) => value as CoreJsonValue, decode: (value: CoreJsonValue) => value } };
+    let host: StudioPreviewHost;
+    let accept = true;
+    host = createStudioPreviewHost({
+      compiled: artifact, value: initial, context: { locale: "de-CH" }, extensions, extensionCodecs,
+      onProposal: (proposal) => { if (accept) host.acceptProposal(proposal.transactionId); },
+    });
+    host.controller.dispatch(fieldEvent("focus", ["flow", "first", "people", 0, "name"]));
+    host.controller.dispatch(fieldEvent("blur", ["flow", "first", "people", 0, "name"]));
+    host.controller.dispatch(nodeEvent("collection:move", [{ kind: "node", id: "flow" }, { kind: "node", id: "first" }, { kind: "node", id: "people" }], { payload: { from: 0, to: 1 } }));
+    host.controller.dispatch(nodeEvent("wizard:next", [{ kind: "node", id: "flow" }]));
+    await publish();
+
+    accept = false;
+    host.controller.dispatch(fieldEvent("input", ["flow", "first", "people", 0, "name"], { payload: "Pending" }));
+    await publish();
+    const state = host.serialize();
+    expect(state.value).toEqual({ flow: { first: { people: [{ name: "Lin" }, { name: "Ada" }] }, second: {} } });
+    expect(state.meta["visited"]).not.toEqual([]);
+    expect(state.meta["activeWizards"]).not.toEqual([]);
+    expect(state.meta["collectionKeys"]).not.toEqual([]);
+    expect(state.meta["extensions"]).toEqual(extensions);
+    expect(state).not.toHaveProperty("context");
+    expect(state).not.toHaveProperty("workbench");
+    expect(state).not.toHaveProperty("browser");
+
+    host.reset({ value: initial, context: { locale: "en" }, extensions });
+    expect(host.serialize().meta["visited"]).toEqual([]);
+    expect((host.getSnapshot().nodes[0] as { activeStage?: string }).activeStage).toBe("first");
+    host.recreate(state);
+    expect(host.serialize()).toEqual(state);
+    expect((host.getSnapshot().nodes[0] as { activeStage?: string }).activeStage).toBe("second");
+  });
+
   it("recreates registered durable extensions without adapter-only workbench state", () => {
     const artifact = compiled();
     const extensionCodecs = { draft: { encode: (value: unknown) => value as CoreJsonValue, decode: (value: CoreJsonValue) => value } };
@@ -172,6 +226,11 @@ describe("Studio preview host", () => {
 
     host.update({ compiled: dynamicCompiled, value: { dynamic: "" }, context: { enabled: true } });
     await publish();
+    expect(host.getSnapshot().nodes.map(({ id }) => id)).toEqual(["dynamic"]);
+
+    const beforeFailedReset = host.controller;
+    expect(() => host.reset({ value: { dynamic: "" }, context: {} })).toThrow(/Reference path enabled does not exist/);
+    expect(host.controller).toBe(beforeFailedReset);
     expect(host.getSnapshot().nodes.map(({ id }) => id)).toEqual(["dynamic"]);
 
     const incompatible = compileStudioForm({

@@ -5,6 +5,7 @@ import type {
   StagesSnapshot,
   StagesStateMigration,
   StagesValueCodec,
+  SerializedStagesState,
   ValidationFailureIssueFactory,
 } from "@stages/core";
 import type { CompiledStudioForm, StudioDiagnostic, StudioFieldRegistry } from "../compiler/types";
@@ -40,6 +41,8 @@ export interface StudioPreviewCreationOptions {
   readonly codec?: StagesValueCodec<unknown>;
   readonly migrations?: readonly StagesStateMigration[];
   readonly extensionCodecs?: Readonly<Record<string, StagesExtensionCodec>>;
+  /** Namespaces retained by the Studio runtime envelope. Omit to retain every registered namespace. */
+  readonly durableExtensionNamespaces?: readonly string[];
   readonly validationFailureIssue?: ValidationFailureIssueFactory;
 }
 
@@ -52,6 +55,12 @@ export interface StudioPreviewHostOptions extends StudioPreviewCallbacks, Studio
 
 export interface StudioPreviewHostUpdate extends StudioPreviewCallbacks, StudioPreviewCreationOptions {
   readonly compiled: CompiledStudioForm;
+  readonly value: unknown;
+  readonly context?: JsonObject;
+  readonly extensions?: JsonObject;
+}
+
+export interface StudioPreviewReset {
   readonly value: unknown;
   readonly context?: JsonObject;
   readonly extensions?: JsonObject;
@@ -71,6 +80,9 @@ export interface StudioPreviewHost {
   acceptProposal(transactionId: number, replacementValue?: unknown): boolean;
   rejectProposal(transactionId: number): boolean;
   replaceValue(value: unknown): void;
+  reset(input: StudioPreviewReset): void;
+  serialize(): SerializedStagesState;
+  recreate(state: SerializedStagesState): void;
   destroy(): void;
 }
 
