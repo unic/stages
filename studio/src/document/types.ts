@@ -26,17 +26,20 @@ interface StudioNodeBase {
   readonly legacy?: JsonObject;
 }
 
-export interface StudioFieldNode extends StudioNodeBase {
+interface StudioValidatedNodeBase extends StudioNodeBase {
+  readonly validators?: readonly StudioValidatorSpec[];
+}
+
+export interface StudioFieldNode extends StudioValidatedNodeBase {
   readonly kind: "field";
   readonly runtimeId: string;
   readonly definition: StudioDefinitionRef;
   readonly props: JsonObject;
   readonly computed?: StudioExpression;
   readonly derivedProps?: Readonly<Record<string, StudioExpression>>;
-  readonly validators?: readonly StudioValidatorSpec[];
 }
 
-export interface StudioGroupNode extends StudioNodeBase {
+export interface StudioGroupNode extends StudioValidatedNodeBase {
   readonly kind: "group";
   readonly runtimeId: string;
   readonly childUids: readonly Uid[];
@@ -46,7 +49,7 @@ export type StudioCollectionItemKey =
   | { readonly kind: "index" }
   | { readonly kind: "property"; readonly property: string };
 
-interface StudioCollectionNodeBase extends StudioNodeBase {
+interface StudioCollectionNodeBase extends StudioValidatedNodeBase {
   readonly kind: "collection";
   readonly runtimeId: string;
   readonly min?: number;
@@ -82,7 +85,7 @@ export interface StudioVariantNode extends StudioNodeBase {
   readonly childUids: readonly Uid[];
 }
 
-export interface StudioWizardNode extends StudioNodeBase {
+export interface StudioWizardNode extends StudioValidatedNodeBase {
   readonly kind: "wizard";
   readonly runtimeId: string;
   readonly stageUids: readonly Uid[];
@@ -112,17 +115,55 @@ export interface StudioFragmentNodeOverride {
 }
 
 /** A linked use of a reusable fragment. It compiles as an ordinary runtime group. */
-export interface StudioFragmentInstanceNode extends StudioNodeBase {
+export interface StudioFragmentInstanceNode extends StudioValidatedNodeBase {
   readonly kind: "fragment";
   readonly runtimeId: string;
   readonly fragmentUid: Uid;
   readonly overrides?: Readonly<Record<Uid, StudioFragmentNodeOverride>>;
 }
 
-export interface StudioValidatorSpec {
-  readonly kind: "required";
-  readonly message: string;
+export type StudioValidationSeverity = "error" | "warning";
+export type StudioValidationEventPolicy = string | readonly string[];
+export type StudioValidationPath = readonly (number | string)[];
+
+export interface StudioLocalizedValidationMessage {
+  readonly default: string;
+  /** Locale keys are matched against `context.locale` in preview scenarios. */
+  readonly translations?: Readonly<Record<string, string>>;
 }
+
+interface StudioValidatorBase {
+  /** Optional only for compatibility with early document-v1 required rules. */
+  readonly id?: string;
+  readonly code?: string;
+  readonly on?: StudioValidationEventPolicy;
+  readonly revealOn?: StudioValidationEventPolicy;
+  readonly severity?: StudioValidationSeverity;
+  readonly message?: string | StudioLocalizedValidationMessage;
+  readonly when?: StudioExpression;
+  readonly includeDisabled?: boolean;
+  readonly dependencies?: readonly StudioValidationPath[];
+  /** Defaults to the validator owner's path. */
+  readonly issuePath?: StudioValidationPath;
+}
+
+export type StudioValidatorSpec = StudioValidatorBase & (
+  | { readonly kind: "required" }
+  | { readonly kind: "length"; readonly min?: number; readonly max?: number }
+  | { readonly kind: "range"; readonly min?: number; readonly max?: number }
+  | { readonly kind: "pattern"; readonly pattern: string; readonly flags?: string }
+  | {
+      readonly kind: "comparison";
+      readonly operator: "===" | "!==" | "<" | "<=" | ">" | ">=";
+      readonly other: StudioExpression;
+    }
+  | {
+      readonly kind: "collection";
+      readonly min?: number;
+      readonly max?: number;
+      readonly uniqueBy?: readonly string[];
+    }
+);
 
 export type StudioNode = StudioBlockNode | StudioCollectionNode | StudioFieldNode
   | StudioFragmentInstanceNode | StudioGroupNode | StudioStageNode | StudioVariantNode | StudioWizardNode;
@@ -150,6 +191,7 @@ export interface StudioFormDocument {
   readonly runtime: { readonly schemaId: string; readonly schemaVersion: number };
   readonly rootNodeUids: readonly Uid[];
   readonly nodes: Readonly<Record<Uid, StudioNode>>;
+  readonly validators?: readonly StudioValidatorSpec[];
   readonly scenarios: readonly StudioScenario[];
   readonly settings: JsonObject;
 }

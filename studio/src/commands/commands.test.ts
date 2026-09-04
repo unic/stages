@@ -36,6 +36,16 @@ function success(project: StudioProjectDocument, command: StudioCommand): Studio
 }
 
 describe("Studio command engine", () => {
+  it("updates form validators immutably", () => {
+    const initial = project();
+    const validators = [{ id: "form.required", kind: "required" as const, message: "Required" }];
+    const updated = success(initial, { type: "form.update", formUid, changes: { validators } });
+    expect(updated.forms[formUid]?.validators).toEqual(validators);
+    expect(initial.forms[formUid]?.validators).toBeUndefined();
+    const removed = success(updated, { type: "form.update", formUid, changes: { validators: undefined } });
+    expect(removed.forms[formUid]).not.toHaveProperty("validators");
+  });
+
   it("inserts and edits named scenarios through immutable history commands", () => {
     const initial = project();
     const scenarioUid = toUid("scenario_permissions");

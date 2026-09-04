@@ -3,6 +3,7 @@ import type {
   StudioHomogeneousCollectionNode,
   StudioFragmentDefinition,
   StudioFragmentInstanceNode,
+  StudioFormDocument,
   StudioNode,
   StudioProjectDocument,
   StudioScenario,
@@ -13,6 +14,11 @@ import type {
 export type StudioNodeChanges = Readonly<Record<string, unknown>>;
 
 export type StudioCommand =
+  | {
+    readonly type: "form.update";
+    readonly formUid: Uid;
+    readonly changes: { readonly validators: StudioFormDocument["validators"] | undefined };
+  }
   | {
     readonly type: "scenario.insert";
     readonly formUid: Uid;

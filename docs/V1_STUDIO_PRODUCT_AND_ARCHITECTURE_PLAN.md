@@ -59,6 +59,12 @@ Execution status:
   compile dynamic visibility, disabled state, derived props, optional factory
   structure, and stages; named context/feature scenarios drive a state-aware
   preview with last-valid recovery
+- Session 18 completed: [`../studio/src/validation/catalog.ts`](../studio/src/validation/catalog.ts),
+  [`../studio/src/validation/inspection.ts`](../studio/src/validation/inspection.ts),
+  and [`../studio/components/v1/StudioValidationEditor.tsx`](../studio/components/v1/StudioValidationEditor.tsx)
+  author and compile field, node, and form synchronous validators with event,
+  reveal, severity, conditional, disabled, scope, dependency, localization,
+  issue-inspection, and focus-first-error support
 
 Primary references:
 

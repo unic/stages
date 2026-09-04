@@ -1,5 +1,5 @@
 import type { CollectionVariantConfig, DataPath, DynamicConfigContext, NodeAddress, NodeConfig, NodeResolverContext, StageNodeConfig, StagesSchema } from "@stages/core";
-import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioNode, Uid } from "../document";
+import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioNode, StudioValidatorSpec, Uid } from "../document";
 import { isSafeObjectKey, isStudioVariantCollection, toUid } from "../document";
 import { evaluateStudioExpression } from "../expressions/evaluator";
 import { studioExpressionDependencies } from "../expressions/serialization";
@@ -13,6 +13,7 @@ import {
   validateStudioFieldProps,
 } from "../registry";
 import { studioRuntimeAddressKey, studioRuntimePathKey } from "./source-map";
+import { compileStudioValidators } from "../validation/catalog";
 import type {
   CompiledStudioForm,
   StudioDiagnostic,
@@ -124,6 +125,7 @@ export function expandStudioFragments(
       childUids: definition.rootNodeUids.map((uid) => uidMap.get(uid)!).filter(Boolean),
       ...(instance.presentation === undefined ? {} : { presentation: instance.presentation }),
       ...(instance.behavior === undefined ? {} : { behavior: instance.behavior }),
+      ...(instance.validators === undefined ? {} : { validators: instance.validators }),
       ...(instance.legacy === undefined ? {} : { legacy: instance.legacy }),
     };
   };
@@ -180,12 +182,24 @@ function unsupportedBehavior(
     "Computed fields are not supported by the minimal compiler.",
     { entityUid: node.uid, propertyPath: ["nodes", node.uid, "computed"], runtimePath, runtimeAddress },
   );
-  if (node.kind === "field" && node.validators !== undefined && node.validators.length > 0) diagnostic(
-    context,
-    "compiler.unsupported-validators",
-    "Document validators are not supported by the minimal compiler.",
-    { entityUid: node.uid, propertyPath: ["nodes", node.uid, "validators"], runtimePath, runtimeAddress },
-  );
+}
+
+function validatorsForNode(node: StudioNode): readonly StudioValidatorSpec[] | undefined {
+  if (node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment") return node.validators;
+  return undefined;
+}
+
+function compiledValidators(
+  context: CompileContext,
+  specs: readonly StudioValidatorSpec[] | undefined,
+  owner: { readonly entityUid?: Uid; readonly propertyPath: readonly (number | string)[]; readonly runtimePath: DataPath; readonly runtimeAddress: NodeAddress },
+) {
+  const result = compileStudioValidators(specs);
+  for (const entry of result.diagnostics) diagnostic(context, entry.code, entry.message, {
+    ...owner,
+    propertyPath: [...owner.propertyPath, entry.index],
+  });
+  return result.validators.length === 0 ? {} : { validators: result.validators };
 }
 
 function isStaticallyHidden(node: StudioNode): boolean {
@@ -343,6 +357,12 @@ function compileNode(
     else context.presenceByAddress.set(studioRuntimeAddressKey(runtimeAddress), node.behavior.presentWhen);
   }
   unsupportedBehavior(context, node, runtimePath, runtimeAddress);
+  const validation = compiledValidators(context, validatorsForNode(node), {
+    entityUid: node.uid,
+    propertyPath: ["nodes", node.uid, "validators"],
+    runtimePath,
+    runtimeAddress,
+  });
 
   if (node.kind === "field") {
     context.visiting.delete(node.uid);
@@ -379,6 +399,7 @@ function compileNode(
         type: definition.key,
         props: node.props,
         ...compiledBehavior(node),
+        ...validation,
         ...(node.derivedProps === undefined ? {} : {
           deriveProps: (resolverContext: NodeResolverContext<unknown, unknown>) => Object.fromEntries(
             Object.entries(node.derivedProps ?? {}).map(([key, expression]) => [key, expressionValue(expression, resolverContext)]),
@@ -441,6 +462,7 @@ function compileNode(
       id: node.runtimeId,
       nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
       ...compiledBehavior(node),
+      ...validation,
     },
     render,
   };
@@ -461,6 +483,7 @@ function compileNode(
       ...(node.max === undefined ? {} : { max: node.max }),
       ...(itemKey === undefined ? {} : { itemKey }),
       ...compiledBehavior(node),
+      ...validation,
     };
     const schema: NodeConfig<unknown, StudioFieldRegistry, unknown> = isStudioVariantCollection(node)
       ? {
@@ -489,6 +512,7 @@ function compileNode(
       ...(initialStage === undefined ? {} : { initialStage }),
       ...(node.navigation === undefined ? {} : { navigation: node.navigation }),
       ...compiledBehavior(node),
+      ...validation,
     },
     render,
   };
@@ -593,6 +617,7 @@ export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<
     presenceByAddress: new Map(),
     variantPresence: new Map(),
   };
+  recordSource(context, expanded.form.uid, [], []);
   const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);
   for (const uid of Object.keys(expanded.form.nodes) as Uid[]) {
     if (!context.visited.has(uid)) diagnostic(
@@ -606,6 +631,7 @@ export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<
     id: form.runtime.schemaId,
     version: form.runtime.schemaVersion,
     nodes: nodes.flatMap((node) => node.schema === undefined ? [] : [node.schema]),
+    ...compiledValidators(context, form.validators, { propertyPath: ["validators"], runtimePath: [], runtimeAddress: [] }),
   };
   const schemaInput = context.presenceByAddress.size === 0 && context.variantPresence.size === 0
     ? schema

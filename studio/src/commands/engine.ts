@@ -366,6 +366,16 @@ function executeSingle(
     formUid: command.formUid,
   });
 
+  if (command.type === "form.update") {
+    const keys = Object.keys(command.changes);
+    if (keys.some((key) => key !== "validators")) return fail("command.invalid-update", "Form updates may change validators only.", commandPath, { formUid: form.uid });
+    if (keys.length === 0 || keys.every((key) => Object.is((form as unknown as Record<string, unknown>)[key], command.changes[key as keyof typeof command.changes]))) return { ok: true, document: project, affectedUids: [], changed: false };
+    const next = { ...form } as StudioFormDocument & { validators?: StudioFormDocument["validators"] };
+    if (command.changes.validators === undefined) delete next.validators;
+    else next.validators = command.changes.validators;
+    return commit(project, next, [form.uid], commandPath);
+  }
+
   if (command.type === "scenario.insert") {
     if (projectHasUid(project, command.scenario.uid)) return fail("command.uid-conflict", `UID ${command.scenario.uid} is already in use.`, commandPath, { formUid: form.uid, entityUid: command.scenario.uid });
     if (!Number.isSafeInteger(command.index) || command.index < 0 || command.index > form.scenarios.length) return fail("command.index-out-of-bounds", `Scenario index ${command.index} is out of bounds.`, commandPath, { formUid: form.uid });

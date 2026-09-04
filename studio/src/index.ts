@@ -8,3 +8,4 @@ export * as platform from "./platform";
 export * as projects from "./projects";
 export * as registry from "./registry";
 export * as runtime from "./runtime";
+export * as validation from "./validation";

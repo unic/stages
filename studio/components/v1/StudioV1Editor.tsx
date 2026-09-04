@@ -12,7 +12,7 @@ import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
-import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type StudioScenario, type Uid } from "../../src/document/types";
+import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type StudioScenario, type StudioValidatorSpec, type Uid } from "../../src/document/types";
 import type { StudioExpression, StudioExpressionContext } from "../../src/expressions/types";
 import { evaluateStudioExpression } from "../../src/expressions/evaluator";
 import {
@@ -38,6 +38,7 @@ import { StudioProjectConflictError } from "../../src/projects/types";
 import type { StudioProjectRepository } from "../../src/projects/types";
 import { createStudioPreviewHost } from "../../src/runtime/preview-host";
 import { useStudioPreviewHost } from "../../src/runtime/use-studio-preview-host";
+import { focusFirstVisibleValidationError, inspectStudioValidation } from "../../src/validation/inspection";
 import {
   createStudioWorkbenchState,
   createStudioOutlineModel,
@@ -52,6 +53,7 @@ import { Button } from "../ui/button";
 import { STUDIO_SUPPORTED_DEFINITIONS, useStudioDocumentStartup } from "./StudioDocumentStartup";
 import { StudioOutline } from "./StudioOutline";
 import { StudioExpressionEditor, type StudioExpressionReferenceOption } from "./StudioExpressionEditor";
+import { StudioValidationEditor } from "./StudioValidationEditor";
 import {
   createStudioStructuralActions,
   type StudioEditorNavigationState,
@@ -244,16 +246,19 @@ function PreviewDynamicBlock({ form, node, expressionContext }: {
   return <PreviewBlock node={node} />;
 }
 
-function PreviewFieldControl({ definition, field, node, currentValue, descriptionId, disabled, onInput }: {
+function PreviewFieldControl({ definition, field, node, currentValue, descriptionId, disabled, invalid, onInput, onBlur, onFocus }: {
   readonly definition: AnyStudioAuthoringFieldDefinition;
   readonly field: StudioFieldNode;
   readonly node: StudioRuntimeRenderNode<"field">;
   readonly currentValue: unknown;
   readonly descriptionId?: string;
   readonly disabled: boolean;
+  readonly invalid: boolean;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+  readonly onBlur: () => void;
+  readonly onFocus: () => void;
 }) {
-  const common = { className: "ui-input", "aria-describedby": descriptionId, disabled };
+  const common = { className: "ui-input", "aria-describedby": descriptionId, "aria-invalid": invalid || undefined, disabled, onBlur, onFocus };
   if (definition.preview.control === "checkbox") {
     return <input {...common} type="checkbox" checked={Boolean(currentValue)} onChange={(event) => onInput(node, event.currentTarget.checked)} />;
   }
@@ -280,19 +285,22 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
   />;
 }
 
-function PreviewField({ form, node, snapshot, value, onInput }: {
+function PreviewField({ form, node, snapshot, value, onInput, onBlur, onFocus }: {
   readonly form: StudioFormDocument;
   readonly node: StudioRuntimeRenderNode<"field">;
   readonly snapshot: Extract<RenderNodeSnapshot, { readonly kind: "field" }>;
   readonly value: unknown;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+  readonly onBlur: () => void;
+  readonly onFocus: () => void;
 }) {
   const field = form.nodes[node.uid];
   if (field?.kind !== "field") return null;
   const definition = studioFieldDefinition(field.definition);
   if (!definition) return null;
   const description = typeof snapshot.props["helpText"] === "string" ? snapshot.props["helpText"] : "";
-  const descriptionId = description.length > 0 ? `${node.uid}-help` : undefined;
+  const issue = snapshot.state.visibleIssues[0];
+  const descriptionId = issue === undefined ? (description.length > 0 ? `${node.uid}-help` : undefined) : `${node.uid}-issue`;
   return <PreviewLayout node={node}><label className="studio-field">
     <span>{typeof snapshot.props["label"] === "string" ? snapshot.props["label"] : nodeLabel(form, node.uid)}</span>
     <PreviewFieldControl
@@ -301,10 +309,13 @@ function PreviewField({ form, node, snapshot, value, onInput }: {
       node={node}
       currentValue={getAtPath(value, node.runtimePath) ?? definition.value.emptyValue}
       disabled={snapshot.state.disabled}
+      invalid={issue?.severity === "error"}
       {...(descriptionId === undefined ? {} : { descriptionId })}
       onInput={onInput}
+      onBlur={onBlur}
+      onFocus={onFocus}
     />
-    {descriptionId && <small id={descriptionId}>{description}</small>}
+    {issue ? <small id={`${node.uid}-issue`} role="alert">{issue.message ?? issue.code}</small> : descriptionId && <small id={descriptionId}>{description}</small>}
   </label></PreviewLayout>;
 }
 
@@ -402,7 +413,7 @@ function PreviewNode(props: PreviewNodeProps) {
   if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
     <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
   ))}</div></PreviewLayout>;
-  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} onInput={onInput} /> : null;
+  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} onInput={onInput} onBlur={() => onStructureEvent(fieldEvent("blur", path, { source: "adapter" }))} onFocus={() => onStructureEvent(fieldEvent("focus", path, { source: "adapter" }))} /> : null;
 }
 
 function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
@@ -584,6 +595,7 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
   readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => void;
   readonly onAddScenario: () => StudioScenario | undefined;
 }) {
+  const previewRef = useRef<HTMLElement>(null);
   const initialScenario = form.scenarios[0];
   const [activeScenarioUid, setActiveScenarioUid] = useState<Uid | undefined>(initialScenario?.uid);
   const scenario = form.scenarios.find(({ uid }) => uid === activeScenarioUid) ?? form.scenarios[0];
@@ -611,6 +623,19 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
     onProposal,
   }), [compiled, extensionCodecs, onProposal, scenario?.context, scenario?.extensions, value]);
   const preview = useStudioPreviewHost(host, input);
+  const [validationScope, setValidationScope] = useState<string>("form");
+  const [validationMessage, setValidationMessage] = useState("Validation has not run.");
+  const validationInspection = inspectStudioValidation(preview.snapshot, compiled.sourceMap);
+  const validate = async () => {
+    const entry = validationScope === "form" ? undefined : compiled.sourceMap.byUid.get(toUid(validationScope));
+    const result = await preview.controller.validate({
+      scope: entry === undefined ? "form" : { address: entry.runtimeAddress },
+      event: "submit",
+      reveal: true,
+    });
+    setValidationMessage(result.isValid ? "Selected scope is valid." : `${result.visibleIssues.length} visible issue${result.visibleIssues.length === 1 ? "" : "s"}.`);
+    if (!result.isValid) requestAnimationFrame(() => { if (previewRef.current) focusFirstVisibleValidationError(previewRef.current); });
+  };
   const themeStyle = {
     "--studio-preview-background": compiled.renderPlan.theme.background,
     "--studio-preview-foreground": compiled.renderPlan.theme.foreground,
@@ -622,7 +647,7 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
   } as CSSProperties;
 
   return (
-    <section className="studio-v1-preview" aria-labelledby="studio-v1-preview-title" style={themeStyle} data-studio-theme="default">
+    <section ref={previewRef} className="studio-v1-preview" aria-labelledby="studio-v1-preview-title" style={themeStyle} data-studio-theme="default">
       <div className="studio-v1-section-heading">
         <h2 id="studio-v1-preview-title">Preview</h2>
         <span>{compiled.diagnostics.length + preview.diagnostics.length} problems</span>
@@ -643,6 +668,18 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
         </div>}
       </section>
       <DynamicStructurePanel form={form} nodes={compiled.renderPlan.nodes} snapshots={preview.snapshot.nodes} value={value} scenario={scenario} />
+      <section className="studio-v1-validation-state" aria-labelledby="studio-v1-validation-state-title">
+        <h3 id="studio-v1-validation-state-title">Validation state</h3>
+        <label className="studio-field"><span>Scope</span><select value={validationScope} onChange={(event) => setValidationScope(event.currentTarget.value)}>
+          <option value="form">Whole form</option>
+          {[...compiled.sourceMap.byUid.values()].filter((entry) => entry.uid !== form.uid).map((entry) => <option key={entry.uid} value={entry.uid}>{nodeLabel(form, entry.uid)}</option>)}
+        </select></label>
+        <Button type="button" size="sm" onClick={() => void validate()}>Validate and reveal</Button>
+        <p role="status" aria-live="polite">{validationMessage} Status: {validationInspection.status}.</p>
+        {validationInspection.issues.length > 0 && <ul>{validationInspection.issues.map(({ issue, targetUid, visible }) => <li key={`${targetUid ?? "form"}:${issue.id}:${JSON.stringify(issue.path)}`}>
+          <strong>{issue.severity}</strong> {issue.message ?? issue.code} <small>{visible ? "visible" : "hidden"}{targetUid === undefined ? "" : ` · ${nodeLabel(form, targetUid)}`}</small>
+        </li>)}</ul>}
+      </section>
       <div className="studio-v1-preview__fields">
         {compiled.renderPlan.nodes.map((node) => (
           <PreviewNode
@@ -784,6 +821,16 @@ function ExpressionInspector({ node, form, onUpdate }: {
   </fieldset>;
 }
 
+function nodeValidators(node: StudioNode): readonly StudioValidatorSpec[] | undefined {
+  return node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment"
+    ? node.validators
+    : undefined;
+}
+
+function supportsValidators(node: StudioNode): boolean {
+  return node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment";
+}
+
 function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach, onBulkLabel }: {
   readonly nodes: readonly StudioNode[];
   readonly form: StudioFormDocument;
@@ -852,6 +899,12 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
       {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onUpdateFragmentNode={onUpdateFragmentNode} onDetach={onDetach} />}
       <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
       <ExpressionInspector node={node} form={form} onUpdate={onUpdate} />
+      {supportsValidators(node) && <StudioValidationEditor
+        validators={nodeValidators(node)}
+        references={expressionReferences(form)}
+        ownerLabel={node.kind === "field" ? "field" : "node"}
+        onChange={(validators, label) => onUpdate(node, { validators }, label, `validators:${node.uid}`)}
+      />}
       <PresentationInspector node={node} onUpdate={onUpdate} />
     </div>
   );
@@ -988,6 +1041,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     const node = form.nodes[uid];
     return node === undefined ? [] : [node];
   });
+  const formSelected = navigation.workbench.selectedUids.includes(form.uid);
   const compiled = compileStudioForm(form, history.present.fragments);
 
   const replaceHistory = (nextHistory: StudioHistoryState) => {
@@ -1108,6 +1162,12 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       uid: node.uid,
       changes,
     }, { label, ...(coalesceKey === undefined ? {} : { coalesceKey }) });
+    if (result.ok) setHistory(result.history);
+    else setStatus(result.failure.message);
+  };
+
+  const updateFormValidators = (validators: readonly StudioValidatorSpec[] | undefined, label: string) => {
+    const result = dispatchStudioCommand(history, { type: "form.update", formUid: form.uid, changes: { validators } }, { label, coalesceKey: `validators:${form.uid}` });
     if (result.ok) setHistory(result.history);
     else setStatus(result.failure.message);
   };
@@ -1307,7 +1367,12 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         </section>
         <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title">
           <h2 id="studio-v1-inspector-title">Inspector</h2>
-          <SelectionInspector
+          {formSelected ? <StudioValidationEditor
+            validators={form.validators}
+            references={expressionReferences(form)}
+            ownerLabel="form"
+            onChange={updateFormValidators}
+          /> : <SelectionInspector
             key={selectedNodes.map(({ uid }) => uid).join("\u0000")}
             nodes={selectedNodes}
             form={form}
@@ -1317,7 +1382,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onUpdateFragmentNode={updateFragmentNode}
             onDetach={detachFragment}
             onBulkLabel={updateBulkLabel}
-          />
+          />}
           <StructureControls
             nodes={selectedNodes}
             canPaste={navigation.clipboard !== undefined}

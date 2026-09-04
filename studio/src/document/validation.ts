@@ -43,6 +43,65 @@ function own(value: Record<string, unknown>, key: string): unknown {
   return Object.prototype.hasOwnProperty.call(value, key) ? value[key] : undefined;
 }
 
+function isValidationPath(value: unknown): boolean {
+  return Array.isArray(value) && value.every((segment) => typeof segment === "string"
+    ? isSafeObjectKey(segment)
+    : Number.isSafeInteger(segment) && (segment as number) >= 0);
+}
+
+function validEventPolicy(value: unknown): boolean {
+  return typeof value === "string" ? value.length > 0
+    : Array.isArray(value) && value.length > 0 && value.every((event) => typeof event === "string" && event.length > 0);
+}
+
+function validateValidators(
+  value: unknown,
+  path: DiagnosticPath,
+  failures: StudioDocumentDiagnostic[],
+  details: { readonly formUid?: Uid; readonly entityUid?: Uid },
+): void {
+  if (value === undefined) return;
+  if (!Array.isArray(value)) { failures.push(issue("document.invalid-validators", "validators must be an array.", path, details)); return; }
+  const ids = new Set<string>();
+  value.forEach((candidate, index) => {
+    const validatorPath = [...path, index];
+    if (!isPlainRecord(candidate)) { failures.push(issue("document.invalid-validator", "Validator must be an object.", validatorPath, details)); return; }
+    const kind = own(candidate, "kind");
+    if (!["required", "length", "range", "pattern", "comparison", "collection"].includes(String(kind))) failures.push(issue("document.invalid-validator-kind", "Validator kind is not in the synchronous catalog.", [...validatorPath, "kind"], details));
+    const id = own(candidate, "id");
+    if (id !== undefined && (typeof id !== "string" || id.trim().length === 0)) failures.push(issue("document.invalid-validator-id", "Validator id must be a non-empty string.", [...validatorPath, "id"], details));
+    else if (typeof id === "string" && ids.has(id)) failures.push(issue("document.duplicate-validator-id", `Validator ID ${id} is duplicated.`, [...validatorPath, "id"], details));
+    else if (typeof id === "string") ids.add(id);
+    for (const key of ["on", "revealOn"] as const) {
+      const policy = own(candidate, key);
+      if (policy !== undefined && !validEventPolicy(policy)) failures.push(issue("document.invalid-validator-events", `${key} must be a non-empty event or event array.`, [...validatorPath, key], details));
+    }
+    const severity = own(candidate, "severity");
+    if (severity !== undefined && severity !== "error" && severity !== "warning") failures.push(issue("document.invalid-validator-severity", "severity must be error or warning.", [...validatorPath, "severity"], details));
+    const message = own(candidate, "message");
+    if (message !== undefined && typeof message !== "string" && (!isPlainRecord(message)
+      || typeof own(message, "default") !== "string"
+      || (own(message, "translations") !== undefined && (!isPlainRecord(own(message, "translations")) || Object.values(own(message, "translations") as Record<string, unknown>).some((translation) => typeof translation !== "string"))))) {
+      failures.push(issue("document.invalid-validator-message", "message must be text or a localized message object.", [...validatorPath, "message"], details));
+    }
+    if (own(candidate, "when") !== undefined && !isStudioExpression(own(candidate, "when"))) failures.push(issue("document.invalid-expression", "Validator when must be a safe expression AST.", [...validatorPath, "when"], details));
+    if (own(candidate, "includeDisabled") !== undefined && typeof own(candidate, "includeDisabled") !== "boolean") failures.push(issue("document.invalid-validator-disabled-policy", "includeDisabled must be boolean.", [...validatorPath, "includeDisabled"], details));
+    const dependencies = own(candidate, "dependencies");
+    if (dependencies !== undefined && (!Array.isArray(dependencies) || dependencies.some((dependency) => !isValidationPath(dependency)))) failures.push(issue("document.invalid-validator-dependencies", "dependencies must contain safe absolute data paths.", [...validatorPath, "dependencies"], details));
+    if (own(candidate, "issuePath") !== undefined && !isValidationPath(own(candidate, "issuePath"))) failures.push(issue("document.invalid-validator-issue-path", "issuePath must be a safe absolute data path.", [...validatorPath, "issuePath"], details));
+    for (const key of ["min", "max"] as const) {
+      const bound = own(candidate, key);
+      if (bound !== undefined && (typeof bound !== "number" || !Number.isFinite(bound) || ((kind === "length" || kind === "collection") && (!Number.isSafeInteger(bound) || bound < 0)))) failures.push(issue("document.invalid-validator-bound", `${key} is not a valid ${kind} bound.`, [...validatorPath, key], details));
+    }
+    if (typeof own(candidate, "min") === "number" && typeof own(candidate, "max") === "number" && (own(candidate, "min") as number) > (own(candidate, "max") as number)) failures.push(issue("document.invalid-validator-range", "Validator min cannot exceed max.", validatorPath, details));
+    if (kind === "pattern" && typeof own(candidate, "pattern") !== "string") failures.push(issue("document.invalid-validator-pattern", "Pattern validator requires a string pattern.", [...validatorPath, "pattern"], details));
+    if (kind === "pattern" && typeof own(candidate, "pattern") === "string") try { new RegExp(own(candidate, "pattern") as string, typeof own(candidate, "flags") === "string" ? own(candidate, "flags") as string : undefined); } catch { failures.push(issue("document.invalid-validator-pattern", "Pattern validator regular expression is invalid.", [...validatorPath, "pattern"], details)); }
+    if (kind === "comparison" && (!["===", "!==", "<", "<=", ">", ">="].includes(String(own(candidate, "operator"))) || !isStudioExpression(own(candidate, "other")))) failures.push(issue("document.invalid-validator-comparison", "Comparison validator requires an operator and safe expression.", validatorPath, details));
+    const uniqueBy = own(candidate, "uniqueBy");
+    if (kind === "collection" && uniqueBy !== undefined && (!Array.isArray(uniqueBy) || uniqueBy.some((segment) => typeof segment !== "string" || !isSafeObjectKey(segment)))) failures.push(issue("document.invalid-validator-unique-path", "uniqueBy must be a safe relative property path.", [...validatorPath, "uniqueBy"], details));
+  });
+}
+
 export function utf8ByteLength(value: string): number {
   let bytes = 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -310,6 +369,7 @@ export function validateStudioProject(
       const formUid = formUidValue;
       if (formKey !== formUid) failures.push(issue("document.uid-key-mismatch", `Form key ${formKey} does not match uid ${formUid}.`, formPath, { formUid, entityUid: formUid }));
       if (typeof own(formUnknown, "title") !== "string") failures.push(issue("document.invalid-title", "Form title must be a string.", [...formPath, "title"], { formUid }));
+      validateValidators(own(formUnknown, "validators"), [...formPath, "validators"], failures, { formUid, entityUid: formUid });
       const runtime = own(formUnknown, "runtime");
       if (!isPlainRecord(runtime) || typeof own(runtime, "schemaId") !== "string" || !Number.isSafeInteger(own(runtime, "schemaVersion")) || (own(runtime, "schemaVersion") as number) < 1) {
         failures.push(issue("document.invalid-runtime", "runtime requires schemaId and a positive integer schemaVersion.", [...formPath, "runtime"], { formUid }));
@@ -338,6 +398,8 @@ export function validateStudioProject(
             if (Object.prototype.hasOwnProperty.call(behavior, "presentWhen") && !isStudioExpression(own(behavior, "presentWhen"))) failures.push(issue("document.invalid-expression", "behavior.presentWhen must be a safe expression AST.", [...nodePath, "behavior", "presentWhen"], details));
           }
           if (Object.prototype.hasOwnProperty.call(node, "legacy") && !isPlainRecord(own(node, "legacy"))) failures.push(issue("document.invalid-legacy-metadata", "legacy must be a JSON object.", [...nodePath, "legacy"], details));
+          if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateValidators(own(node, "validators"), [...nodePath, "validators"], failures, details);
+          else if (Object.prototype.hasOwnProperty.call(node, "validators")) failures.push(issue("document.invalid-validator-owner", `${String(kind)} nodes cannot own validators.`, [...nodePath, "validators"], details));
           if (kind === "group" || kind === "collection" || kind === "stage") {
             const discriminated = kind === "collection" && Object.prototype.hasOwnProperty.call(node, "variantUids");
             const childKey = discriminated ? "variantUids" : "childUids";
@@ -402,7 +464,6 @@ export function validateStudioProject(
               else if (isPlainRecord(derivedProps)) for (const [key, expression] of Object.entries(derivedProps)) {
                 if (!isSafeObjectKey(key) || !isStudioExpression(expression)) failures.push(issue("document.invalid-expression", `derivedProps.${key} must be a safe expression AST.`, [...nodePath, "derivedProps", key], details));
               }
-              if (Object.prototype.hasOwnProperty.call(node, "validators") && !Array.isArray(own(node, "validators"))) failures.push(issue("document.invalid-validators", "validators must be an array.", [...nodePath, "validators"], details));
             }
           } else failures.push(issue("document.unknown-node-kind", "Unknown node kind.", [...nodePath, "kind"], details));
         }
@@ -473,6 +534,7 @@ export function validateStudioProject(
           const kind = own(nodeUnknown, "kind");
           const runtimeId = own(nodeUnknown, "runtimeId");
           if (kind !== "block" && (typeof runtimeId !== "string" || runtimeId.length === 0 || runtimeId.length > 128 || !isSafeObjectKey(runtimeId))) failures.push(issue("document.invalid-runtime-id", "runtimeId must be a non-empty safe key of at most 128 characters.", [...nodePath, "runtimeId"], isUid(nodeUid) ? { entityUid: nodeUid } : {}));
+          if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateValidators(own(nodeUnknown, "validators"), [...nodePath, "validators"], failures, isUid(nodeUid) ? { entityUid: nodeUid } : {});
           if (kind === "fragment") {
             checkInstance(nodeUnknown, nodePath, isUid(nodeUid) ? nodeUid : undefined);
           } else if (kind === "field" || kind === "block") {

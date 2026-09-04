@@ -50,9 +50,11 @@ export function dispatchStudioCommand(
   if (!result.ok) return { ok: false, history, failure: result.failure };
   if (!result.changed) return { ok: true, history, affectedUids: [], changed: false };
   const label = options.label ?? (command.type === "transaction" ? command.label : command.type);
-  const coalesceKey = options.coalesceKey === undefined || command.type !== "node.update"
+  const coalesceKey = options.coalesceKey === undefined || (command.type !== "node.update" && command.type !== "form.update")
     ? undefined
-    : `${command.formUid}:${command.uid}:${Object.keys(command.changes).sort().join(",")}:${options.coalesceKey}`;
+    : command.type === "node.update"
+      ? `${command.formUid}:${command.uid}:${Object.keys(command.changes).sort().join(",")}:${options.coalesceKey}`
+      : `${command.formUid}:form:${Object.keys(command.changes).sort().join(",")}:${options.coalesceKey}`;
   const previous = history.past.at(-1);
   const canCoalesce = coalesceKey !== undefined
     && previous?.coalesceKey === coalesceKey
