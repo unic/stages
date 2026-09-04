@@ -3,7 +3,7 @@ import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Button } from "./button";
-import { Checkbox, InputNumber, Message } from "./field-controls";
+import { Calendar, Checkbox, InputNumber, Message, MultiSelect } from "./field-controls";
 
 describe("shadcn field controls", () => {
   it("keeps non-submit buttons safe by default", () => {
@@ -38,5 +38,48 @@ describe("shadcn field controls", () => {
   it("maps destructive messages to accessible alerts", () => {
     render(<Message severity="error" text="This field is required" />);
     expect(screen.getByRole("alert")).toHaveTextContent("This field is required");
+  });
+
+  it("does not forward legacy configuration props to DOM controls", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <>
+        <MultiSelect
+          aria-label="Locales"
+          value={["EN"]}
+          options={[{ value: "EN", label: "English" }]}
+          showFilter
+          showSelectAll={false}
+          filter
+          display="chip"
+          inline={false}
+          selectionLimit={3}
+          onChange={() => {}}
+        />
+        <Calendar
+          aria-label="Available from"
+          value={new Date("2026-01-01T00:00:00")}
+          showIcon
+          showTime
+          showButtonBar
+          numberOfMonths={2}
+          selectionMode="single"
+          onChange={() => {}}
+        />
+        <InputNumber
+          aria-label="Price"
+          value={10}
+          mode="currency"
+          currency="CHF"
+          currencyDisplay="symbol"
+          useGrouping
+          minFractionDigits={2}
+          onChange={() => {}}
+        />
+      </>,
+    );
+
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

@@ -84,10 +84,6 @@ const InputWrapper = ({
   );
 
   useEffect(() => {
-    useStagesStore.persist.rehydrate();
-  }, []);
-
-  useEffect(() => {
     setLabelText(label ? parseTemplateLiterals(label, store.data) : "");
   }, [label, store.data]);
 

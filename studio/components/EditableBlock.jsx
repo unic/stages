@@ -26,10 +26,6 @@ const EditableBlock = ({
   });
 
   useEffect(() => {
-    useStagesStore.persist.rehydrate();
-  }, []);
-
-  useEffect(() => {
     if (!pathIsSelected(path, selectedElement, fieldsetId))
       setIsInEditMode(false);
   }, [path, selectedElement]);

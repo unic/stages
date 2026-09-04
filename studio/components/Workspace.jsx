@@ -79,6 +79,7 @@ const Workspace = () => {
 
     useEffect(() => {
         document.addEventListener('keydown', onKeyPress);
+        return () => document.removeEventListener('keydown', onKeyPress);
     }, []);
 
     const rootContextMenuItems = [

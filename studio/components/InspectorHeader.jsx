@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import useStagesStore from "./store";
 import { Button } from "./ui/button";
 import { Search } from "lucide-react";
@@ -11,10 +11,6 @@ const GeneralConfig = () => {
   const allPaths = getAllPaths(store.currentConfig);
   const [searchValue, setSearchValue] = useState("");
   const [items, setItems] = useState(allPaths);
-
-  useEffect(() => {
-    useStagesStore.persist.rehydrate();
-  }, []);
 
   const search = (event) => {
     setItems(allPaths.filter((item) => item.indexOf(event.query) !== -1));

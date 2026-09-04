@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import useStagesStore from "./store";
 
@@ -16,10 +16,6 @@ const InsertBlock = ({
   const { isOver, setNodeRef } = useDroppable({
     id: `droppable-${path}`,
   });
-
-  useEffect(() => {
-    useStagesStore.persist.rehydrate();
-  }, []);
 
   const handleMouseEnter = () => {
     setIsHover(true);

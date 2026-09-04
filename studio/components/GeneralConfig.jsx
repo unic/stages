@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import useStagesStore from "./store";
 import isoLangs from "./isoLangs";
 import { truncateString } from "./helpers";
@@ -73,10 +72,6 @@ const generalConfigFields = [
 
 const GeneralConfig = () => {
   const store = useStagesStore();
-
-  useEffect(() => {
-    useStagesStore.persist.rehydrate();
-  }, []);
 
   return (
     <StudioV1Form

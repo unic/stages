@@ -1,7 +1,7 @@
 import { forwardRef, useId, useState } from "react";
 import { Eye, EyeOff, Star } from "lucide-react";
 import { ToggleGroup } from "radix-ui";
-import { cn } from "../../lib/utils";
+import { cn, pickDOMProps } from "../../lib/utils";
 import { Alert, AlertDescription } from "./alert";
 import { Button } from "./button";
 import { Checkbox as CheckboxPrimitive } from "./checkbox";
@@ -50,7 +50,7 @@ export const MultiSelect = forwardRef(function MultiSelect({ options = [], optio
         return option === undefined ? selectedValue : optionValue(option, valueKey);
       });
       emitValue(onChange, nextValue, event);
-    }} {...props}>
+    }} {...pickDOMProps(props, ["disabled", "form", "required", "size"])}>
       {options.map((option, index) => <option key={String(optionValue(option, valueKey) ?? index)} value={String(optionValue(option, valueKey))}>{optionLabel(option, labelKey)}</option>)}
     </select>
   );
@@ -70,7 +70,7 @@ export function InputSwitch({ checked, value, onChange, ...props }) {
 }
 
 export function ToggleButton({ checked, onChange, onLabel = "On", offLabel = "Off", label, secondaryText, prefix, suffix, error, isValidating, tooltipOptions, defaultValue, ...props }) {
-  return <Button {...props} variant={checked ? "default" : "outline"} aria-pressed={Boolean(checked)} onClick={(event) => emitValue(onChange, !checked, event)}>{checked ? onLabel : offLabel}</Button>;
+  return <Button {...pickDOMProps(props, ["disabled", "form", "formAction", "name"])} variant={checked ? "default" : "outline"} aria-pressed={Boolean(checked)} onClick={(event) => emitValue(onChange, !checked, event)}>{checked ? onLabel : offLabel}</Button>;
 }
 
 export function InputNumber({ value, onChange, ...props }) {
@@ -95,7 +95,7 @@ export function SelectButton({ options = [], value, onChange, optionLabel: label
       if (!nextValue) return;
       const option = options.find((candidate) => String(optionValue(candidate, valueKey)) === nextValue);
       emitValue(onChange, option === undefined ? nextValue : optionValue(option, valueKey));
-    }} {...props}>
+    }} {...pickDOMProps(props, ["disabled", "loop", "orientation", "required"])}>
       {options.map((option, index) => {
         const nextValue = optionValue(option, valueKey);
         return <ToggleGroup.Item className="ui-toggle-group__item" key={String(nextValue ?? index)} value={String(nextValue)}>{optionLabel(option, labelKey)}</ToggleGroup.Item>;
@@ -133,7 +133,7 @@ export function Password({ feedback, toggleMask = true, className, ...props }) {
 
 export function Divider({ children, layout = "horizontal", className, pt, type, align, ...props }) {
   if (!children) return <Separator orientation={layout} className={className} />;
-  return <div className={cn("ui-divider", `ui-divider--${layout}`, className)} {...props}><Separator orientation={layout} /><span>{children}</span><Separator orientation={layout} /></div>;
+  return <div className={cn("ui-divider", `ui-divider--${layout}`, className)} {...pickDOMProps(props)}><Separator orientation={layout} /><span>{children}</span><Separator orientation={layout} /></div>;
 }
 
 export function Message({ text, severity = "info", ...props }) {
