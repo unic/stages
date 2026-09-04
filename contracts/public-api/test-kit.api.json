@@ -1,0 +1,9 @@
+{
+  "package": "@stages/test-kit",
+  "files": [
+    {
+      "path": "index.d.ts",
+      "declaration": "import type { StagesController, StagesEvent, StagesSnapshot } from \"@stages/core\";\nexport interface AdapterHarness<TValue> {\n    readonly getSnapshot: () => StagesSnapshot<TValue>;\n    readonly emit: (event: StagesEvent) => void;\n    readonly destroy: () => void;\n}\nexport declare function bindAdapter<TValue, TFields, TContext>(controller: StagesController<TValue, TFields, TContext>, render: (snapshot: StagesSnapshot<TValue>) => void): AdapterHarness<TValue>;"
+    }
+  ]
+}

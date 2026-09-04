@@ -1,0 +1,15 @@
+{
+  "format": "stages",
+  "formatVersion": 1,
+  "schema": {
+    "id": "profile",
+    "version": 1
+  },
+  "value": {
+    "first": "Ada"
+  },
+  "baseline": {
+    "first": "Initial"
+  },
+  "meta": {}
+}

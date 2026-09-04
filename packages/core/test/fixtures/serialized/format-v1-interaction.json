@@ -1,0 +1,64 @@
+{
+  "format": "stages",
+  "formatVersion": 1,
+  "schema": {
+    "id": "compatibility-state",
+    "version": 1
+  },
+  "value": {
+    "items": [
+      { "name": "Ada" },
+      { "name": "Grace" }
+    ],
+    "flow": {
+      "intro": {},
+      "confirm": {}
+    }
+  },
+  "baseline": {
+    "items": [
+      { "name": "Ada" },
+      { "name": "Grace" }
+    ],
+    "flow": {
+      "intro": {},
+      "confirm": {}
+    }
+  },
+  "meta": {
+    "touched": [
+      [
+        { "kind": "node", "id": "items" },
+        { "kind": "row", "id": "stable-row-a" },
+        { "kind": "node", "id": "name" }
+      ]
+    ],
+    "visited": [
+      [
+        { "kind": "node", "id": "items" },
+        { "kind": "row", "id": "stable-row-a" },
+        { "kind": "node", "id": "name" }
+      ]
+    ],
+    "revealedValidation": [
+      [
+        { "kind": "node", "id": "items" },
+        { "kind": "row", "id": "stable-row-a" },
+        { "kind": "node", "id": "name" }
+      ]
+    ],
+    "activeWizards": [
+      [
+        [{ "kind": "node", "id": "flow" }],
+        "confirm"
+      ]
+    ],
+    "collectionKeys": [
+      [
+        [{ "kind": "node", "id": "items" }],
+        ["stable-row-a", "stable-row-b"]
+      ]
+    ],
+    "extensions": {}
+  }
+}

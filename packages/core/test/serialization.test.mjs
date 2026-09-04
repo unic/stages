@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   encodeJson,
@@ -9,6 +10,52 @@ import {
 } from "../dist/index.js";
 
 const emptySchema = { id: "persistence", version: 1, nodes: [] };
+const fixture = (name) => JSON.parse(readFileSync(new URL(`fixtures/serialized/${name}`, import.meta.url), "utf8"));
+
+test("every historical serialized fixture remains a valid format-v1 envelope", () => {
+  for (const name of ["format-v1-interaction.json", "schema-v1-profile.json"]) {
+    assert.deepEqual(validateSerializedState(fixture(name)), fixture(name), name);
+  }
+});
+
+test("format-v1 fixtures preserve row identity, wizard location, and durable interaction state", () => {
+  const fields = { text: { view: "text", initialValue: "" } };
+  const schema = {
+    id: "compatibility-state",
+    version: 1,
+    nodes: [
+      {
+        kind: "collection",
+        id: "items",
+        nodes: [{
+          kind: "field",
+          id: "name",
+          type: "text",
+          validators: [{
+            id: "required",
+            on: "init",
+            revealOn: "blur",
+            validate: ({ fieldValue, path }) => fieldValue === ""
+              ? [{ id: "required", code: "required", path, severity: "error" }]
+              : [],
+          }],
+        }],
+      },
+      {
+        kind: "wizard",
+        id: "flow",
+        stages: [{ id: "intro", nodes: [] }, { id: "confirm", nodes: [] }],
+      },
+    ],
+  };
+  const controller = stages({ schema, fields, state: fixture("format-v1-interaction.json") });
+  const snapshot = controller.getSnapshot();
+
+  assert.deepEqual(snapshot.nodes[0].nodes.map(({ id }) => id), ["stable-row-a", "stable-row-b"]);
+  assert.equal(snapshot.nodes[0].nodes[0].nodes[0].state.touched, true);
+  assert.equal(snapshot.nodes[1].activeStage, "confirm");
+  assert.deepEqual(controller.serialize(), fixture("format-v1-interaction.json"));
+});
 
 test("JSON encoding rejects unsupported values with precise paths", () => {
   assert.throws(
@@ -104,14 +151,7 @@ test("revealed validation state survives recreation while focus remains ephemera
 });
 
 test("ordered migrations upgrade value and baseline before recreation", () => {
-  const state = {
-    format: "stages",
-    formatVersion: 1,
-    schema: { id: "profile", version: 1 },
-    value: { first: "Ada" },
-    baseline: { first: "Initial" },
-    meta: {},
-  };
+  const state = fixture("schema-v1-profile.json");
   const migrations = [{
     schemaId: "profile",
     fromVersion: 1,

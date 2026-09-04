@@ -1,0 +1,9 @@
+{
+  "package": "@stages/dom",
+  "files": [
+    {
+      "path": "index.d.ts",
+      "declaration": "import type { ContainerSnapshot, DataPath, FieldDefinition, FieldSnapshot, StagesController, StagesSnapshot } from \"@stages/core\";\nexport interface DomFieldBinding {\n    readonly document: Document;\n    readonly id: string;\n    readonly field: FieldSnapshot;\n    readonly emit: (name: string, payload?: unknown) => void;\n}\nexport interface DomFieldView {\n    readonly render: (binding: DomFieldBinding) => HTMLElement;\n}\nexport interface DomFieldProps {\n    readonly label?: string;\n    readonly description?: string;\n    readonly inputType?: string;\n    readonly placeholder?: string;\n    readonly required?: boolean;\n    readonly autocomplete?: string;\n}\nexport interface MountStagesOptions<TValue> {\n    readonly renderInactiveStages?: boolean;\n    readonly onRender?: (snapshot: StagesSnapshot<TValue>) => void;\n}\nexport interface MountedStages {\n    render(): void;\n    focus(path: DataPath, options?: FocusOptions): boolean;\n    focusFirstIssue(options?: FocusOptions): boolean;\n    destroy(): void;\n}\nexport declare function createDomFields(): {\n    readonly text: FieldDefinition<string, DomFieldProps, DomFieldView>;\n    readonly number: FieldDefinition<number | undefined, DomFieldProps, DomFieldView>;\n    readonly checkbox: FieldDefinition<boolean, DomFieldProps, DomFieldView>;\n};\nexport declare function mountStages<TValue, TFields, TContext>(root: Element, controller: StagesController<TValue, TFields, TContext>, options?: MountStagesOptions<TValue>): MountedStages;\nexport type { ContainerSnapshot };"
+    }
+  ]
+}
