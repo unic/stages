@@ -19,6 +19,8 @@ Execution status:
   provides the browser-free immutable command engine and checkpoint history
 - Session 07 completed: [`../studio/src/compiler/index.ts`](../studio/src/compiler/index.ts)
   compiles the minimal text-and-group slice to public Stages v1 artifacts
+- Session 08 completed: [`../studio/src/runtime/index.ts`](../studio/src/runtime/index.ts)
+  owns the controlled preview handshake and long-lived controller lifecycle
 
 Primary references:
 
