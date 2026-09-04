@@ -140,7 +140,7 @@ function CanvasNode({ form, uid, selectedUids, onSelect }: {
     : node.kind === "variant" ? node.childUids
     : node.kind === "wizard" ? node.stageUids : [];
   return (
-    <li className="studio-v1-node">
+    <li className="studio-v1-node" data-canvas-kind={node.kind}>
       <button
         type="button"
         className="studio-v1-node__select"
