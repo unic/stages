@@ -102,6 +102,27 @@ describe("Studio document validation", () => {
     nodes["field_title"]!["computed"] = { kind: "call", callee: "alert", arguments: [1] };
     expectCode(input, "document.invalid-expression");
   });
+
+  it("validates discriminated collection and wizard structural references", () => {
+    const input = validProject();
+    const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    form["rootNodeUids"] = ["collection_contacts", "wizard_flow"];
+    form["nodes"] = {
+      collection_contacts: { uid: "collection_contacts", kind: "collection", runtimeId: "contacts", discriminator: "kind", variantUids: ["variant_person"], initialRows: 1 },
+      variant_person: { uid: "variant_person", kind: "variant", runtimeId: "person", childUids: [] },
+      wizard_flow: { uid: "wizard_flow", kind: "wizard", runtimeId: "flow", stageUids: ["stage_intro"], initialStageUid: "stage_missing", navigation: { nonLinear: "yes" } },
+      stage_intro: { uid: "stage_intro", kind: "stage", runtimeId: "intro", childUids: [] },
+    };
+    expectCode(input, "document.missing-initial-variant");
+    expectCode(input, "document.invalid-initial-stage");
+    expectCode(input, "document.invalid-navigation");
+
+    const misplaced = validProject();
+    const misplacedForm = (misplaced["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    misplacedForm["rootNodeUids"] = ["stage_root"];
+    misplacedForm["nodes"] = { stage_root: { uid: "stage_root", kind: "stage", runtimeId: "root", childUids: [] } };
+    expectCode(misplaced, "document.invalid-node-placement");
+  });
 });
 
 describe("Studio project migrations and serialization", () => {

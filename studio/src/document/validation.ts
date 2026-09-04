@@ -197,6 +197,14 @@ function checkGraph(
     } else if (parents.has(root)) {
       failures.push(issue("document.duplicate-node-reference", `Node ${root} is referenced more than once.`, path, { formUid, entityUid: root }));
     } else {
+      const rootNode = nodes[root];
+      const rootKind = isPlainRecord(rootNode) ? own(rootNode, "kind") : undefined;
+      if (rootKind === "stage" || rootKind === "variant") failures.push(issue(
+        "document.invalid-node-placement",
+        `${String(rootKind)} nodes cannot be form roots.`,
+        path,
+        { formUid, entityUid: root },
+      ));
       parents.add(root);
       stack.push({ uid: root, depth: 1, path });
     }
@@ -218,7 +226,10 @@ function checkGraph(
     }
     const node = nodes[item.uid];
     if (!isPlainRecord(node)) continue;
-    const referenceKey = own(node, "kind") === "wizard" ? "stageUids" : "childUids";
+    const kind = own(node, "kind");
+    const referenceKey = kind === "wizard" ? "stageUids"
+      : kind === "collection" && Object.prototype.hasOwnProperty.call(node, "variantUids") ? "variantUids"
+        : "childUids";
     const references = own(node, referenceKey);
     if (!Array.isArray(references)) continue;
     references.forEach((child, index) => {
@@ -230,6 +241,19 @@ function checkGraph(
       } else if (parents.has(child)) {
         failures.push(issue("document.duplicate-node-reference", `Node ${child} is referenced more than once.`, path, { formUid, entityUid: child }));
       } else {
+        const childNode = nodes[child];
+        const childKind = isPlainRecord(childNode) ? own(childNode, "kind") : undefined;
+        const validPlacement = kind === "wizard" ? childKind === "stage"
+          : referenceKey === "variantUids" ? childKind === "variant"
+            : childKind !== "stage" && childKind !== "variant";
+        if (!validPlacement) {
+          failures.push(issue(
+            "document.invalid-node-placement",
+            `Node kind ${String(childKind)} cannot be referenced by ${String(kind)}.${referenceKey}.`,
+            path,
+            { formUid, entityUid: child },
+          ));
+        }
         parents.add(child);
         stack.push({ uid: child, depth: item.depth + 1, path });
       }
@@ -312,15 +336,47 @@ export function validateStudioProject(
           }
           if (Object.prototype.hasOwnProperty.call(node, "legacy") && !isPlainRecord(own(node, "legacy"))) failures.push(issue("document.invalid-legacy-metadata", "legacy must be a JSON object.", [...nodePath, "legacy"], details));
           if (kind === "group" || kind === "collection" || kind === "stage") {
-            if (!Array.isArray(own(node, "childUids"))) failures.push(issue("document.invalid-children", `${kind} childUids must be an array.`, [...nodePath, "childUids"], details));
+            const discriminated = kind === "collection" && Object.prototype.hasOwnProperty.call(node, "variantUids");
+            const childKey = discriminated ? "variantUids" : "childUids";
+            if (!Array.isArray(own(node, childKey))) failures.push(issue("document.invalid-children", `${kind} ${childKey} must be an array.`, [...nodePath, childKey], details));
             if (kind === "collection") {
               for (const key of ["min", "max", "initialRows"] as const) {
                 const value = own(node, key);
                 if (value !== undefined && (!Number.isSafeInteger(value) || (value as number) < 0)) failures.push(issue("document.invalid-collection-limit", `${key} must be a non-negative integer.`, [...nodePath, key], details));
               }
+              const min = own(node, "min");
+              const max = own(node, "max");
+              const initialRows = own(node, "initialRows");
+              if (typeof min === "number" && typeof max === "number" && min > max) failures.push(issue("document.invalid-collection-range", "Collection min cannot exceed max.", nodePath, details));
+              if (typeof initialRows === "number" && typeof max === "number" && initialRows > max) failures.push(issue("document.invalid-initial-rows", "initialRows cannot exceed the collection max.", [...nodePath, "initialRows"], details));
+              const discriminator = own(node, "discriminator");
+              if (discriminated) {
+                const variantUids = own(node, "variantUids");
+                if (typeof discriminator !== "string" || discriminator.length === 0 || !isSafeObjectKey(discriminator)) failures.push(issue("document.invalid-discriminator", "A discriminated collection requires a safe discriminator.", [...nodePath, "discriminator"], details));
+                if (Array.isArray(variantUids) && variantUids.length === 0) failures.push(issue("document.empty-variants", "A discriminated collection requires at least one variant.", [...nodePath, "variantUids"], details));
+                const initialVariantUid = own(node, "initialVariantUid");
+                if (initialVariantUid !== undefined && (!isUid(initialVariantUid) || !new Set(Array.isArray(variantUids) ? variantUids : []).has(initialVariantUid))) failures.push(issue("document.invalid-initial-variant", "initialVariantUid must reference one of the collection variants.", [...nodePath, "initialVariantUid"], details));
+                if (typeof initialRows === "number" && initialRows > 0 && initialVariantUid === undefined) failures.push(issue("document.missing-initial-variant", "Discriminated collections with initial rows require initialVariantUid.", [...nodePath, "initialVariantUid"], details));
+                if (Object.prototype.hasOwnProperty.call(node, "childUids")) failures.push(issue("document.invalid-collection-shape", "A collection cannot define both childUids and variantUids.", nodePath, details));
+              } else if (discriminator !== undefined) failures.push(issue("document.invalid-collection-shape", "A homogeneous collection cannot define a discriminator.", [...nodePath, "discriminator"], details));
+              const itemKey = own(node, "itemKey");
+              if (itemKey !== undefined && (!isPlainRecord(itemKey)
+                || (own(itemKey, "kind") !== "index" && (own(itemKey, "kind") !== "property"
+                  || typeof own(itemKey, "property") !== "string" || !isSafeObjectKey(own(itemKey, "property") as string))))) {
+                failures.push(issue("document.invalid-item-key", "itemKey must use the index or a safe row property.", [...nodePath, "itemKey"], details));
+              }
             }
           } else if (kind === "wizard") {
-            if (!Array.isArray(own(node, "stageUids"))) failures.push(issue("document.invalid-stages", "Wizard stageUids must be an array.", [...nodePath, "stageUids"], details));
+            const stageUids = own(node, "stageUids");
+            if (!Array.isArray(stageUids)) failures.push(issue("document.invalid-stages", "Wizard stageUids must be an array.", [...nodePath, "stageUids"], details));
+            const initialStageUid = own(node, "initialStageUid");
+            if (initialStageUid !== undefined && (!isUid(initialStageUid) || !new Set(Array.isArray(stageUids) ? stageUids : []).has(initialStageUid))) failures.push(issue("document.invalid-initial-stage", "initialStageUid must reference one of the wizard stages.", [...nodePath, "initialStageUid"], details));
+            const navigation = own(node, "navigation");
+            if (navigation !== undefined && (!isPlainRecord(navigation)
+              || (own(navigation, "validateCurrent") !== undefined && typeof own(navigation, "validateCurrent") !== "boolean")
+              || (own(navigation, "nonLinear") !== undefined && typeof own(navigation, "nonLinear") !== "boolean"))) failures.push(issue("document.invalid-navigation", "navigation flags must be booleans.", [...nodePath, "navigation"], details));
+          } else if (kind === "variant") {
+            if (!Array.isArray(own(node, "childUids"))) failures.push(issue("document.invalid-children", "variant childUids must be an array.", [...nodePath, "childUids"], details));
           } else if (kind === "field" || kind === "block") {
             const definition = own(node, "definition");
             if (!isPlainRecord(definition) || typeof own(definition, "key") !== "string" || !Number.isSafeInteger(own(definition, "version")) || (own(definition, "version") as number) < 1) {

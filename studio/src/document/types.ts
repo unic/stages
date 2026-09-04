@@ -39,19 +39,55 @@ export interface StudioGroupNode extends StudioNodeBase {
   readonly childUids: readonly Uid[];
 }
 
-export interface StudioCollectionNode extends StudioNodeBase {
+export type StudioCollectionItemKey =
+  | { readonly kind: "index" }
+  | { readonly kind: "property"; readonly property: string };
+
+interface StudioCollectionNodeBase extends StudioNodeBase {
   readonly kind: "collection";
   readonly runtimeId: string;
-  readonly childUids: readonly Uid[];
   readonly min?: number;
   readonly max?: number;
   readonly initialRows?: number;
+  readonly itemKey?: StudioCollectionItemKey;
+}
+
+export type StudioHomogeneousCollectionNode = StudioCollectionNodeBase & {
+      readonly childUids: readonly Uid[];
+      readonly discriminator?: never;
+      readonly variantUids?: never;
+    };
+
+export type StudioVariantCollectionNode = StudioCollectionNodeBase & {
+      readonly childUids?: never;
+      readonly discriminator: string;
+      readonly variantUids: readonly Uid[];
+      /** Variant used only when Studio explicitly creates initial scenario rows. */
+      readonly initialVariantUid?: Uid;
+    };
+
+export type StudioCollectionNode = StudioHomogeneousCollectionNode | StudioVariantCollectionNode;
+
+export function isStudioVariantCollection(node: StudioCollectionNode): node is StudioVariantCollectionNode {
+  return Array.isArray(node.variantUids);
+}
+
+export interface StudioVariantNode extends StudioNodeBase {
+  readonly kind: "variant";
+  /** Compiles to the discriminator value; it does not add a data-path segment. */
+  readonly runtimeId: string;
+  readonly childUids: readonly Uid[];
 }
 
 export interface StudioWizardNode extends StudioNodeBase {
   readonly kind: "wizard";
   readonly runtimeId: string;
   readonly stageUids: readonly Uid[];
+  readonly initialStageUid?: Uid;
+  readonly navigation?: {
+    readonly validateCurrent?: boolean;
+    readonly nonLinear?: boolean;
+  };
 }
 
 export interface StudioStageNode extends StudioNodeBase {
@@ -72,7 +108,7 @@ export interface StudioValidatorSpec {
 }
 
 export type StudioNode = StudioBlockNode | StudioCollectionNode | StudioFieldNode
-  | StudioGroupNode | StudioStageNode | StudioWizardNode;
+  | StudioGroupNode | StudioStageNode | StudioVariantNode | StudioWizardNode;
 
 export interface StudioScenario {
   readonly uid: Uid;

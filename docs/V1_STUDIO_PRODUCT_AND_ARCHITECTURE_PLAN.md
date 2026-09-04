@@ -39,6 +39,11 @@ Execution status:
   and [`../studio/src/compiler/types.ts`](../studio/src/compiler/types.ts)
   keep content blocks, explicit responsive layout, and theme tokens in the
   presentation render plan without adding domain-value fields
+- Session 14 completed: [`../studio/src/document/types.ts`](../studio/src/document/types.ts),
+  [`../studio/src/compiler/compiler.ts`](../studio/src/compiler/compiler.ts), and
+  [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx)
+  author, compile, initialize, and preview groups, homogeneous and discriminated
+  collections, variants, wizards, and ordered stages through public v1 contracts
 
 Primary references:
 

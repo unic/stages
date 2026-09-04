@@ -1,6 +1,6 @@
-import type { DataPath, NodeAddress, NodeConfig } from "@stages/core";
-import type { StudioFormDocument, StudioNode, Uid } from "../document";
-import { isSafeObjectKey } from "../document";
+import type { CollectionVariantConfig, DataPath, NodeAddress, NodeConfig, StageNodeConfig } from "@stages/core";
+import type { JsonObject, JsonValue, StudioFormDocument, StudioNode, Uid } from "../document";
+import { isSafeObjectKey, isStudioVariantCollection } from "../document";
 import {
   STUDIO_RUNTIME_FIELDS,
   studioBlockDefinition,
@@ -30,6 +30,8 @@ interface CompileContext {
 
 interface CompiledNode {
   readonly schema?: NodeConfig<unknown, StudioFieldRegistry, unknown>;
+  readonly stage?: StageNodeConfig<unknown, StudioFieldRegistry, unknown>;
+  readonly variant?: readonly [string, CollectionVariantConfig<unknown, StudioFieldRegistry, unknown>];
   readonly render: StudioRenderNode;
 }
 
@@ -101,8 +103,18 @@ function isStaticallyHidden(node: StudioNode): boolean {
 
 function renderChildren(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return node.childUids;
   return [];
+}
+
+function staticBehavior(node: StudioNode): { readonly when?: boolean; readonly disabled?: boolean } {
+  return {
+    ...(node.behavior?.when?.kind === "literal" && typeof node.behavior.when.value === "boolean"
+      ? { when: node.behavior.when.value }
+      : {}),
+    ...(typeof node.behavior?.disabled === "boolean" ? { disabled: node.behavior.disabled } : {}),
+  };
 }
 
 function compileSiblings(
@@ -193,9 +205,11 @@ function compileNode(
     return undefined;
   }
 
-  const runtimePath: DataPath = [...parentPath, node.runtimeId];
-  const runtimeAddress: NodeAddress = [...parentAddress, { kind: "node", id: node.runtimeId }];
-  recordSource(context, node.uid, runtimePath, runtimeAddress);
+  const variant = node.kind === "variant";
+  const runtimePath: DataPath = variant ? parentPath : [...parentPath, node.runtimeId];
+  const runtimeAddress: NodeAddress = variant ? parentAddress : [...parentAddress, { kind: "node", id: node.runtimeId }];
+  if (variant) context.byUid.set(node.uid, Object.freeze({ uid: node.uid, runtimePath, runtimeAddress }));
+  else recordSource(context, node.uid, runtimePath, runtimeAddress);
   unsupportedBehavior(context, node, runtimePath, runtimeAddress);
 
   if (node.kind === "field") {
@@ -232,7 +246,7 @@ function compileNode(
         id: node.runtimeId,
         type: definition.key,
         props: node.props,
-        ...(typeof node.behavior?.disabled === "boolean" ? { disabled: node.behavior.disabled } : {}),
+        ...staticBehavior(node),
       },
       render: {
         uid: node.uid,
@@ -249,17 +263,14 @@ function compileNode(
 
   const children = compileSiblings(context, renderChildren(node), runtimePath, runtimeAddress);
   context.visiting.delete(node.uid);
-  if (node.kind !== "group") {
-    diagnostic(context, "compiler.unsupported-node-kind", `Node kind ${node.kind} is not supported by the minimal runtime compiler.`, {
-      entityUid: node.uid,
-      propertyPath: ["nodes", node.uid, "kind"],
-      runtimePath,
-      runtimeAddress,
-    });
+  if (node.kind === "variant") {
     return {
+      variant: [node.runtimeId, {
+        nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
+      }],
       render: {
         uid: node.uid,
-        kind: node.kind,
+        kind: "variant",
         runtimePath,
         runtimeAddress,
         presentation,
@@ -269,24 +280,112 @@ function compileNode(
       },
     };
   }
-  return {
+  const render = {
+    uid: node.uid,
+    kind: node.kind,
+    runtimePath,
+    runtimeAddress,
+    presentation,
+    layout,
+    hidden,
+    children: children.map((child) => child.render),
+  } as StudioRenderNode;
+  if (node.kind === "stage") return {
+    stage: {
+      id: node.runtimeId,
+      nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
+      ...staticBehavior(node),
+    },
+    render,
+  };
+  if (node.kind === "group") return {
     schema: {
       kind: "group",
       id: node.runtimeId,
       nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
-      ...(typeof node.behavior?.disabled === "boolean" ? { disabled: node.behavior.disabled } : {}),
+      ...staticBehavior(node),
     },
-    render: {
-      uid: node.uid,
-      kind: "group",
-      runtimePath,
-      runtimeAddress,
-      presentation,
-      layout,
-      hidden,
-      children: children.map((child) => child.render),
-    },
+    render,
   };
+  if (node.kind === "collection") {
+    const keyProperty = node.itemKey?.kind === "property" ? node.itemKey.property : undefined;
+    const itemKey = keyProperty === undefined ? undefined : (item: Readonly<unknown>, _index: number): string => {
+      if (item !== null && typeof item === "object") {
+        const value = (item as Readonly<Record<string, unknown>>)[keyProperty];
+        if (typeof value === "string" && value.length > 0) return value;
+        if (typeof value === "number" && Number.isFinite(value)) return String(value);
+      }
+      return "";
+    };
+    const common = {
+      kind: "collection" as const,
+      id: node.runtimeId,
+      ...(node.min === undefined ? {} : { min: node.min }),
+      ...(node.max === undefined ? {} : { max: node.max }),
+      ...(itemKey === undefined ? {} : { itemKey }),
+      ...staticBehavior(node),
+    };
+    const schema: NodeConfig<unknown, StudioFieldRegistry, unknown> = isStudioVariantCollection(node)
+      ? {
+          ...common,
+          discriminator: node.discriminator,
+          variants: Object.fromEntries(children.flatMap((child) => child.variant === undefined ? [] : [child.variant])),
+        }
+      : {
+          ...common,
+          nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
+        };
+    return { schema, render };
+  }
+  const initialStageNode = node.initialStageUid === undefined ? undefined : context.form.nodes[node.initialStageUid];
+  const initialStage = initialStageNode?.kind === "stage" ? initialStageNode.runtimeId : undefined;
+  return {
+    schema: {
+      kind: "wizard",
+      id: node.runtimeId,
+      stages: children.flatMap((child) => child.stage === undefined ? [] : [child.stage]),
+      ...(initialStage === undefined ? {} : { initialStage }),
+      ...(node.navigation === undefined ? {} : { navigation: node.navigation }),
+      ...staticBehavior(node),
+    },
+    render,
+  };
+}
+
+function emptyScope(form: StudioFormDocument, uids: readonly Uid[]): JsonObject {
+  const value: Record<string, JsonValue> = {};
+  for (const uid of uids) {
+    const node = form.nodes[uid];
+    if (!node || node.kind === "block" || node.kind === "variant") continue;
+    if (node.kind === "field") {
+      const definition = studioFieldDefinition(node.definition);
+      if (definition) value[node.runtimeId] = definition.value.emptyValue as JsonValue;
+    } else if (node.kind === "group" || node.kind === "stage") {
+      value[node.runtimeId] = emptyScope(form, node.childUids);
+    } else if (node.kind === "wizard") {
+      value[node.runtimeId] = emptyScope(form, node.stageUids);
+    } else {
+      const rows: JsonObject[] = [];
+      for (let index = 0; index < (node.initialRows ?? 0); index += 1) {
+        let row: JsonObject;
+        if (isStudioVariantCollection(node)) {
+          const variantNode = node.initialVariantUid === undefined ? undefined : form.nodes[node.initialVariantUid];
+          row = variantNode?.kind === "variant"
+            ? { ...emptyScope(form, variantNode.childUids), [node.discriminator]: variantNode.runtimeId }
+            : {};
+        } else row = emptyScope(form, node.childUids);
+        if (node.itemKey?.kind === "property") row = { ...row, [node.itemKey.property]: `row-${index + 1}` };
+        rows.push(row);
+      }
+      value[node.runtimeId] = rows;
+    }
+  }
+  return value;
+}
+
+/** Builds explicit owner-controlled scenario data; it is never installed as a schema default. */
+export function createEmptyStudioScenarioValue(form: StudioFormDocument): JsonObject {
+  return emptyScope(form, form.rootNodeUids);
 }
 
 export function compileStudioForm(form: StudioFormDocument): CompiledStudioForm {

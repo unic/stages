@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { evaluateSchema, initialFieldValue, type DynamicMetaSnapshot } from "@stages/core";
 import projectV1 from "../document/fixtures/project-v1.json";
 import { serializeStudioProject, toUid, validateStudioProject } from "../document";
-import type { StudioFormDocument, StudioGroupNode, StudioProjectDocument } from "../document";
+import type { JsonObject, StudioFormDocument, StudioGroupNode, StudioNode, StudioProjectDocument, Uid } from "../document";
 import { DEFAULT_STUDIO_THEME } from "../registry";
 import {
   compileStudioForm,
+  createEmptyStudioScenarioValue,
   studioRuntimeAddressKey,
   studioRuntimePathKey,
 } from "./index";
@@ -99,7 +100,7 @@ describe("minimal Studio compiler", () => {
     expect(compiled.sourceMap.uidByAddress.get(studioRuntimeAddressKey(fieldAddress))).toBe(fieldUid);
   });
 
-  it("reports stable compiler diagnostics for sibling IDs and unsupported nodes", () => {
+  it("reports stable compiler diagnostics for sibling IDs", () => {
     const original = project().forms[formUid];
     if (!original) throw new Error("Missing form fixture.");
     const duplicateUid = toUid("field_duplicate");
@@ -131,7 +132,6 @@ describe("minimal Studio compiler", () => {
     const compiled = compileStudioForm(form);
     expect(compiled.diagnostics.map((entry) => entry.code)).toEqual([
       "compiler.duplicate-sibling-id",
-      "compiler.unsupported-node-kind",
       "compiler.unreachable-node",
     ]);
     expect(compiled.diagnostics[0]).toMatchObject({
@@ -181,7 +181,11 @@ describe("minimal Studio compiler", () => {
     };
     const compiled = compileStudioForm(form);
 
-    expect(compiled.schema.nodes).toEqual([expect.objectContaining({ kind: "field", id: "name" })]);
+    expect(compiled.schema.nodes).toEqual([
+      expect.objectContaining({ kind: "field", id: "name" }),
+      { kind: "collection", id: "people", nodes: [] },
+      { kind: "wizard", id: "signup", stages: [{ id: "details", nodes: [] }] },
+    ]);
     expect(compiled.renderPlan.nodes.map(({ uid }) => uid)).toEqual(form.rootNodeUids);
     expect(compiled.renderPlan.nodes[1]).toMatchObject({ uid: hiddenUid, kind: "block", hidden: true });
     expect(compiled.renderPlan.nodes[3]).toMatchObject({
@@ -194,10 +198,94 @@ describe("minimal Studio compiler", () => {
       children: [{ uid: stageUid, children: [{ uid: stageHelpUid, kind: "block" }] }],
     });
     expect(compiled.renderPlan.theme.accent).toBe("#be123c");
-    expect(compiled.diagnostics.map(({ code }) => code)).toEqual([
-      "compiler.unsupported-node-kind",
-      "compiler.unsupported-node-kind",
-      "compiler.unsupported-node-kind",
-    ]);
+    expect(compiled.diagnostics).toEqual([]);
+  });
+
+  it("compiles collection constraints, variants, stable keys, wizard policy, and explicit empty scenario rows", () => {
+    const collectionUid = toUid("collection_contacts");
+    const personUid = toUid("variant_person");
+    const nameUid = toUid("field_name");
+    const wizardUid = toUid("wizard_flow");
+    const introUid = toUid("stage_intro");
+    const reviewUid = toUid("stage_review");
+    const form: StudioFormDocument = {
+      uid: formUid,
+      title: "Structural form",
+      runtime: { schemaId: "structural", schemaVersion: 1 },
+      rootNodeUids: [collectionUid, wizardUid],
+      nodes: {
+        [collectionUid]: { uid: collectionUid, kind: "collection", runtimeId: "contacts", min: 1, max: 3, initialRows: 1, itemKey: { kind: "property", property: "id" }, discriminator: "kind", variantUids: [personUid], initialVariantUid: personUid },
+        [personUid]: { uid: personUid, kind: "variant", runtimeId: "person", childUids: [nameUid] },
+        [nameUid]: { uid: nameUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Name" } },
+        [wizardUid]: { uid: wizardUid, kind: "wizard", runtimeId: "flow", stageUids: [introUid, reviewUid], initialStageUid: reviewUid, navigation: { nonLinear: true, validateCurrent: true } },
+        [introUid]: { uid: introUid, kind: "stage", runtimeId: "intro", childUids: [] },
+        [reviewUid]: { uid: reviewUid, kind: "stage", runtimeId: "review", childUids: [] },
+      },
+      scenarios: [],
+      settings: {},
+    };
+    const compiled = compileStudioForm(form);
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.schema.nodes).toMatchObject([{
+      kind: "collection", id: "contacts", min: 1, max: 3, discriminator: "kind",
+      variants: { person: { nodes: [{ kind: "field", id: "name" }] } },
+    }, {
+      kind: "wizard", id: "flow", initialStage: "review",
+      navigation: { nonLinear: true, validateCurrent: true },
+      stages: [{ id: "intro" }, { id: "review" }],
+    }]);
+    expect((compiled.schema.nodes[0] as { itemKey?: (value: unknown, index: number) => string }).itemKey?.({ id: "contact-1" }, 0)).toBe("contact-1");
+    const empty = createEmptyStudioScenarioValue(form);
+    expect(empty).toEqual({
+      contacts: [{ id: "row-1", kind: "person", name: "" }],
+      flow: { intro: {}, review: {} },
+    });
+    const evaluated = evaluateSchema({ schema: compiled.schema, fields: compiled.fields, value: empty, context: {}, meta });
+    expect(evaluated.diagnostics).toEqual([]);
+  });
+
+  it("matches the representative group, collection, variant, and wizard nesting permutations", () => {
+    const kinds = ["group", "collection", "variant", "wizard"] as const;
+    const sequences: Array<readonly (typeof kinds)[number][]> = [];
+    let current: Array<readonly (typeof kinds)[number][]> = [[]];
+    for (let depth = 1; depth <= 3; depth += 1) {
+      current = current.flatMap((sequence) => kinds.map((kind) => [...sequence, kind]));
+      sequences.push(...current);
+    }
+    const deep = Array.from({ length: 32 }, (_, index) => kinds[index % kinds.length]!);
+    for (const [fixtureIndex, sequence] of [...sequences, deep].entries()) {
+      const nodes = {} as Record<Uid, StudioNode>;
+      const leafUid = toUid(`field_leaf_${fixtureIndex}`);
+      nodes[leafUid] = { uid: leafUid, kind: "field", runtimeId: "leaf", definition: { key: "text", version: 1 }, props: { label: "Leaf" } };
+      let rootUid = leafUid;
+      let value: JsonObject = { leaf: "Ada" };
+      for (let index = sequence.length - 1; index >= 0; index -= 1) {
+        const kind = sequence[index]!;
+        const uid = toUid(`${kind}_${fixtureIndex}_${index}`);
+        const id = `${kind}${index}`;
+        if (kind === "group") {
+          nodes[uid] = { uid, kind: "group", runtimeId: id, childUids: [rootUid] };
+          value = { [id]: value };
+        } else if (kind === "collection") {
+          nodes[uid] = { uid, kind: "collection", runtimeId: id, childUids: [rootUid], itemKey: { kind: "index" } };
+          value = { [id]: [value] };
+        } else if (kind === "variant") {
+          const variantUid = toUid(`variant_entry_${fixtureIndex}_${index}`);
+          nodes[variantUid] = { uid: variantUid, kind: "variant", runtimeId: "entry", childUids: [rootUid] };
+          nodes[uid] = { uid, kind: "collection", runtimeId: id, discriminator: "variant", variantUids: [variantUid] };
+          value = { [id]: [{ variant: "entry", ...value }] };
+        } else {
+          const stageUid = toUid(`stage_${fixtureIndex}_${index}`);
+          nodes[stageUid] = { uid: stageUid, kind: "stage", runtimeId: `step${index}`, childUids: [rootUid] };
+          nodes[uid] = { uid, kind: "wizard", runtimeId: id, stageUids: [stageUid], initialStageUid: stageUid };
+          value = { [id]: { [`step${index}`]: value } };
+        }
+        rootUid = uid;
+      }
+      const form: StudioFormDocument = { uid: formUid, title: "Permutation", runtime: { schemaId: `permutation-${fixtureIndex}`, schemaVersion: 1 }, rootNodeUids: [rootUid], nodes, scenarios: [], settings: {} };
+      const compiled = compileStudioForm(form);
+      expect(compiled.diagnostics, sequence.join(" > ")).toEqual([]);
+      expect(evaluateSchema({ schema: compiled.schema, fields: compiled.fields, value, context: {}, meta }).diagnostics, sequence.join(" > ")).toEqual([]);
+    }
   });
 });

@@ -1,4 +1,4 @@
-import type { StudioNode, StudioProjectDocument, Uid } from "../document/types";
+import { isStudioVariantCollection, type StudioNode, type StudioProjectDocument, type Uid } from "../document/types";
 
 export interface StudioOutlineItem {
   readonly uid: Uid;
@@ -16,7 +16,8 @@ export interface StudioOutlineModel {
 
 function childUids(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return node.childUids;
   return [];
 }
 

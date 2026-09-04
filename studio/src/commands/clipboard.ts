@@ -1,5 +1,6 @@
 import type { StudioFormDocument, StudioNode, StudioProjectDocument, Uid } from "../document/types";
 import { isUid } from "../document/uid";
+import { isStudioVariantCollection } from "../document/types";
 import type { StudioCommand, StudioCommandFailureCode } from "./types";
 
 export interface StudioNodeClipboard {
@@ -16,7 +17,8 @@ export type StudioClipboardResult<T> =
 
 function children(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return node.childUids;
   return [];
 }
 
@@ -110,8 +112,19 @@ export function createStudioPasteCommand(
     const targetUid = uidMap[sourceUid];
     if (!source || !targetUid) continue;
     let copy: StudioNode;
-    if (source.kind === "wizard") copy = { ...source, uid: targetUid, stageUids: source.stageUids.map((uid) => uidMap[uid] as Uid) };
-    else if (source.kind === "group" || source.kind === "collection" || source.kind === "stage") {
+    if (source.kind === "wizard") copy = {
+      ...source,
+      uid: targetUid,
+      stageUids: source.stageUids.map((uid) => uidMap[uid] as Uid),
+      ...(source.initialStageUid === undefined ? {} : { initialStageUid: uidMap[source.initialStageUid] as Uid }),
+    };
+    else if (source.kind === "collection" && isStudioVariantCollection(source)) copy = {
+      ...source,
+      uid: targetUid,
+      variantUids: source.variantUids.map((uid) => uidMap[uid] as Uid),
+      ...(source.initialVariantUid === undefined ? {} : { initialVariantUid: uidMap[source.initialVariantUid] as Uid }),
+    };
+    else if (source.kind === "group" || source.kind === "collection" || source.kind === "stage" || source.kind === "variant") {
       copy = { ...source, uid: targetUid, childUids: source.childUids.map((uid) => uidMap[uid] as Uid) };
     } else copy = { ...source, uid: targetUid };
     const runtimeId = runtimeIdMap[sourceUid];

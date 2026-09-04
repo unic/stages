@@ -1,4 +1,4 @@
-import { fieldEvent, getAtPath } from "@stages/core";
+import { fieldEvent, getAtPath, nodeEvent, type DataPath, type RenderNodeSnapshot, type StagesEvent } from "@stages/core";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   createStudioHistory,
@@ -9,10 +9,10 @@ import {
   undoStudioHistory,
 } from "../../src/commands/history";
 import type { StudioHistoryState } from "../../src/commands/types";
-import { compileStudioForm } from "../../src/compiler/compiler";
+import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
-import type { JsonObject, StudioFieldNode, StudioFormDocument, StudioNode, Uid } from "../../src/document/types";
+import { isStudioVariantCollection, type JsonObject, type StudioFieldNode, type StudioFormDocument, type StudioNode, type Uid } from "../../src/document/types";
 import {
   STUDIO_FIELD_DEFINITIONS,
   STUDIO_BLOCK_DEFINITIONS,
@@ -87,6 +87,19 @@ function nextBlock(form: StudioFormDocument, definition: StudioBlockDefinition) 
   return createStudioBlockNode(definition, uid);
 }
 
+function nextStructuralIdentity(form: StudioFormDocument, stem: string): { readonly uid: Uid; readonly runtimeId: string } {
+  const runtimeIds = new Set(Object.values(form.nodes).flatMap((node) => node.kind === "block" ? [] : [node.runtimeId]));
+  let suffix = 1;
+  let uid = toUid(stem);
+  let runtimeId = stem;
+  while (form.nodes[uid] !== undefined || runtimeIds.has(runtimeId)) {
+    suffix += 1;
+    uid = toUid(`${stem}_${suffix}`);
+    runtimeId = `${stem}${suffix}`;
+  }
+  return { uid, runtimeId };
+}
+
 function nodeDisplayLabel(node: StudioNode): string {
   const configured = (node.kind === "field" || node.kind === "block" ? node.props["label"] ?? node.props["text"] : undefined)
     ?? node.presentation?.["label"];
@@ -108,7 +121,8 @@ function CanvasNode({ form, uid, selectedUids, onSelect }: {
   const node = form.nodes[uid];
   if (!node) return null;
   const children = node.kind === "group" || node.kind === "collection" || node.kind === "stage"
-    ? node.childUids
+    ? node.kind === "collection" && isStudioVariantCollection(node) ? node.variantUids : node.childUids
+    : node.kind === "variant" ? node.childUids
     : node.kind === "wizard" ? node.stageUids : [];
   return (
     <li className="studio-v1-node">
@@ -222,23 +236,98 @@ function PreviewField({ form, node, value, onInput }: {
   </label></PreviewLayout>;
 }
 
-function PreviewNode({ form, node, value, onInput }: {
+function previewChildPath(form: StudioFormDocument, parentPath: DataPath, child: StudioRenderNode): DataPath | undefined {
+  if (child.kind === "block") return undefined;
+  const documentNode = form.nodes[child.uid];
+  if (!documentNode || documentNode.kind === "block" || documentNode.kind === "variant") return parentPath;
+  return [...parentPath, documentNode.runtimeId];
+}
+
+function runtimeIdFor(form: StudioFormDocument, uid: Uid): string | undefined {
+  const node = form.nodes[uid];
+  return node === undefined || node.kind === "block" ? undefined : node.runtimeId;
+}
+
+function findPreviewSnapshot(nodes: readonly RenderNodeSnapshot[], path: DataPath): RenderNodeSnapshot | undefined {
+  for (const node of nodes) {
+    if (node.path.length === path.length && node.path.every((segment, index) => segment === path[index])) return node;
+    if (node.kind !== "field") {
+      const nested = findPreviewSnapshot(node.nodes, path);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
+}
+
+interface PreviewNodeProps {
   readonly form: StudioFormDocument;
   readonly node: StudioRenderNode;
   readonly value: unknown;
+  readonly snapshotNodes: readonly RenderNodeSnapshot[];
+  readonly runtimePath: DataPath | undefined;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
-}) {
+  readonly onStructureEvent: (event: StagesEvent) => void;
+}
+
+function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRuntimeRenderNode<"collection">; readonly path: DataPath }) {
+  const { form, node, value, snapshotNodes, path, onInput, onStructureEvent } = props;
+  const collection = form.nodes[node.uid];
+  const snapshot = findPreviewSnapshot(snapshotNodes, path);
+  const rows = getAtPath(value, path);
+  const values = Array.isArray(rows) ? rows : [];
+  return <PreviewLayout node={node}><div className="studio-v1-preview__collection">
+      <div className="studio-v1-preview__collection-actions">
+        {collection?.kind === "collection" && isStudioVariantCollection(collection)
+          ? collection.variantUids.map((uid) => <button type="button" key={uid} disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:add", snapshot.address, { payload: { variant: runtimeIdFor(form, uid) } }))}>Add {nodeLabel(form, uid)}</button>)
+          : <button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:add", snapshot.address))}>Add row</button>}
+      </div>
+      {values.map((row, index) => {
+      let children = node.children;
+      if (collection?.kind === "collection" && isStudioVariantCollection(collection)) {
+        const variantId = row !== null && typeof row === "object" ? (row as Record<string, unknown>)[collection.discriminator] : undefined;
+        children = node.children.find((child) => child.kind === "variant" && runtimeIdFor(form, child.uid) === variantId)?.children ?? [];
+      }
+      const rowPath: DataPath = [...path, index];
+      const rowSnapshot = snapshot?.kind === "collection" ? snapshot.nodes[index] : undefined;
+      const rowKey = rowSnapshot?.kind === "row" ? rowSnapshot.id : `unavailable-${JSON.stringify(row)}`;
+      return <div className="studio-v1-preview__row" data-row-index={index} key={rowKey}>{children.map((child) => (
+        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
+      ))}<button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canRemove === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:remove", snapshot.address, { payload: { index } }))}>Remove row {index + 1}</button></div>;
+    })}</div></PreviewLayout>;
+}
+
+function PreviewWizard(props: PreviewNodeProps & { readonly node: StudioRuntimeRenderNode<"wizard">; readonly path: DataPath }) {
+  const { form, node, value, snapshotNodes, path, onInput, onStructureEvent } = props;
+  const snapshot = findPreviewSnapshot(snapshotNodes, path);
+  const activeStage = snapshot?.kind === "wizard" ? snapshot.activeStage : undefined;
+  const stages = activeStage === undefined ? node.children.slice(0, 1) : node.children.filter((child) => runtimeIdFor(form, child.uid) === activeStage);
+  return <PreviewLayout node={node}><div className="studio-v1-preview__wizard">
+      {snapshot?.kind === "wizard" && <nav aria-label={`${nodeLabel(form, node.uid)} stages`}>
+        <button type="button" disabled={snapshot.canPrevious !== true} onClick={() => onStructureEvent(nodeEvent("wizard:previous", snapshot.address))}>Previous</button>
+        {snapshot.canGo === true && node.children.map((stage) => <button type="button" key={stage.uid} aria-current={runtimeIdFor(form, stage.uid) === activeStage ? "step" : undefined} onClick={() => onStructureEvent(nodeEvent("wizard:go", snapshot.address, { payload: runtimeIdFor(form, stage.uid) }))}>{nodeLabel(form, stage.uid)}</button>)}
+        <button type="button" disabled={snapshot.canNext !== true} onClick={() => onStructureEvent(nodeEvent("wizard:next", snapshot.address))}>Next</button>
+      </nav>}
+      {stages.map((child) => (
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
+    ))}</div></PreviewLayout>;
+}
+
+function PreviewNode(props: PreviewNodeProps) {
+  const { form, node, value, snapshotNodes, runtimePath, onInput, onStructureEvent } = props;
   if (node.hidden) return null;
   if (node.kind === "block") return <PreviewBlock node={node} />;
+  const path = runtimePath ?? node.runtimePath;
   if (node.kind === "group") {
     return <PreviewLayout node={node}><fieldset className="studio-v1-preview__group">{node.children.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} onInput={onInput} />
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
     ))}</fieldset></PreviewLayout>;
   }
-  if (node.kind !== "field") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} onInput={onInput} />
+  if (node.kind === "collection") return <PreviewCollection {...props} node={node} path={path} />;
+  if (node.kind === "wizard") return <PreviewWizard {...props} node={node} path={path} />;
+  if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
+    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
   ))}</div></PreviewLayout>;
-  return <PreviewField form={form} node={node} value={value} onInput={onInput} />;
+  return <PreviewField form={form} node={{ ...node, runtimePath: path }} value={value} onInput={onInput} />;
 }
 
 function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
@@ -358,7 +447,7 @@ function PresentationInspector({ node, onUpdate }: {
 
 function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocument; readonly compiled: CompiledStudioForm }) {
   const scenario = form.scenarios[0];
-  const [value, setValue] = useState<unknown>(() => scenario?.value ?? {});
+  const [value, setValue] = useState<unknown>(() => scenario?.value ?? createEmptyStudioScenarioValue(form));
   const [host] = useState(() => createStudioPreviewHost({
     compiled,
     value,
@@ -392,10 +481,13 @@ function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocume
             form={form}
             node={node}
             value={preview.snapshot.value}
+            snapshotNodes={preview.snapshot.nodes}
+            runtimePath={undefined}
             onInput={(renderNode, nextValue) => preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, {
               payload: nextValue,
               source: "adapter",
             }))}
+            onStructureEvent={(event) => preview.controller.dispatch(event)}
           />
         ))}
       </div>
@@ -403,8 +495,63 @@ function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocume
   );
 }
 
-function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
+function StructuralInspector({ node, form, onUpdate }: {
+  readonly node: StudioNode;
+  readonly form: StudioFormDocument;
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+}) {
+  if (node.kind === "collection") {
+    const updateNumber = (key: "initialRows" | "max" | "min", draft: string) => {
+      const value = draft === "" ? undefined : Number(draft);
+      if (value !== undefined && (!Number.isSafeInteger(value) || value < 0)) return;
+      onUpdate(node, { [key]: value }, `Edit collection ${key}`, `collection.${key}:${node.uid}`);
+    };
+    const discriminated = isStudioVariantCollection(node);
+    return <fieldset className="studio-v1-structural-inspector">
+      <legend>{discriminated ? "Variant collection" : "Collection"} settings</legend>
+      {(["min", "max", "initialRows"] as const).map((key) => <label className="studio-field" key={key}>
+        <span>{key === "initialRows" ? "Initial scenario rows" : key}</span>
+        <input className="ui-input" type="number" min="0" value={node[key] ?? ""} onChange={(event) => updateNumber(key, event.currentTarget.value)} />
+      </label>)}
+      <label className="studio-field"><span>Item key</span><select
+        value={node.itemKey?.kind ?? "index"}
+        onChange={(event) => onUpdate(node, { itemKey: event.currentTarget.value === "property" ? { kind: "property", property: "id" } : { kind: "index" } }, "Edit item key strategy")}
+      ><option value="index">Row index</option><option value="property">Row property</option></select></label>
+      {node.itemKey?.kind === "property" && <label className="studio-field"><span>Key property</span><input
+        className="ui-input"
+        value={node.itemKey.property}
+        onChange={(event) => {
+          const property = event.currentTarget.value;
+          if (property.length > 0 && isSafeObjectKey(property)) onUpdate(node, { itemKey: { kind: "property", property } }, "Edit item key property", `collection.itemKey:${node.uid}`);
+        }}
+      /></label>}
+      {discriminated && <>
+        <label className="studio-field"><span>Discriminator</span><input className="ui-input" value={node.discriminator} onChange={(event) => {
+          const discriminator = event.currentTarget.value;
+          if (discriminator.length > 0 && isSafeObjectKey(discriminator)) onUpdate(node, { discriminator }, "Edit discriminator", `collection.discriminator:${node.uid}`);
+        }} /></label>
+        <label className="studio-field"><span>Initial row variant</span><select value={node.initialVariantUid ?? ""} onChange={(event) => onUpdate(node, { initialVariantUid: event.currentTarget.value === "" ? undefined : toUid(event.currentTarget.value) }, "Edit initial variant") }>
+          <option value="">None</option>
+          {node.variantUids.map((uid) => <option key={uid} value={uid}>{nodeLabel(form, uid)}</option>)}
+        </select></label>
+      </>}
+    </fieldset>;
+  }
+  if (node.kind === "wizard") return <fieldset className="studio-v1-structural-inspector">
+    <legend>Wizard settings</legend>
+    <label className="studio-field"><span>Initial stage</span><select value={node.initialStageUid ?? ""} onChange={(event) => onUpdate(node, { initialStageUid: event.currentTarget.value === "" ? undefined : toUid(event.currentTarget.value) }, "Edit initial stage") }>
+      <option value="">First visible stage</option>
+      {node.stageUids.map((uid) => <option key={uid} value={uid}>{nodeLabel(form, uid)}</option>)}
+    </select></label>
+    <label><input type="checkbox" checked={node.navigation?.nonLinear ?? false} onChange={(event) => onUpdate(node, { navigation: { ...node.navigation, nonLinear: event.currentTarget.checked } }, "Edit nonlinear navigation") } /> Allow nonlinear navigation</label>
+    <label><input type="checkbox" checked={node.navigation?.validateCurrent ?? false} onChange={(event) => onUpdate(node, { navigation: { ...node.navigation, validateCurrent: event.currentTarget.checked } }, "Edit validation gating") } /> Validate current stage before navigation</label>
+  </fieldset>;
+  return null;
+}
+
+function SelectionInspector({ nodes, form, onUpdate, onBulkLabel }: {
   readonly nodes: readonly StudioNode[];
+  readonly form: StudioFormDocument;
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
   readonly onBulkLabel: (nodes: readonly StudioFieldNode[], label: string) => void;
 }) {
@@ -463,6 +610,7 @@ function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
         <FieldInspector node={node} onUpdate={onUpdate} />
       )}
       {node.kind === "block" && <BlockInspector node={node} onUpdate={onUpdate} />}
+      <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
       <PresentationInspector node={node} onUpdate={onUpdate} />
     </div>
   );
@@ -660,6 +808,53 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
+  const insertStructure = (kind: "collection" | "group" | "stage" | "variant" | "variant-collection" | "wizard") => {
+    const selected = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
+    const identity = nextStructuralIdentity(form, kind === "variant-collection" ? "items" : kind);
+    let command;
+    let selectedUid = identity.uid;
+    if (kind === "stage") {
+      if (selected?.kind !== "wizard") { setStatus("Select a wizard before adding a stage."); return; }
+      command = { type: "node.insert" as const, formUid: form.uid, parentUid: selected.uid, index: selected.stageUids.length, node: { ...identity, kind: "stage" as const, childUids: [], presentation: { label: "Stage" } } };
+    } else if (kind === "variant") {
+      if (selected?.kind !== "collection" || !isStudioVariantCollection(selected)) { setStatus("Select a variant collection before adding a variant."); return; }
+      command = { type: "node.insert" as const, formUid: form.uid, parentUid: selected.uid, index: selected.variantUids.length, node: { ...identity, kind: "variant" as const, childUids: [], presentation: { label: "Variant" } } };
+    } else if (kind === "wizard") {
+      const stage = nextStructuralIdentity(form, "stage");
+      command = {
+        type: "node.insert-subtree" as const, formUid: form.uid, parentUid: null, index: form.rootNodeUids.length,
+        rootUids: [identity.uid],
+        nodes: {
+          [identity.uid]: { ...identity, kind: "wizard" as const, stageUids: [stage.uid], initialStageUid: stage.uid, navigation: { nonLinear: false, validateCurrent: false }, presentation: { label: "Wizard" } },
+          [stage.uid]: { ...stage, kind: "stage" as const, childUids: [], presentation: { label: "Stage 1" } },
+        },
+      };
+    } else if (kind === "variant-collection") {
+      const variant = nextStructuralIdentity(form, "variant");
+      command = {
+        type: "node.insert-subtree" as const, formUid: form.uid, parentUid: null, index: form.rootNodeUids.length,
+        rootUids: [identity.uid],
+        nodes: {
+          [identity.uid]: { ...identity, kind: "collection" as const, discriminator: "kind", variantUids: [variant.uid], initialVariantUid: variant.uid, initialRows: 0, itemKey: { kind: "index" as const }, presentation: { label: "Variant collection" } },
+          [variant.uid]: { ...variant, kind: "variant" as const, childUids: [], presentation: { label: "Variant 1" } },
+        },
+      };
+    } else {
+      command = {
+        type: "node.insert" as const, formUid: form.uid, parentUid: null, index: form.rootNodeUids.length,
+        node: { ...identity, kind, childUids: [], ...(kind === "collection" ? { initialRows: 0, itemKey: { kind: "index" as const } } : {}), presentation: { label: kind === "group" ? "Group" : "Collection" } },
+      };
+    }
+    const result = dispatchStudioCommand(history, command, { label: `Add ${kind}` });
+    if (!result.ok) { setStatus(result.failure.message); return; }
+    setHistory(result.history);
+    setNavigation((current) => ({
+      ...current,
+      workbench: selectStudioUid({ ...current.workbench, expandedUids: new Set([...current.workbench.expandedUids, selectedUid]) }, selectedUid, [...visibleOutlineUids, selectedUid]),
+    }));
+    setStatus(`${kind} added`);
+  };
+
   const updateNode = (
     node: StudioNode,
     changes: Readonly<Record<string, unknown>>,
@@ -769,6 +964,15 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               </Button>
             ))}
           </section>
+          <section className="studio-v1-palette" aria-labelledby="studio-v1-structure-palette-title">
+            <h2 id="studio-v1-structure-palette-title">Structure</h2>
+            <Button variant="outline" disabled={loading} onClick={() => insertStructure("group")}>Add group</Button>
+            <Button variant="outline" disabled={loading} onClick={() => insertStructure("collection")}>Add collection</Button>
+            <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant-collection")}>Add variant collection</Button>
+            <Button variant="outline" disabled={loading} onClick={() => insertStructure("wizard")}>Add wizard</Button>
+            <Button variant="outline" disabled={loading} onClick={() => insertStructure("stage")}>Add stage to selected wizard</Button>
+            <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant")}>Add variant to selected collection</Button>
+          </section>
         </div>
         <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
           <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks</span></div>
@@ -783,6 +987,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           <SelectionInspector
             key={selectedNodes.map(({ uid }) => uid).join("\u0000")}
             nodes={selectedNodes}
+            form={form}
             onUpdate={updateNode}
             onBulkLabel={updateBulkLabel}
           />

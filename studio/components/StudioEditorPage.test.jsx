@@ -194,7 +194,27 @@ describe("StudioEditorPage interactions", () => {
     });
   });
 
-  it("coordinates keyboard outline navigation, multi-selection, bulk edits, and Problems", async () => {
+  it("authors variant collections and ordered wizard stages from the structural palette", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([emptyProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    await user.click(screen.getByRole("button", { name: "Add variant collection" }));
+    expect(screen.getByRole("group", { name: "Variant collection settings" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Discriminator" })).toHaveValue("kind");
+    expect(document.querySelectorAll('[data-kind="variant"]')).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Add variant to selected collection" }));
+    expect(document.querySelectorAll('[data-kind="variant"]')).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Add wizard" }));
+    expect(screen.getByRole("group", { name: "Wizard settings" })).toBeVisible();
+    expect(document.querySelectorAll('[data-kind="stage"]')).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Add stage to selected wizard" }));
+    expect(document.querySelectorAll('[data-kind="stage"]')).toHaveLength(2);
+  });
+
+  it("coordinates keyboard outline navigation and multi-selection across compiled structural nodes", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
@@ -234,9 +254,7 @@ describe("StudioEditorPage interactions", () => {
     await user.keyboard("{ArrowRight}");
     expect(document.querySelector('[data-outline-uid="field_nested"]')).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: /compiler\.unsupported-node-kind.*wizard/ }));
-    expect(wizardItem).toHaveAttribute("aria-selected", "true");
-    await waitFor(() => expect(document.activeElement).toBe(wizardItem));
+    expect(screen.getByText("No problems")).toBeVisible();
   });
 
   it("routes keyboard, context-menu, shortcut, and pointer structure edits through commands", async () => {

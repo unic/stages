@@ -260,6 +260,50 @@ describe("Studio command engine", () => {
     expect(canPlaceStudioNode("root", "stage")).toBe(false);
     expect(canPlaceStudioNode("collection", "wizard")).toBe(true);
   });
+
+  it("authors, orders, and copies discriminated variants and wizard stages by UID", () => {
+    const collectionUid = toUid("collection_contacts");
+    const personUid = toUid("variant_person");
+    const companyUid = toUid("variant_company");
+    let current = success(project(), {
+      type: "node.insert-subtree", formUid, parentUid: null, index: 1, rootUids: [collectionUid],
+      nodes: {
+        [collectionUid]: { uid: collectionUid, kind: "collection", runtimeId: "contacts", discriminator: "kind", variantUids: [personUid], initialVariantUid: personUid, initialRows: 1 },
+        [personUid]: { uid: personUid, kind: "variant", runtimeId: "person", childUids: [] },
+      },
+    });
+    current = success(current, {
+      type: "node.insert", formUid, parentUid: collectionUid, index: 1,
+      node: { uid: companyUid, kind: "variant", runtimeId: "company", childUids: [] },
+    });
+    current = success(current, { type: "node.move", formUid, uid: companyUid, parentUid: collectionUid, index: 0 });
+    expect(current.forms[formUid]?.nodes[collectionUid]).toMatchObject({ variantUids: [companyUid, personUid] });
+
+    const invalidChild = executeStudioCommand(current, {
+      type: "node.insert", formUid, parentUid: collectionUid, index: 2,
+      node: { uid: toUid("field_invalid_variant_child"), kind: "field", runtimeId: "bad", definition: { key: "text", version: 1 }, props: {} },
+    });
+    expect(invalidChild).toMatchObject({ ok: false, failure: { code: "command.incompatible-placement" } });
+
+    const copied = copyStudioNodes(current, formUid, [collectionUid]);
+    expect(copied.ok).toBe(true);
+    if (!copied.ok) return;
+    const copyCollectionUid = toUid("collection_contacts_copy");
+    const copyPersonUid = toUid("variant_person_copy");
+    const copyCompanyUid = toUid("variant_company_copy");
+    const paste = createStudioPasteCommand(copied.value, { formUid, parentUid: null, index: 2 }, {
+      [collectionUid]: copyCollectionUid,
+      [personUid]: copyPersonUid,
+      [companyUid]: copyCompanyUid,
+    }, { [collectionUid]: "contactsCopy" });
+    expect(paste.ok).toBe(true);
+    if (!paste.ok) return;
+    const pasted = success(current, paste.value);
+    expect(pasted.forms[formUid]?.nodes[copyCollectionUid]).toMatchObject({
+      variantUids: [copyCompanyUid, copyPersonUid],
+      initialVariantUid: copyPersonUid,
+    });
+  });
 });
 
 describe("Studio document history", () => {

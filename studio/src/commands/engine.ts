@@ -1,4 +1,4 @@
-import { isSafeObjectKey, isUid } from "../document";
+import { isSafeObjectKey, isStudioVariantCollection, isUid } from "../document";
 import type { StudioFormDocument, StudioNode, StudioProjectDocument, Uid } from "../document";
 import type {
   StudioCommand,
@@ -9,7 +9,8 @@ import type {
 
 const UPDATE_KEYS = new Set([
   "runtimeId", "definition", "props", "presentation", "behavior", "legacy",
-  "computed", "validators", "min", "max", "initialRows",
+  "computed", "validators", "min", "max", "initialRows", "itemKey",
+  "discriminator", "initialVariantUid", "initialStageUid", "navigation",
 ]);
 
 export type StudioPlacementParentKind = StudioNode["kind"] | "root";
@@ -21,7 +22,8 @@ export function canPlaceStudioNode(
 ): boolean {
   if (parentKind === "field" || parentKind === "block") return false;
   if (parentKind === "wizard") return childKind === "stage";
-  return childKind !== "stage";
+  if (parentKind === "collection") return childKind !== "stage";
+  return childKind !== "stage" && childKind !== "variant";
 }
 
 function fail(
@@ -35,13 +37,17 @@ function fail(
 
 function children(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return node.childUids;
   return [];
 }
 
 function withChildren(node: StudioNode, next: readonly Uid[]): StudioNode {
   if (node.kind === "wizard") return { ...node, stageUids: next };
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") {
+  if (node.kind === "collection") return isStudioVariantCollection(node)
+    ? { ...node, variantUids: next }
+    : { ...node, childUids: next };
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") {
     return { ...node, childUids: next };
   }
   return node;
@@ -73,7 +79,10 @@ function incompatiblePlacement(
   commandPath: readonly number[],
 ): { readonly ok: false; readonly failure: StudioCommandFailure } | undefined {
   const parentKind = parentUid === null ? "root" : form.nodes[parentUid]?.kind;
-  if (parentKind !== undefined && canPlaceStudioNode(parentKind, node.kind)) return undefined;
+  const parent = parentUid === null ? undefined : form.nodes[parentUid];
+  const collectionCompatible = parent?.kind !== "collection"
+    || (isStudioVariantCollection(parent) ? node.kind === "variant" : node.kind !== "variant");
+  if (parentKind !== undefined && canPlaceStudioNode(parentKind, node.kind) && collectionCompatible) return undefined;
   return fail(
     "command.incompatible-placement",
     `${node.kind} node ${node.uid} cannot be placed ${parentUid === null ? "at the form root" : `inside ${parentUid}`}.`,
@@ -159,6 +168,51 @@ function invariantFailure(form: StudioFormDocument, commandPath: readonly number
       "command.invariant",
       node.kind === "stage" ? `Stage ${uid} must be a wizard child.` : `Wizard children must be stages; received ${uid}.`,
       commandPath,
+      { formUid: form.uid, entityUid: uid },
+    ).failure;
+    if (node.kind === "variant" && parentKind !== "collection") return fail(
+      "command.invariant",
+      `Variant ${uid} must be a discriminated collection child.`,
+      commandPath,
+      { formUid: form.uid, entityUid: uid },
+    ).failure;
+    if (node.kind === "collection") {
+      const isDiscriminated = isStudioVariantCollection(node);
+      if (isDiscriminated !== (node.discriminator !== undefined)) return fail(
+        "command.invariant", `Collection ${uid} must define exactly one homogeneous or discriminated shape.`, commandPath,
+        { formUid: form.uid, entityUid: uid },
+      ).failure;
+      const invalidChild = children(node).find((childUid) => (
+        form.nodes[childUid]?.kind === "variant"
+      ) !== isDiscriminated);
+      if (invalidChild !== undefined) return fail(
+        "command.invariant",
+        isDiscriminated
+          ? `Discriminated collection children must be variants; received ${invalidChild}.`
+          : `Homogeneous collection children cannot be variants; received ${invalidChild}.`,
+        commandPath,
+        { formUid: form.uid, entityUid: invalidChild },
+      ).failure;
+      if (node.min !== undefined && node.max !== undefined && node.min > node.max) return fail(
+        "command.invariant", `Collection ${uid} has min greater than max.`, commandPath,
+        { formUid: form.uid, entityUid: uid },
+      ).failure;
+      if (node.initialRows !== undefined
+        && node.max !== undefined && node.initialRows > node.max) return fail(
+        "command.invariant", `Collection ${uid} initial rows cannot exceed max.`, commandPath,
+        { formUid: form.uid, entityUid: uid },
+      ).failure;
+      if (isDiscriminated && node.initialVariantUid !== undefined && !node.variantUids.includes(node.initialVariantUid)) return fail(
+        "command.invariant", `Collection ${uid} initial variant must reference one of its variants.`, commandPath,
+        { formUid: form.uid, entityUid: uid },
+      ).failure;
+      if (isDiscriminated && (node.initialRows ?? 0) > 0 && node.initialVariantUid === undefined) return fail(
+        "command.invariant", `Collection ${uid} requires an initial variant when it creates initial rows.`, commandPath,
+        { formUid: form.uid, entityUid: uid },
+      ).failure;
+    }
+    if (node.kind === "wizard" && node.initialStageUid !== undefined && !node.stageUids.includes(node.initialStageUid)) return fail(
+      "command.invariant", `Wizard ${uid} initial stage must reference one of its stages.`, commandPath,
       { formUid: form.uid, entityUid: uid },
     ).failure;
     seen.add(uid);
@@ -343,7 +397,12 @@ function executeSingle(
     if (keys.length === 0 || keys.every((key) => Object.is((node as unknown as Record<string, unknown>)[key], command.changes[key]))) {
       return { ok: true, document: project, affectedUids: [], changed: false };
     }
-    const nextNode = { ...node, ...command.changes } as StudioNode;
+    const nextNodeRecord = { ...node } as unknown as Record<string, unknown>;
+    for (const key of keys) {
+      if (command.changes[key] === undefined) delete nextNodeRecord[key];
+      else nextNodeRecord[key] = command.changes[key];
+    }
+    const nextNode = nextNodeRecord as unknown as StudioNode;
     return commit(project, { ...form, nodes: { ...form.nodes, [command.uid]: nextNode } }, [command.uid], commandPath);
   }
 
@@ -381,8 +440,8 @@ function executeSingle(
   }
 
   if (command.type === "node.unwrap") {
-    if (node.kind !== "group" && node.kind !== "collection") return fail(
-      "command.incompatible-placement", "Only groups and collections can be unwrapped without losing structure.", commandPath,
+    if (node.kind !== "group" && (node.kind !== "collection" || isStudioVariantCollection(node))) return fail(
+      "command.incompatible-placement", "Only groups and homogeneous collections can be unwrapped without losing structure.", commandPath,
       { formUid: form.uid, entityUid: node.uid },
     );
     const parents = parentMap(form);
@@ -414,6 +473,10 @@ function executeSingle(
       { formUid: form.uid, entityUid: node.uid },
     );
     if (node.kind === command.targetKind) return { ok: true, document: project, affectedUids: [], changed: false };
+    if (node.kind === "collection" && isStudioVariantCollection(node)) return fail(
+      "command.incompatible-placement", "A discriminated collection cannot be converted without choosing how to preserve its variants.", commandPath,
+      { formUid: form.uid, entityUid: node.uid },
+    );
     let childUids: readonly Uid[];
     const nodes = { ...form.nodes } as Record<Uid, StudioNode>;
     const affected: Uid[] = [node.uid];
@@ -495,6 +558,11 @@ function executeSingle(
     const targetUid = command.uidMap[sourceUid];
     if (!source || !targetUid) continue;
     let copy = withChildren({ ...source, uid: targetUid }, children(source).map((uid) => command.uidMap[uid] as Uid));
+    if (copy.kind === "wizard" && copy.initialStageUid !== undefined) {
+      copy = { ...copy, initialStageUid: command.uidMap[copy.initialStageUid] ?? copy.initialStageUid };
+    } else if (copy.kind === "collection" && isStudioVariantCollection(copy) && copy.initialVariantUid !== undefined) {
+      copy = { ...copy, initialVariantUid: command.uidMap[copy.initialVariantUid] ?? copy.initialVariantUid };
+    }
     if (sourceUid === command.uid && command.rootRuntimeId !== undefined && copy.kind !== "block") {
       copy = { ...copy, runtimeId: command.rootRuntimeId };
     }

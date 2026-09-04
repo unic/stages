@@ -1,6 +1,6 @@
 import type {
-  StudioCollectionNode,
   StudioGroupNode,
+  StudioHomogeneousCollectionNode,
   StudioNode,
   StudioProjectDocument,
   StudioStageNode,
@@ -56,7 +56,7 @@ export type StudioCommand =
     readonly formUid: Uid;
     /** Nodes must be contiguous siblings and are kept in their current order. */
     readonly uids: readonly Uid[];
-    readonly wrapper: StudioGroupNode | StudioCollectionNode;
+    readonly wrapper: StudioGroupNode | StudioHomogeneousCollectionNode;
   }
   | { readonly type: "node.unwrap"; readonly formUid: Uid; readonly uid: Uid }
   | {

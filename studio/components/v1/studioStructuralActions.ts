@@ -4,7 +4,7 @@ import { canPlaceStudioNode } from "../../src/commands/engine";
 import { dispatchStudioCommand } from "../../src/commands/history";
 import type { StudioCommand, StudioHistoryState } from "../../src/commands/types";
 import { toUid } from "../../src/document/uid";
-import type { StudioFormDocument, StudioNode, Uid } from "../../src/document/types";
+import { isStudioVariantCollection, type StudioFormDocument, type StudioNode, type Uid } from "../../src/document/types";
 import {
   createStudioDropCommand,
   createStudioRelativeMoveCommand,
@@ -30,7 +30,8 @@ interface StructuralActionOptions {
 
 function nodeChildren(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return node.childUids;
   return [];
 }
 

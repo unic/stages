@@ -1,6 +1,6 @@
 import { canPlaceStudioNode } from "../commands/engine";
 import type { StudioCommand } from "../commands/types";
-import type { StudioFormDocument, StudioNode, Uid } from "../document/types";
+import { isStudioVariantCollection, type StudioFormDocument, type StudioNode, type Uid } from "../document/types";
 
 export type StudioMoveDirection = "bottom" | "down" | "in" | "out" | "top" | "up";
 
@@ -12,7 +12,8 @@ export interface StudioNodePlacement {
 
 function children(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
-  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return node.childUids;
   return [];
 }
 
