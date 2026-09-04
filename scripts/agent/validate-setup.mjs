@@ -67,6 +67,29 @@ function parseFrontmatter(source) {
   return { values, body: source.slice(match[0].length) };
 }
 
+function validateSkillMetadata(root, skillName, failures) {
+  const relativeFile = `.agents/skills/${skillName}/agents/openai.yaml`;
+  const absoluteFile = path.join(root, relativeFile);
+  if (!existsSync(absoluteFile)) {
+    failures.push(`Missing skill UI metadata: ${relativeFile}`);
+    return;
+  }
+  const source = readFileSync(absoluteFile, "utf8");
+  const value = (key) => source.match(new RegExp(`^\\s*${key}:\\s*"([^"]*)"\\s*$`, "m"))?.[1];
+  if (!value("display_name")) failures.push(`${relativeFile}: interface.display_name is required`);
+  const shortDescription = value("short_description");
+  if (!shortDescription || shortDescription.length < 25 || shortDescription.length > 64) {
+    failures.push(`${relativeFile}: interface.short_description must contain 25-64 characters`);
+  }
+  const defaultPrompt = value("default_prompt");
+  if (!defaultPrompt?.includes(`$${skillName}`)) {
+    failures.push(`${relativeFile}: interface.default_prompt must mention $${skillName}`);
+  }
+  if (skillName === "stages-prepare-release" && !/^\s*allow_implicit_invocation:\s*false\s*$/m.test(source)) {
+    failures.push(`${relativeFile}: release preparation must disable implicit invocation`);
+  }
+}
+
 function packageScripts(root, manifestCache, prefix = ".") {
   const manifestPath = path.join(root, prefix, "package.json");
   if (!manifestCache.has(manifestPath)) {
@@ -102,6 +125,11 @@ function validateReferences(root, relativeFile, source, failures, manifestCache)
   for (const match of prefixMatches) {
     const scripts = packageScripts(root, manifestCache, match[1]);
     if (!scripts?.[match[2]]) failures.push(`${relativeFile}: ${match[1]} package script does not exist: ${match[2]}`);
+  }
+
+  const nodeFiles = source.matchAll(/(?:^|[`\s])node ([\w./-]+\.(?:mjs|js))(?:[`\s]|$)/gm);
+  for (const match of nodeFiles) {
+    if (!existsSync(path.join(root, match[1]))) failures.push(`${relativeFile}: referenced executable does not exist: ${match[1]}`);
   }
 }
 
@@ -153,7 +181,9 @@ export function validateSetup(root = repositoryRoot, options = {}) {
         else descriptions.set(description, relativeFile);
       }
       if (frontmatter.body.split("\n").length > 250) failures.push(`${relativeFile}: body exceeds 250 lines`);
+      if (/\bTODO\b/.test(source)) failures.push(`${relativeFile}: unresolved TODO placeholder`);
       validateReferences(root, relativeFile, source, failures, manifestCache);
+      validateSkillMetadata(root, entry.name, failures);
     }
   }
 

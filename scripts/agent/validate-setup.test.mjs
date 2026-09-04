@@ -17,6 +17,16 @@ function write(root, relativePath, contents = "") {
   writeFileSync(target, contents);
 }
 
+function writeMetadata(root, skillName, shortDescription = "Verify a small example workflow") {
+  write(root, `.agents/skills/${skillName}/agents/openai.yaml`, [
+    "interface:",
+    `  display_name: "${skillName}"`,
+    `  short_description: "${shortDescription}"`,
+    `  default_prompt: "Use $${skillName} for this task."`,
+    "",
+  ].join("\n"));
+}
+
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), "stages-agent-setup-"));
   write(root, "package.json", JSON.stringify({ scripts: { "check:v1": "true" } }));
@@ -37,6 +47,7 @@ test("accepts a valid minimal setup", async () => {
       "Read [the instructions](../../../AGENTS.md), then run `npm run check:v1`.",
       "",
     ].join("\n"));
+    writeMetadata(root, "example-skill");
     assert.deepEqual(validateSetup(root, {
       expectedAgentFiles: ["AGENTS.md"],
       expectedSkills: ["example-skill"],
@@ -106,6 +117,23 @@ test("rejects an active application without an impact rule", async () => {
     write(root, "examples/svelte/package.json", "{}");
     assert(validateSetup(root, { expectedAgentFiles: [], expectedSkills: [] })
       .includes("Active package or example has no impact mapping: examples/svelte"));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("validates skill UI metadata and executable references", async () => {
+  const root = await fixture();
+  try {
+    write(root, ".agents/skills/release/SKILL.md", [
+      "---", "name: release", "description: Prepare a release safely.", "---", "",
+      "Run `node scripts/missing.mjs`. TODO", "",
+    ].join("\n"));
+    writeMetadata(root, "release", "short");
+    const failures = validateSetup(root, { expectedAgentFiles: [], expectedSkills: ["release"] });
+    assert(failures.some((failure) => failure.includes("short_description")));
+    assert(failures.some((failure) => failure.includes("referenced executable does not exist")));
+    assert(failures.some((failure) => failure.includes("unresolved TODO")));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

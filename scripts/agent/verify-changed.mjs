@@ -36,23 +36,29 @@ function trackedStatus() {
   return git(["status", "--short", "--untracked-files=no"]);
 }
 
-function runCommand(id, logDirectory) {
+export function runCommand(id, logDirectory, options = {}) {
   const logPath = path.join(logDirectory, `${id.replaceAll(":", "-")}.log`);
-  const result = spawnSync(commands[id], {
-    cwd: repositoryRoot,
+  const command = options.command ?? commands[id];
+  const result = spawnSync(command, {
+    cwd: options.cwd ?? repositoryRoot,
     encoding: "utf8",
     shell: true,
     env: process.env,
   });
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  const logger = options.logger ?? console;
   writeFileSync(logPath, output);
   if (result.status !== 0) {
     const tail = readFileSync(logPath, "utf8").trim().split("\n").slice(-40).join("\n");
-    console.error(`${id} failed. Full log: ${logPath}\n${tail}`);
+    logger.error(`${id} failed. Full log: ${logPath}\n${tail}`);
     return false;
   }
-  console.log(`✓ ${id}`);
+  logger.log(`✓ ${id}`);
   return true;
+}
+
+export function didTrackedStateChange(before, after) {
+  return before !== after;
 }
 
 function main() {
@@ -83,7 +89,7 @@ function main() {
     }
   }
   const after = trackedStatus();
-  if (after !== before) console.warn("Warning: verification changed tracked working-tree state.");
+  if (didTrackedStateChange(before, after)) console.warn("Warning: verification changed tracked working-tree state.");
   rmSync(logs, { recursive: true, force: true });
 }
 
