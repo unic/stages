@@ -11,7 +11,7 @@ export default defineConfig({
     globals: true,
     setupFiles: "./test/setup.ts",
     css: true,
-    include: ["components/**/*.test.{js,jsx,ts,tsx}"],
+    include: ["components/**/*.test.{js,jsx,ts,tsx}", "src/**/*.test.{ts,tsx}"],
     coverage: {
       reporter: ["text", "html"],
     },

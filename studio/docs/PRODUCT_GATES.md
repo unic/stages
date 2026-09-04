@@ -104,6 +104,7 @@ for Gate A. Domain modules cannot depend on either Next.js router.
 - [x] Browser, accessibility, data-loss, project-size, publication, and routing
   decisions are explicit.
 - [x] Strict TypeScript module boundaries run in CI.
-- [ ] Document v1 and its migration policy are reviewed.
+- [x] Document v1 and its migration policy are implemented with golden migration
+  and deterministic round-trip evidence.
 
 The remaining Gate A work belongs to Sessions 03 and 04.

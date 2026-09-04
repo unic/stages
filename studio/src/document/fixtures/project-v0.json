@@ -1,0 +1,40 @@
+{
+  "format": "stages-studio",
+  "formatVersion": 0,
+  "project": {
+    "uid": "project_event_launch",
+    "title": "Event launch",
+    "locale": "en"
+  },
+  "forms": {
+    "form_event": {
+      "uid": "form_event",
+      "title": "Event details",
+      "runtime": {
+        "schemaId": "event-launch",
+        "schemaVersion": 1
+      },
+      "rootNodeUids": ["group_event"],
+      "nodes": {
+        "group_event": {
+          "uid": "group_event",
+          "kind": "group",
+          "runtimeId": "event",
+          "childUids": ["field_title"]
+        },
+        "field_title": {
+          "uid": "field_title",
+          "kind": "field",
+          "runtimeId": "title",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "Event title"
+          }
+        }
+      }
+    }
+  }
+}
