@@ -16,7 +16,6 @@ const optionValue = (option, key = "value") => option && typeof option === "obje
 const optionLabel = (option, key = "label") => option && typeof option === "object" ? option[key] ?? option.value : option;
 const emitValue = (onChange, value, originalEvent) => onChange?.({ originalEvent, value, checked: value, target: { value, checked: value } });
 
-export { Button };
 export const InputText = Input;
 export const InputTextarea = Textarea;
 

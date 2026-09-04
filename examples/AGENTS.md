@@ -4,4 +4,5 @@
 - Shared behavior belongs in `examples/shared/event-launch`, not duplicated in framework applications.
 - Keep framework examples behaviorally equivalent.
 - Framework-specific UI changes require that adapter's build and matching E2E project.
+- Run `npm run doctor` for React example changes and resolve new errors before handoff.
 - Shared contract changes require shared tests, every example build, and all-adapter E2E.

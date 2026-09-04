@@ -2,7 +2,6 @@
   "name": "stages-studio",
   "version": "0.0.1",
   "description": "Form Management System",
-  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

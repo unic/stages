@@ -20,6 +20,7 @@ export const expectedSkills = [
   "stages-change-api",
   "stages-update-docs",
   "stages-prepare-release",
+  "stages-check-quality",
 ];
 
 const ignoredDirectories = new Set([

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Check Stages Quality"
+  short_description: "Run targeted static quality checks safely"
+  default_prompt: "Use $stages-check-quality to inspect and verify this Stages change."

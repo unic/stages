@@ -44,7 +44,7 @@ for (const [file, expected] of cases) {
 test("deduplicates commands while preserving dependency order", () => {
   assert.deepEqual(
     mapChangedPaths(["packages/react/src/index.tsx", "packages/react/src/index.tsx", "examples/react/src/App.tsx"]).commandIds,
-    ["build:core", "build:react", "typecheck:react", "test:react", "build:example:react", "e2e:react"],
+    ["build:core", "build:react", "typecheck:react", "test:react", "build:example:react", "e2e:react", "quality:knip", "quality:react"],
   );
 });
 

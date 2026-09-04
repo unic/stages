@@ -13,12 +13,13 @@ test("release mode always delegates to the complete release gate", () => {
 test("change mode retains the complete adapter impact selection", () => {
   assert.deepEqual(commandIdsForMode(["packages/react/src/index.tsx"], "change"), [
     "build:core", "build:react", "typecheck:react", "test:react", "build:example:react", "e2e:react",
+    "quality:knip", "quality:react",
   ]);
 });
 
 test("focused mode rebuilds and tests packages while omitting application verification", () => {
   assert.deepEqual(commandIdsForMode(["packages/react/src/index.tsx"], "focused"), [
-    "build:core", "build:react", "typecheck:react", "test:react",
+    "build:core", "build:react", "typecheck:react", "test:react", "quality:knip", "quality:react",
   ]);
 });
 

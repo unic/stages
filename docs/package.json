@@ -2,7 +2,6 @@
   "name": "stages-docs",
   "version": "1.0.0",
   "description": "Documentation for Stages",
-  "main": "index.js",
   "scripts": {
     "build:stages": "tsc -p ../packages/core/tsconfig.build.json && tsc -p ../packages/react/tsconfig.build.json",
     "predev": "npm run build:stages",

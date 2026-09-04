@@ -12,6 +12,7 @@ Stages v1 is the default development target. Active v1 packages and applications
 - Do not add dependencies or modify lockfiles incidentally.
 - Preserve existing working-tree changes, including unrelated untracked files.
 - Use Node 24.15.0 from `.nvmrc`.
+- Use `$stages-check-quality` for dependency, dead-code, or React-quality work; run `npm run check:quality` for the complete static gate.
 - Run `npm run release:check:v1` for public API, serialization, manifests, package metadata, framework contracts, or release work.
 
 During review, flag changes that weaken controlled-value proposal/acceptance semantics, public contract changes without compatibility evidence and documentation, and core imports of framework, browser, or runtime dependencies.

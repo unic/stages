@@ -47,6 +47,8 @@ export const commands = Object.freeze({
   "check:v1": "npm run check:v1",
   "test:v1": "npm run test:v1",
   "verify:packages": "npm run verify:packages:v1",
+  "quality:knip": "npm run check:knip",
+  "quality:react": "npm run doctor",
   "build:legacy": "npm run build",
   "release": "npm run release:check:v1",
 });
@@ -149,6 +151,12 @@ export function mapChangedPaths(paths) {
   const selected = new Set();
   for (const file of normalizedPaths) {
     for (const commandId of commandsForPath(file)) selected.add(commandId);
+    if (/^(?:packages|examples|studio|docs)\//.test(file) && /\.(?:[cm]?[jt]sx?|vue)$/.test(file)) {
+      selected.add("quality:knip");
+    }
+    if (/^(?:packages\/react|examples\/react|studio|docs)\//.test(file) && /\.[cm]?[jt]sx?$/.test(file)) {
+      selected.add("quality:react");
+    }
   }
   const commandIds = Object.keys(commands).filter((commandId) => selected.has(commandId));
   if (selected.has("release")) return { paths: normalizedPaths, commandIds: ["release"] };

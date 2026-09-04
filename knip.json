@@ -1,0 +1,102 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "treatConfigHintsAsErrors": true,
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.mjs"],
+      "project": ["scripts/**/*.mjs"],
+      "ignoreDependencies": [
+        "@angular/core",
+        "@angular/platform-browser",
+        "@e18e/cli",
+        "axios",
+        "fast-json-stable-stringify",
+        "json-beautify",
+        "prop-types",
+        "react-bootstrap",
+        "vue"
+      ],
+      "vue": false
+    },
+    "packages/core": {
+      "entry": ["src/index.ts", "test/**/*.test.mjs", "test-d/**/*.ts"],
+      "project": ["src/**/*.ts", "test/**/*.mjs", "test-d/**/*.ts"]
+    },
+    "packages/dom": {
+      "entry": ["test/**/*.test.mjs"],
+      "project": ["src/**/*.ts", "test/**/*.mjs"]
+    },
+    "packages/react": {
+      "entry": ["test/**/*.test.mjs"],
+      "project": ["src/**/*.tsx", "test/**/*.mjs"]
+    },
+    "packages/vue": {
+      "entry": ["test/**/*.test.mjs"],
+      "project": ["src/**/*.ts", "test/**/*.mjs"]
+    },
+    "packages/angular": {
+      "entry": ["test/**/*.test.mjs"],
+      "project": ["src/**/*.ts", "test/**/*.mjs"]
+    },
+    "packages/test-kit": {
+      "entry": ["src/index.{ts,tsx}", "test/**/*.test.mjs"],
+      "project": ["src/**/*.{ts,tsx}", "test/**/*.mjs"]
+    },
+    "examples/shared/event-launch": {
+      "entry": ["index.ts", "test/**/*.test.mjs"],
+      "project": ["*.ts", "test/**/*.mjs"]
+    },
+    "examples/vanilla": {
+      "project": ["src/**/*.ts"],
+      "includeEntryExports": true
+    },
+    "examples/react": {
+      "entry": ["test/**/*.test.mjs"],
+      "project": ["src/**/*.{ts,tsx}", "test/**/*.mjs"],
+      "includeEntryExports": true
+    },
+    "examples/vue": {
+      "project": ["src/**/*.ts"],
+      "vue": false,
+      "includeEntryExports": true
+    },
+    "examples/angular": {
+      "project": ["src/**/*.ts"],
+      "includeEntryExports": true
+    },
+    "examples/e2e": {
+      "project": ["*.{mjs,ts}"],
+      "includeEntryExports": true
+    },
+    "studio": {
+      "entry": [
+        "pages/**/*.{js,jsx}",
+        "components/**/*.{test.js,test.jsx}",
+        "components/v1/*.test.mjs"
+      ],
+      "project": [
+        "pages/**/*.{js,jsx}",
+        "components/**/*.{js,jsx,mjs}",
+        "lib/**/*.js",
+        "shared/**/*.js",
+        "test/**/*.js",
+        "*.config.{js,mjs}"
+      ],
+      "includeEntryExports": true
+    },
+    "docs": {
+      "entry": [
+        "mdx-components.jsx",
+        "components/**/*.{js,jsx}",
+        "content/**/_meta.js"
+      ],
+      "project": [
+        "*.{js,jsx,mjs}",
+        "components/**/*.{js,jsx}",
+        "content/**/*.{js,jsx}"
+      ],
+      "ignoreDependencies": ["@stages/core", "@stages/react"]
+    }
+  }
+}

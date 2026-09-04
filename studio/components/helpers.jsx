@@ -3,7 +3,7 @@ import _ from "lodash";
 import Mustache from "mustache";
 import fieldProps from "./fieldProps";
 
-export const parseJSONConfig = (config, data) => {
+const parseJSONConfig = (config, data) => {
   if (!config) return [];
   const parsedConfig = config.map((item) => {
     const newItem = { ...item };
@@ -113,7 +113,7 @@ export const moveConfigField = (config, from, to) => {
   return true;
 };
 
-export const doesPathExist = (path, store) => {
+const doesPathExist = (path, store) => {
   if (!path) return false;
   const configPath = getConfigPathFromDataPath(path, store.currentConfig);
   const config = _.get(store.currentConfig, configPath);

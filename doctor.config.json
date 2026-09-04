@@ -1,0 +1,58 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "projects": [
+    "packages/react",
+    "examples/react",
+    "studio",
+    "docs"
+  ],
+  "supplyChain": {
+    "enabled": false
+  },
+  "noScore": true,
+  "blocking": "error",
+  "ignore": {
+    "files": [
+      "**/dist/**",
+      "**/.next/**",
+      "**/out/**",
+      "**/coverage/**"
+    ],
+    "overrides": [
+      {
+        "files": ["src/index.tsx"],
+        "rules": ["react-doctor/no-ref-current-in-render"]
+      },
+      {
+        "files": ["components/Workspace.jsx"],
+        "rules": [
+          "react-doctor/no-layout-property-animation",
+          "react-doctor/no-ref-current-in-render"
+        ]
+      },
+      {
+        "files": ["components/Card.jsx"],
+        "rules": ["react-doctor/no-layout-property-animation"]
+      },
+      {
+        "files": ["components/v1/StudioV1Preview.jsx"],
+        "rules": ["react-doctor/no-ref-current-in-render"]
+      },
+      {
+        "files": [
+          "components/helpers.jsx",
+          "components/v1/legacyConfig.mjs"
+        ],
+        "rules": ["react-doctor/no-eval"]
+      },
+      {
+        "files": ["package.json"],
+        "rules": ["react-doctor/require-reduced-motion"]
+      },
+      {
+        "files": ["examples/react-adapter.tsx"],
+        "rules": ["react-doctor/no-ref-current-in-render"]
+      }
+    ]
+  }
+}

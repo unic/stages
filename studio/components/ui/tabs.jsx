@@ -9,6 +9,3 @@ export const TabsList = forwardRef(function TabsList({ className, ...props }, re
 export const TabsTrigger = forwardRef(function TabsTrigger({ className, ...props }, ref) {
   return <TabsPrimitive.Trigger ref={ref} className={cn("ui-tabs-trigger", className)} {...props} />;
 });
-export const TabsContent = forwardRef(function TabsContent({ className, ...props }, ref) {
-  return <TabsPrimitive.Content ref={ref} className={cn("ui-tabs-content", className)} {...props} />;
-});

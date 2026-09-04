@@ -3,7 +3,7 @@ import { Slot } from "radix-ui";
 import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
-export const buttonVariants = cva("ui-button", {
+const buttonVariants = cva("ui-button", {
   variants: {
     variant: {
       default: "ui-button--default",
