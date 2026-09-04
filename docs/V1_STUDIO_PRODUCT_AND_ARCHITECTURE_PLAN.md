@@ -11,6 +11,12 @@ Execution status:
   and [`../studio/docs/PRODUCT_GATES.md`](../studio/docs/PRODUCT_GATES.md)
 - Session 03 completed: strict Studio TypeScript and dependency boundaries are
   enforced by `npm --prefix studio run check`
+- Session 04 completed: [`../studio/src/document/index.ts`](../studio/src/document/index.ts)
+  defines document v1, validation, migrations, and deterministic serialization
+- Session 05 completed: [`../studio/src/legacy/importer.ts`](../studio/src/legacy/importer.ts)
+  imports frozen POC inputs without executing imported text
+- Session 06 completed: [`../studio/src/commands/index.ts`](../studio/src/commands/index.ts)
+  provides the browser-free immutable command engine and checkpoint history
 
 Primary references:
 
