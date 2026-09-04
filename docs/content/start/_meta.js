@@ -5,5 +5,6 @@ export default {
   "first-controller": "First controller",
   "react-quickstart": "React quickstart",
   "vue-quickstart": "Vue quickstart",
+  "angular-quickstart": "Angular quickstart",
   "dom-quickstart": "DOM quickstart"
 }

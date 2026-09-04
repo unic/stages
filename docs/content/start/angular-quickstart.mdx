@@ -1,0 +1,48 @@
+---
+title: Angular quickstart
+description: Render a controlled Stages field with Angular v22 signals and an application-owned component.
+---
+
+# Angular v22 quickstart
+
+`@stages/angular` connects a Stages controller to Angular signals and scoped
+lifecycle cleanup. Your application owns accepted values, field components,
+markup, and styling.
+
+```ts
+import { Component, Input, computed, signal } from "@angular/core";
+import { stages, type FieldSnapshot } from "@stages/core";
+import {
+  StagesFieldComponent,
+  injectStages,
+  type AngularFieldView,
+} from "@stages/angular";
+
+@Component({ selector: "text-field", template: `<input [value]="field.value" (input)="emit('input', $any($event.target).value)" />` })
+class TextField implements AngularFieldView<string, { readonly label: string }> {
+  @Input({ required: true }) id!: string;
+  @Input({ required: true }) field!: FieldSnapshot<string>;
+  @Input({ required: true }) props!: { readonly label: string };
+  @Input({ required: true }) emit!: (name: string, payload?: unknown) => void;
+}
+
+@Component({
+  selector: "profile-form",
+  imports: [StagesFieldComponent],
+  template: `<stages-field [controller]="controller" [path]="['name']" />`,
+})
+export class ProfileForm {
+  readonly value = signal({ name: "" });
+  readonly binding = injectStages(
+    () => stages({ schema, fields, value: this.value(), onChange: ({ value }) => this.value.set(value) }),
+    computed(() => ({ value: this.value() })),
+  );
+  readonly controller = this.binding.controller;
+}
+```
+
+`injectStages()` must run in an Angular injection context. It watches the input
+signal, exposes the current snapshot signal, and destroys its controller with
+the current `DestroyRef`.
+
+Next: [Angular adapter guide](/adapters/angular) or [Angular API reference](/reference/angular).

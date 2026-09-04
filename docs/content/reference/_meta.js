@@ -2,6 +2,7 @@ export default {
   "core": "Core",
   "react": "React",
   "vue": "Vue",
+  "angular": "Angular",
   "dom": "DOM",
   "test-kit": "Test kit",
   "standard-events": "Standard events",

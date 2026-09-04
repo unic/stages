@@ -1,0 +1,42 @@
+---
+title: Angular API reference
+description: Runtime and type contracts exported by @stages/angular for Angular v22.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
+# Angular v22 API reference
+
+`@stages/angular` is ESM, depends on the matching `@stages/core` release, and
+requires `@angular/core` v22. For usage guidance, see the
+[Angular adapter guide](/adapters/angular).
+
+## Runtime exports
+
+`injectStages(factory, input)` returns an `InjectStagesResult` and owns the
+created controller. `stagesSignal`, `fieldSignal`, `collectionSignal`, and
+`wizardSignal` return Angular `Signal` values and accept an optional
+`DestroyRef`. `StagesFieldComponent` is a standalone component with selector
+`stages-field` and inputs `controller`, `path`, and optional `id`.
+
+## Field contracts
+
+`AngularFieldBinding` and `AngularFieldView` have exact members `id`, `field`,
+`props`, and `emit`. `AngularFieldComponent<TValue, TProps>` is a component
+`Type` implementing that view. The adapter passes all four values as Angular
+inputs whenever it creates or updates a field view.
+
+`InjectStagesResult` contains `controller` and `snapshot`.
+
+## Collection contracts
+
+`AngularCollectionBinding` has `items`, `canAdd`, and `add`. Each
+`AngularCollectionItemBinding` has `key`, `index`, `value`, `address`,
+`canRemove`, `canMovePrevious`, `canMoveNext`, `fieldPath`, `remove`, and
+`moveTo`.
+
+## Wizard contracts
+
+`AngularWizardBinding` has `activeStage`, `stages`, `canPrevious`, `canNext`,
+`canGo`, `previous`, `next`, and `go`. Each `AngularWizardStageBinding` has
+`id`, `path`, `address`, `active`, `disabled`, and `validation`.

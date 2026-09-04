@@ -17,7 +17,7 @@ schema + controlled value/context/extensions
           ┌─────────┴─────────┐
  snapshots│                   │events
           ▼                   ▲
- DOM / React / Vue / custom adapter │
+ DOM / React / Vue / Angular / custom adapter │
           │                   │
           └────── rendered UI ┘
 
@@ -101,13 +101,14 @@ away readonly snapshot types.
 `@stages/core` has no runtime dependencies and imports only its own modules.
 `@stages/dom` and `@stages/test-kit` depend only on the matching core version.
 `@stages/react` depends on core and declares React 17 or newer as a peer.
-`@stages/vue` depends on core and declares Vue 3.3 or newer as a peer. Core's
-TypeScript library target is `ES2020` without DOM types, and the acceptance gate
+`@stages/vue` depends on core and declares Vue 3.3 or newer as a peer.
+`@stages/angular` depends on core and declares Angular core v22 as a peer.
+Core's TypeScript library target is `ES2020` without DOM types, and the acceptance gate
 rejects browser globals or non-relative runtime imports in core source.
 
 ## Evidence
 
-Package boundaries come from the five package manifests and
+Package boundaries come from the six package manifests and
 `scripts/check-v1-acceptance.mjs`. Normalization is implemented in
 `packages/core/src/schema.ts`; the per-controller state, reconciliation,
 transaction scheduler, and structural sharing are in

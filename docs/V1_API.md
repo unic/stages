@@ -17,6 +17,7 @@ export and major runtime concept to its v1 disposition.
 | `@stages/dom` | Dependency-free renderer and native field definitions | `@stages/core` |
 | `@stages/react` | React lifecycle and selector bindings | `@stages/core`; React is a peer |
 | `@stages/vue` | Vue Composition API lifecycle and selector bindings | `@stages/core`; Vue is a peer |
+| `@stages/angular` | Angular v22 signal lifecycle and selector bindings | `@stages/core`; Angular core is a peer |
 | `@stages/test-kit` | Framework adapter contract harness | `@stages/core` |
 
 All packages are ESM-only during the alpha and expose declarations through
@@ -351,6 +352,18 @@ Vue views receive an ID, field snapshot, resolved props, and
 `emit(name, payload?)`. Composition API subscriptions are released with their
 effect scope, and a controller created by `useStages()` is destroyed on scope
 disposal. Markup and accessibility policy remain application-owned.
+
+## Angular adapter
+
+- `injectStages(factory, input)` owns a controller and watches controlled signal updates;
+- `stagesSignal(controller)` exposes the whole snapshot;
+- `fieldSignal(controller, path)` selects one field;
+- `StagesFieldComponent` dynamically renders its registered Angular component;
+- `collectionSignal(controller, path)` exposes stable row commands;
+- `wizardSignal(controller, path)` exposes stage metadata and navigation.
+
+Subscriptions and owned controllers are released through `DestroyRef`.
+Application field components receive `id`, `field`, `props`, and `emit` inputs.
 
 ## Test-kit adapter harness
 

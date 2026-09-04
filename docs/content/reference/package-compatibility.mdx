@@ -13,7 +13,7 @@ Stages v1 packages fit a build and runtime environment.
 **Prerequisites:** [Installation](/start/installation) and the current
 [release status](/project/release-status).
 
-All five packages currently move as one `1.0.0-alpha.0` release unit. Keep
+All six packages currently move as one `1.0.0-alpha.0` release unit. Keep
 their versions exactly aligned; adapter packages declare an exact dependency
 on the matching core version.
 
@@ -24,12 +24,13 @@ on the matching core version.
 | `@stages/core` | None | ES2020 JavaScript | Framework-neutral application, browser, worker, or server code |
 | `@stages/react` | `@stages/core@1.0.0-alpha.0` | Peer `react@>=17.0.0` | A React renderer and lifecycle |
 | `@stages/vue` | `@stages/core@1.0.0-alpha.0` | Peer `vue@>=3.3.0` | A Vue renderer and lifecycle |
+| `@stages/angular` | `@stages/core@1.0.0-alpha.0` | Peer `@angular/core@>=22.0.0 <23.0.0` | An Angular signal renderer and lifecycle |
 | `@stages/dom` | `@stages/core@1.0.0-alpha.0` | Browser DOM globals | Direct native-DOM rendering |
 | `@stages/test-kit` | `@stages/core@1.0.0-alpha.0` | None | Adapter tests or framework-neutral harnesses |
 
 `@stages/core` and `@stages/test-kit` compile without DOM library types.
 `@stages/dom` requires `Document`, `Element`, `HTMLElement`, and focus APIs.
-`@stages/react` and `@stages/vue` are compiled with DOM types because their
+`@stages/react`, `@stages/vue`, and `@stages/angular` are compiled with DOM types because their
 field IDs and common application views target browser integrations, but core
 remains the portable state engine.
 
@@ -97,7 +98,7 @@ external-consumer and maintainer evidence listed in the release checklist.
 ## Evidence
 
 Versions, `type`, `exports`, `sideEffects`, exact core dependencies, and the
-React and Vue peer ranges are derived from the five `packages/*/package.json` files.
+React, Vue, and Angular peer ranges are derived from the six `packages/*/package.json` files.
 Runtime-library boundaries come from package TypeScript configurations and the
 architecture acceptance gate. Packed-consumer verification exercises the
 published entry-point shape offline.

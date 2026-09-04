@@ -39,20 +39,20 @@ repository tests rather than browser controls. They have no UI behavior to make
 interactive. The release gate verifies this page list and every live demo name
 so additions cannot silently disappear.
 
-`npm run check:docs:v1` derives runtime and type exports from all five package
+`npm run check:docs:v1` derives runtime and type exports from all six package
 entry points and compares them with the manifest. It also extracts diagnostic,
 serialization-error, and collection-rejection codes from source; checks exact
 snapshot, validation, persistence, and serialized-metadata members; checks
 all diagnostic members, severities, codes, and catalog columns; checks nested
-React, Vue, and DOM binding members; checks nested navigation routes; verifies displayed
+React, Vue, Angular, and DOM binding members; checks nested navigation routes; verifies displayed
 regions against strict TypeScript fixtures; and rejects known obsolete API
 names in normative pages. It also locks the 14-page recipe inventory and
 verifies every recipe's build-rendered fixture/region pair. The reference lock
-now derives 277 public interface members, 59 named object-union members, and 36
+now derives 310 public interface members, 59 named object-union members, and 36
 literal contract values; validates every internal and manifest anchor; requires
 version/review metadata on every reference page; checks bidirectional
 guide/reference navigation; and derives the package compatibility matrix from
-the five package manifests.
+the six package manifests.
 
 The manifest freezes exports and recognized code/event catalogs. Every current
 package export must have status `complete`; partial or missing records fail the

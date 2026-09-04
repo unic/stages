@@ -1,0 +1,28 @@
+# Angular v22 adapter
+
+`@stages/angular` provides signal-first bindings and a standalone dynamic field
+host without imposing a component library or visual design.
+
+- `injectStages(factory, input)` creates and owns a controller in the current
+  injection context.
+- `stagesSignal(controller)` exposes the complete snapshot.
+- `fieldSignal(controller, path)` derives one field snapshot.
+- `StagesFieldComponent` renders the Angular component stored in the field's
+  opaque `view` token and updates its inputs with `ComponentRef.setInput()`.
+- `collectionSignal(controller, path)` exposes stable rows and structural commands.
+- `wizardSignal(controller, path)` exposes stage metadata and navigation.
+
+Each signal helper accepts an optional explicit `DestroyRef`; when omitted it
+injects the current one. This makes subscriptions follow their component or
+service scope. `injectStages()` additionally destroys the controller.
+
+Application field components implement `AngularFieldView` and declare `id`,
+`field`, `props`, and `emit` inputs. `StagesFieldComponent` supports standalone
+and NgModule-declared component types through `ViewContainerRef`. Field markup,
+labels, validation announcements, and focus policy remain application-owned.
+
+Use each collection item's `key` in `@for (...; track item.key)`, and use its
+`fieldPath()` after row moves rather than constructing index paths yourself.
+
+See the runnable [`examples/angular`](https://github.com/unic/stages/tree/master/examples/angular)
+workspace wizard and the [exact API reference](/reference/angular).

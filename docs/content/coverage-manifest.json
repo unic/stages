@@ -140,6 +140,28 @@
       ]
     },
     {
+      "package": "@stages/angular",
+      "entrypoint": "packages/angular/src/index.ts",
+      "tests": ["packages/angular/test/angular.test.mjs"],
+      "defaultReference": "/reference/angular",
+      "exports": [
+        { "symbol": "StagesFieldComponent", "kind": "runtime", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "collectionSignal", "kind": "runtime", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "fieldSignal", "kind": "runtime", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "injectStages", "kind": "runtime", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "stagesSignal", "kind": "runtime", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "wizardSignal", "kind": "runtime", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularCollectionBinding", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularCollectionItemBinding", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularFieldBinding", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularFieldComponent", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularFieldView", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularWizardBinding", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "AngularWizardStageBinding", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" },
+        { "symbol": "InjectStagesResult", "kind": "type", "guide": "/adapters/angular", "reference": "/reference/angular", "status": "complete" }
+      ]
+    },
+    {
       "package": "@stages/dom",
       "entrypoint": "packages/dom/src/index.ts",
       "tests": ["packages/dom/test/dom.test.mjs"],
@@ -252,6 +274,14 @@
       "VueWizardStageBinding": ["id", "path", "address", "active", "disabled", "validation"],
       "VueWizardBinding": ["activeStage", "stages", "canPrevious", "canNext", "canGo", "previous", "next", "go"],
       "StagesFieldProps": ["controller", "path", "id"]
+    },
+    "angularMembers": {
+      "AngularFieldBinding": ["id", "field", "props", "emit"],
+      "InjectStagesResult": ["controller", "snapshot"],
+      "AngularCollectionItemBinding": ["key", "index", "value", "address", "canRemove", "canMovePrevious", "canMoveNext", "fieldPath", "remove", "moveTo"],
+      "AngularCollectionBinding": ["items", "canAdd", "add"],
+      "AngularWizardStageBinding": ["id", "path", "address", "active", "disabled", "validation"],
+      "AngularWizardBinding": ["activeStage", "stages", "canPrevious", "canNext", "canGo", "previous", "next", "go"]
     },
     "domMembers": {
       "DomFieldBinding": ["document", "id", "field", "emit"],

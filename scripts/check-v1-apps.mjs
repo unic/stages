@@ -11,6 +11,7 @@ const activeRoots = [
   "docs/content",
   "examples/react/src",
   "examples/vue/src",
+  "examples/angular/src",
   "examples/vanilla/src",
 ];
 const activeManifests = [
@@ -18,6 +19,7 @@ const activeManifests = [
   "docs/package.json",
   "examples/react/package.json",
   "examples/vue/package.json",
+  "examples/angular/package.json",
   "examples/vanilla/package.json",
 ];
 const activeStandaloneFiles = ["docs/mdx-components.jsx", "docs/next.config.mjs"];

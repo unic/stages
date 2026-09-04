@@ -21,13 +21,14 @@ state are helpful, but no Stages knowledge is required.
   prerelease version.
 </Callout>
 
-## The five packages
+## The six packages
 
 | Package | Responsibility | Does not own |
 | --- | --- | --- |
 | `@stages/core` | Schema evaluation, immutable proposals, validation, collection commands, wizard metadata, serialization | Markup, storage, routing, network requests |
 | `@stages/react` | React lifecycle and bindings for fields, collections, and wizards | A component library or visual design |
 | `@stages/vue` | Vue Composition API lifecycle and bindings for fields, collections, and wizards | A component library or visual design |
+| `@stages/angular` | Angular v22 signal lifecycle and bindings for fields, collections, and wizards | A component library or visual design |
 | `@stages/dom` | Accessible native field definitions, recursive mounting, and focus helpers | Application layout and custom-view accessibility |
 | `@stages/test-kit` | A small harness for exercising custom adapters | Framework-specific rendering |
 
@@ -52,6 +53,7 @@ controller modes.
 - New to Stages: [Mental model](/start/mental-model) → [Installation](/start/installation) → [First controller](/start/first-controller).
 - React application: continue to the [React quickstart](/start/react-quickstart).
 - Vue application: continue to the [Vue quickstart](/start/vue-quickstart).
+- Angular application: continue to the [Angular quickstart](/start/angular-quickstart).
 - Framework-free application: continue to the [DOM quickstart](/start/dom-quickstart).
 - Another framework: read [Custom adapters](/adapters/custom/contract) after the first-controller tutorial.
 - Existing 0.x application: start with [Migrating from 0.x](/migration/from-0.x).
