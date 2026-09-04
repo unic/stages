@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { validateSetup } from "./validate-setup.mjs";
+import { instructionFilesForPath, validateSetup } from "./validate-setup.mjs";
 
 const mappedDirectories = [
   "packages/core", "packages/dom", "packages/react", "packages/vue", "packages/angular", "packages/test-kit",
@@ -109,4 +109,18 @@ test("rejects an active application without an impact rule", async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("discovers instructions from root to each active subtree", () => {
+  const repository = path.resolve(import.meta.dirname, "../..");
+  assert.deepEqual(instructionFilesForPath(repository, "package.json"), ["AGENTS.md"]);
+  assert.deepEqual(instructionFilesForPath(repository, "packages/core/src/controller.ts"), [
+    "AGENTS.md", "packages/AGENTS.md", "packages/core/AGENTS.md",
+  ]);
+  assert.deepEqual(instructionFilesForPath(repository, "docs/content/index.mdx"), [
+    "AGENTS.md", "docs/AGENTS.md",
+  ]);
+  assert.deepEqual(instructionFilesForPath(repository, "studio/components/store.js"), [
+    "AGENTS.md", "studio/AGENTS.md",
+  ]);
 });

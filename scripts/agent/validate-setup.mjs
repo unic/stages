@@ -40,6 +40,21 @@ function filesRecursively(root, relativeDirectory = "") {
   return files;
 }
 
+export function instructionFilesForPath(root, relativeTarget = "") {
+  const target = relativeTarget.replaceAll("\\", "/").replace(/^\.\//, "");
+  const targetPath = path.join(root, target);
+  const targetDirectory = existsSync(targetPath) && statSync(targetPath).isDirectory()
+    ? target
+    : path.posix.dirname(target);
+  const segments = targetDirectory === "." ? [] : targetDirectory.split("/").filter(Boolean);
+  const instructions = [];
+  for (let depth = 0; depth <= segments.length; depth += 1) {
+    const candidate = path.posix.join(...segments.slice(0, depth), "AGENTS.md");
+    if (existsSync(path.join(root, candidate))) instructions.push(candidate);
+  }
+  return instructions;
+}
+
 function parseFrontmatter(source) {
   const match = source.match(/^---\s*\n([\s\S]*?)\n---(?:\s*\n|$)/);
   if (!match) return undefined;

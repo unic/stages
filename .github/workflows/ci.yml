@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-v1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            studio/package-lock.json
+            docs/package-lock.json
+            examples/shared/event-launch/package-lock.json
+            examples/vanilla/package-lock.json
+            examples/react/package-lock.json
+            examples/vue/package-lock.json
+            examples/angular/package-lock.json
+            examples/e2e/package-lock.json
+
+      - name: Install locked dependencies
+        run: |
+          npm ci
+          npm --prefix studio ci
+          npm --prefix docs ci
+          npm --prefix examples/shared/event-launch ci
+          npm --prefix examples/vanilla ci
+          npm --prefix examples/react ci
+          npm --prefix examples/vue ci
+          npm --prefix examples/angular ci
+          npm --prefix examples/e2e ci
+
+      - name: Install Chromium
+        working-directory: examples/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate agent setup
+        run: npm run check:agent-setup
+
+      - name: Run complete v1 release gate
+        run: npm run release:check:v1
