@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:v1": "node --test components/v1/*.test.mjs && vitest run"
+    "test:v1": "node --test components/v1/*.test.mjs && vitest run",
+    "bench:legacy": "vitest run --config vitest.benchmark.config.mjs"
   },
   "keywords": [
     "form",

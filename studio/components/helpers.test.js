@@ -28,4 +28,21 @@ describe("moveConfigField", () => {
     expect(moveConfigField(config, "group", "group.child")).toBe(false);
     expect(config[0].fields.map(({ id }) => id)).toEqual(["child"]);
   });
+
+  it("moves a field to each relative position used by editor commands", () => {
+    const config = [field("first"), field("second"), field("third")];
+
+    expect(moveConfigField(config, "third", "first")).toBe(true);
+    expect(config.map(({ id }) => id)).toEqual(["third", "first", "second"]);
+    expect(moveConfigField(config, "third", "second+")).toBe(true);
+    expect(config.map(({ id }) => id)).toEqual(["first", "second", "third"]);
+  });
+
+  it("leaves the source unchanged when a path cannot be resolved", () => {
+    const config = [field("first"), field("second")];
+    const before = structuredClone(config);
+
+    expect(moveConfigField(config, "missing", "second")).toBe(false);
+    expect(config).toEqual(before);
+  });
 });

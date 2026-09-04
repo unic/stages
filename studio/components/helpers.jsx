@@ -149,7 +149,6 @@ export const downloadFile = ({ data, fileName, fileType }) => {
   a.download = fileName;
   a.href = window.URL.createObjectURL(blob);
   const clickEvt = new MouseEvent("click", {
-    view: window,
     bubbles: true,
     cancelable: true,
   });
