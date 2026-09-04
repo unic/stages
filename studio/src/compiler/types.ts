@@ -1,5 +1,5 @@
 import type { DataPath, NodeAddress, StagesSchema } from "@stages/core";
-import type { JsonObject, StudioNode, Uid } from "../document";
+import type { JsonObject, StudioFormDocument, StudioNode, Uid } from "../document";
 import type {
   StudioBlockKey,
   StudioFieldRegistry,
@@ -20,12 +20,18 @@ export interface StudioDiagnostic {
   readonly runtimePath?: DataPath;
   readonly runtimeAddress?: NodeAddress;
   readonly helpId?: string;
+  readonly fragmentDefinitionUid?: Uid;
+  readonly fragmentNodeUid?: Uid;
+  readonly fragmentInstanceUids?: readonly Uid[];
 }
 
 export interface StudioSourceMapEntry {
   readonly uid: Uid;
   readonly runtimePath: DataPath;
   readonly runtimeAddress: NodeAddress;
+  readonly fragmentDefinitionUid?: Uid;
+  readonly fragmentNodeUid?: Uid;
+  readonly fragmentInstanceUids?: readonly Uid[];
 }
 
 export interface StudioSourceMap {
@@ -42,7 +48,7 @@ interface StudioRenderNodeBase {
   readonly children: readonly StudioRenderNode[];
 }
 
-export type StudioRuntimeRenderKind = Exclude<StudioNode["kind"], "block">;
+export type StudioRuntimeRenderKind = Exclude<StudioNode["kind"], "block" | "fragment">;
 
 export interface StudioRuntimeRenderNode<TKind extends StudioRuntimeRenderKind = StudioRuntimeRenderKind> extends StudioRenderNodeBase {
   readonly kind: TKind;
@@ -67,6 +73,8 @@ export interface StudioRenderPlan {
 }
 
 export interface CompiledStudioForm {
+  /** Ephemeral ordinary-node graph used by the preview after fragment expansion. */
+  readonly expandedForm: StudioFormDocument;
   readonly schema: StagesSchema<unknown, StudioFieldRegistry, unknown>;
   readonly fields: StudioFieldRegistry;
   readonly renderPlan: StudioRenderPlan;

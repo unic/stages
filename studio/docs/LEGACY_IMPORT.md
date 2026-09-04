@@ -1,6 +1,6 @@
 # Legacy Studio import
 
-Status: implemented for Session 05
+Status: implemented through Session 15
 
 Date: 2026-09-04
 
@@ -22,13 +22,15 @@ fieldset encodings. It preserves:
 - supported visibility and computed-value expressions as a declarative AST;
 - current preview data as a named scenario, separately from form structure;
   and
-- fieldset provenance as migration metadata after expansion into local nodes.
+- fieldset provenance as migration metadata on linked fragment instances.
 
 The explicit fieldset form uses `{ type: "fieldset", fieldset: "address" }`.
 The POC form uses `{ type: "address" }`, where the type names a fieldset. Both
-expand deterministically and remove the duplicated wrapper group found in the
-frozen definitions. Fragment linking is deferred to the explicit fragment
-model; import never invents a live link.
+create one explicit fragment definition per legacy fieldset, remove the
+duplicated wrapper group found in frozen definitions, and create linked
+instances for every use. Multiple legacy uses therefore share one imported
+definition while retaining their local runtime IDs and observed encoding as
+migration provenance.
 
 ## Expression safety
 

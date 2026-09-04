@@ -7,7 +7,7 @@ export interface StudioNodeClipboard {
   readonly sourceFormUid: Uid;
   readonly rootUids: readonly Uid[];
   readonly nodes: Readonly<Record<Uid, StudioNode>>;
-  /** Reserved for fragment/resource references introduced by later document slices. */
+  /** External reusable resources required before a paste can commit. */
   readonly dependencies: readonly Uid[];
 }
 
@@ -69,13 +69,17 @@ export function copyStudioNodes(
     if (!nestedSelection) { roots.push(uid); visit(uid); }
   }
   const nodes = {} as Record<Uid, StudioNode>;
+  const dependencies = new Set<Uid>();
   for (const uid of included) {
     const node = form.nodes[uid];
-    if (node) nodes[uid] = structuredClone(node);
+    if (node) {
+      nodes[uid] = structuredClone(node);
+      if (node.kind === "fragment") dependencies.add(node.fragmentUid);
+    }
   }
   return {
     ok: true,
-    value: { sourceFormUid: formUid, rootUids: roots, nodes, dependencies: [] },
+    value: { sourceFormUid: formUid, rootUids: roots, nodes, dependencies: [...dependencies] },
   };
 }
 

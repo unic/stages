@@ -322,6 +322,32 @@ describe("StudioEditorPage interactions", () => {
     expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
   });
 
+  it("creates, reuses, overrides, edits, and detaches linked fragments", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
+    await user.click(screen.getByRole("button", { name: "Create fragment from selection" }));
+    await screen.findByText("Fragment 1 created");
+    expect(screen.getByText(/edits below update every linked instance/)).toBeVisible();
+
+    const definitionName = screen.getByRole("textbox", { name: "Definition name" });
+    await user.clear(definitionName);
+    await user.type(definitionName, "Contact");
+    await user.click(screen.getByRole("button", { name: "Insert Contact" }));
+    await screen.findByText("Contact inserted");
+    const override = screen.getByRole("textbox", { name: "Override First field label" });
+    await user.type(override, "Primary contact");
+    expect(screen.getByRole("textbox", { name: "Primary contact" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Detach instance" }));
+    await screen.findByText("Contact detached");
+    expect(document.querySelector('[data-kind="fragment"][aria-selected="true"]')).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Primary contact" })).toBeVisible();
+  });
+
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {
     const firstConfig = structuredClone(editorConfig);
     const secondConfig = structuredClone(editorConfig);

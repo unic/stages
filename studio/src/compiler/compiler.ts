@@ -1,6 +1,6 @@
 import type { CollectionVariantConfig, DataPath, NodeAddress, NodeConfig, StageNodeConfig } from "@stages/core";
-import type { JsonObject, JsonValue, StudioFormDocument, StudioNode, Uid } from "../document";
-import { isSafeObjectKey, isStudioVariantCollection } from "../document";
+import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioNode, Uid } from "../document";
+import { isSafeObjectKey, isStudioVariantCollection, toUid } from "../document";
 import {
   STUDIO_RUNTIME_FIELDS,
   studioBlockDefinition,
@@ -26,6 +26,104 @@ interface CompileContext {
   readonly uidByAddress: Map<string, Uid>;
   readonly visited: Set<Uid>;
   readonly visiting: Set<Uid>;
+  readonly provenance: ReadonlyMap<Uid, FragmentProvenance>;
+}
+
+interface FragmentProvenance {
+  readonly fragmentDefinitionUid: Uid;
+  readonly fragmentNodeUid?: Uid;
+  readonly fragmentInstanceUids: readonly Uid[];
+}
+
+interface ExpandedFragments {
+  readonly form: StudioFormDocument;
+  readonly provenance: ReadonlyMap<Uid, FragmentProvenance>;
+  readonly diagnostics: readonly StudioDiagnostic[];
+}
+
+function virtualFragmentUid(instanceUids: readonly Uid[], nodeUid: Uid): Uid {
+  const source = `${instanceUids.join("_")}__${nodeUid}`;
+  if (source.length <= 128) return toUid(source);
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
+  return toUid(`${source.slice(0, 118)}_${(hash >>> 0).toString(36)}`.slice(0, 128));
+}
+
+function remapNodeChildren(node: StudioNode, uidMap: ReadonlyMap<Uid, Uid>): StudioNode {
+  const remap = (uids: readonly Uid[]) => uids.map((uid) => uidMap.get(uid) ?? uid);
+  if (node.kind === "wizard") return { ...node, stageUids: remap(node.stageUids), ...(node.initialStageUid === undefined ? {} : { initialStageUid: uidMap.get(node.initialStageUid) ?? node.initialStageUid }) };
+  if (node.kind === "collection") return isStudioVariantCollection(node)
+    ? { ...node, variantUids: remap(node.variantUids), ...(node.initialVariantUid === undefined ? {} : { initialVariantUid: uidMap.get(node.initialVariantUid) ?? node.initialVariantUid }) }
+    : { ...node, childUids: remap(node.childUids) };
+  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return { ...node, childUids: remap(node.childUids) };
+  return node;
+}
+
+/** Purely expands linked resources to the ordinary node graph consumed by core. */
+export function expandStudioFragments(
+  form: StudioFormDocument,
+  fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {},
+): ExpandedFragments {
+  const nodes: Record<Uid, StudioNode> = { ...form.nodes };
+  const allocated = new Set<Uid>(Object.keys(nodes) as Uid[]);
+  const provenance = new Map<Uid, FragmentProvenance>();
+  const diagnostics: StudioDiagnostic[] = [];
+  const expandInstance = (instance: StudioFragmentInstanceNode, instanceUids: readonly Uid[], active: readonly Uid[]): StudioNode => {
+    const definition = fragments[instance.fragmentUid];
+    const baseProvenance = { fragmentDefinitionUid: instance.fragmentUid, fragmentInstanceUids: instanceUids };
+    provenance.set(instance.uid, baseProvenance);
+    if (!definition || active.includes(instance.fragmentUid)) {
+      diagnostics.push({
+        code: definition ? "compiler.fragment-cycle" : "compiler.missing-fragment",
+        severity: "error",
+        source: "compiler",
+        formUid: form.uid,
+        entityUid: instance.uid,
+        fragmentDefinitionUid: instance.fragmentUid,
+        fragmentInstanceUids: instanceUids,
+        propertyPath: ["nodes", instance.uid, "fragmentUid"],
+        message: definition
+          ? `Fragment cycle reaches ${instance.fragmentUid} through instance ${instance.uid}.`
+          : `Fragment ${instance.fragmentUid} used by ${instance.uid} does not exist.`,
+      });
+      return { ...instance, kind: "group", childUids: [] };
+    }
+    const uidMap = new Map<Uid, Uid>();
+    for (const sourceUid of Object.keys(definition.nodes) as Uid[]) {
+      const base = virtualFragmentUid(instanceUids, sourceUid);
+      let uid = base;
+      let suffix = 1;
+      while (allocated.has(uid)) uid = toUid(`${base.slice(0, 122)}_${++suffix}`);
+      allocated.add(uid);
+      uidMap.set(sourceUid, uid);
+    }
+    for (const sourceNode of Object.values(definition.nodes)) {
+      const uid = uidMap.get(sourceNode.uid)!;
+      const override = instance.overrides?.[sourceNode.uid];
+      let cloned = remapNodeChildren({
+        ...sourceNode,
+        uid,
+        ...(override?.runtimeId === undefined || sourceNode.kind === "block" ? {} : { runtimeId: override.runtimeId }),
+        ...(override?.props === undefined || (sourceNode.kind !== "field" && sourceNode.kind !== "block") ? {} : { props: { ...sourceNode.props, ...override.props } }),
+        ...(override?.presentation === undefined ? {} : { presentation: { ...sourceNode.presentation, ...override.presentation } }),
+      }, uidMap);
+      const nestedInstances = [...instanceUids, sourceNode.uid];
+      provenance.set(uid, { ...baseProvenance, fragmentNodeUid: sourceNode.uid });
+      if (cloned.kind === "fragment") cloned = expandInstance(cloned, nestedInstances, [...active, instance.fragmentUid]);
+      nodes[uid] = cloned;
+    }
+    return {
+      uid: instance.uid,
+      kind: "group",
+      runtimeId: instance.runtimeId,
+      childUids: definition.rootNodeUids.map((uid) => uidMap.get(uid)!).filter(Boolean),
+      ...(instance.presentation === undefined ? {} : { presentation: instance.presentation }),
+      ...(instance.behavior === undefined ? {} : { behavior: instance.behavior }),
+      ...(instance.legacy === undefined ? {} : { legacy: instance.legacy }),
+    };
+  };
+  for (const node of Object.values(form.nodes)) if (node.kind === "fragment") nodes[node.uid] = expandInstance(node, [node.uid], []);
+  return { form: { ...form, nodes }, provenance, diagnostics };
 }
 
 interface CompiledNode {
@@ -41,12 +139,14 @@ function diagnostic(
   message: string,
   details: Omit<StudioDiagnostic, "code" | "message" | "severity" | "source" | "formUid"> = {},
 ): void {
+  const provenance = details.entityUid === undefined ? undefined : context.provenance.get(details.entityUid);
   context.diagnostics.push({
     code,
     severity: "error",
     source: "compiler",
     message,
     formUid: context.form.uid,
+    ...provenance,
     ...details,
   });
 }
@@ -57,7 +157,7 @@ function recordSource(
   runtimePath: DataPath,
   runtimeAddress: NodeAddress,
 ): void {
-  const entry = Object.freeze({ uid, runtimePath, runtimeAddress });
+  const entry = Object.freeze({ uid, runtimePath, runtimeAddress, ...context.provenance.get(uid) });
   context.byUid.set(uid, entry);
   context.uidByPath.set(studioRuntimePathKey(runtimePath), uid);
   context.uidByAddress.set(studioRuntimeAddressKey(runtimeAddress), uid);
@@ -208,7 +308,7 @@ function compileNode(
   const variant = node.kind === "variant";
   const runtimePath: DataPath = variant ? parentPath : [...parentPath, node.runtimeId];
   const runtimeAddress: NodeAddress = variant ? parentAddress : [...parentAddress, { kind: "node", id: node.runtimeId }];
-  if (variant) context.byUid.set(node.uid, Object.freeze({ uid: node.uid, runtimePath, runtimeAddress }));
+  if (variant) context.byUid.set(node.uid, Object.freeze({ uid: node.uid, runtimePath, runtimeAddress, ...context.provenance.get(node.uid) }));
   else recordSource(context, node.uid, runtimePath, runtimeAddress);
   unsupportedBehavior(context, node, runtimePath, runtimeAddress);
 
@@ -337,6 +437,11 @@ function compileNode(
         };
     return { schema, render };
   }
+  if (node.kind === "fragment") {
+    context.visiting.delete(node.uid);
+    diagnostic(context, "compiler.unexpanded-fragment", `Fragment instance ${node.uid} could not be expanded.`, { entityUid: node.uid });
+    return undefined;
+  }
   const initialStageNode = node.initialStageUid === undefined ? undefined : context.form.nodes[node.initialStageUid];
   const initialStage = initialStageNode?.kind === "stage" ? initialStageNode.runtimeId : undefined;
   return {
@@ -364,7 +469,7 @@ function emptyScope(form: StudioFormDocument, uids: readonly Uid[]): JsonObject 
       value[node.runtimeId] = emptyScope(form, node.childUids);
     } else if (node.kind === "wizard") {
       value[node.runtimeId] = emptyScope(form, node.stageUids);
-    } else {
+    } else if (node.kind === "collection") {
       const rows: JsonObject[] = [];
       for (let index = 0; index < (node.initialRows ?? 0); index += 1) {
         let row: JsonObject;
@@ -384,22 +489,25 @@ function emptyScope(form: StudioFormDocument, uids: readonly Uid[]): JsonObject 
 }
 
 /** Builds explicit owner-controlled scenario data; it is never installed as a schema default. */
-export function createEmptyStudioScenarioValue(form: StudioFormDocument): JsonObject {
-  return emptyScope(form, form.rootNodeUids);
+export function createEmptyStudioScenarioValue(form: StudioFormDocument, fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {}): JsonObject {
+  const expanded = expandStudioFragments(form, fragments).form;
+  return emptyScope(expanded, expanded.rootNodeUids);
 }
 
-export function compileStudioForm(form: StudioFormDocument): CompiledStudioForm {
+export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {}): CompiledStudioForm {
+  const expanded = expandStudioFragments(form, fragments);
   const context: CompileContext = {
-    form,
-    diagnostics: [],
+    form: expanded.form,
+    diagnostics: [...expanded.diagnostics],
     byUid: new Map(),
     uidByPath: new Map(),
     uidByAddress: new Map(),
     visited: new Set(),
     visiting: new Set(),
+    provenance: expanded.provenance,
   };
-  const nodes = compileSiblings(context, form.rootNodeUids, [], []);
-  for (const uid of Object.keys(form.nodes) as Uid[]) {
+  const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);
+  for (const uid of Object.keys(expanded.form.nodes) as Uid[]) {
     if (!context.visited.has(uid)) diagnostic(
       context,
       "compiler.unreachable-node",
@@ -408,6 +516,7 @@ export function compileStudioForm(form: StudioFormDocument): CompiledStudioForm 
     );
   }
   return {
+    expandedForm: expanded.form,
     schema: {
       id: form.runtime.schemaId,
       version: form.runtime.schemaVersion,
@@ -415,8 +524,8 @@ export function compileStudioForm(form: StudioFormDocument): CompiledStudioForm 
     },
     fields: STUDIO_RUNTIME_FIELDS,
     renderPlan: {
-      formUid: form.uid,
-      theme: studioTheme(form.settings["theme"]),
+      formUid: expanded.form.uid,
+      theme: studioTheme(expanded.form.settings["theme"]),
       nodes: nodes.map((node) => node.render),
     },
     sourceMap: {

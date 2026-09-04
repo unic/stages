@@ -39,12 +39,18 @@ describe("legacy Studio project importer", () => {
       if (!result.ok) continue;
       const form = result.value.forms[toUid("legacy_form")]!;
       const root = form.nodes[form.rootNodeUids[0]!]!;
-      expect(root.kind).toBe("group");
+      expect(root.kind).toBe("fragment");
       expect(root.legacy).toEqual(expect.objectContaining({
         fieldsetId: "address",
         fieldsetEncoding: encoding === "explicit" ? "explicit" : "poc-type",
       }));
-      if (root.kind === "group") expect(root.childUids).toHaveLength(1);
+      if (root.kind === "fragment") {
+        const fragment = result.value.fragments[root.fragmentUid];
+        expect(fragment?.rootNodeUids).toHaveLength(1);
+        expect(Object.values(fragment?.nodes ?? {})).toEqual(expect.arrayContaining([
+          expect.objectContaining({ kind: "field" }),
+        ]));
+      }
     }
   });
 

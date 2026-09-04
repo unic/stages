@@ -16,6 +16,8 @@ export const DEFAULT_STUDIO_DOCUMENT_LIMITS: StudioDocumentLimits = Object.freez
   maxNodesPerForm: 1_000,
   maxNodesPerProject: 10_000,
   maxScenariosPerForm: 50,
+  maxFragments: 100,
+  maxNodesPerFragment: 1_000,
   maxDepth: 50,
   maxJsonDepth: 100,
 });
@@ -287,7 +289,7 @@ export function validateStudioProject(
   if (!isPlainRecord(projectValue)) failures.push(issue("document.invalid-project", "project must be an object.", ["project"]));
   if (!isPlainRecord(formsValue)) failures.push(issue("document.invalid-forms", "forms must be a UID-keyed object.", ["forms"]));
   const fragments = own(input, "fragments");
-  if (!isPlainRecord(fragments) || Object.keys(fragments).length > 0) failures.push(issue("document.unsupported-fragments", "Document v1 reserves fragments as an empty object.", ["fragments"]));
+  if (!isPlainRecord(fragments)) failures.push(issue("document.invalid-fragments", "fragments must be a UID-keyed object.", ["fragments"]));
   if (!isPlainRecord(own(input, "resources"))) failures.push(issue("document.invalid-resources", "resources must be a JSON object.", ["resources"]));
 
   const uids = new Map<string, DiagnosticPath>();
@@ -377,6 +379,11 @@ export function validateStudioProject(
               || (own(navigation, "nonLinear") !== undefined && typeof own(navigation, "nonLinear") !== "boolean"))) failures.push(issue("document.invalid-navigation", "navigation flags must be booleans.", [...nodePath, "navigation"], details));
           } else if (kind === "variant") {
             if (!Array.isArray(own(node, "childUids"))) failures.push(issue("document.invalid-children", "variant childUids must be an array.", [...nodePath, "childUids"], details));
+          } else if (kind === "fragment") {
+            const fragmentUid = own(node, "fragmentUid");
+            if (!isUid(fragmentUid)) failures.push(issue("document.invalid-fragment-reference", "fragmentUid must be a safe Studio UID.", [...nodePath, "fragmentUid"], details));
+            const overrides = own(node, "overrides");
+            if (overrides !== undefined && !isPlainRecord(overrides)) failures.push(issue("document.invalid-fragment-overrides", "Fragment overrides must be a UID-keyed object.", [...nodePath, "overrides"], details));
           } else if (kind === "field" || kind === "block") {
             const definition = own(node, "definition");
             if (!isPlainRecord(definition) || typeof own(definition, "key") !== "string" || !Number.isSafeInteger(own(definition, "version")) || (own(definition, "version") as number) < 1) {
@@ -411,6 +418,89 @@ export function validateStudioProject(
       if (!Array.isArray(own(formUnknown, "rootNodeUids"))) failures.push(issue("document.invalid-roots", "rootNodeUids must be an array.", [...formPath, "rootNodeUids"], { formUid }));
       if (!isPlainRecord(own(formUnknown, "settings"))) failures.push(issue("document.invalid-settings", "settings must be a JSON object.", [...formPath, "settings"], { formUid }));
       checkGraph(formUnknown, formUid, formPath, limits.maxDepth, failures);
+    }
+  }
+  if (isPlainRecord(fragments)) {
+    const fragmentEntries = Object.entries(fragments);
+    if (fragmentEntries.length > limits.maxFragments) failures.push(issue("document.fragment-limit", `Project exceeds the ${limits.maxFragments}-fragment limit.`, ["fragments"]));
+    const fragmentUids = new Set(fragmentEntries.map(([key]) => key));
+    const checkInstance = (node: Record<string, unknown>, nodePath: DiagnosticPath, entityUid?: Uid): void => {
+      const target = own(node, "fragmentUid");
+      const definition = typeof target === "string" ? fragments[target] : undefined;
+      if (!isUid(target) || !fragmentUids.has(target)) failures.push(issue("document.unresolved-fragment", `Fragment reference ${JSON.stringify(target)} does not resolve.`, [...nodePath, "fragmentUid"], entityUid ? { entityUid } : {}));
+      const overrides = own(node, "overrides");
+      if (overrides === undefined) return;
+      if (!isPlainRecord(overrides)) { failures.push(issue("document.invalid-fragment-overrides", "Fragment overrides must be a UID-keyed object.", [...nodePath, "overrides"], entityUid ? { entityUid } : {})); return; }
+      const definitionNodes = isPlainRecord(definition) && isPlainRecord(definition["nodes"]) ? definition["nodes"] : undefined;
+      for (const [sourceUid, override] of Object.entries(overrides)) {
+        const path = [...nodePath, "overrides", sourceUid];
+        if (!definitionNodes || !Object.prototype.hasOwnProperty.call(definitionNodes, sourceUid)) failures.push(issue("document.unresolved-fragment-override", `Override target ${sourceUid} does not exist in fragment ${String(target)}.`, path, entityUid ? { entityUid } : {}));
+        if (!isPlainRecord(override) || Object.keys(override).some((key) => key !== "runtimeId" && key !== "props" && key !== "presentation")) { failures.push(issue("document.invalid-fragment-overrides", "An override may contain runtimeId, props, and presentation only.", path, entityUid ? { entityUid } : {})); continue; }
+        const runtimeId = own(override, "runtimeId");
+        if (runtimeId !== undefined && (typeof runtimeId !== "string" || runtimeId.length === 0 || runtimeId.length > 128 || !isSafeObjectKey(runtimeId))) failures.push(issue("document.invalid-runtime-id", "Override runtimeId must be a non-empty safe key of at most 128 characters.", [...path, "runtimeId"], entityUid ? { entityUid } : {}));
+        if (own(override, "props") !== undefined && !isPlainRecord(own(override, "props"))) failures.push(issue("document.invalid-fragment-overrides", "Override props must be an object.", [...path, "props"], entityUid ? { entityUid } : {}));
+        if (own(override, "presentation") !== undefined && !isPlainRecord(own(override, "presentation"))) failures.push(issue("document.invalid-fragment-overrides", "Override presentation must be an object.", [...path, "presentation"], entityUid ? { entityUid } : {}));
+      }
+    };
+    for (const [fragmentKey, fragmentUnknown] of fragmentEntries) {
+      const fragmentPath: DiagnosticPath = ["fragments", fragmentKey];
+      if (!isPlainRecord(fragmentUnknown)) { failures.push(issue("document.invalid-fragment", "Fragment must be an object.", fragmentPath)); continue; }
+      const fragmentUidValue = own(fragmentUnknown, "uid");
+      if (!recordUid(failures, uids, fragmentUidValue, [...fragmentPath, "uid"])) continue;
+      const fragmentUid = fragmentUidValue;
+      if (fragmentKey !== fragmentUid) failures.push(issue("document.uid-key-mismatch", `Fragment key ${fragmentKey} does not match uid ${fragmentUid}.`, fragmentPath, { entityUid: fragmentUid }));
+      if (typeof own(fragmentUnknown, "title") !== "string") failures.push(issue("document.invalid-title", "Fragment title must be a string.", [...fragmentPath, "title"], { entityUid: fragmentUid }));
+      if (!Number.isSafeInteger(own(fragmentUnknown, "version")) || (own(fragmentUnknown, "version") as number) < 1) failures.push(issue("document.invalid-fragment-version", "Fragment version must be a positive integer.", [...fragmentPath, "version"], { entityUid: fragmentUid }));
+      const parameters = own(fragmentUnknown, "parameters");
+      if (!Array.isArray(parameters) || parameters.some((parameter) => typeof parameter !== "string" || !isSafeObjectKey(parameter))) failures.push(issue("document.invalid-fragment-parameters", "Fragment parameters must be safe string keys.", [...fragmentPath, "parameters"], { entityUid: fragmentUid }));
+      const nodes = own(fragmentUnknown, "nodes");
+      if (!isPlainRecord(nodes)) failures.push(issue("document.invalid-nodes", "Fragment nodes must be a UID-keyed object.", [...fragmentPath, "nodes"], { entityUid: fragmentUid }));
+      else {
+        const entries = Object.entries(nodes);
+        totalNodes += entries.length;
+        if (entries.length > limits.maxNodesPerFragment) failures.push(issue("document.fragment-node-limit", `Fragment exceeds the ${limits.maxNodesPerFragment}-node limit.`, [...fragmentPath, "nodes"], { entityUid: fragmentUid }));
+        for (const [nodeKey, nodeUnknown] of entries) {
+          const nodePath = [...fragmentPath, "nodes", nodeKey];
+          if (!isPlainRecord(nodeUnknown)) { failures.push(issue("document.invalid-node", "Node must be an object.", nodePath, { entityUid: fragmentUid })); continue; }
+          const nodeUid = own(nodeUnknown, "uid");
+          if (recordUid(failures, uids, nodeUid, [...nodePath, "uid"]) && nodeKey !== nodeUid) failures.push(issue("document.uid-key-mismatch", `Node key ${nodeKey} does not match uid ${nodeUid}.`, nodePath, { entityUid: nodeUid }));
+          const kind = own(nodeUnknown, "kind");
+          const runtimeId = own(nodeUnknown, "runtimeId");
+          if (kind !== "block" && (typeof runtimeId !== "string" || runtimeId.length === 0 || runtimeId.length > 128 || !isSafeObjectKey(runtimeId))) failures.push(issue("document.invalid-runtime-id", "runtimeId must be a non-empty safe key of at most 128 characters.", [...nodePath, "runtimeId"], isUid(nodeUid) ? { entityUid: nodeUid } : {}));
+          if (kind === "fragment") {
+            checkInstance(nodeUnknown, nodePath, isUid(nodeUid) ? nodeUid : undefined);
+          } else if (kind === "field" || kind === "block") {
+            const definition = own(nodeUnknown, "definition");
+            if (!isPlainRecord(definition) || typeof own(definition, "key") !== "string" || !Number.isSafeInteger(own(definition, "version"))) failures.push(issue("document.invalid-definition", `${kind} definition requires a key and positive integer version.`, [...nodePath, "definition"]));
+            if (!isPlainRecord(own(nodeUnknown, "props"))) failures.push(issue("document.invalid-props", `${kind} props must be a JSON object.`, [...nodePath, "props"]));
+          } else if (kind === "wizard") {
+            if (!Array.isArray(own(nodeUnknown, "stageUids"))) failures.push(issue("document.invalid-stages", "Wizard stageUids must be an array.", [...nodePath, "stageUids"]));
+          } else if (kind === "group" || kind === "collection" || kind === "stage" || kind === "variant") {
+            const childKey = kind === "collection" && Object.prototype.hasOwnProperty.call(nodeUnknown, "variantUids") ? "variantUids" : "childUids";
+            if (!Array.isArray(own(nodeUnknown, childKey))) failures.push(issue("document.invalid-children", `${kind} ${childKey} must be an array.`, [...nodePath, childKey]));
+          } else failures.push(issue("document.unknown-node-kind", "Unknown node kind.", [...nodePath, "kind"]));
+        }
+      }
+      if (!Array.isArray(own(fragmentUnknown, "rootNodeUids"))) failures.push(issue("document.invalid-roots", "Fragment rootNodeUids must be an array.", [...fragmentPath, "rootNodeUids"], { entityUid: fragmentUid }));
+      checkGraph(fragmentUnknown, fragmentUid, fragmentPath, limits.maxDepth, failures);
+    }
+    const visitFragment = (uid: string, path: string[]): void => {
+      if (path.includes(uid)) {
+        failures.push(issue("document.fragment-cycle", `Fragment graph contains a cycle through ${uid}.`, ["fragments", uid], isUid(uid) ? { entityUid: uid } : {}));
+        return;
+      }
+      const fragment = fragments[uid];
+      if (!isPlainRecord(fragment) || !isPlainRecord(fragment["nodes"])) return;
+      for (const node of Object.values(fragment["nodes"])) {
+        if (isPlainRecord(node) && node["kind"] === "fragment" && typeof node["fragmentUid"] === "string") visitFragment(node["fragmentUid"], [...path, uid]);
+      }
+    };
+    for (const uid of fragmentUids) visitFragment(uid, []);
+    if (isPlainRecord(formsValue)) for (const [formKey, formUnknown] of Object.entries(formsValue)) {
+      if (!isPlainRecord(formUnknown) || !isPlainRecord(formUnknown["nodes"])) continue;
+      for (const [nodeKey, nodeUnknown] of Object.entries(formUnknown["nodes"])) if (isPlainRecord(nodeUnknown) && nodeUnknown["kind"] === "fragment") {
+        checkInstance(nodeUnknown, ["forms", formKey, "nodes", nodeKey], isUid(nodeKey) ? nodeKey : undefined);
+      }
     }
   }
   if (totalNodes > limits.maxNodesPerProject) failures.push(issue("document.project-node-limit", `Project exceeds the ${limits.maxNodesPerProject}-node limit.`, ["forms"]));

@@ -79,6 +79,33 @@ describe("Studio document validation", () => {
     expectCode(cyclic, "document.node-cycle");
   });
 
+  it("validates linked fragment resources, references, and dependency cycles", () => {
+    const input = validProject();
+    const forms = input["forms"] as Record<string, Record<string, unknown>>;
+    const form = forms["form_event"]!;
+    form["rootNodeUids"] = ["fragment_instance"];
+    form["nodes"] = {
+      fragment_instance: { uid: "fragment_instance", kind: "fragment", runtimeId: "billing", fragmentUid: "fragment_address" },
+    };
+    input["fragments"] = {
+      fragment_address: {
+        uid: "fragment_address", title: "Address", version: 1, parameters: [],
+        rootNodeUids: ["fragment_street"],
+        nodes: { fragment_street: { uid: "fragment_street", kind: "field", runtimeId: "street", definition: { key: "text", version: 1 }, props: {} } },
+      },
+    };
+    expect(validateStudioProject(input, { supportedDefinitions: definitions }).ok).toBe(true);
+
+    (form["nodes"] as Record<string, Record<string, unknown>>)["fragment_instance"]!["fragmentUid"] = "fragment_missing";
+    expectCode(input, "document.unresolved-fragment");
+
+    (form["nodes"] as Record<string, Record<string, unknown>>)["fragment_instance"]!["fragmentUid"] = "fragment_address";
+    const fragment = (input["fragments"] as Record<string, Record<string, unknown>>)["fragment_address"]!;
+    fragment["rootNodeUids"] = ["fragment_recursive"];
+    fragment["nodes"] = { fragment_recursive: { uid: "fragment_recursive", kind: "fragment", runtimeId: "recursive", fragmentUid: "fragment_address" } };
+    expectCode(input, "document.fragment-cycle");
+  });
+
   it("enforces depth, node, scenario, byte, and definition-version limits", () => {
     expectCode(validProject(), "document.form-node-limit", { limits: { maxNodesPerForm: 1 } });
     expectCode(validProject(), "document.project-node-limit", { limits: { maxNodesPerProject: 1 } });

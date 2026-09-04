@@ -44,6 +44,11 @@ Execution status:
   [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx)
   author, compile, initialize, and preview groups, homogeneous and discriminated
   collections, variants, wizards, and ordered stages through public v1 contracts
+- Session 15 completed: [`../studio/src/compiler/compiler.ts`](../studio/src/compiler/compiler.ts),
+  [`../studio/src/commands/engine.ts`](../studio/src/commands/engine.ts), and
+  [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx)
+  provide explicit reusable definitions, linked instances, declared overrides,
+  provenance-aware compilation, legacy-fieldset migration, and detachment
 
 Primary references:
 

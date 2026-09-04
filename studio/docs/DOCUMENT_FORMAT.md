@@ -1,6 +1,6 @@
 # Studio project document v1
 
-Status: implemented initial contract for Session 04
+Status: implemented through Session 15
 
 Date: 2026-09-04
 
@@ -11,12 +11,13 @@ The declarations and executable contract live in `studio/src/document/`.
 ## Minimal v1 shape
 
 The envelope identifies itself with `format: "stages-studio"` and
-`formatVersion: 1`. It contains project metadata, normalized forms, reserved
+`formatVersion: 1`. It contains project metadata, normalized forms, reusable
 fragment storage, and JSON-safe resources.
 
 Each form has a stable UID, runtime schema identity/version, an ordered root UID
 list, a normalized node map, named scenarios, and settings. The node union
-contains fields, presentation blocks, groups, collections, wizards, and stages.
+contains fields, presentation blocks, groups, collections, wizards, stages,
+variants, and linked fragment instances.
 References keep every recursive structure normalized. Fields and blocks carry
 exact trusted-definition key/version requirements. Safe behavior is stored as
 a declarative expression AST; executable functions never enter the document.
@@ -41,8 +42,8 @@ object keys `__proto__`, `prototype`, and `constructor`.
 5. return a detached, deeply frozen document or path-addressed diagnostics.
 
 The default defensive budgets match the accepted local-beta targets: 5 MiB,
-50 forms, 1,000 nodes per form, 10,000 nodes per project, 50 scenarios per
-form, and graph depth 50. Callers may lower limits for constrained contexts;
+50 forms, 100 fragments, 1,000 nodes per form or fragment, 10,000 nodes per
+project, 50 scenarios per form, and graph depth 50. Callers may lower limits for constrained contexts;
 raising product limits requires review against the product gates.
 
 Arbitrary JSON resources and scenario values also have a defensive nesting
@@ -86,9 +87,32 @@ an exact property path. Form/entity UIDs are included when available. Import,
 recovery, compiler, and Problems-panel code should branch on codes and paths,
 not message text.
 
-Fragments remain an empty reserved object in this minimal contract. Their
-graph, parameters, instances, and version rules require an explicit later
-format migration rather than accepting an underspecified shape now.
+## Reusable fragments
+
+`fragments` is a UID-keyed map of explicit resources. A definition owns a
+title, positive version, declared parameter names, ordered root UIDs, and a
+normalized node graph. Definition and node UIDs remain globally unique across
+the project. A node with `kind: "fragment"` stores its local runtime ID, the
+definition UID, and optional overrides keyed by definition-node UID.
+
+Validation rejects unresolved references, unsafe IDs, malformed definitions,
+unreachable definition nodes, and direct or indirect fragment cycles. A
+fragment instance is a leaf in the editable form graph; it never makes the
+same definition node acquire multiple document parents.
+
+Compilation expands each instance purely and deterministically into an
+ordinary group and ordinary supported descendants. The local instance runtime
+ID scopes its values, so the same definition can be used more than once in a
+form without runtime-path collisions. Ephemeral descendant UIDs are stable per
+instance and are not persisted. Source-map entries and compiler diagnostics
+retain the definition UID, source node UID, and instance chain.
+
+Definition edits update every linked instance. Declared instance overrides are
+applied without mutating the resource. Detach replaces the selected instance
+with a local group and newly allocated local copies while preserving its
+runtime shape and overrides; the resource itself remains unchanged. Nested
+fragment instances, when present in a detached definition, keep their own
+independent links.
 
 ## Evidence
 
@@ -96,4 +120,5 @@ format migration rather than accepting an underspecified shape now.
 - `studio/src/document/fixtures/project-v0.json`
 - `studio/src/document/fixtures/project-v1.json`
 - ADR 0001 (declarative source) and ADR 0002 (UID/runtime identity)
+- ADR 0004 (compiler source maps and fragment provenance)
 - `studio/docs/PRODUCT_GATES.md`

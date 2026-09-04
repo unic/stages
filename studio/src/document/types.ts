@@ -102,13 +102,36 @@ export interface StudioBlockNode extends StudioNodeBase {
   readonly props: JsonObject;
 }
 
+export interface StudioFragmentNodeOverride {
+  readonly runtimeId?: string;
+  readonly props?: JsonObject;
+  readonly presentation?: JsonObject;
+}
+
+/** A linked use of a reusable fragment. It compiles as an ordinary runtime group. */
+export interface StudioFragmentInstanceNode extends StudioNodeBase {
+  readonly kind: "fragment";
+  readonly runtimeId: string;
+  readonly fragmentUid: Uid;
+  readonly overrides?: Readonly<Record<Uid, StudioFragmentNodeOverride>>;
+}
+
 export interface StudioValidatorSpec {
   readonly kind: "required";
   readonly message: string;
 }
 
 export type StudioNode = StudioBlockNode | StudioCollectionNode | StudioFieldNode
-  | StudioGroupNode | StudioStageNode | StudioVariantNode | StudioWizardNode;
+  | StudioFragmentInstanceNode | StudioGroupNode | StudioStageNode | StudioVariantNode | StudioWizardNode;
+
+export interface StudioFragmentDefinition {
+  readonly uid: Uid;
+  readonly title: string;
+  readonly version: number;
+  readonly parameters: readonly string[];
+  readonly rootNodeUids: readonly Uid[];
+  readonly nodes: Readonly<Record<Uid, StudioNode>>;
+}
 
 export interface StudioScenario {
   readonly uid: Uid;
@@ -133,8 +156,7 @@ export interface StudioProjectDocument {
   readonly formatVersion: 1;
   readonly project: { readonly uid: Uid; readonly title: string; readonly defaultLocale: string };
   readonly forms: Readonly<Record<Uid, StudioFormDocument>>;
-  /** Reserved for the explicit fragment model introduced by its own slice. */
-  readonly fragments: JsonObject;
+  readonly fragments: Readonly<Record<Uid, StudioFragmentDefinition>>;
   /** JSON-safe resources only; executable definitions never live here. */
   readonly resources: JsonObject;
 }
@@ -156,6 +178,8 @@ export interface StudioDocumentLimits {
   readonly maxNodesPerForm: number;
   readonly maxNodesPerProject: number;
   readonly maxScenariosPerForm: number;
+  readonly maxFragments: number;
+  readonly maxNodesPerFragment: number;
   readonly maxDepth: number;
   readonly maxJsonDepth: number;
 }

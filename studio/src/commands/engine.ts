@@ -1,5 +1,5 @@
 import { isSafeObjectKey, isStudioVariantCollection, isUid } from "../document";
-import type { StudioFormDocument, StudioNode, StudioProjectDocument, Uid } from "../document";
+import type { StudioFormDocument, StudioFragmentDefinition, StudioFragmentNodeOverride, StudioNode, StudioProjectDocument, Uid } from "../document";
 import type {
   StudioCommand,
   StudioCommandFailure,
@@ -11,6 +11,7 @@ const UPDATE_KEYS = new Set([
   "runtimeId", "definition", "props", "presentation", "behavior", "legacy",
   "computed", "validators", "min", "max", "initialRows", "itemKey",
   "discriminator", "initialVariantUid", "initialStageUid", "navigation",
+  "fragmentUid", "overrides",
 ]);
 
 export type StudioPlacementParentKind = StudioNode["kind"] | "root";
@@ -113,6 +114,71 @@ function replacePlacement(
 
 function replaceForm(project: StudioProjectDocument, form: StudioFormDocument): StudioProjectDocument {
   return { ...project, forms: { ...project.forms, [form.uid]: form } };
+}
+
+function projectHasUid(project: StudioProjectDocument, uid: Uid): boolean {
+  return project.project.uid === uid
+    || project.forms[uid] !== undefined
+    || project.fragments[uid] !== undefined
+    || Object.values(project.forms).some((form) => form.nodes[uid] !== undefined || form.scenarios.some((scenario) => scenario.uid === uid))
+    || Object.values(project.fragments).some((fragment) => fragment.nodes[uid] !== undefined);
+}
+
+function remapDetachedNode(
+  source: StudioNode,
+  targetUid: Uid,
+  uidMap: Readonly<Record<Uid, Uid>>,
+  override?: StudioFragmentNodeOverride,
+): StudioNode {
+  let copy = withChildren({
+    ...source,
+    uid: targetUid,
+    ...(override?.runtimeId === undefined || source.kind === "block" ? {} : { runtimeId: override.runtimeId }),
+    ...(override?.props === undefined || (source.kind !== "field" && source.kind !== "block") ? {} : { props: { ...source.props, ...override.props } }),
+    ...(override?.presentation === undefined ? {} : { presentation: { ...source.presentation, ...override.presentation } }),
+  }, children(source).map((uid) => uidMap[uid] ?? uid));
+  if (copy.kind === "wizard" && copy.initialStageUid !== undefined) copy = { ...copy, initialStageUid: uidMap[copy.initialStageUid] ?? copy.initialStageUid };
+  if (copy.kind === "collection" && isStudioVariantCollection(copy) && copy.initialVariantUid !== undefined) copy = { ...copy, initialVariantUid: uidMap[copy.initialVariantUid] ?? copy.initialVariantUid };
+  return copy;
+}
+
+function fragmentAsForm(fragment: StudioFragmentDefinition): StudioFormDocument {
+  return {
+    uid: fragment.uid,
+    title: fragment.title,
+    runtime: { schemaId: fragment.uid, schemaVersion: fragment.version },
+    rootNodeUids: fragment.rootNodeUids,
+    nodes: fragment.nodes,
+    scenarios: [],
+    settings: {},
+  };
+}
+
+function fragmentDependencyFailure(
+  project: StudioProjectDocument,
+  commandPath: readonly number[],
+): StudioCommandFailure | undefined {
+  const visiting = new Set<Uid>();
+  const visited = new Set<Uid>();
+  const visit = (uid: Uid): StudioCommandFailure | undefined => {
+    if (visiting.has(uid)) return fail("command.invariant", `Fragment graph contains a cycle through ${uid}.`, commandPath, { entityUid: uid }).failure;
+    if (visited.has(uid)) return undefined;
+    const fragment = project.fragments[uid];
+    if (!fragment) return fail("command.fragment-not-found", `Fragment ${uid} does not exist.`, commandPath, { entityUid: uid }).failure;
+    visiting.add(uid);
+    for (const node of Object.values(fragment.nodes)) if (node.kind === "fragment") {
+      const failure = visit(node.fragmentUid);
+      if (failure) return failure;
+    }
+    visiting.delete(uid);
+    visited.add(uid);
+    return undefined;
+  };
+  for (const uid of Object.keys(project.fragments) as Uid[]) {
+    const failure = visit(uid);
+    if (failure) return failure;
+  }
+  return undefined;
 }
 
 function subtreeUids(form: StudioFormDocument, rootUid: Uid): Uid[] {
@@ -257,13 +323,119 @@ function executeSingle(
   command: Exclude<StudioCommand, { readonly type: "transaction" }>,
   commandPath: readonly number[],
 ): StudioCommandResult {
+  if (command.type === "fragment.update" || command.type === "fragment.node.update") {
+    const fragment = project.fragments[command.fragmentUid];
+    if (!fragment) return fail("command.fragment-not-found", `Fragment ${command.fragmentUid} does not exist.`, commandPath, { entityUid: command.fragmentUid });
+    if (command.type === "fragment.update") {
+      const keys = Object.keys(command.changes);
+      if (keys.length === 0 || keys.every((key) => Object.is((fragment as unknown as Record<string, unknown>)[key], command.changes[key as keyof typeof command.changes]))) {
+        return { ok: true, document: project, affectedUids: [], changed: false };
+      }
+      const next = { ...fragment, ...command.changes };
+      if (typeof next.title !== "string" || !Number.isSafeInteger(next.version) || next.version < 1
+        || !Array.isArray(next.parameters) || next.parameters.some((parameter) => !isSafeObjectKey(parameter))) {
+        return fail("command.invalid-update", "Fragment metadata is invalid.", commandPath, { entityUid: fragment.uid });
+      }
+      return { ok: true, document: { ...project, fragments: { ...project.fragments, [fragment.uid]: next } }, affectedUids: [fragment.uid], changed: true };
+    }
+    const node = fragment.nodes[command.uid];
+    if (!node) return fail("command.node-not-found", `Fragment node ${command.uid} does not exist.`, commandPath, { entityUid: command.uid });
+    const keys = Object.keys(command.changes);
+    if (keys.some((key) => !UPDATE_KEYS.has(key))) return fail("command.invalid-update", "Fragment node updates may change editable properties only.", commandPath, { entityUid: command.uid });
+    const record = { ...node } as unknown as Record<string, unknown>;
+    for (const key of keys) command.changes[key] === undefined ? delete record[key] : record[key] = command.changes[key];
+    const nextFragment = { ...fragment, nodes: { ...fragment.nodes, [command.uid]: record as unknown as StudioNode } };
+    const invariant = invariantFailure(fragmentAsForm(nextFragment), commandPath);
+    if (invariant) return { ok: false, failure: invariant };
+    const nextProject = { ...project, fragments: { ...project.fragments, [fragment.uid]: nextFragment } };
+    const dependencyFailure = fragmentDependencyFailure(nextProject, commandPath);
+    if (dependencyFailure) return { ok: false, failure: dependencyFailure };
+    return { ok: true, document: nextProject, affectedUids: [fragment.uid, command.uid], changed: true };
+  }
+
+  if (command.type === "fragment.insert") return executeSingle(project, {
+    type: "node.insert",
+    formUid: command.formUid,
+    parentUid: command.parentUid,
+    index: command.index,
+    node: command.instance,
+  }, commandPath);
+
   const form = project.forms[command.formUid];
   if (!form) return fail("command.form-not-found", `Form ${command.formUid} does not exist.`, commandPath, {
     formUid: command.formUid,
   });
 
+  if (command.type === "fragment.create") {
+    if (projectHasUid(project, command.fragment.uid)) return fail("command.uid-conflict", `Fragment UID ${command.fragment.uid} is already in use.`, commandPath, { entityUid: command.fragment.uid });
+    if (command.instance.fragmentUid !== command.fragment.uid || projectHasUid(project, command.instance.uid)) return fail("command.uid-conflict", "The new instance must reference the new fragment and use a free UID.", commandPath, { formUid: form.uid, entityUid: command.instance.uid });
+    if (command.uids.length === 0 || new Set(command.uids).size !== command.uids.length) return fail("command.non-contiguous-selection", "Creating a fragment requires unique sibling nodes.", commandPath, { formUid: form.uid });
+    const parents = parentMap(form);
+    const parentUid = parents.get(command.uids[0]!);
+    if (parentUid === undefined || command.uids.some((uid) => parents.get(uid) !== parentUid)) return fail("command.non-contiguous-selection", "Fragment roots must share a parent.", commandPath, { formUid: form.uid });
+    const placement = placementList(form, parentUid, commandPath);
+    if (!placement.ok) return placement;
+    const selected = new Set(command.uids);
+    const ordered = placement.list.filter((uid) => selected.has(uid));
+    const index = placement.list.indexOf(ordered[0]!);
+    if (ordered.length !== command.uids.length || placement.list.slice(index, index + ordered.length).some((uid) => !selected.has(uid))) return fail("command.non-contiguous-selection", "Fragment roots must be contiguous siblings.", commandPath, { formUid: form.uid });
+    const movedUids = ordered.flatMap((uid) => subtreeUids(form, uid));
+    const fragmentNodes = {} as Record<Uid, StudioNode>;
+    const remainingNodes = { ...form.nodes } as Record<Uid, StudioNode>;
+    for (const uid of movedUids) {
+      const moved = form.nodes[uid];
+      if (moved) fragmentNodes[uid] = moved;
+      delete remainingNodes[uid];
+    }
+    const fragment: StudioFragmentDefinition = { ...command.fragment, rootNodeUids: ordered, nodes: fragmentNodes };
+    const fragmentFailure = invariantFailure(fragmentAsForm(fragment), commandPath);
+    if (fragmentFailure) return { ok: false, failure: fragmentFailure };
+    const list = [...placement.list];
+    list.splice(index, ordered.length, command.instance.uid);
+    const withInstance = { ...form, nodes: { ...remainingNodes, [command.instance.uid]: command.instance } };
+    const nextForm = replacePlacement(withInstance, parentUid, list);
+    const formFailure = invariantFailure(nextForm, commandPath);
+    if (formFailure) return { ok: false, failure: formFailure };
+    return {
+      ok: true,
+      document: { ...replaceForm(project, nextForm), fragments: { ...project.fragments, [fragment.uid]: fragment } },
+      affectedUids: [fragment.uid, command.instance.uid, ...movedUids, ...(parentUid ? [parentUid] : [])],
+      changed: true,
+    };
+  }
+
+  if (command.type === "fragment.detach") {
+    const instance = form.nodes[command.uid];
+    if (!instance) return fail("command.node-not-found", `Node ${command.uid} does not exist.`, commandPath, { formUid: form.uid, entityUid: command.uid });
+    if (instance.kind !== "fragment") return fail("command.invalid-update", `Node ${command.uid} is not a fragment instance.`, commandPath, { formUid: form.uid, entityUid: command.uid });
+    const fragment = project.fragments[instance.fragmentUid];
+    if (!fragment) return fail("command.fragment-not-found", `Fragment ${instance.fragmentUid} does not exist.`, commandPath, { formUid: form.uid, entityUid: instance.fragmentUid });
+    const sourceUids = Object.keys(fragment.nodes) as Uid[];
+    const mapped = sourceUids.map((uid) => command.uidMap[uid]);
+    if (sourceUids.some((uid) => !isUid(command.uidMap[uid])) || Object.keys(command.uidMap).length !== sourceUids.length || new Set(mapped).size !== sourceUids.length) return fail("command.invalid-uid-map", "Detach requires one unique replacement UID for every fragment node.", commandPath, { formUid: form.uid, entityUid: instance.uid });
+    const conflict = mapped.find((uid) => uid !== undefined && projectHasUid(project, uid));
+    if (conflict) return fail("command.uid-conflict", `UID ${conflict} is already in use.`, commandPath, { formUid: form.uid, entityUid: conflict });
+    const nodes = { ...form.nodes } as Record<Uid, StudioNode>;
+    for (const sourceUid of sourceUids) {
+      const source = fragment.nodes[sourceUid];
+      const targetUid = command.uidMap[sourceUid];
+      if (source && targetUid) nodes[targetUid] = remapDetachedNode(source, targetUid, command.uidMap, instance.overrides?.[sourceUid]);
+    }
+    nodes[instance.uid] = {
+      uid: instance.uid,
+      kind: "group",
+      runtimeId: instance.runtimeId,
+      childUids: fragment.rootNodeUids.map((uid) => command.uidMap[uid]!).filter(Boolean),
+      ...(instance.presentation === undefined ? {} : { presentation: instance.presentation }),
+      ...(instance.behavior === undefined ? {} : { behavior: instance.behavior }),
+      ...(instance.legacy === undefined ? {} : { legacy: instance.legacy }),
+    };
+    return commit(project, { ...form, nodes }, [instance.uid, ...mapped.filter((uid): uid is Uid => uid !== undefined)], commandPath);
+  }
+
   if (command.type === "node.insert") {
-    if (form.nodes[command.node.uid]) return fail("command.uid-conflict", `UID ${command.node.uid} is already in use.`, commandPath, {
+    if (command.node.kind === "fragment" && project.fragments[command.node.fragmentUid] === undefined) return fail("command.fragment-not-found", `Fragment ${command.node.fragmentUid} does not exist.`, commandPath, { formUid: form.uid, entityUid: command.node.fragmentUid });
+    if (projectHasUid(project, command.node.uid)) return fail("command.uid-conflict", `UID ${command.node.uid} is already in use.`, commandPath, {
       formUid: form.uid, entityUid: command.node.uid,
     });
     const placement = placementList(form, command.parentUid, commandPath);
@@ -288,14 +460,15 @@ function executeSingle(
     const malformed = nodeEntries.find(([uid, node]) => uid !== node.uid);
     const missingRoot = command.rootUids.find((uid) => command.nodes[uid] === undefined);
     const unresolvedChild = nodeEntries.flatMap(([, node]) => children(node)).find((uid) => command.nodes[uid] === undefined);
+    const unresolvedFragmentUid = nodeEntries.flatMap(([, node]) => node.kind === "fragment" && project.fragments[node.fragmentUid] === undefined ? [node.fragmentUid] : [])[0];
     const unresolvedUid = missingRoot ?? unresolvedChild;
-    if (malformed || missingRoot || unresolvedChild || new Set(command.rootUids).size !== command.rootUids.length) return fail(
+    if (malformed || missingRoot || unresolvedChild || unresolvedFragmentUid || new Set(command.rootUids).size !== command.rootUids.length) return fail(
       "command.unresolved-clipboard-dependency",
       "Pasted nodes must be a self-contained graph with matching UID keys and unique roots.",
       commandPath,
       {
         formUid: form.uid,
-        ...(unresolvedUid === undefined ? {} : { entityUid: unresolvedUid }),
+        ...(unresolvedUid === undefined && unresolvedFragmentUid === undefined ? {} : { entityUid: unresolvedUid ?? unresolvedFragmentUid }),
       },
     );
     const conflict = nodeEntries.find(([uid]) => form.nodes[uid] !== undefined)?.[0];
@@ -403,6 +576,7 @@ function executeSingle(
       else nextNodeRecord[key] = command.changes[key];
     }
     const nextNode = nextNodeRecord as unknown as StudioNode;
+    if (nextNode.kind === "fragment" && project.fragments[nextNode.fragmentUid] === undefined) return fail("command.fragment-not-found", `Fragment ${nextNode.fragmentUid} does not exist.`, commandPath, { formUid: form.uid, entityUid: nextNode.fragmentUid });
     return commit(project, { ...form, nodes: { ...form.nodes, [command.uid]: nextNode } }, [command.uid], commandPath);
   }
 

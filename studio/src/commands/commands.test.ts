@@ -16,6 +16,7 @@ import {
 import { toUid, validateStudioProject } from "../document";
 import type { StudioProjectDocument, Uid } from "../document";
 import type { StudioCommand, StudioHistoryState } from "./index";
+import { compileStudioForm } from "../compiler";
 
 const formUid = toUid("form_event");
 const groupUid = toUid("group_event");
@@ -35,6 +36,36 @@ function success(project: StudioProjectDocument, command: StudioCommand): Studio
 }
 
 describe("Studio command engine", () => {
+  it("creates, edits, inserts, overrides, and detaches reusable fragments immutably", () => {
+    const initial = project();
+    const fragmentUid = toUid("fragment_event");
+    const instanceUid = toUid("fragment_event_instance");
+    const created = success(initial, {
+      type: "fragment.create", formUid, uids: [fieldUid],
+      fragment: { uid: fragmentUid, title: "Event details", version: 1, parameters: [] },
+      instance: { uid: instanceUid, kind: "fragment", runtimeId: "details", fragmentUid },
+    });
+    expect(created.fragments[fragmentUid]?.rootNodeUids).toEqual([fieldUid]);
+    expect(created.forms[formUid]?.nodes[fieldUid]).toBeUndefined();
+    expect(created.forms[formUid]?.nodes[instanceUid]).toMatchObject({ kind: "fragment", fragmentUid });
+
+    const edited = success(created, { type: "fragment.node.update", fragmentUid, uid: fieldUid, changes: { props: { label: "Shared title" } } });
+    expect(edited.fragments[fragmentUid]?.nodes[fieldUid]).toMatchObject({ props: { label: "Shared title" } });
+    const secondUid = toUid("fragment_event_second");
+    const inserted = success(edited, { type: "fragment.insert", formUid, parentUid: null, index: 1, instance: { uid: secondUid, kind: "fragment", runtimeId: "otherDetails", fragmentUid, overrides: { [fieldUid]: { props: { label: "Other title" } } } } });
+    const insertedForm = inserted.forms[formUid]!;
+    expect(compileStudioForm(insertedForm, inserted.fragments).schema.nodes).toMatchObject([
+      { kind: "group", id: "event", nodes: [{ kind: "group", id: "details", nodes: [{ props: { label: "Shared title" } }] }] },
+      { kind: "group", id: "otherDetails", nodes: [{ props: { label: "Other title" } }] },
+    ]);
+    const detachedUid = toUid("detached_title");
+    const detached = success(inserted, { type: "fragment.detach", formUid, uid: secondUid, uidMap: { [fieldUid]: detachedUid } });
+    expect(detached.forms[formUid]?.nodes[secondUid]).toMatchObject({ kind: "group", runtimeId: "otherDetails", childUids: [detachedUid] });
+    expect(detached.forms[formUid]?.nodes[detachedUid]).toMatchObject({ kind: "field", props: { label: "Other title" } });
+    expect(detached.fragments[fragmentUid]).toBe(edited.fragments[fragmentUid]);
+    expect(initial.fragments).toEqual({});
+  });
+
   it("inserts, updates, moves, duplicates, and deletes while preserving unaffected identity", () => {
     const initial = project();
     const secondUid = toUid("field_summary");

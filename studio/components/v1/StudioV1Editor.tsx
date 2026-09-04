@@ -12,7 +12,7 @@ import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
-import { isStudioVariantCollection, type JsonObject, type StudioFieldNode, type StudioFormDocument, type StudioNode, type Uid } from "../../src/document/types";
+import { isStudioVariantCollection, type JsonObject, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type Uid } from "../../src/document/types";
 import {
   STUDIO_FIELD_DEFINITIONS,
   STUDIO_BLOCK_DEFINITIONS,
@@ -98,6 +98,21 @@ function nextStructuralIdentity(form: StudioFormDocument, stem: string): { reado
     runtimeId = `${stem}${suffix}`;
   }
   return { uid, runtimeId };
+}
+
+function nextProjectUid(project: StudioProjectDocument, stem: string): Uid {
+  const used = new Set<string>([
+    project.project.uid,
+    ...Object.keys(project.forms),
+    ...Object.keys(project.fragments),
+    ...Object.values(project.forms).flatMap((form) => Object.keys(form.nodes)),
+    ...Object.values(project.fragments).flatMap((fragment) => Object.keys(fragment.nodes)),
+  ]);
+  const safeStem = stem.replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 118) || "entity";
+  let suffix = 1;
+  let uid = toUid(safeStem);
+  while (used.has(uid)) uid = toUid(`${safeStem}_${++suffix}`);
+  return uid;
 }
 
 function nodeDisplayLabel(node: StudioNode): string {
@@ -549,10 +564,45 @@ function StructuralInspector({ node, form, onUpdate }: {
   return null;
 }
 
-function SelectionInspector({ nodes, form, onUpdate, onBulkLabel }: {
+function FragmentInspector({ instance, fragment, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach }: {
+  readonly instance: StudioFragmentInstanceNode;
+  readonly fragment: StudioFragmentDefinition | undefined;
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+  readonly onUpdateFragment: (fragment: StudioFragmentDefinition, title: string) => void;
+  readonly onUpdateFragmentNode: (fragment: StudioFragmentDefinition, node: StudioNode, changes: Readonly<Record<string, unknown>>) => void;
+  readonly onDetach: (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => void;
+}) {
+  if (!fragment) return <p role="alert">The linked fragment is missing.</p>;
+  return <fieldset className="studio-v1-fragment-inspector">
+    <legend>Linked fragment</legend>
+    <label className="studio-field"><span>Definition name</span><input className="ui-input" value={fragment.title} onChange={(event) => onUpdateFragment(fragment, event.currentTarget.value)} /></label>
+    <p><small>Version {fragment.version} · edits below update every linked instance.</small></p>
+    {Object.values(fragment.nodes).map((definitionNode) => <div key={definitionNode.uid}>
+      {definitionNode.kind !== "block" && <label className="studio-field"><span>{nodeDisplayLabel(definitionNode)} definition ID</span><input className="ui-input" value={definitionNode.runtimeId} onChange={(event) => {
+        const runtimeId = event.currentTarget.value;
+        if (runtimeId.length > 0 && isSafeObjectKey(runtimeId)) onUpdateFragmentNode(fragment, definitionNode, { runtimeId });
+      }} /></label>}
+      {definitionNode.kind === "field" && <label className="studio-field"><span>Override {nodeDisplayLabel(definitionNode)} label</span><input className="ui-input" value={String(instance.overrides?.[definitionNode.uid]?.props?.["label"] ?? "")} placeholder="Use definition label" onChange={(event) => {
+        const label = event.currentTarget.value;
+        const current = instance.overrides?.[definitionNode.uid] ?? {};
+        const props = { ...current.props } as Record<string, JsonObject[string]>;
+        if (label === "") delete props["label"];
+        else props["label"] = label;
+        onUpdate(instance, { overrides: { ...instance.overrides, [definitionNode.uid]: { ...current, props } } }, "Override fragment field label", `fragment.override.${definitionNode.uid}:${instance.uid}`);
+      }} /></label>}
+    </div>)}
+    <Button variant="outline" size="sm" onClick={() => onDetach(instance, fragment)}>Detach instance</Button>
+  </fieldset>;
+}
+
+function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach, onBulkLabel }: {
   readonly nodes: readonly StudioNode[];
   readonly form: StudioFormDocument;
+  readonly fragments: StudioProjectDocument["fragments"];
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+  readonly onUpdateFragment: (fragment: StudioFragmentDefinition, title: string) => void;
+  readonly onUpdateFragmentNode: (fragment: StudioFragmentDefinition, node: StudioNode, changes: Readonly<Record<string, unknown>>) => void;
+  readonly onDetach: (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => void;
   readonly onBulkLabel: (nodes: readonly StudioFieldNode[], label: string) => void;
 }) {
   const [bulkLabel, setBulkLabel] = useState("");
@@ -610,6 +660,7 @@ function SelectionInspector({ nodes, form, onUpdate, onBulkLabel }: {
         <FieldInspector node={node} onUpdate={onUpdate} />
       )}
       {node.kind === "block" && <BlockInspector node={node} onUpdate={onUpdate} />}
+      {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onUpdateFragmentNode={onUpdateFragmentNode} onDetach={onDetach} />}
       <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
       <PresentationInspector node={node} onUpdate={onUpdate} />
     </div>
@@ -747,7 +798,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     const node = form.nodes[uid];
     return node === undefined ? [] : [node];
   });
-  const compiled = compileStudioForm(form);
+  const compiled = compileStudioForm(form, history.present.fragments);
 
   const replaceHistory = (nextHistory: StudioHistoryState) => {
     const nextOutline = createStudioOutlineModel(nextHistory.present);
@@ -888,6 +939,62 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
+  const createFragment = () => {
+    const uids = selectedNodes.map(({ uid }) => uid);
+    if (uids.length === 0) { setStatus("Select one or more nodes to create a fragment."); return; }
+    const number = Object.keys(history.present.fragments).length + 1;
+    const fragmentUid = nextProjectUid(history.present, `fragment_${number}`);
+    const instanceUid = nextProjectUid(history.present, `fragment_instance_${number}`);
+    const instance: StudioFragmentInstanceNode = { uid: instanceUid, kind: "fragment", runtimeId: `fragment${number}`, fragmentUid };
+    const result = dispatchStudioCommand(history, {
+      type: "fragment.create",
+      formUid: form.uid,
+      uids,
+      fragment: { uid: fragmentUid, title: `Fragment ${number}`, version: 1, parameters: [] },
+      instance,
+    }, { label: `Create Fragment ${number}` });
+    if (!result.ok) { setStatus(result.failure.message); return; }
+    replaceHistory(result.history);
+    setNavigation((current) => ({ ...current, workbench: selectStudioUid(current.workbench, instanceUid, [...visibleOutlineUids, instanceUid]) }));
+    setStatus(`Fragment ${number} created`);
+  };
+
+  const insertFragment = (fragment: StudioFragmentDefinition) => {
+    const uid = nextProjectUid(history.present, `${fragment.uid}_instance`);
+    const runtimeIds = new Set(Object.values(form.nodes).flatMap((node) => node.kind === "block" ? [] : [node.runtimeId]));
+    let suffix = 1;
+    let runtimeId = fragment.title.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase().slice(0, 118) || "fragment";
+    while (runtimeIds.has(runtimeId)) runtimeId = `${runtimeId.replace(/\d+$/, "")}${++suffix}`;
+    const result = dispatchStudioCommand(history, {
+      type: "fragment.insert",
+      formUid: form.uid,
+      parentUid: null,
+      index: form.rootNodeUids.length,
+      instance: { uid, kind: "fragment", runtimeId, fragmentUid: fragment.uid },
+    }, { label: `Insert ${fragment.title}` });
+    if (!result.ok) { setStatus(result.failure.message); return; }
+    replaceHistory(result.history);
+    setNavigation((current) => ({ ...current, workbench: selectStudioUid(current.workbench, uid, [...visibleOutlineUids, uid]) }));
+    setStatus(`${fragment.title} inserted`);
+  };
+
+  const updateFragment = (fragment: StudioFragmentDefinition, title: string) => {
+    const result = dispatchStudioCommand(history, { type: "fragment.update", fragmentUid: fragment.uid, changes: { title } }, { label: "Rename fragment", coalesceKey: `fragment.title:${fragment.uid}` });
+    if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
+  };
+
+  const updateFragmentNode = (fragment: StudioFragmentDefinition, node: StudioNode, changes: Readonly<Record<string, unknown>>) => {
+    const result = dispatchStudioCommand(history, { type: "fragment.node.update", fragmentUid: fragment.uid, uid: node.uid, changes }, { label: "Edit fragment definition" });
+    if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
+  };
+
+  const detachFragment = (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => {
+    const uidMap = Object.fromEntries(Object.keys(fragment.nodes).map((uid) => [uid, nextProjectUid(history.present, `detached_${uid}`)])) as Readonly<Record<Uid, Uid>>;
+    const result = dispatchStudioCommand(history, { type: "fragment.detach", formUid: form.uid, uid: instance.uid, uidMap }, { label: `Detach ${fragment.title}` });
+    if (result.ok) { replaceHistory(result.history); setStatus(`${fragment.title} detached`); }
+    else setStatus(result.failure.message);
+  };
+
   const {
     moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
   } = createStudioStructuralActions({ history, form, navigation, replaceHistory, setNavigation, setStatus });
@@ -973,6 +1080,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             <Button variant="outline" disabled={loading} onClick={() => insertStructure("stage")}>Add stage to selected wizard</Button>
             <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant")}>Add variant to selected collection</Button>
           </section>
+          <section className="studio-v1-palette" aria-labelledby="studio-v1-fragment-palette-title">
+            <h2 id="studio-v1-fragment-palette-title">Fragments</h2>
+            <Button variant="outline" disabled={loading || selectedNodes.length === 0} onClick={createFragment}>Create fragment from selection</Button>
+            {Object.values(history.present.fragments).map((fragment) => <Button key={fragment.uid} variant="outline" disabled={loading} onClick={() => insertFragment(fragment)}>Insert {fragment.title}</Button>)}
+          </section>
         </div>
         <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
           <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks</span></div>
@@ -988,7 +1100,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             key={selectedNodes.map(({ uid }) => uid).join("\u0000")}
             nodes={selectedNodes}
             form={form}
+            fragments={history.present.fragments}
             onUpdate={updateNode}
+            onUpdateFragment={updateFragment}
+            onUpdateFragmentNode={updateFragmentNode}
+            onDetach={detachFragment}
             onBulkLabel={updateBulkLabel}
           />
           <StructureControls
@@ -1005,7 +1121,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         </aside>
       </div>
       <ProblemsPanel diagnostics={compiled.diagnostics} onNavigate={navigateProblem} />
-      <ControlledPreview form={form} compiled={compiled} />
+      <ControlledPreview form={compiled.expandedForm} compiled={compiled} />
     </main>
   );
 }

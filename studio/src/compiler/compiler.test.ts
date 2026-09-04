@@ -31,6 +31,61 @@ const meta: DynamicMetaSnapshot = {
 };
 
 describe("minimal Studio compiler", () => {
+  it("expands multiple linked instances with overrides and definition provenance", () => {
+    const fragmentUid = toUid("fragment_address");
+    const definitionFieldUid = toUid("fragment_street");
+    const firstInstanceUid = toUid("fragment_home");
+    const secondInstanceUid = toUid("fragment_work");
+    const form: StudioFormDocument = {
+      uid: formUid, title: "Fragments", runtime: { schemaId: "fragments", schemaVersion: 1 },
+      rootNodeUids: [firstInstanceUid, secondInstanceUid],
+      nodes: {
+        [firstInstanceUid]: { uid: firstInstanceUid, kind: "fragment", runtimeId: "home", fragmentUid },
+        [secondInstanceUid]: { uid: secondInstanceUid, kind: "fragment", runtimeId: "work", fragmentUid, overrides: { [definitionFieldUid]: { props: { label: "Office street" } } } },
+      }, scenarios: [], settings: {},
+    };
+    const compiled = compileStudioForm(form, {
+      [fragmentUid]: {
+        uid: fragmentUid, title: "Address", version: 1, parameters: [], rootNodeUids: [definitionFieldUid],
+        nodes: { [definitionFieldUid]: { uid: definitionFieldUid, kind: "field", runtimeId: "street", definition: { key: "text", version: 1 }, props: { label: "Street" } } },
+      },
+    });
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.schema.nodes).toMatchObject([
+      { kind: "group", id: "home", nodes: [{ kind: "field", id: "street", props: { label: "Street" } }] },
+      { kind: "group", id: "work", nodes: [{ kind: "field", id: "street", props: { label: "Office street" } }] },
+    ]);
+    const instanceEntries = [...compiled.sourceMap.byUid.values()].filter((entry) => entry.fragmentNodeUid === definitionFieldUid);
+    expect(instanceEntries).toHaveLength(2);
+    expect(instanceEntries.map((entry) => entry.fragmentInstanceUids)).toEqual([[firstInstanceUid], [secondInstanceUid]]);
+    expect(createEmptyStudioScenarioValue(form, {
+      [fragmentUid]: { uid: fragmentUid, title: "Address", version: 1, parameters: [], rootNodeUids: [definitionFieldUid], nodes: { [definitionFieldUid]: { uid: definitionFieldUid, kind: "field", runtimeId: "street", definition: { key: "text", version: 1 }, props: {} } } },
+    })).toEqual({ home: { street: "" }, work: { street: "" } });
+  });
+
+  it("reports cyclic fragment provenance without recursing indefinitely", () => {
+    const fragmentUid = toUid("fragment_recursive");
+    const nestedUid = toUid("fragment_nested_instance");
+    const instanceUid = toUid("fragment_root_instance");
+    const form: StudioFormDocument = {
+      uid: formUid, title: "Cycle", runtime: { schemaId: "cycle", schemaVersion: 1 },
+      rootNodeUids: [instanceUid],
+      nodes: { [instanceUid]: { uid: instanceUid, kind: "fragment", runtimeId: "root", fragmentUid } },
+      scenarios: [], settings: {},
+    };
+    const compiled = compileStudioForm(form, {
+      [fragmentUid]: {
+        uid: fragmentUid, title: "Recursive", version: 1, parameters: [], rootNodeUids: [nestedUid],
+        nodes: { [nestedUid]: { uid: nestedUid, kind: "fragment", runtimeId: "nested", fragmentUid } },
+      },
+    });
+    expect(compiled.diagnostics).toContainEqual(expect.objectContaining({
+      code: "compiler.fragment-cycle",
+      fragmentDefinitionUid: fragmentUid,
+      fragmentInstanceUids: [instanceUid, nestedUid],
+    }));
+  });
+
   it("compiles text fields and groups through the public core evaluator", () => {
     const input = project();
     const before = serializeStudioProject(input);

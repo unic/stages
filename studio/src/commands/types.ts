@@ -1,6 +1,8 @@
 import type {
   StudioGroupNode,
   StudioHomogeneousCollectionNode,
+  StudioFragmentDefinition,
+  StudioFragmentInstanceNode,
   StudioNode,
   StudioProjectDocument,
   StudioStageNode,
@@ -16,6 +18,39 @@ export type StudioCommand =
     readonly parentUid: Uid | null;
     readonly index: number;
     readonly node: StudioNode;
+  }
+  | {
+    readonly type: "fragment.create";
+    readonly formUid: Uid;
+    /** Contiguous sibling subtrees moved into the new definition. */
+    readonly uids: readonly Uid[];
+    readonly fragment: Pick<StudioFragmentDefinition, "uid" | "title" | "version" | "parameters">;
+    readonly instance: StudioFragmentInstanceNode;
+  }
+  | {
+    readonly type: "fragment.insert";
+    readonly formUid: Uid;
+    readonly parentUid: Uid | null;
+    readonly index: number;
+    readonly instance: StudioFragmentInstanceNode;
+  }
+  | {
+    readonly type: "fragment.update";
+    readonly fragmentUid: Uid;
+    readonly changes: Partial<Pick<StudioFragmentDefinition, "title" | "version" | "parameters">>;
+  }
+  | {
+    readonly type: "fragment.node.update";
+    readonly fragmentUid: Uid;
+    readonly uid: Uid;
+    readonly changes: StudioNodeChanges;
+  }
+  | {
+    readonly type: "fragment.detach";
+    readonly formUid: Uid;
+    readonly uid: Uid;
+    /** Complete fragment-definition node UID mapping for the detached copy. */
+    readonly uidMap: Readonly<Record<Uid, Uid>>;
   }
   | {
     readonly type: "node.insert-subtree";
@@ -81,6 +116,7 @@ export type StudioCommand =
 export type StudioCommandFailureCode =
   | "command.empty-transaction"
   | "command.form-not-found"
+  | "command.fragment-not-found"
   | "command.index-out-of-bounds"
   | "command.invalid-parent"
   | "command.invalid-uid-map"

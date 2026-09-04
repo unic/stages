@@ -3,6 +3,7 @@ import { validateStudioProject } from "../document/validation";
 import type {
   JsonObject,
   JsonValue,
+  StudioFragmentDefinition,
   StudioNode,
   StudioNodeBehavior,
   Uid,
@@ -31,6 +32,8 @@ interface ImportContext {
   readonly fieldDefinitionAliases: Readonly<Record<string, { readonly key: string; readonly version: number }>>;
   readonly blockTypes: Set<string>;
   readonly fieldsets: Map<string, Record<string, unknown>>;
+  readonly fragmentUids: Map<string, Uid>;
+  readonly fragments: Record<Uid, StudioFragmentDefinition>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -236,15 +239,15 @@ function importNodes(
     const implicitFieldset = context.fieldsets.has(type) ? type : undefined;
     const fieldsetId = explicitFieldset ?? implicitFieldset;
     if (fieldsetId) {
-      const fieldset = context.fieldsets.get(fieldsetId);
-      if (!fieldset) {
+      const fragmentUid = context.fragmentUids.get(fieldsetId);
+      if (!fragmentUid) {
         emit(context, "legacy.fieldset.missing", "error", `Could not resolve fieldset ${fieldsetId}.`, itemPath, uid);
       }
       context.nodes[uid] = {
         ...common,
-        kind: "group",
+        kind: "fragment",
         runtimeId: id,
-        childUids: fieldset ? importNodes(normalizedFieldsetNodes(item, fieldset), context, [...itemPath, "fieldset", fieldsetId]) : [],
+        fragmentUid: fragmentUid ?? toUid("missing_fragment"),
         legacy: { ...(common.legacy ?? {}), fieldsetId, fieldsetEncoding: explicitFieldset ? "explicit" : "poc-type" },
       };
       output.push(uid);
@@ -325,11 +328,35 @@ export function importLegacyStudioProject(
     fieldDefinitionAliases: options.fieldDefinitionAliases ?? {},
     blockTypes: new Set(options.blockTypes ?? DEFAULT_BLOCK_TYPES),
     fieldsets,
+    fragmentUids: new Map(),
+    fragments: {},
   };
   const projectUid = options.projectUid ?? toUid("legacy_project");
   const formUid = options.formUid ?? toUid("legacy_form");
   context.usedUids.add(projectUid);
   context.usedUids.add(formUid);
+  for (const [fieldsetId] of fieldsets) {
+    const fragmentUid = allocateUid(context, "fragment", [fieldsetId]);
+    context.fragmentUids.set(fieldsetId, fragmentUid);
+  }
+  for (const [fieldsetId, fieldset] of fieldsets) {
+    const fragmentUid = context.fragmentUids.get(fieldsetId)!;
+    const definitionNodes: Record<string, StudioNode> = {};
+    const definitionContext: ImportContext = { ...context, nodes: definitionNodes };
+    const rootNodeUids = importNodes(
+      normalizedFieldsetNodes({ id: fieldsetId, fieldset: fieldsetId }, fieldset),
+      definitionContext,
+      ["fieldsets", fieldsetId, "config"],
+    );
+    context.fragments[fragmentUid] = {
+      uid: fragmentUid,
+      title: typeof fieldset["label"] === "string" ? fieldset["label"] : fieldsetId,
+      version: 1,
+      parameters: [],
+      rootNodeUids,
+      nodes: definitionNodes,
+    };
+  }
   const rootNodeUids = importNodes(input.config, context, ["config"]);
   const general = isRecord(input.generalConfig) ? input.generalConfig : {};
   const generalJson = jsonValue(general, context, ["generalConfig"]);
@@ -359,7 +386,7 @@ export function importLegacyStudioProject(
         settings: { legacyFormMetadata: generalJson ?? {} },
       },
     },
-    fragments: {},
+    fragments: context.fragments,
     resources: { migration: { source: "studio-poc" } },
   };
   const supportedDefinitions = Object.fromEntries([
