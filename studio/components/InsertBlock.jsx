@@ -18,6 +18,7 @@ const InsertBlock = ({
   const [isHover, setIsHover] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
     id: `droppable-${path}`,
+    data: { path },
   });
 
   const handleMouseEnter = () => {

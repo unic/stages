@@ -69,6 +69,50 @@ export const getConfigPathFromDataPath = (path, config) => {
     : realPath;
 };
 
+export const moveConfigField = (config, from, to) => {
+  const insertAfter = to.endsWith("+");
+  const destination = insertAfter ? to.slice(0, -1) : to;
+  const sourcePath = getConfigPathFromDataPath(from, config);
+  const destinationPath = getConfigPathFromDataPath(destination, config);
+  if (!sourcePath || !destinationPath) return false;
+
+  // A container cannot be placed inside itself.
+  if (
+    destinationPath.startsWith(`${sourcePath}.fields`) ||
+    destinationPath.startsWith(`${sourcePath}.stages`)
+  ) return false;
+
+  const sourceBracket = sourcePath.lastIndexOf("[");
+  const destinationBracket = destinationPath.lastIndexOf("[");
+  const sourceParentPath = sourcePath.substring(0, sourceBracket);
+  const destinationParentPath = destinationPath.substring(0, destinationBracket);
+  const sourceIndex = Number.parseInt(sourcePath.substring(sourceBracket + 1), 10);
+  let insertionIndex = Number.parseInt(
+    destinationPath.substring(destinationBracket + 1),
+    10
+  ) + (insertAfter ? 1 : 0);
+  const sourceArray = sourceParentPath ? _.get(config, sourceParentPath) : config;
+  const destinationArray = destinationParentPath
+    ? _.get(config, destinationParentPath)
+    : config;
+
+  if (
+    !Array.isArray(sourceArray) ||
+    !Array.isArray(destinationArray) ||
+    sourceIndex < 0 ||
+    sourceIndex >= sourceArray.length ||
+    insertionIndex < 0 ||
+    insertionIndex > destinationArray.length
+  ) return false;
+
+  const [field] = sourceArray.splice(sourceIndex, 1);
+  if (sourceArray === destinationArray && sourceIndex < insertionIndex) {
+    insertionIndex -= 1;
+  }
+  destinationArray.splice(insertionIndex, 0, field);
+  return true;
+};
+
 export const doesPathExist = (path, store) => {
   if (!path) return false;
   const configPath = getConfigPathFromDataPath(path, store.currentConfig);

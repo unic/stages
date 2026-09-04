@@ -50,6 +50,7 @@ const CollectionContainer = ({
   );
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `draggable-${path}`,
+    data: { path },
   });
 
   useEffect(() => {
@@ -92,6 +93,7 @@ const CollectionContainer = ({
 
   return (
     <Container
+      ref={setNodeRef}
       isInEditMode={isInEditMode}
       isEditMode={isEditMode}
       isFieldConfigEditor={isFieldConfigEditor}
@@ -130,7 +132,6 @@ const CollectionContainer = ({
             right: "8px",
             cursor: "grab",
           }}
-          ref={setNodeRef}
           {...listeners}
           {...attributes}
         >

@@ -49,6 +49,7 @@ const GroupContainer = ({
   );
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `draggable-${path}`,
+    data: { path },
   });
 
   useEffect(() => {
@@ -91,6 +92,7 @@ const GroupContainer = ({
 
   return (
     <Container
+      ref={setNodeRef}
       isInEditMode={isInEditMode}
       isEditMode={isEditMode}
       isFieldConfigEditor={isFieldConfigEditor}
@@ -130,7 +132,6 @@ const GroupContainer = ({
             right: "8px",
             cursor: "grab",
           }}
-          ref={setNodeRef}
           {...listeners}
           {...attributes}
         >

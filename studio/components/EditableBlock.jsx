@@ -30,6 +30,7 @@ const EditableBlock = ({
   );
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `draggable-${path}`,
+    data: { path },
   });
 
   useEffect(() => {
@@ -39,6 +40,7 @@ const EditableBlock = ({
 
   return (
     <motion.div
+      ref={setNodeRef}
       className={inGroup ? "flex-1" : undefined}
       style={{
         minWidth: !isFieldConfigEditor
@@ -108,7 +110,6 @@ const EditableBlock = ({
             right: "8px",
             cursor: "grab",
           }}
-          ref={setNodeRef}
           {...listeners}
           {...attributes}
         >

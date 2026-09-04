@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
 import Sugar from "sugar";
-import { DndContext } from '@dnd-kit/core';
+import { DndContext, pointerWithin, rectIntersection } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
@@ -35,7 +35,7 @@ import StagesIcon from './StagesIcon';
 import useStagesStore from './store';
 import { initNewCollections, removeEmptyElements } from "./helpers";
 
-import { getConfigPathFromDataPath, createNewFieldID, arrayMove } from './helpers';
+import { getConfigPathFromDataPath, createNewFieldID, arrayMove, moveConfigField } from './helpers';
 import StudioV1Preview, { StudioV1Form } from './v1/StudioV1Preview';
 
 import initialConfig from './configTemplates/initialConfig';
@@ -43,6 +43,11 @@ import kitchensinkConfig from './configTemplates/kitchensinkConfig';
 import templatingConfig from './configTemplates/templatingConfig';
 import layoutingConfig from './configTemplates/layoutingConfig';
 import interfaceStateConfig from './configTemplates/interfaceStateConfig';
+
+const insertionCollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+};
 
 const Workspace = () => {
     const toast = useRef(null);
@@ -417,10 +422,7 @@ const Workspace = () => {
         if (to === "top") arrayMove(arrayToInsertInto, index, 0);
         if (to === "bottom") arrayMove(arrayToInsertInto, index, arrayToInsertInto.length - 1);
         if (to !== "" && to !== "up" && to !== "down" && to !== "top" && to !== "bottom") {
-            const realToPath = getConfigPathFromDataPath(to, newConfig);
-            const lastArrayIndex = realToPath.lastIndexOf("[");
-            let toIndex = parseInt(realToPath.substring(lastArrayIndex + 1));
-            arrayMove(arrayToInsertInto, index, toIndex > index ? toIndex - 1 : toIndex);
+            moveConfigField(newConfig, path, to);
         }
         _.set(newConfig, parentOfRealPath, arrayToInsertInto);
         if (fieldset) {
@@ -991,8 +993,10 @@ const Workspace = () => {
 
     const handleDragEnd = (event) => {
         console.log("--> handleDragEnd <--", { event });
-        if (event?.active?.id && event?.over?.id) {
-            handleMoveField(event.active.id.substring(10), event.over.id.substring(10));
+        const from = event?.active?.data?.current?.path;
+        const to = event?.over?.data?.current?.path;
+        if (from && to) {
+            handleMoveField(from, to);
         }
     };
 
@@ -1090,7 +1094,7 @@ const Workspace = () => {
                 ) : null}
                 {!store.isEditMode ? <div><br /></div> : null}
                 {store.isEditMode ? (
-                    <DndContext onDragEnd={handleDragEnd}>
+                    <DndContext collisionDetection={insertionCollisionDetection} onDragEnd={handleDragEnd}>
                         <StudioV1Form
                             config={store.currentConfig}
                             fieldsets={store.fieldsets}
