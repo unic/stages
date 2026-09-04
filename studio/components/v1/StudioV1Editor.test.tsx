@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { compileStudioForm } from "../../src/compiler";
@@ -7,6 +8,48 @@ import { ControlledPreview } from "./StudioV1Editor";
 function renderPreview(form: StudioFormDocument, resources?: StudioResourceCatalog, defaultLocale = "en") {
   return render(<ControlledPreview form={form} compiled={compileStudioForm(form, {}, resources === undefined ? {} : { localization: { defaultLocale, resources } })} {...(resources === undefined ? {} : { resources })} defaultLocale={defaultLocale} onUpdateScenario={() => {}} onAddScenario={() => undefined} />);
 }
+
+describe("Studio responsive preview layout", () => {
+  it("packs two half-width fields beside each other inside a group", async () => {
+    const style = document.createElement("style");
+    style.textContent = readFileSync("styles/globals.css", "utf8");
+    document.head.append(style);
+    const groupUid = toUid("group_contact");
+    const firstUid = toUid("field_first_name");
+    const lastUid = toUid("field_last_name");
+    const halfWidth = {
+      width: { mobile: "full", tablet: "half", desktop: "half" },
+      columns: { mobile: 1, tablet: 1, desktop: 1 },
+      align: { mobile: "stretch", tablet: "stretch", desktop: "stretch" },
+    } as const;
+    const form: StudioFormDocument = {
+      uid: toUid("form_contact"), title: "Contact", runtime: { schemaId: "contact", schemaVersion: 1 }, rootNodeUids: [groupUid],
+      nodes: {
+        [groupUid]: { uid: groupUid, kind: "group", runtimeId: "contact", childUids: [firstUid, lastUid], presentation: { label: "Contact" } },
+        [firstUid]: { uid: firstUid, kind: "field", runtimeId: "firstName", definition: { key: "text", version: 1 }, props: { label: "First name" }, presentation: { layout: halfWidth } },
+        [lastUid]: { uid: lastUid, kind: "field", runtimeId: "lastName", definition: { key: "text", version: 1 }, props: { label: "Last name" }, presentation: { layout: halfWidth } },
+      },
+      scenarios: [{ uid: toUid("scenario_contact"), title: "Contact", value: { contact: { firstName: "Ada", lastName: "Lovelace" } } }], settings: {},
+    };
+
+    renderPreview(form);
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "First name" })).toHaveValue("Ada"));
+    const group = document.querySelector(".studio-v1-preview__group");
+    const firstLayout = screen.getByRole("textbox", { name: "First name" }).closest(".studio-v1-preview__layout");
+    const lastLayout = screen.getByRole("textbox", { name: "Last name" }).closest(".studio-v1-preview__layout");
+
+    expect(group).not.toBeNull();
+    expect(getComputedStyle(group as Element).display).toBe("flex");
+    expect(getComputedStyle(group as Element).flexWrap).toBe("wrap");
+    expect(firstLayout?.parentElement).toBe(group);
+    expect(lastLayout?.parentElement).toBe(group);
+    expect(firstLayout).toHaveAttribute("data-width-desktop", "half");
+    expect(lastLayout).toHaveAttribute("data-width-desktop", "half");
+    expect(getComputedStyle(firstLayout as Element).width).toContain("50%");
+    expect(getComputedStyle(firstLayout as Element).width).toContain("--studio-preview-spacing");
+    style.remove();
+  });
+});
 
 describe("Studio extensions, transient state, and localization", () => {
   it("explains ownership, reports locale fallback, resolves labels, and formats canonical values", async () => {
