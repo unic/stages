@@ -17,13 +17,16 @@ function outlineProjectSnapshot() {
         uid: toUid("form_outline"),
         title: "Registration",
         runtime: { schemaId: "registration", schemaVersion: 1 },
-        rootNodeUids: [toUid("field_first"), toUid("field_second"), toUid("wizard_journey")],
+        rootNodeUids: [toUid("field_first"), toUid("field_second"), toUid("group_drop"), toUid("wizard_journey")],
         nodes: {
           [toUid("field_first")]: {
             uid: toUid("field_first"), kind: "field", runtimeId: "first", definition: { key: "text", version: 1 }, props: { label: "First field" },
           },
           [toUid("field_second")]: {
             uid: toUid("field_second"), kind: "field", runtimeId: "second", definition: { key: "text", version: 1 }, props: { label: "Second field" },
+          },
+          [toUid("group_drop")]: {
+            uid: toUid("group_drop"), kind: "group", runtimeId: "drop", childUids: [], presentation: { label: "Drop group" },
           },
           [toUid("wizard_journey")]: {
             uid: toUid("wizard_journey"), kind: "wizard", runtimeId: "journey", stageUids: [toUid("stage_details")], presentation: { label: "Journey" },
@@ -177,6 +180,71 @@ describe("StudioEditorPage interactions", () => {
     await user.click(screen.getByRole("button", { name: /compiler\.unsupported-node-kind.*wizard/ }));
     expect(wizardItem).toHaveAttribute("aria-selected", "true");
     await waitFor(() => expect(document.activeElement).toBe(wizardItem));
+  });
+
+  it("routes keyboard, context-menu, shortcut, and pointer structure edits through commands", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    let firstItem = document.querySelector('[data-outline-uid="field_first"]');
+    let secondItem = document.querySelector('[data-outline-uid="field_second"]');
+    const dropGroup = document.querySelector('[data-outline-uid="group_drop"]');
+    expect(firstItem && secondItem && dropGroup).toBeTruthy();
+
+    await act(async () => { firstItem.focus(); });
+    await user.keyboard("{Alt>}{ArrowDown}{/Alt}");
+    await screen.findByText("First field moved down.");
+    const rootGroup = document.querySelector('[data-outline-uid="form_outline"] > [role="group"]');
+    expect(rootGroup.children[0]).toHaveAttribute("data-outline-uid", "field_second");
+    expect(rootGroup.children[1]).toHaveAttribute("data-outline-uid", "field_first");
+
+    firstItem = document.querySelector('[data-outline-uid="field_first"]');
+    secondItem = document.querySelector('[data-outline-uid="field_second"]');
+    fireEvent.click(secondItem);
+    fireEvent.click(firstItem, { ctrlKey: true });
+    fireEvent.contextMenu(firstItem);
+    await user.click(screen.getByRole("menuitem", { name: "Group" }));
+    await screen.findByText("2 nodes grouped.");
+    const grouped = document.querySelector('[data-kind="group"][aria-selected="true"]');
+    expect(grouped).toBeTruthy();
+
+    await act(async () => { grouped.focus(); });
+    await user.keyboard("{Control>}{Shift>}g{/Shift}{/Control}");
+    await screen.findByText("Group ungrouped.");
+    expect(document.querySelector('[data-outline-uid="field_first"]')).toBeTruthy();
+    expect(document.querySelector('[data-outline-uid="field_second"]')).toBeTruthy();
+
+    secondItem = document.querySelector('[data-outline-uid="field_second"]');
+    fireEvent.click(secondItem);
+    await act(async () => { secondItem.focus(); });
+    await user.keyboard("{Control>}c{/Control}{Control>}v{/Control}");
+    await screen.findByText("Node pasted.");
+    expect(screen.getAllByRole("textbox", { name: "Second field" })).toHaveLength(2);
+    await user.keyboard("{Control>}x{/Control}");
+    await screen.findByText("Node cut.");
+    expect(screen.getAllByRole("textbox", { name: "Second field" })).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+
+    secondItem = document.querySelector('[data-outline-uid="field_second"]');
+    const data = new Map();
+    const dataTransfer = {
+      effectAllowed: "all",
+      setData: (type, value) => data.set(type, value),
+      getData: (type) => data.get(type) ?? "",
+    };
+    fireEvent.dragStart(secondItem, { dataTransfer });
+    fireEvent.dragOver(dropGroup, { dataTransfer });
+    fireEvent.drop(dropGroup, { dataTransfer });
+    await screen.findByText("Second field moved to Drop group.");
+    await user.click(screen.getByRole("button", { name: "Expand Drop group" }));
+    secondItem = document.querySelector('[data-outline-uid="field_second"]');
+    expect(secondItem).toHaveAttribute("aria-level", "3");
+    await act(async () => { secondItem.focus(); });
+    await user.keyboard("{Alt>}{ArrowLeft}{/Alt}");
+    await screen.findByText("Second field moved out.");
+    expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
   });
 
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {

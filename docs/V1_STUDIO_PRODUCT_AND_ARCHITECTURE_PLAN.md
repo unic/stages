@@ -27,6 +27,10 @@ Execution status:
   and [`../studio/src/editor/index.ts`](../studio/src/editor/index.ts) coordinate
   keyboard navigation, UID-based selection and expansion, compatible bulk edits,
   and Problems navigation
+- Session 11 completed: [`../studio/src/commands/engine.ts`](../studio/src/commands/engine.ts)
+  and [`../studio/src/commands/clipboard.ts`](../studio/src/commands/clipboard.ts)
+  provide structural compatibility, wrap/unwrap, conversion, cross-container
+  movement, and clipboard commands shared by pointer and keyboard authoring
 
 Primary references:
 

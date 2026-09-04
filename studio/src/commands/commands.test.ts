@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
 import {
+  canPlaceStudioNode,
+  copyStudioNodes,
+  createStudioCutCommand,
+  createStudioPasteCommand,
   markStudioHistorySaved,
   createStudioHistory,
   dispatchStudioCommand,
@@ -114,6 +118,15 @@ describe("Studio command engine", () => {
       type: "node.update", formUid, uid: fieldUid, changes: { uid: toUid("changed") },
     });
     expect(structuralUpdate).toMatchObject({ ok: false, failure: { code: "command.invalid-update" } });
+
+    const illegalStage = executeStudioCommand(initial, {
+      type: "node.insert",
+      formUid,
+      parentUid: null,
+      index: 1,
+      node: { uid: toUid("stage_illegal"), kind: "stage", runtimeId: "step", childUids: [] },
+    });
+    expect(illegalStage).toMatchObject({ ok: false, failure: { code: "command.incompatible-placement" } });
     expect(initial).toEqual(project());
   });
 
@@ -141,6 +154,111 @@ describe("Studio command engine", () => {
       failure: { code: "command.node-not-found", commandPath: [1] },
     });
     expect(initial.forms[formUid]?.nodes[toUid("field_summary")]).toBeUndefined();
+  });
+
+  it("wraps and unwraps contiguous siblings without changing their UIDs or order", () => {
+    const summaryUid = toUid("field_summary");
+    const withSummary = success(project(), {
+      type: "node.insert", formUid, parentUid: groupUid, index: 1,
+      node: { uid: summaryUid, kind: "field", runtimeId: "summary", definition: { key: "text", version: 1 }, props: {} },
+    });
+    const wrapperUid = toUid("collection_details");
+    const wrapped = success(withSummary, {
+      type: "node.wrap",
+      formUid,
+      uids: [summaryUid, fieldUid],
+      wrapper: { uid: wrapperUid, kind: "collection", runtimeId: "details", childUids: [], min: 1 },
+    });
+    expect(wrapped.forms[formUid]?.nodes[groupUid]).toMatchObject({ childUids: [wrapperUid] });
+    expect(wrapped.forms[formUid]?.nodes[wrapperUid]).toMatchObject({ childUids: [fieldUid, summaryUid] });
+
+    const unwrapped = success(wrapped, { type: "node.unwrap", formUid, uid: wrapperUid });
+    expect(unwrapped.forms[formUid]?.nodes[groupUid]).toMatchObject({ childUids: [fieldUid, summaryUid] });
+    expect(unwrapped.forms[formUid]?.nodes[wrapperUid]).toBeUndefined();
+    expect(unwrapped.forms[formUid]?.nodes[fieldUid]).toBe(withSummary.forms[formUid]?.nodes[fieldUid]);
+
+    const middleUid = toUid("field_middle");
+    const withMiddle = success(withSummary, {
+      type: "node.insert", formUid, parentUid: groupUid, index: 1,
+      node: { uid: middleUid, kind: "field", runtimeId: "middle", definition: { key: "text", version: 1 }, props: {} },
+    });
+    const nonContiguous = executeStudioCommand(withMiddle, {
+      type: "node.wrap",
+      formUid,
+      uids: [fieldUid, summaryUid],
+      wrapper: { uid: toUid("group_invalid"), kind: "group", runtimeId: "invalid", childUids: [] },
+    });
+    expect(nonContiguous).toMatchObject({ ok: false, failure: { code: "command.non-contiguous-selection" } });
+  });
+
+  it("converts groups, collections, and single-stage wizards losslessly", () => {
+    const collection = success(project(), {
+      type: "node.convert", formUid, uid: groupUid, targetKind: "collection", collection: { min: 1, initialRows: 1 },
+    });
+    expect(collection.forms[formUid]?.nodes[groupUid]).toMatchObject({ kind: "collection", childUids: [fieldUid], min: 1 });
+
+    const stageUid = toUid("stage_step1");
+    const wizard = success(collection, {
+      type: "node.convert",
+      formUid,
+      uid: groupUid,
+      targetKind: "wizard",
+      stage: { uid: stageUid, kind: "stage", runtimeId: "step1", childUids: [], presentation: { label: "Step 1" } },
+    });
+    expect(wizard.forms[formUid]?.nodes[groupUid]).toMatchObject({ kind: "wizard", stageUids: [stageUid] });
+    expect(wizard.forms[formUid]?.nodes[stageUid]).toMatchObject({ childUids: [fieldUid] });
+
+    const group = success(wizard, { type: "node.convert", formUid, uid: groupUid, targetKind: "group" });
+    expect(group.forms[formUid]?.nodes[groupUid]).toMatchObject({ kind: "group", childUids: [fieldUid] });
+    expect(group.forms[formUid]?.nodes[stageUid]).toBeUndefined();
+  });
+
+  it("copies, cuts, and pastes self-contained subtrees with explicit UID remapping", () => {
+    const initial = project();
+    const copied = copyStudioNodes(initial, formUid, [groupUid, fieldUid]);
+    expect(copied.ok).toBe(true);
+    if (!copied.ok) return;
+    expect(copied.value.rootUids).toEqual([groupUid]);
+    expect(Object.keys(copied.value.nodes)).toEqual([groupUid, fieldUid]);
+
+    const copyGroupUid = toUid("group_copy");
+    const copyFieldUid = toUid("field_copy");
+    const paste = createStudioPasteCommand(copied.value, { formUid, parentUid: null, index: 1 }, {
+      [groupUid]: copyGroupUid,
+      [fieldUid]: copyFieldUid,
+    }, { [groupUid]: "eventCopy" });
+    expect(paste.ok).toBe(true);
+    if (!paste.ok) return;
+    const pasted = success(initial, paste.value);
+    expect(pasted.forms[formUid]?.rootNodeUids).toEqual([groupUid, copyGroupUid]);
+    expect(pasted.forms[formUid]?.nodes[copyGroupUid]).toMatchObject({ childUids: [copyFieldUid] });
+
+    const cut = success(initial, createStudioCutCommand(copied.value));
+    expect(cut.forms[formUid]?.rootNodeUids).toEqual([]);
+    expect(cut.forms[formUid]?.nodes).toEqual({});
+
+    const unresolved = createStudioPasteCommand(
+      { ...copied.value, dependencies: [toUid("fragment_missing")] },
+      { formUid, parentUid: null, index: 1 },
+      { [groupUid]: copyGroupUid, [fieldUid]: copyFieldUid },
+    );
+    expect(unresolved).toMatchObject({ ok: false, code: "command.unresolved-clipboard-dependency" });
+  });
+
+  it("moves across containers and enforces the structural compatibility matrix", () => {
+    const rootFieldUid = toUid("field_root");
+    const withRoot = success(project(), {
+      type: "node.insert", formUid, parentUid: null, index: 1,
+      node: { uid: rootFieldUid, kind: "field", runtimeId: "root", definition: { key: "text", version: 1 }, props: {} },
+    });
+    const moved = success(withRoot, { type: "node.move", formUid, uid: rootFieldUid, parentUid: groupUid, index: 1 });
+    expect(moved.forms[formUid]?.rootNodeUids).toEqual([groupUid]);
+    expect(moved.forms[formUid]?.nodes[groupUid]).toMatchObject({ childUids: [fieldUid, rootFieldUid] });
+
+    expect(canPlaceStudioNode("wizard", "stage")).toBe(true);
+    expect(canPlaceStudioNode("wizard", "field")).toBe(false);
+    expect(canPlaceStudioNode("root", "stage")).toBe(false);
+    expect(canPlaceStudioNode("collection", "wizard")).toBe(true);
   });
 });
 

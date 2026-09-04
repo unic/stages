@@ -12,6 +12,18 @@ const UPDATE_KEYS = new Set([
   "computed", "validators", "min", "max", "initialRows",
 ]);
 
+export type StudioPlacementParentKind = StudioNode["kind"] | "root";
+
+/** The current document-v1 structural compatibility matrix. */
+export function canPlaceStudioNode(
+  parentKind: StudioPlacementParentKind,
+  childKind: StudioNode["kind"],
+): boolean {
+  if (parentKind === "field" || parentKind === "block") return false;
+  if (parentKind === "wizard") return childKind === "stage";
+  return childKind !== "stage";
+}
+
 function fail(
   code: StudioCommandFailureCode,
   message: string,
@@ -52,6 +64,22 @@ function placementList(
     });
   }
   return { ok: true, list: children(parent), parent };
+}
+
+function incompatiblePlacement(
+  form: StudioFormDocument,
+  parentUid: Uid | null,
+  node: StudioNode,
+  commandPath: readonly number[],
+): { readonly ok: false; readonly failure: StudioCommandFailure } | undefined {
+  const parentKind = parentUid === null ? "root" : form.nodes[parentUid]?.kind;
+  if (parentKind !== undefined && canPlaceStudioNode(parentKind, node.kind)) return undefined;
+  return fail(
+    "command.incompatible-placement",
+    `${node.kind} node ${node.uid} cannot be placed ${parentUid === null ? "at the form root" : `inside ${parentUid}`}.`,
+    commandPath,
+    { formUid: form.uid, entityUid: node.uid },
+  );
 }
 
 function parentMap(form: StudioFormDocument): Map<Uid, Uid | null> {
@@ -186,6 +214,8 @@ function executeSingle(
     });
     const placement = placementList(form, command.parentUid, commandPath);
     if (!placement.ok) return placement;
+    const incompatible = incompatiblePlacement(form, command.parentUid, command.node, commandPath);
+    if (incompatible) return incompatible;
     if (!Number.isSafeInteger(command.index) || command.index < 0 || command.index > placement.list.length) {
       return fail("command.index-out-of-bounds", `Insert index ${command.index} is out of bounds.`, commandPath, { formUid: form.uid });
     }
@@ -194,6 +224,91 @@ function executeSingle(
     const withNode = { ...form, nodes: { ...form.nodes, [command.node.uid]: command.node } };
     const next = replacePlacement(withNode, command.parentUid, list);
     return commit(project, next, [command.node.uid, ...(command.parentUid ? [command.parentUid] : [])], commandPath);
+  }
+
+  if (command.type === "node.insert-subtree") {
+    if (command.rootUids.length === 0) return fail(
+      "command.unresolved-clipboard-dependency", "A pasted subtree must contain at least one root.", commandPath, { formUid: form.uid },
+    );
+    const nodeEntries = Object.entries(command.nodes) as Array<[Uid, StudioNode]>;
+    const malformed = nodeEntries.find(([uid, node]) => uid !== node.uid);
+    const missingRoot = command.rootUids.find((uid) => command.nodes[uid] === undefined);
+    const unresolvedChild = nodeEntries.flatMap(([, node]) => children(node)).find((uid) => command.nodes[uid] === undefined);
+    const unresolvedUid = missingRoot ?? unresolvedChild;
+    if (malformed || missingRoot || unresolvedChild || new Set(command.rootUids).size !== command.rootUids.length) return fail(
+      "command.unresolved-clipboard-dependency",
+      "Pasted nodes must be a self-contained graph with matching UID keys and unique roots.",
+      commandPath,
+      {
+        formUid: form.uid,
+        ...(unresolvedUid === undefined ? {} : { entityUid: unresolvedUid }),
+      },
+    );
+    const conflict = nodeEntries.find(([uid]) => form.nodes[uid] !== undefined)?.[0];
+    if (conflict !== undefined) return fail("command.uid-conflict", `UID ${conflict} is already in use.`, commandPath, {
+      formUid: form.uid, entityUid: conflict,
+    });
+    const placement = placementList(form, command.parentUid, commandPath);
+    if (!placement.ok) return placement;
+    if (!Number.isSafeInteger(command.index) || command.index < 0 || command.index > placement.list.length) {
+      return fail("command.index-out-of-bounds", `Insert index ${command.index} is out of bounds.`, commandPath, { formUid: form.uid });
+    }
+    for (const rootUid of command.rootUids) {
+      const root = command.nodes[rootUid];
+      if (!root) continue;
+      const incompatible = incompatiblePlacement(form, command.parentUid, root, commandPath);
+      if (incompatible) return incompatible;
+    }
+    const list = [...placement.list];
+    list.splice(command.index, 0, ...command.rootUids);
+    const withNodes = { ...form, nodes: { ...form.nodes, ...command.nodes } };
+    const next = replacePlacement(withNodes, command.parentUid, list);
+    return commit(
+      project,
+      next,
+      [...nodeEntries.map(([uid]) => uid), ...(command.parentUid ? [command.parentUid] : [])],
+      commandPath,
+    );
+  }
+
+  if (command.type === "node.wrap") {
+    if (command.uids.length === 0 || new Set(command.uids).size !== command.uids.length) return fail(
+      "command.non-contiguous-selection", "Wrap requires one or more unique sibling nodes.", commandPath, { formUid: form.uid },
+    );
+    if (form.nodes[command.wrapper.uid]) return fail("command.uid-conflict", `UID ${command.wrapper.uid} is already in use.`, commandPath, {
+      formUid: form.uid, entityUid: command.wrapper.uid,
+    });
+    const parents = parentMap(form);
+    const firstUid = command.uids[0]!;
+    const parentUid = parents.get(firstUid);
+    if (parentUid === undefined || command.uids.some((uid) => !form.nodes[uid] || parents.get(uid) !== parentUid)) return fail(
+      "command.non-contiguous-selection", "Wrapped nodes must exist under the same parent.", commandPath, { formUid: form.uid, entityUid: firstUid },
+    );
+    const placement = placementList(form, parentUid, commandPath);
+    if (!placement.ok) return placement;
+    const selected = new Set(command.uids);
+    const ordered = placement.list.filter((uid) => selected.has(uid));
+    const firstIndex = placement.list.indexOf(ordered[0]!);
+    if (ordered.length !== command.uids.length || placement.list.slice(firstIndex, firstIndex + ordered.length).some((uid) => !selected.has(uid))) {
+      return fail("command.non-contiguous-selection", "Wrapped nodes must be contiguous siblings.", commandPath, {
+        formUid: form.uid, entityUid: firstUid,
+      });
+    }
+    const wrapper = { ...command.wrapper, childUids: ordered };
+    const incompatible = incompatiblePlacement(form, parentUid, wrapper, commandPath);
+    if (incompatible) return incompatible;
+    for (const uid of ordered) {
+      const child = form.nodes[uid];
+      if (child && !canPlaceStudioNode(wrapper.kind, child.kind)) return fail(
+        "command.incompatible-placement", `${child.kind} node ${uid} cannot be wrapped in a ${wrapper.kind}.`, commandPath,
+        { formUid: form.uid, entityUid: uid },
+      );
+    }
+    const list = [...placement.list];
+    list.splice(firstIndex, ordered.length, wrapper.uid);
+    const withWrapper = { ...form, nodes: { ...form.nodes, [wrapper.uid]: wrapper } };
+    const next = replacePlacement(withWrapper, parentUid, list);
+    return commit(project, next, [wrapper.uid, ...ordered, ...(parentUid ? [parentUid] : [])], commandPath);
   }
 
   const node = form.nodes[command.uid];
@@ -246,6 +361,8 @@ function executeSingle(
     const newPlacement = placementList(form, command.parentUid, commandPath);
     if (!oldPlacement.ok) return oldPlacement;
     if (!newPlacement.ok) return newPlacement;
+    const incompatible = incompatiblePlacement(form, command.parentUid, node, commandPath);
+    if (incompatible) return incompatible;
     const destinationLength = newPlacement.list.length - (oldParentUid === command.parentUid ? 1 : 0);
     if (!Number.isSafeInteger(command.index) || command.index < 0 || command.index > destinationLength) {
       return fail("command.index-out-of-bounds", `Move index ${command.index} is out of bounds.`, commandPath, { formUid: form.uid });
@@ -263,6 +380,93 @@ function executeSingle(
     return commit(project, next, [command.uid, ...(oldParentUid ? [oldParentUid] : []), ...(command.parentUid ? [command.parentUid] : [])], commandPath);
   }
 
+  if (command.type === "node.unwrap") {
+    if (node.kind !== "group" && node.kind !== "collection") return fail(
+      "command.incompatible-placement", "Only groups and collections can be unwrapped without losing structure.", commandPath,
+      { formUid: form.uid, entityUid: node.uid },
+    );
+    const parents = parentMap(form);
+    const parentUid = parents.get(node.uid);
+    if (parentUid === undefined) return fail("command.invariant", `Node ${node.uid} is unreachable.`, commandPath, {
+      formUid: form.uid, entityUid: node.uid,
+    });
+    const placement = placementList(form, parentUid, commandPath);
+    if (!placement.ok) return placement;
+    for (const childUid of node.childUids) {
+      const child = form.nodes[childUid];
+      if (child) {
+        const incompatible = incompatiblePlacement(form, parentUid, child, commandPath);
+        if (incompatible) return incompatible;
+      }
+    }
+    const index = placement.list.indexOf(node.uid);
+    const list = [...placement.list];
+    list.splice(index, 1, ...node.childUids);
+    const nodes = { ...form.nodes } as Record<Uid, StudioNode>;
+    delete nodes[node.uid];
+    const next = replacePlacement({ ...form, nodes }, parentUid, list);
+    return commit(project, next, [node.uid, ...node.childUids, ...(parentUid ? [parentUid] : [])], commandPath);
+  }
+
+  if (command.type === "node.convert") {
+    if (node.kind !== "group" && node.kind !== "collection" && node.kind !== "wizard") return fail(
+      "command.incompatible-placement", "Only groups, collections, and wizards can be converted.", commandPath,
+      { formUid: form.uid, entityUid: node.uid },
+    );
+    if (node.kind === command.targetKind) return { ok: true, document: project, affectedUids: [], changed: false };
+    let childUids: readonly Uid[];
+    const nodes = { ...form.nodes } as Record<Uid, StudioNode>;
+    const affected: Uid[] = [node.uid];
+    if (node.kind === "wizard") {
+      if (node.stageUids.length !== 1) return fail(
+        "command.incompatible-placement", "A wizard must contain exactly one stage for lossless conversion.", commandPath,
+        { formUid: form.uid, entityUid: node.uid },
+      );
+      const stageUid = node.stageUids[0]!;
+      const stage = form.nodes[stageUid];
+      if (!stage || stage.kind !== "stage") return fail(
+        "command.invariant", `Wizard stage ${stageUid} does not resolve.`, commandPath,
+        { formUid: form.uid, entityUid: stageUid },
+      );
+      childUids = stage.childUids;
+      delete nodes[stageUid];
+      affected.push(stageUid, ...childUids);
+    } else childUids = node.childUids;
+
+    const base = {
+      uid: node.uid,
+      runtimeId: node.runtimeId,
+      ...(node.presentation === undefined ? {} : { presentation: node.presentation }),
+      ...(node.behavior === undefined ? {} : { behavior: node.behavior }),
+      ...(node.legacy === undefined ? {} : { legacy: node.legacy }),
+    };
+    let converted: StudioNode;
+    if (command.targetKind === "group") converted = { ...base, kind: "group", childUids };
+    else if (command.targetKind === "collection") converted = {
+      ...base,
+      kind: "collection",
+      childUids,
+      ...(command.collection?.min === undefined ? {} : { min: command.collection.min }),
+      ...(command.collection?.max === undefined ? {} : { max: command.collection.max }),
+      ...(command.collection?.initialRows === undefined ? {} : { initialRows: command.collection.initialRows }),
+    };
+    else {
+      if (node.kind === "wizard" || command.stage === undefined) return fail(
+        "command.incompatible-placement", "Converting to a wizard requires one new stage.", commandPath,
+        { formUid: form.uid, entityUid: node.uid },
+      );
+      if (form.nodes[command.stage.uid]) return fail("command.uid-conflict", `UID ${command.stage.uid} is already in use.`, commandPath, {
+        formUid: form.uid, entityUid: command.stage.uid,
+      });
+      const stage = { ...command.stage, childUids };
+      nodes[stage.uid] = stage;
+      affected.push(stage.uid, ...childUids);
+      converted = { ...base, kind: "wizard", stageUids: [stage.uid] };
+    }
+    nodes[node.uid] = converted;
+    return commit(project, { ...form, nodes }, affected, commandPath);
+  }
+
   const sourceUids = subtreeUids(form, command.uid);
   const mappedValues = Object.values(command.uidMap);
   if (sourceUids.some((uid) => !command.uidMap[uid]) || Object.keys(command.uidMap).length !== sourceUids.length
@@ -277,6 +481,11 @@ function executeSingle(
   });
   const placement = placementList(form, command.parentUid, commandPath);
   if (!placement.ok) return placement;
+  const rootCopySource = form.nodes[command.uid];
+  if (rootCopySource) {
+    const incompatible = incompatiblePlacement(form, command.parentUid, rootCopySource, commandPath);
+    if (incompatible) return incompatible;
+  }
   if (!Number.isSafeInteger(command.index) || command.index < 0 || command.index > placement.list.length) {
     return fail("command.index-out-of-bounds", `Duplicate index ${command.index} is out of bounds.`, commandPath, { formUid: form.uid });
   }

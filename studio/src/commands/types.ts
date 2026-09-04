@@ -1,4 +1,11 @@
-import type { StudioNode, StudioProjectDocument, Uid } from "../document";
+import type {
+  StudioCollectionNode,
+  StudioGroupNode,
+  StudioNode,
+  StudioProjectDocument,
+  StudioStageNode,
+  Uid,
+} from "../document";
 
 export type StudioNodeChanges = Readonly<Record<string, unknown>>;
 
@@ -9,6 +16,14 @@ export type StudioCommand =
     readonly parentUid: Uid | null;
     readonly index: number;
     readonly node: StudioNode;
+  }
+  | {
+    readonly type: "node.insert-subtree";
+    readonly formUid: Uid;
+    readonly parentUid: Uid | null;
+    readonly index: number;
+    readonly rootUids: readonly Uid[];
+    readonly nodes: Readonly<Record<Uid, StudioNode>>;
   }
   | { readonly type: "node.delete"; readonly formUid: Uid; readonly uid: Uid }
   | {
@@ -37,6 +52,27 @@ export type StudioCommand =
     readonly rootRuntimeId?: string;
   }
   | {
+    readonly type: "node.wrap";
+    readonly formUid: Uid;
+    /** Nodes must be contiguous siblings and are kept in their current order. */
+    readonly uids: readonly Uid[];
+    readonly wrapper: StudioGroupNode | StudioCollectionNode;
+  }
+  | { readonly type: "node.unwrap"; readonly formUid: Uid; readonly uid: Uid }
+  | {
+    readonly type: "node.convert";
+    readonly formUid: Uid;
+    readonly uid: Uid;
+    readonly targetKind: "collection" | "group" | "wizard";
+    /** Required when converting a group or collection to a wizard. */
+    readonly stage?: StudioStageNode;
+    readonly collection?: {
+      readonly min?: number;
+      readonly max?: number;
+      readonly initialRows?: number;
+    };
+  }
+  | {
     readonly type: "transaction";
     readonly label: string;
     readonly commands: readonly StudioCommand[];
@@ -50,7 +86,10 @@ export type StudioCommandFailureCode =
   | "command.invalid-uid-map"
   | "command.invalid-update"
   | "command.invariant"
+  | "command.incompatible-placement"
   | "command.node-not-found"
+  | "command.non-contiguous-selection"
+  | "command.unresolved-clipboard-dependency"
   | "command.uid-conflict";
 
 export interface StudioCommandFailure {

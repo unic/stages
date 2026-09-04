@@ -1,6 +1,7 @@
 import type { Uid } from "../document";
 
 export * from "./outline";
+export * from "./structure";
 
 export interface StudioWorkbenchState {
   readonly selectedUids: readonly Uid[];

@@ -1,24 +1,46 @@
-import { useEffect, useMemo, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import type { StudioProjectDocument, Uid } from "../../src/document/types";
 import {
   createStudioOutlineModel,
   selectStudioUid,
   setStudioExpansion,
   type StudioWorkbenchState,
+  type StudioMoveDirection,
   visibleStudioOutlineUids,
 } from "../../src/editor";
+
+function writeStudioDragData(event: DragEvent<HTMLElement>, uid: Uid): void {
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("application/x-stages-studio-uid", uid);
+}
+
+function startStudioDrag(event: DragEvent<HTMLLIElement>, uid: Uid): void {
+  if ((event.target as HTMLElement).closest("[role=treeitem]") !== event.currentTarget) return;
+  writeStudioDragData(event, uid);
+  event.stopPropagation();
+}
 
 interface StudioOutlineProps {
   readonly project: StudioProjectDocument;
   readonly state: StudioWorkbenchState;
   readonly onChange: (state: StudioWorkbenchState) => void;
   readonly onActivateForm: (formUid: Uid) => void;
+  readonly onMove: (uid: Uid, direction: StudioMoveDirection) => void;
+  readonly onDrop: (uid: Uid, targetUid: Uid) => void;
+  readonly onCopy: (uids: readonly Uid[]) => void;
+  readonly onCut: (uids: readonly Uid[]) => void;
+  readonly onPaste: (targetUid: Uid) => void;
+  readonly onGroup: (uids: readonly Uid[]) => void;
+  readonly onUngroup: (uid: Uid) => void;
 }
 
-export function StudioOutline({ project, state, onChange, onActivateForm }: StudioOutlineProps) {
+export function StudioOutline({
+  project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup,
+}: StudioOutlineProps) {
   const model = useMemo(() => createStudioOutlineModel(project), [project]);
   const visibleUids = visibleStudioOutlineUids(model, state.expandedUids);
   const itemRefs = useRef(new Map<Uid, HTMLLIElement>());
+  const [contextUid, setContextUid] = useState<Uid | undefined>();
 
   useEffect(() => {
     if (state.focusedUid !== undefined && document.activeElement?.closest("[role=tree]") !== null) {
@@ -45,6 +67,20 @@ export function StudioOutline({ project, state, onChange, onActivateForm }: Stud
     if (event.target !== event.currentTarget && (event.target as HTMLElement).closest("[role=treeitem]") !== event.currentTarget) return;
     const item = model.items.get(uid);
     if (!item) return;
+    const primaryModifier = event.metaKey || event.ctrlKey;
+    const actionUids = state.selectedUids.includes(uid) ? state.selectedUids.filter((selectedUid) => model.items.get(selectedUid)?.kind !== "form") : [uid];
+    if (event.altKey && event.key === "ArrowUp") onMove(uid, "up");
+    else if (event.altKey && event.key === "ArrowDown") onMove(uid, "down");
+    else if (event.altKey && event.key === "ArrowRight") onMove(uid, "in");
+    else if (event.altKey && event.key === "ArrowLeft") onMove(uid, "out");
+    else if (event.altKey && event.key === "Home") onMove(uid, "top");
+    else if (event.altKey && event.key === "End") onMove(uid, "bottom");
+    else if (primaryModifier && event.key.toLowerCase() === "c") onCopy(actionUids);
+    else if (primaryModifier && event.key.toLowerCase() === "x") onCut(actionUids);
+    else if (primaryModifier && event.key.toLowerCase() === "v") onPaste(uid);
+    else if (primaryModifier && event.key.toLowerCase() === "g" && event.shiftKey) onUngroup(uid);
+    else if (primaryModifier && event.key.toLowerCase() === "g") onGroup(actionUids);
+    else {
     const index = visibleUids.indexOf(uid);
     if (event.key === "ArrowDown" && index < visibleUids.length - 1) focusUid(visibleUids[index + 1]!);
     else if (event.key === "ArrowUp" && index > 0) focusUid(visibleUids[index - 1]!);
@@ -62,6 +98,7 @@ export function StudioOutline({ project, state, onChange, onActivateForm }: Stud
     } else if (event.key === "Enter" || event.key === " ") {
       select(uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
     } else return;
+    }
     event.preventDefault();
     event.stopPropagation();
   };
@@ -69,6 +106,20 @@ export function StudioOutline({ project, state, onChange, onActivateForm }: Stud
     if ((event.target as HTMLElement).closest("[role=treeitem]") !== event.currentTarget) return;
     if ((event.target as HTMLElement).closest("button")) return;
     select(uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
+  };
+  const selectedNodeUids = (uid: Uid): readonly Uid[] => state.selectedUids.includes(uid)
+    ? state.selectedUids.filter((selectedUid) => model.items.get(selectedUid)?.kind !== "form")
+    : [uid];
+  const drop = (event: DragEvent<HTMLLIElement>, targetUid: Uid) => {
+    if ((event.target as HTMLElement).closest("[role=treeitem]") !== event.currentTarget) return;
+    event.preventDefault();
+    const uid = event.dataTransfer.getData("application/x-stages-studio-uid");
+    if (uid) onDrop(uid as Uid, targetUid);
+    event.stopPropagation();
+  };
+  const runContextAction = (action: () => void) => {
+    action();
+    setContextUid(undefined);
   };
 
   const renderItem = (uid: Uid, level: number) => {
@@ -88,11 +139,21 @@ export function StudioOutline({ project, state, onChange, onActivateForm }: Stud
         className="studio-v1-outline__item"
         data-kind={item.kind}
         data-outline-uid={uid}
+        draggable={item.kind !== "form"}
         onClick={(event) => click(event, uid)}
         onFocus={(event) => {
           if (event.target === event.currentTarget && state.focusedUid !== uid) focusUid(uid);
         }}
         onKeyDown={(event) => keyDown(event, uid)}
+        onContextMenu={(event) => {
+          if ((event.target as HTMLElement).closest("[role=treeitem]") !== event.currentTarget) return;
+          event.preventDefault();
+          if (!state.selectedUids.includes(uid)) select(uid);
+          setContextUid(uid);
+        }}
+        onDragStart={(event) => startStudioDrag(event, uid)}
+        onDragOver={(event) => { if (item.kind !== "form") event.preventDefault(); }}
+        onDrop={(event) => drop(event, uid)}
       >
         <div className="studio-v1-outline__row">
           {expandable ? (
@@ -120,6 +181,20 @@ export function StudioOutline({ project, state, onChange, onActivateForm }: Stud
       <ul role="tree" aria-label="Project structure" aria-multiselectable="true">
         {model.roots.map((uid) => renderItem(uid, 1))}
       </ul>
+      {contextUid !== undefined && model.items.get(contextUid)?.kind !== "form" && (
+        <div className="studio-v1-outline__menu" role="menu" aria-label={`Actions for ${model.items.get(contextUid)?.label ?? contextUid}`}>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "up"))}>Move up</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "down"))}>Move down</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "in"))}>Move into previous</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "out"))}>Move out</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onGroup(selectedNodeUids(contextUid)))}>Group</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onUngroup(contextUid))}>Ungroup</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onCopy(selectedNodeUids(contextUid)))}>Copy</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onCut(selectedNodeUids(contextUid)))}>Cut</button>
+          <button role="menuitem" type="button" onClick={() => runContextAction(() => onPaste(contextUid))}>Paste</button>
+          <button role="menuitem" type="button" onClick={() => setContextUid(undefined)}>Close menu</button>
+        </div>
+      )}
       <div className="studio-v1-outline__resources">
         <h3>Fragments</h3>
         <p>{Object.keys(project.fragments).length === 0 ? "No fragments" : `${Object.keys(project.fragments).length} fragments`}</p>

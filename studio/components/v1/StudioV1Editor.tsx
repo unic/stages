@@ -25,20 +25,19 @@ import {
   revealStudioUid,
   selectStudioUid,
   type StudioSelectionOptions,
-  type StudioWorkbenchState,
+  type StudioMoveDirection,
   visibleStudioOutlineUids,
 } from "../../src/editor";
 import { Button } from "../ui/button";
 import { STUDIO_SUPPORTED_DEFINITIONS, useStudioDocumentStartup } from "./StudioDocumentStartup";
 import { StudioOutline } from "./StudioOutline";
+import {
+  createStudioStructuralActions,
+  type StudioEditorNavigationState,
+} from "./studioStructuralActions";
 
 interface StudioV1EditorProps {
   readonly repository?: StudioProjectRepository;
-}
-
-interface StudioEditorNavigationState {
-  readonly activeFormUid?: Uid;
-  readonly workbench: StudioWorkbenchState;
 }
 
 function firstForm(project: StudioHistoryState["present"]): StudioFormDocument | undefined {
@@ -229,6 +228,46 @@ function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
   );
 }
 
+function StructureControls({ nodes, canPaste, onMove, onGroup, onUngroup, onConvert, onCopy, onCut, onPaste }: {
+  readonly nodes: readonly StudioNode[];
+  readonly canPaste: boolean;
+  readonly onMove: (direction: StudioMoveDirection) => void;
+  readonly onGroup: () => void;
+  readonly onUngroup: () => void;
+  readonly onConvert: (kind: "collection" | "group" | "wizard") => void;
+  readonly onCopy: () => void;
+  readonly onCut: () => void;
+  readonly onPaste: () => void;
+}) {
+  const selected = nodes[0];
+  const convertible = nodes.length === 1 && (selected?.kind === "group" || selected?.kind === "collection" || selected?.kind === "wizard");
+  const unwrappable = nodes.length === 1 && (selected?.kind === "group" || selected?.kind === "collection");
+  return (
+    <section className="studio-v1-structure" aria-labelledby="studio-v1-structure-title">
+      <h3 id="studio-v1-structure-title">Structure</h3>
+      <div>
+        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("up")}>Move up</Button>
+        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("down")}>Move down</Button>
+        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("in")}>Move in</Button>
+        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("out")}>Move out</Button>
+        <Button variant="outline" size="sm" disabled={nodes.length === 0} onClick={onGroup}>Group</Button>
+        <Button variant="outline" size="sm" disabled={!unwrappable} onClick={onUngroup}>Ungroup</Button>
+        <Button variant="outline" size="sm" disabled={nodes.length === 0} onClick={onCopy}>Copy</Button>
+        <Button variant="outline" size="sm" disabled={nodes.length === 0} onClick={onCut}>Cut</Button>
+        <Button variant="outline" size="sm" disabled={!canPaste || nodes.length !== 1} onClick={onPaste}>Paste</Button>
+      </div>
+      {convertible && (
+        <div>
+          <Button variant="outline" size="sm" disabled={selected.kind === "group"} onClick={() => onConvert("group")}>Convert to group</Button>
+          <Button variant="outline" size="sm" disabled={selected.kind === "collection"} onClick={() => onConvert("collection")}>Convert to collection</Button>
+          <Button variant="outline" size="sm" disabled={selected.kind === "wizard"} onClick={() => onConvert("wizard")}>Convert to wizard</Button>
+        </div>
+      )}
+      <p><small>Move: Alt+Arrow · Copy/Cut/Paste: Ctrl/⌘+C/X/V</small></p>
+    </section>
+  );
+}
+
 function ProblemsPanel({ diagnostics, onNavigate }: {
   readonly diagnostics: readonly StudioDiagnostic[];
   readonly onNavigate: (diagnostic: StudioDiagnostic) => void;
@@ -395,6 +434,10 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
+  const {
+    moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
+  } = createStudioStructuralActions({ history, form, navigation, replaceHistory, setNavigation, setStatus });
+
   const navigateProblem = (diagnostic: StudioDiagnostic) => {
     const targetUid = diagnostic.entityUid ?? diagnostic.formUid;
     if (targetUid === undefined) return;
@@ -443,6 +486,13 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             state={navigation.workbench}
             onChange={(workbench) => setNavigation((current) => ({ ...current, workbench }))}
             onActivateForm={(activeFormUid) => setNavigation((current) => ({ ...current, activeFormUid }))}
+            onMove={moveNode}
+            onDrop={dropNode}
+            onCopy={copyNodes}
+            onCut={cutNodes}
+            onPaste={pasteNodes}
+            onGroup={groupNodes}
+            onUngroup={ungroupNode}
           />
           <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
             <h2 id="studio-v1-palette-title">Fields</h2>
@@ -464,6 +514,17 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             nodes={selectedNodes}
             onUpdate={updateNode}
             onBulkLabel={updateBulkLabel}
+          />
+          <StructureControls
+            nodes={selectedNodes}
+            canPaste={navigation.clipboard !== undefined}
+            onMove={(direction) => { const uid = selectedNodes[0]?.uid; if (uid) moveNode(uid, direction); }}
+            onGroup={() => groupNodes(selectedNodes.map(({ uid }) => uid))}
+            onUngroup={() => { const uid = selectedNodes[0]?.uid; if (uid) ungroupNode(uid); }}
+            onConvert={(kind) => { const uid = selectedNodes[0]?.uid; if (uid) convertNode(uid, kind); }}
+            onCopy={() => { copyNodes(selectedNodes.map(({ uid }) => uid)); }}
+            onCut={() => cutNodes(selectedNodes.map(({ uid }) => uid))}
+            onPaste={() => { const uid = selectedNodes[0]?.uid; if (uid) pasteNodes(uid); }}
           />
         </aside>
       </div>

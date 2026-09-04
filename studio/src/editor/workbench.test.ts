@@ -6,7 +6,10 @@ import {
   revealStudioUid,
   selectStudioUid,
   setStudioExpansion,
+  createStudioDropCommand,
+  createStudioRelativeMoveCommand,
 } from "./index";
+import type { StudioFormDocument } from "../document";
 
 const form = toUid("form");
 const group = toUid("group");
@@ -49,5 +52,36 @@ describe("Studio workbench state", () => {
     const afterDelete = reconcileStudioWorkbench(preserved, new Set([form, group, second]), [form, group, second]);
     expect(afterDelete.selectedUids).toEqual([]);
     expect(afterDelete.focusedUid).toBe(form);
+  });
+});
+
+describe("Studio structural move planning", () => {
+  const formDocument: StudioFormDocument = {
+    uid: form,
+    title: "Form",
+    runtime: { schemaId: "form", schemaVersion: 1 },
+    rootNodeUids: [group, second],
+    nodes: {
+      [group]: { uid: group, kind: "group", runtimeId: "group", childUids: [first] },
+      [first]: { uid: first, kind: "field", runtimeId: "first", definition: { key: "text", version: 1 }, props: {} },
+      [second]: { uid: second, kind: "field", runtimeId: "second", definition: { key: "text", version: 1 }, props: {} },
+    },
+    scenarios: [],
+    settings: {},
+  };
+
+  it("uses node.move for keyboard reorder and pointer cross-container drop", () => {
+    expect(createStudioRelativeMoveCommand(formDocument, second, "top")).toEqual({
+      type: "node.move", formUid: form, uid: second, parentUid: null, index: 0,
+    });
+    expect(createStudioDropCommand(formDocument, second, group)).toEqual({
+      type: "node.move", formUid: form, uid: second, parentUid: group, index: 1,
+    });
+    expect(createStudioRelativeMoveCommand(formDocument, second, "in")).toEqual({
+      type: "node.move", formUid: form, uid: second, parentUid: group, index: 1,
+    });
+    expect(createStudioRelativeMoveCommand(formDocument, first, "out")).toEqual({
+      type: "node.move", formUid: form, uid: first, parentUid: null, index: 1,
+    });
   });
 });
