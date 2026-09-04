@@ -66,6 +66,7 @@ function nativeInputView(kind: "text" | "number" | "checkbox"): DomFieldView {
       if (props.autocomplete !== undefined) input.setAttribute("autocomplete", props.autocomplete);
       if (kind === "checkbox") input.checked = field.value === true;
       else input.value = field.value === undefined || field.value === null ? "" : String(field.value);
+      let focusTimer: ReturnType<typeof setTimeout> | undefined;
 
       if (props.label !== undefined) {
         const label = document.createElement("label");
@@ -74,17 +75,26 @@ function nativeInputView(kind: "text" | "number" | "checkbox"): DomFieldView {
         wrapper.append(label);
       }
       input.addEventListener("input", () => {
+        if (focusTimer !== undefined) clearTimeout(focusTimer);
         const payload = kind === "checkbox"
           ? input.checked
           : kind === "number"
             ? input.value === "" || !Number.isFinite(input.valueAsNumber) ? undefined : input.valueAsNumber
             : input.value;
-        emit("input", payload);
+        setTimeout(() => {
+          if (!field.state.focused) emit("focus");
+          emit("input", payload);
+        }, 0);
       });
       input.addEventListener("focus", () => {
-        if (!field.state.focused) emit("focus");
+        // Let the native click/input sequence finish before a controlled
+        // metadata update replaces the mounted element.
+        if (!field.state.focused) focusTimer = setTimeout(() => { if (input.isConnected) emit("focus"); }, 50);
       });
-      input.addEventListener("blur", () => emit("blur"));
+      input.addEventListener("blur", () => {
+        if (focusTimer !== undefined) clearTimeout(focusTimer);
+        setTimeout(() => { if (input.isConnected) emit("blur"); }, 0);
+      });
       wrapper.append(input);
 
       const describedBy: string[] = [];
@@ -206,7 +216,22 @@ export function mountStages<TValue, TFields, TContext>(
     if (field === undefined || destroyed) return false;
     const element = findMountedElement(elementId(field));
     if (element === undefined || !canFocus(element)) return false;
+    const previouslyFocused = findField(controller.getSnapshot().nodes, (candidate) => candidate.state.focused);
+    if (previouslyFocused !== undefined && previouslyFocused.address !== field.address) {
+      compatibleController.dispatch({
+        name: "blur",
+        target: { kind: "field", path: previouslyFocused.path },
+        source: "adapter",
+      });
+    }
     element.focus(options);
+    if (!field.state.focused) {
+      compatibleController.dispatch({
+        name: "focus",
+        target: { kind: "field", path: field.path },
+        source: "adapter",
+      });
+    }
     return document.activeElement === element;
   };
   const render = (): void => {

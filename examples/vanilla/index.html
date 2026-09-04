@@ -1,37 +1,10 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A controlled, accessible Stages v1 wizard using the DOM adapter." />
-    <title>Stages v1 — Vanilla wizard</title>
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="The canonical Event Launch workflow using the Stages DOM adapter." /><title>Event Launch — Stages DOM example</title><link rel="stylesheet" href="/src/styles.css" /></head>
   <body>
-    <main class="shell">
-      <header>
-        <p class="eyebrow">Stages v1 DOM adapter</p>
-        <h1>Create your workspace</h1>
-        <p>A framework-free controlled wizard with validation and durable state.</p>
-      </header>
-
-      <form id="wizard-form" novalidate>
-        <ol id="progress" class="progress" aria-label="Setup progress"></ol>
-        <div id="stages-root"></div>
-
-        <p id="form-status" class="status" role="status" aria-live="polite"></p>
-        <div class="actions">
-          <button id="previous" type="button">Previous</button>
-          <button id="next" type="button">Next</button>
-          <button id="submit" type="submit">Finish setup</button>
-        </div>
-      </form>
-
-      <details>
-        <summary>Controlled value and serialized state</summary>
-        <pre id="debug-value"></pre>
-      </details>
-    </main>
-    <script type="module" src="/src/main.ts"></script>
+    <main class="event-shell"><header class="event-hero"><div><span class="eyebrow">Canonical cross-adapter example</span><h1>Launch an event people remember.</h1><p>One framework-neutral Stages workflow, composed with DOM bindings.</p></div><span class="adapter-badge">DOM / vanilla</span></header>
+      <div class="event-layout"><form id="event-launch-form" class="event-card" data-testid="event-launch-form" novalidate><ol id="wizard-progress" class="wizard-progress" data-testid="wizard-progress" aria-label="Event launch progress"></ol><section class="stage-panel"><div class="stage-heading"><h2 id="stage-heading">Event launch</h2><p>Domain behavior is shared; this chrome belongs to the application.</p></div><section id="validation-summary" class="validation-summary" data-testid="validation-summary" hidden><h3>Check these details</h3><ul></ul></section><div id="published" hidden></div><div id="stages-root"></div><p id="form-status" class="form-status" data-testid="form-status" role="status" aria-live="polite"></p><div class="stage-actions"><button id="previous" class="secondary" type="button">Previous</button><button id="next" class="primary" type="button">Next</button><button id="publish" class="primary" type="submit">Publish event</button></div></section></form>
+      <aside class="summary-rail"><h2>Launch summary</h2><dl class="summary-list"><div><dt>Current stage</dt><dd id="current-stage"></dd></div><div><dt>Visible stages</dt><dd id="visible-count"></dd></div><div><dt>Validation</dt><dd id="validation-status"></dd></div></dl><div class="utility-actions"><button id="apply-template" data-testid="apply-template" type="button">Apply conference template</button><button id="save-draft" data-testid="save-draft" type="button">Save draft</button><button id="resume-draft" data-testid="resume-draft" type="button">Resume draft</button><button id="start-over" data-testid="start-over" type="button">Start over</button><button id="smoke-data" type="button" hidden>Load smoke-test data</button></div><label class="context-toggle"><input id="require-compliance" type="checkbox" />Require data-processing agreement</label><details class="inspector" data-testid="stages-inspector"><summary>Stages inspector</summary><pre id="inspector-output"></pre></details></aside></div>
+    </main><script type="module" src="/src/main.ts"></script>
   </body>
 </html>

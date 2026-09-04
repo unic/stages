@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "paths": { "@stages/core": ["../../../packages/core/dist/index.d.ts"] },
+    "skipLibCheck": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["dist"]
+}

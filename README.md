@@ -49,12 +49,21 @@ controller = stages({
 });
 ```
 
-## Active applications and examples
+## Canonical Event Launch example
 
-- [`examples/vanilla`](examples/vanilla/README.md) — DOM adapter wizard
-- [`examples/react`](examples/react/README.md) — React workspace wizard
-- [`examples/vue`](examples/vue/README.md) — Vue workspace wizard
-- [`examples/angular`](examples/angular/README.md) — Angular v22 workspace wizard
+One shared Event Launch domain/schema is implemented in every public UI
+adapter and checked by a framework-neutral contract plus a parameterized
+browser suite:
+
+- [`examples/shared/event-launch`](examples/shared/event-launch) — model, field contract, schema factory, validation, fixtures, persistence, CSS, and behavior tests
+- [`examples/vanilla`](examples/vanilla/README.md) — `mountStages()` and application-owned DOM chrome
+- [`examples/react`](examples/react/README.md) — controlled hooks under Strict Mode
+- [`examples/vue`](examples/vue/README.md) — Vue Composition API bindings
+- [`examples/angular`](examples/angular/README.md) — Angular v22 signals and strict templates
+- [`examples/e2e`](examples/e2e) — one Playwright conformance suite for all adapters
+
+Other active applications:
+
 - [`studio`](studio) — v1-backed visual form editor
 - [`docs`](docs) — v1 documentation application
 
@@ -72,3 +81,6 @@ Run the complete local candidate gate with:
 ```sh
 npm run release:check:v1
 ```
+
+For focused example work, use `npm run test:example-contract:v1`,
+`npm run build:examples:v1`, or `npm run test:examples:v1 -- --adapter react`.

@@ -11,17 +11,24 @@ manifest is a progress tracker, not a word-occurrence score.
 and the common field-adapter source; the documentation gate verifies those
 source regions.
 
+The maintained integrated proof is the canonical **Event Launch** example in
+`examples/shared/event-launch`, implemented with DOM, React, Vue, and Angular.
+Its headless contract covers controlled proposals, dynamic/schema-factory
+stages, async cancellation, collection identity, navigation gating, validation,
+and serialization. The parameterized Playwright suite then checks the shared
+semantic surface in all four production applications.
+
 | Feature family | Detailed guide | Live proof |
 | --- | --- | --- |
-| Controlled ownership, accept/replace/reject/delay, reset, lifecycle | [Tutorial](/start/first-controller), [concept](/core-concepts/controlled-values), [reference](/reference/core/controller) | Strict TypeScript fixture + controller tests |
+| Controlled ownership, accept/replace/reject/delay, reset, lifecycle | [Tutorial](/start/first-controller), [concept](/core-concepts/controlled-values), [reference](/reference/core/controller) | Event Launch + strict TypeScript fixture + controller tests |
 | Controlled ownership, updates, snapshots, subscriptions, selectors, lifecycle | [Controller](/core) | Controlled profile |
 | Field registry, defaults, reducers, intrinsic validators, events, interaction state | [Fields and events](/fields-events) | Controlled profile |
 | Recursive fields, groups, collections, wizards, paths, addresses, identity | [Schemas](/schema) | Profile, collection, wizard |
 | Predicates, disabled inheritance, derived props, context, factories, reconciliation | [Dynamic behavior](/dynamic-behavior) | Controlled profile, recovery |
 | Transforms, patches, ordering, transactions, batching, structural sharing | [Transforms](/transforms) | Batch transaction |
 | Sync/async validation, policies, scope, dependencies, cancellation, failure handling | [Validation](/validation/overview) | Async validation |
-| Homogeneous/union rows, keys, constraints, every collection command | [Collections](/structures/collections) | Stable collection rows |
-| Stage state, linear/nonlinear navigation, validation gates, guards, dynamic stages | [Wizards](/structures/wizards) | Guarded wizard |
+| Homogeneous/union rows, keys, constraints, every collection command | [Collections](/structures/collections) | Event Launch agenda/tickets + stable collection rows |
+| Stage state, linear/nonlinear navigation, validation gates, guards, dynamic stages | [Wizards](/structures/wizards) | Event Launch + guarded wizard |
 | JSON boundary, recreation, metadata, value/extension codecs, migrations | [Persistence](/persistence/serialization), [types](/reference/core/persistence-types), [errors](/reference/serialization-errors) | Serialized envelope + strict TypeScript fixtures |
 | Diagnostics, invalid revisions, recovery, safe paths, prototype-pollution defense | [Diagnostics](/diagnostics/overview), [catalog](/reference/diagnostics) | Last-valid-tree recovery + checked telemetry/safety fixtures |
 | React lifecycle, typed field views, collection/wizard hooks, accessibility, performance, Strict Mode | [React](/adapters/react/lifecycle), [reference](/reference/react) | Live forms + six checked TSX regions + adapter tests |

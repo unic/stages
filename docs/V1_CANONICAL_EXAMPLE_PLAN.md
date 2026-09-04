@@ -1,8 +1,19 @@
 # Stages v1 canonical cross-adapter example plan
 
-Status: proposed for implementation
+Status: implemented
 
 Last reviewed against the implementation: 2026-09-04
+
+Implementation evidence:
+
+- `examples/shared/event-launch` owns the framework-neutral contract and fast
+  behavior suite;
+- `examples/event-launch-compiler-spike.ts` proves the schema against all four
+  adapter view registries without weakening its types;
+- `examples/vanilla`, `examples/react`, `examples/vue`, and `examples/angular`
+  implement the shared workflow with adapter-owned composition; and
+- `examples/e2e/event-launch.spec.ts` runs the ten conformance journeys as 40
+  Playwright checks across the four applications.
 
 Related material:
 
@@ -208,9 +219,11 @@ interface EventLaunchContext {
 }
 ```
 
-`reservedSlugs` is converted to JSON-safe data only if context persistence is
-later added; it is not part of the controller envelope. The saved value itself
-remains JSON-native, so this example does not need a value codec.
+`reservedSlugs` is not part of the controller envelope. Empty numeric controls
+use `undefined` in the domain model, so the implemented example registers a
+small value codec that maps those empty values to `null` at the JSON boundary
+and restores them on recreation. This keeps in-progress drafts serializable
+without persisting context or changing field-level value contracts.
 
 ## 6. Wizard and schema design
 

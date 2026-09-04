@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@stages/core": ["../packages/core/dist/index.d.ts"],
+      "@stages/dom": ["../packages/dom/dist/index.d.ts"],
+      "@stages/react": ["../packages/react/dist/index.d.ts"],
+      "@stages/vue": ["../packages/vue/dist/index.d.ts"],
+      "@stages/angular": ["../packages/angular/dist/index.d.ts"]
+    }
+  },
+  "include": ["event-launch-compiler-spike.ts", "shared/event-launch/*.ts"]
+}

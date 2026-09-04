@@ -1,17 +1,20 @@
-# Angular workspace wizard
+# Event Launch — Angular
 
-A standalone Angular v22 Stages application demonstrating `injectStages()`,
-signal-based field/collection/wizard bindings, application-owned field
-components, and the dynamic `StagesFieldComponent` renderer.
+The standalone Angular v22 signals implementation of the canonical Event
+Launch workflow.
 
-Build the v1 packages from the repository root, then install and run it:
+- `src/event-launch-app.ts` — `injectStages()`, collection/wizard signals,
+  strict control-flow templates, persistence controls, and teardown
+- `src/fields.ts` — typed dynamic field components used by
+  `StagesFieldComponent`
+- `../shared/event-launch` — framework-neutral domain behavior and shared CSS
+
+From the repository root:
 
 ```sh
 npm run build:v1
-cd examples/angular
-npm install
-npm run dev
+npm --prefix examples/angular run dev
 ```
 
-`npm run build` runs Angular's strict template compiler and creates a
-production build.
+`npm run build:examples:v1` runs Angular's strict template compiler as part of
+the four-adapter build.

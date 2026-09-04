@@ -2,6 +2,9 @@
 node_modules/
 packages/*/dist/
 examples/*/dist/
+examples/shared/*/dist/
+examples/e2e/test-results/
+examples/e2e/playwright-report/
 studio/coverage/
 
 # Optional npm cache directory

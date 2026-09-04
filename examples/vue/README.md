@@ -1,17 +1,19 @@
-# Vue workspace wizard
+# Event Launch — Vue
 
-A Stages v1 example composed with the Vue 3 Composition API. It demonstrates
-controlled `useStages()` ownership, typed application-owned field views,
-`StagesField`, stable collection rows, and `useStagesWizard()` navigation.
+The Vue 3 Composition API implementation of the canonical Event Launch
+workflow shared with the other public adapters.
 
-Build the v1 packages from the repository root, then install and run it:
+- `src/EventLaunchApp.ts` — controlled `useStages()` with a computed update
+  source, wizard/collection composables, save/resume, and scope disposal
+- `src/fields.ts` — six typed Vue functional field views
+- `../shared/event-launch` — framework-neutral domain behavior and shared CSS
+
+From the repository root:
 
 ```sh
 npm run build:v1
-cd examples/vue
-npm install
-npm run dev
+npm --prefix examples/vue run dev
 ```
 
-The repository-level `npm run check:v1` command type-checks this example
-against the built public declarations.
+Local storage and the displayed publish payload deliberately remain
+application-owned policies.

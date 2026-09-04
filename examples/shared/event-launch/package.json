@@ -1,0 +1,16 @@
+{
+  "name": "@stages/example-event-launch",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@stages/core": "file:../../../packages/core"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.0"
+  }
+}

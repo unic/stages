@@ -1,22 +1,23 @@
-# React workspace wizard
+# Event Launch — React
 
-A production-style Stages v1 example composed with React. It demonstrates:
+The React implementation of the canonical Event Launch workflow. The product
+behavior is shared with the DOM, Vue, and Angular examples; this application
+owns only React composition, field components, focus, and lifecycle policy.
 
-- the controlled `useStages()` lifecycle;
-- typed custom field views and `StagesField`;
-- stable collection rows through `useStagesCollection()`;
-- staged validation and `useStagesWizard()` navigation;
-- accessible issue markup and application-owned error focus.
+- `src/EventLaunchApp.tsx` — controlled `useStages()`, selector-backed
+  collection/wizard hooks, navigation, save/resume, and inspector chrome
+- `src/fields.tsx` — the six typed, application-owned React field views
+- `../shared/event-launch` — framework-neutral model, schema, validators,
+  fixtures, persistence helpers, and visual language
+- `test/strict-mode.test.mjs` — Strict Mode replay and teardown coverage
 
-Build the v1 packages from the repository root, then install and run the example:
+From the repository root:
 
 ```sh
 npm run build:v1
-cd examples/react
-npm install
-npm run dev
+npm --prefix examples/react run dev
+npm --prefix examples/react test
 ```
 
-The repository-level `npm run check:v1` command type-checks this example against
-the built public declarations. Within this directory, `npm run build` verifies a
-React 19 production consumer and `npm test` covers Strict Mode lifecycle replay.
+Browser storage, publishing, and routing are application policies composed
+around Stages; the core controller does not claim ownership of them.

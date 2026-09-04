@@ -1,223 +1,34 @@
-import {
-  stages,
-  type ContainerSnapshot,
-  type NodeAddress,
-  type StagesController,
-  type StagesSchema,
-  type ValidationIssue,
-  type ValidatorConfig,
-} from "@stages/core";
-import { createDomFields, mountStages } from "@stages/dom";
+import { formEvent, nodeEvent, stages, type ContainerSnapshot, type RenderNodeSnapshot, type StagesChange, type StagesController, type StagesSnapshot } from "@stages/core";
+import { mountStages } from "@stages/dom";
+import { EVENT_LAUNCH_AGENDA_ADDRESS, EVENT_LAUNCH_STORAGE_KEY, EVENT_LAUNCH_WIZARD_ADDRESS, clearEventLaunchDraft, createAgendaItem, createEventLaunchSchema, createTicketTier, debounceDraftSave, defaultEventLaunchContext, defaultEventLaunchValue, eventLaunchValueCodec, readEventLaunchDraft, saveEventLaunchDraft, smokeTestValue, type AgendaItem, type EventLaunchContext, type EventLaunchValue } from "../../shared/event-launch/index.js";
+import { eventLaunchDomFields } from "./fields.js";
 
-interface WorkspaceValue {
-  setup: {
-    account: {
-      name: string;
-      email: string;
-    };
-    preferences: {
-      seats?: number;
-      productNews: boolean;
-    };
-    review: {
-      confirmation: string;
-    };
-  };
+type Controller = StagesController<EventLaunchValue, typeof eventLaunchDomFields, EventLaunchContext>;
+function query<T extends Element>(selector: string): T { const match = document.querySelector<T>(selector); if (match === null) throw new Error(`Missing Event Launch element: ${selector}`); return match; }
+function findContainer(nodes: readonly RenderNodeSnapshot[], kind: ContainerSnapshot["kind"], id: string): ContainerSnapshot | undefined { for (const node of nodes) if (node.kind !== "field") { if (node.kind === kind && node.id === id) return node; const found = findContainer(node.nodes, kind, id); if (found !== undefined) return found; } return undefined; }
+
+const schema = createEventLaunchSchema();
+let context = defaultEventLaunchContext;
+let lastChange: StagesChange<EventLaunchValue> | undefined;
+const shouldResume = sessionStorage.getItem("event-launch-resume") === "true";
+sessionStorage.removeItem("event-launch-resume");
+const saved = shouldResume ? readEventLaunchDraft(localStorage) : undefined;
+let controller: Controller;
+const onChange = (change: StagesChange<EventLaunchValue>) => { lastChange = change; controller.update({ value: change.value }); };
+controller = saved === undefined ? stages<EventLaunchValue, typeof eventLaunchDomFields, EventLaunchContext>({ schema, fields: eventLaunchDomFields, value: structuredClone(defaultEventLaunchValue), context, codec: eventLaunchValueCodec, onChange, validationFailureIssue: ({ validatorId }) => ({ message: `The ${validatorId} check could not finish. Try again.` }) }) : stages<EventLaunchValue, typeof eventLaunchDomFields, EventLaunchContext>({ schema, fields: eventLaunchDomFields, state: saved, context, codec: eventLaunchValueCodec, onChange, validationFailureIssue: ({ validatorId }) => ({ message: `The ${validatorId} check could not finish. Try again.` }) });
+
+const form = query<HTMLFormElement>("#event-launch-form"); const root = query<HTMLElement>("#stages-root"); const progress = query<HTMLOListElement>("#wizard-progress"); const previous = query<HTMLButtonElement>("#previous"); const next = query<HTMLButtonElement>("#next"); const publish = query<HTMLButtonElement>("#publish"); const status = query<HTMLElement>("#form-status"); const validationSummary = query<HTMLElement>("#validation-summary"); const inspector = query<HTMLElement>("#inspector-output");
+let agendaId = 10; let ticketId = 10;
+function decorateCollection(snapshot: StagesSnapshot<EventLaunchValue>, id: "items" | "tiers"): void {
+  const element = root.querySelector<HTMLElement>(`[data-stages-kind="collection"][data-stages-id="${id}"]`); const collection = findContainer(snapshot.nodes, "collection", id); if (element === null || collection === undefined) return;
+  element.classList.add("collection-list"); const rows = Array.from(element.querySelectorAll<HTMLElement>(":scope > [data-stages-kind='row']")); rows.forEach((row, index) => { const rowSnapshot = collection.nodes.filter((node): node is ContainerSnapshot => node.kind === "row")[index]; if (rowSnapshot === undefined) return; const value = id === "items" ? snapshot.value.launch.agenda.items[index] : snapshot.value.launch.tickets.tiers[index]; if (value === undefined) return; row.classList.add("collection-row"); row.dataset["testid"] = `${id === "items" ? "agenda" : "ticket"}-row-${value.id}`; const header = document.createElement("div"); header.className = "row-header"; const kind = document.createElement("span"); kind.className = "row-kind"; kind.textContent = "kind" in value ? value.kind : "ticket"; const key = document.createElement("span"); key.className = "row-key"; key.textContent = rowSnapshot.id; header.append(kind, key); row.prepend(header); const actions = document.createElement("div"); actions.className = "row-actions"; const addAction = (label: string, disabled: boolean, run: () => void, danger = false) => { const button = document.createElement("button"); button.type = "button"; button.className = `quiet${danger ? " danger" : ""}`; button.textContent = label; button.disabled = disabled; button.addEventListener("click", run); actions.append(button); }; addAction("Move up", index === 0, () => controller.dispatch(nodeEvent("collection:move", rowSnapshot.address, { payload: { to: index - 1 } }))); addAction("Move down", index === rows.length - 1, () => controller.dispatch(nodeEvent("collection:move", rowSnapshot.address, { payload: { to: index + 1 } }))); addAction("Remove", collection.canRemove !== true, () => controller.dispatch(nodeEvent("collection:remove", rowSnapshot.address)), true); row.append(actions); });
+  const toolbar = document.createElement("div"); toolbar.className = "collection-toolbar"; const title = document.createElement("strong"); title.textContent = `${rows.length} ${id === "items" ? "agenda items" : "ticket tiers"}`; const actions = document.createElement("div"); actions.className = "row-actions"; const addButton = (label: string, run: () => void) => { const button = document.createElement("button"); button.type = "button"; button.disabled = collection.canAdd !== true; button.textContent = label; button.addEventListener("click", run); actions.append(button); }; if (id === "items") (["session", "workshop", "break"] as const).forEach((kind) => addButton(`Add ${kind}`, () => { controller.dispatch(nodeEvent("collection:add", EVENT_LAUNCH_AGENDA_ADDRESS, { payload: { value: createAgendaItem(kind, `agenda-${kind}-${agendaId}`) } })); agendaId += 1; })); else addButton("Add tier", () => { controller.dispatch(nodeEvent("collection:add", collection.address, { payload: { value: createTicketTier(`ticket-${ticketId}`) } })); ticketId += 1; }); toolbar.append(title, actions); element.before(toolbar);
 }
-
-function required(id: string, message: string): ValidatorConfig<WorkspaceValue> {
-  return {
-    id,
-    on: ["input", "submit"],
-    revealOn: ["blur", "submit"],
-    validate({ fieldValue, path }): readonly ValidationIssue[] {
-      return typeof fieldValue === "string" && fieldValue.trim().length > 0
-        ? []
-        : [{ id, code: "required", message, path, severity: "error" }];
-    },
-  };
-}
-
-const fields = createDomFields();
-const schema = {
-  id: "vanilla-workspace",
-  version: 1,
-  nodes: [{
-    kind: "wizard",
-    id: "setup",
-    initialStage: "account",
-    navigation: { validateCurrent: true },
-    stages: [
-      {
-        id: "account",
-        nodes: [
-          {
-            kind: "field",
-            id: "name",
-            type: "text",
-            props: { label: "Workspace name", placeholder: "Northwind" },
-            validators: [required("workspace-name.required", "Enter a workspace name.")],
-          },
-          {
-            kind: "field",
-            id: "email",
-            type: "text",
-            props: { label: "Contact email", inputType: "email", placeholder: "you@example.com" },
-            validators: [required("email.required", "Enter a contact email.")],
-          },
-        ],
-      },
-      {
-        id: "preferences",
-        nodes: [
-          {
-            kind: "field",
-            id: "seats",
-            type: "number",
-            props: { label: "Team size" },
-          },
-          {
-            kind: "field",
-            id: "productNews",
-            type: "checkbox",
-            props: { label: "Send occasional product updates" },
-          },
-        ],
-      },
-      {
-        id: "review",
-        nodes: [{
-          kind: "field",
-          id: "confirmation",
-          type: "text",
-          props: { label: "Type CREATE to confirm", placeholder: "CREATE" },
-          validators: [{
-            id: "confirmation.matches",
-            on: ["input", "submit"],
-            revealOn: ["blur", "submit"],
-            validate({ fieldValue, path }) {
-              return fieldValue === "CREATE"
-                ? []
-                : [{
-                    id: "confirmation.matches",
-                    code: "confirmation",
-                    message: "Type CREATE exactly to finish.",
-                    path,
-                    severity: "error",
-                  }];
-            },
-          }],
-        }],
-      },
-    ],
-  }],
-} as const satisfies StagesSchema<WorkspaceValue, typeof fields>;
-
-const initialValue: WorkspaceValue = {
-  setup: {
-    account: { name: "", email: "" },
-    preferences: { seats: 5, productNews: false },
-    review: { confirmation: "" },
-  },
-};
-
-function query<TElement extends Element>(selector: string): TElement {
-  const match = document.querySelector<TElement>(selector);
-  if (match === null) throw new Error(`Missing example element: ${selector}`);
-  return match;
-}
-
-const form = query<HTMLFormElement>("#wizard-form");
-const root = query<HTMLElement>("#stages-root");
-const previous = query<HTMLButtonElement>("#previous");
-const next = query<HTMLButtonElement>("#next");
-const submit = query<HTMLButtonElement>("#submit");
-const progress = query<HTMLOListElement>("#progress");
-const status = query<HTMLElement>("#form-status");
-const debugValue = query<HTMLElement>("#debug-value");
-const wizardAddress: NodeAddress = [{ kind: "node", id: "setup" }];
-let acceptedValue = initialValue;
-let controller: StagesController<WorkspaceValue, typeof fields>;
-
-controller = stages({
-  schema,
-  fields,
-  value: acceptedValue,
-  onChange({ value }) {
-    acceptedValue = value;
-    controller.update({ value: acceptedValue });
-  },
-});
-
-const mounted = mountStages(root, controller);
-
-function wizardSnapshot(): ContainerSnapshot {
-  const wizard = controller.getSnapshot().nodes[0];
-  if (wizard?.kind !== "wizard") throw new Error("The setup wizard is unavailable.");
-  return wizard;
-}
-
-function renderChrome(): void {
-  const snapshot = controller.getSnapshot();
-  const wizard = wizardSnapshot();
-  const stages = wizard.nodes.filter((node): node is ContainerSnapshot => node.kind === "stage");
-
-  progress.replaceChildren(...stages.map((stage) => {
-    const item = document.createElement("li");
-    item.textContent = stage.id;
-    if (stage.active === true) item.setAttribute("aria-current", "step");
-    return item;
-  }));
-  previous.disabled = wizard.canPrevious !== true;
-  next.hidden = wizard.canNext !== true;
-  submit.hidden = wizard.canNext === true;
-  debugValue.textContent = JSON.stringify({
-    value: snapshot.value,
-    state: controller.serialize(),
-  }, null, 2);
-}
-
-async function validateActiveStage(): Promise<boolean> {
-  const activeStage = wizardSnapshot().activeStage;
-  if (activeStage === undefined) return false;
-  const result = await controller.validate({
-    scope: { address: [...wizardAddress, { kind: "node", id: activeStage }] },
-    event: "submit",
-    reveal: true,
-  });
-  if (!result.isValid) {
-    status.textContent = "Please fix the highlighted fields before continuing.";
-    mounted.focusFirstIssue({ preventScroll: false });
-  }
-  return result.isValid;
-}
-
-previous.addEventListener("click", () => {
-  status.textContent = "";
-  controller.dispatch({ name: "wizard:previous", target: { kind: "node", address: wizardAddress } });
-});
-
-next.addEventListener("click", async () => {
-  status.textContent = "";
-  if (await validateActiveStage()) {
-    controller.dispatch({ name: "wizard:next", target: { kind: "node", address: wizardAddress } });
-  }
-});
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const result = await controller.validate({ scope: "form", event: "submit", reveal: true });
-  status.textContent = result.isValid
-    ? `Workspace “${acceptedValue.setup.account.name}” is ready to create.`
-    : "Please fix the highlighted fields before finishing.";
-  if (!result.isValid) mounted.focusFirstIssue({ preventScroll: false });
-});
-
-const unsubscribeChrome = controller.subscribe(renderChrome);
-renderChrome();
-
-window.addEventListener("pagehide", () => {
-  unsubscribeChrome();
-  mounted.destroy();
-  controller.destroy();
-}, { once: true });
+const mounted = mountStages(root, controller, { onRender(snapshot) { root.querySelectorAll<HTMLElement>("[data-stages-kind='group'], [data-stages-kind='stage'], [data-stages-kind='row']").forEach((element) => element.classList.add("field-grid")); root.querySelectorAll<HTMLElement>("[data-stages-field]").forEach((element) => element.classList.add("field")); decorateCollection(snapshot, "items"); decorateCollection(snapshot, "tiers"); } });
+function wizard(): ContainerSnapshot { const found = findContainer(controller.getSnapshot().nodes, "wizard", "launch"); if (found === undefined) throw new Error("Event Launch wizard is unavailable."); return found; }
+async function validateActive(): Promise<boolean> { const active = wizard().nodes.find((node) => node.kind === "stage" && node.active === true); if (active === undefined) return false; const result = await controller.validate({ scope: { address: active.address }, event: "submit", reveal: true }); if (!result.isValid) { status.textContent = "Please fix the highlighted fields before continuing."; mounted.focusFirstIssue(); } return result.isValid; }
+function renderChrome(): void { const snapshot = controller.getSnapshot(); const current = wizard(); const stages = current.nodes.filter((node): node is ContainerSnapshot => node.kind === "stage"); progress.replaceChildren(...stages.map((stage, index) => { const item = document.createElement("li"); const button = document.createElement("button"); button.type = "button"; button.textContent = stage.id; button.dataset["testid"] = `wizard-stage-${stage.id}`; if (stage.active === true) button.setAttribute("aria-current", "step"); button.addEventListener("click", async () => { const activeIndex = stages.findIndex((entry) => entry.active === true); if (index <= activeIndex || await validateActive()) controller.dispatch(nodeEvent("wizard:go", EVENT_LAUNCH_WIZARD_ADDRESS, { payload: stage.id })); }); item.append(button); return item; })); previous.disabled = current.canPrevious !== true; next.hidden = current.canNext !== true; publish.hidden = current.canNext === true; query<HTMLElement>("#current-stage").textContent = current.activeStage ?? "None"; query<HTMLElement>("#visible-count").textContent = String(stages.length); query<HTMLElement>("#validation-status").textContent = snapshot.validation.status; const list = validationSummary.querySelector("ul"); if (list !== null) list.replaceChildren(...snapshot.validation.visibleIssues.map((entry) => { const item = document.createElement("li"); item.textContent = entry.message ?? entry.code; return item; })); validationSummary.hidden = snapshot.validation.visibleIssues.length === 0; query<HTMLElement>("#stage-heading").textContent = ({ basics: "Event basics", venue: "Venue", streaming: "Streaming", agenda: "Agenda", tickets: "Ticket tiers", compliance: "Data processing", review: "Review and publish" } as Readonly<Record<string, string>>)[current.activeStage ?? ""] ?? "Event launch"; inspector.textContent = JSON.stringify({ value: snapshot.value, validation: snapshot.validation, activeStage: current.activeStage, visibleStages: stages.map((stage) => stage.id), lastTransaction: lastChange, diagnostics: snapshot.diagnostics, envelope: controller.serialize() }, null, 2); query<HTMLButtonElement>("#resume-draft").disabled = localStorage.getItem(EVENT_LAUNCH_STORAGE_KEY) === null; }
+previous.addEventListener("click", () => controller.dispatch(nodeEvent("wizard:previous", EVENT_LAUNCH_WIZARD_ADDRESS))); next.addEventListener("click", async () => { if (await validateActive()) controller.dispatch(nodeEvent("wizard:next", EVENT_LAUNCH_WIZARD_ADDRESS)); }); form.addEventListener("submit", async (event) => { event.preventDefault(); const result = await controller.validate({ scope: "form", event: "submit", reveal: true }); if (result.isValid) { const output = query<HTMLElement>("#published"); output.hidden = false; output.className = "published"; output.dataset["testid"] = "published-payload"; output.textContent = JSON.stringify(controller.getSnapshot().value, null, 2); status.textContent = "Event payload is ready. Publishing remains application policy."; } else { status.textContent = "Please resolve the highlighted issues before publishing."; mounted.focusFirstIssue(); } });
+query("#apply-template").addEventListener("click", () => controller.dispatch(formEvent("apply-template"))); query("#save-draft").addEventListener("click", () => { saveEventLaunchDraft(localStorage, controller); status.textContent = "Draft saved by the application."; renderChrome(); }); query("#resume-draft").addEventListener("click", () => { sessionStorage.setItem("event-launch-resume", "true"); location.reload(); }); query("#start-over").addEventListener("click", () => { controller.dispatch(formEvent("form:reset")); clearEventLaunchDraft(localStorage); status.textContent = "The accepted baseline was restored."; }); query<HTMLInputElement>("#require-compliance").addEventListener("change", (event) => { if (event.currentTarget instanceof HTMLInputElement) { context = { ...context, requiresDataProcessingAgreement: event.currentTarget.checked }; controller.update({ context }); } });
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { const smoke = query<HTMLButtonElement>("#smoke-data"); smoke.hidden = false; smoke.addEventListener("click", () => controller.batch(() => { const entries: readonly [readonly (string | number)[], unknown][] = [[["launch","basics","identity","title"], smokeTestValue.launch.basics.identity.title], [["launch","basics","identity","slug"], smokeTestValue.launch.basics.identity.slug], [["launch","basics","accessModel"], "free"]]; entries.forEach(([path, payload]) => controller.dispatch({ name: "input", target: { kind: "field", path }, payload })); })); }
+const autoSave = debounceDraftSave(() => saveEventLaunchDraft(localStorage, controller), 700); const unsubscribe = controller.subscribe(() => { renderChrome(); if (controller.getSnapshot().revision > 0) autoSave.schedule(); }); renderChrome(); window.addEventListener("pagehide", () => { autoSave.destroy(); unsubscribe(); mounted.destroy(); controller.destroy(); }, { once: true });

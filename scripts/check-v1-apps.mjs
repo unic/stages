@@ -13,6 +13,7 @@ const activeRoots = [
   "examples/vue/src",
   "examples/angular/src",
   "examples/vanilla/src",
+  "examples/shared/event-launch",
 ];
 const activeManifests = [
   "studio/package.json",
@@ -22,13 +23,14 @@ const activeManifests = [
   "examples/angular/package.json",
   "examples/vanilla/package.json",
 ];
-const activeStandaloneFiles = ["docs/mdx-components.jsx", "docs/next.config.mjs"];
+const activeStandaloneFiles = ["docs/mdx-components.jsx", "docs/next.config.mjs", "examples/event-launch-compiler-spike.ts"];
 const failures = [];
 
 async function sourceFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
+    if (entry.isDirectory() && ["dist", "node_modules"].includes(entry.name)) continue;
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await sourceFiles(target));
     else if (sourceExtensions.has(path.extname(entry.name))) files.push(target);

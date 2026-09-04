@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
+    "rootDir": "..",
     "types": [],
     "paths": {
       "@stages/core": ["./node_modules/@stages/core/dist/index.d.ts"],

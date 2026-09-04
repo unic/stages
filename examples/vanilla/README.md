@@ -1,18 +1,19 @@
-# Vanilla DOM wizard
+# Event Launch — DOM / vanilla
 
-A production-style Stages v1 example using only `@stages/core` and
-`@stages/dom`. It demonstrates the controlled-value handshake, wizard stages,
-scoped validation, accessible issue output, first-error focus, and serialized
-durable state.
+The framework-free implementation of the canonical Event Launch workflow.
 
-Build the v1 packages from the repository root, then install and run the example:
+- `src/main.ts` — controlled controller ownership, `mountStages()`, snapshot-
+  driven collection/wizard chrome, focus, persistence, and page-hide cleanup
+- `src/fields.ts` — native DOM fields merged with custom textarea, choice, and
+  money views
+- `../shared/event-launch` — framework-neutral domain behavior and shared CSS
+
+From the repository root:
 
 ```sh
 npm run build:v1
-cd examples/vanilla
-npm install
-npm run dev
+npm --prefix examples/vanilla run dev
 ```
 
-The repository-level `npm run check:v1` command type-checks this example against
-the built public declarations.
+The DOM renderer uses stable row snapshots and addresses rather than deriving
+identity from labels or array values.
