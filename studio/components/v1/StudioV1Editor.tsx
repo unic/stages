@@ -1,5 +1,5 @@
 import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import {
   createStudioHistory,
   dispatchStudioCommand,
@@ -198,56 +198,72 @@ function expressionReferences(form: StudioFormDocument): readonly StudioExpressi
   return output;
 }
 
-function CanvasNode({ form, uid, selectedUids, onSelect }: {
-  readonly form: StudioFormDocument;
-  readonly uid: Uid;
+interface AuthoringCanvasBindings {
   readonly selectedUids: readonly Uid[];
+  readonly selectableUids: ReadonlySet<Uid>;
   readonly onSelect: (uid: Uid, options?: StudioSelectionOptions) => void;
-}) {
-  const node = form.nodes[uid];
-  if (!node) return null;
-  const children = node.kind === "group" || node.kind === "collection" || node.kind === "stage"
-    ? node.kind === "collection" && isStudioVariantCollection(node) ? node.variantUids : node.childUids
-    : node.kind === "variant" ? node.childUids
-    : node.kind === "wizard" ? node.stageUids : [];
-  return (
-    <li className="studio-v1-node" data-canvas-kind={node.kind} data-canvas-uid={uid}>
-      <button
-        type="button"
-        className="studio-v1-node__select"
-        aria-pressed={selectedUids.includes(uid)}
-        onClick={(event) => onSelect(uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey })}
-      >
-        <span>{nodeLabel(form, uid)}</span>
-        <small>{node.kind}</small>
-      </button>
-      {children.length > 0 && (
-        <ol className="studio-v1-node__children">
-          {children.map((childUid) => (
-            <CanvasNode key={childUid} form={form} uid={childUid} selectedUids={selectedUids} onSelect={onSelect} />
-          ))}
-        </ol>
-      )}
-    </li>
-  );
+  readonly onDrop: (uid: Uid, targetUid: Uid) => void;
 }
 
-function PreviewLayout({ node, children }: { readonly node: StudioRenderNode; readonly children: ReactNode }) {
+function writeCanvasDragData(event: DragEvent<HTMLButtonElement>, uid: Uid): void {
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("application/x-stages-studio-uid", uid);
+  event.stopPropagation();
+}
+
+function PreviewLayout({ node, children, authoring }: {
+  readonly node: StudioRenderNode;
+  readonly children: ReactNode;
+  readonly authoring?: AuthoringCanvasBindings;
+}) {
+  const selectable = authoring?.selectableUids.has(node.uid) === true;
+  const selected = selectable && authoring.selectedUids.includes(node.uid);
   return (
     <div
-      className="studio-v1-preview__layout"
+      className={`studio-v1-preview__layout${selectable ? " studio-v1-authoring-node" : ""}`}
+      data-authoring-selected={selected || undefined}
+      data-canvas-uid={selectable ? node.uid : undefined}
       data-width-mobile={node.layout.width.mobile}
       data-width-tablet={node.layout.width.tablet}
       data-width-desktop={node.layout.width.desktop}
       data-align-mobile={node.layout.align.mobile}
       data-align-tablet={node.layout.align.tablet}
       data-align-desktop={node.layout.align.desktop}
+      {...(selectable ? { role: "group", tabIndex: 0, "aria-label": `Select ${node.uid}` } : {})}
       style={{ "--studio-layout-columns-mobile": node.layout.columns.mobile, "--studio-layout-columns-tablet": node.layout.columns.tablet, "--studio-layout-columns-desktop": node.layout.columns.desktop } as CSSProperties}
-    >{children}</div>
+      onClick={selectable ? (event) => {
+        event.stopPropagation();
+        authoring.onSelect(node.uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
+      } : undefined}
+      onKeyDown={selectable ? (event) => {
+        if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        authoring.onSelect(node.uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
+      } : undefined}
+      onDragOver={selectable ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; } : undefined}
+      onDrop={selectable ? (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const uid = event.dataTransfer.getData("application/x-stages-studio-uid");
+        if (uid && uid !== node.uid) authoring.onDrop(uid as Uid, node.uid);
+      } : undefined}
+    >
+      {selectable && <button
+        type="button"
+        className="studio-v1-authoring-node__handle"
+        aria-label={`Move ${node.uid}`}
+        title="Drag to move"
+        draggable
+        onClick={(event) => { event.stopPropagation(); authoring.onSelect(node.uid); }}
+        onDragStart={(event) => writeCanvasDragData(event, node.uid)}
+      >⠿</button>}
+      {children}
+    </div>
   );
 }
 
-function PreviewBlock({ node }: { readonly node: Extract<StudioRenderNode, { readonly kind: "block" }> }) {
+function PreviewBlock({ node, authoring }: { readonly node: Extract<StudioRenderNode, { readonly kind: "block" }>; readonly authoring?: AuthoringCanvasBindings }) {
   const text = String(node.props["text"] ?? node.props["label"] ?? "");
   let content: ReactNode;
   if (node.definition === "block:heading") {
@@ -258,19 +274,20 @@ function PreviewBlock({ node }: { readonly node: Extract<StudioRenderNode, { rea
     content = <aside role="note" data-tone={String(node.props["tone"] ?? "info")}>{text}</aside>;
   } else if (node.definition === "block:help") content = <p role="note">{text}</p>;
   else content = <div role="separator">{text}</div>;
-  return <PreviewLayout node={node}>{content}</PreviewLayout>;
+  return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}>{content}</PreviewLayout>;
 }
 
-function PreviewDynamicBlock({ form, node, expressionContext }: {
+function PreviewDynamicBlock({ form, node, expressionContext, authoring }: {
   readonly form: StudioFormDocument;
   readonly node: Extract<StudioRenderNode, { readonly kind: "block" }>;
   readonly expressionContext: StudioExpressionContext;
+  readonly authoring?: AuthoringCanvasBindings;
 }) {
   const source = form.nodes[node.uid];
   const present = source?.behavior?.presentWhen === undefined ? undefined : evaluateStudioExpression(source.behavior.presentWhen, expressionContext);
   const visible = source?.behavior?.when === undefined ? undefined : evaluateStudioExpression(source.behavior.when, expressionContext);
   if ((present?.ok && present.value === false) || (visible?.ok && visible.value === false)) return null;
-  return <PreviewBlock node={node} />;
+  return <PreviewBlock node={node} {...(authoring === undefined ? {} : { authoring })} />;
 }
 
 function PreviewFieldControl({ definition, field, node, currentValue, descriptionId, disabled, invalid, onInput, onBlur, onFocus }: {
@@ -312,7 +329,7 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
   />;
 }
 
-function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, onFocus }: {
+function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, onFocus, authoring }: {
   readonly form: StudioFormDocument;
   readonly node: StudioRuntimeRenderNode<"field">;
   readonly snapshot: Extract<RenderNodeSnapshot, { readonly kind: "field" }>;
@@ -321,6 +338,7 @@ function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, on
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
   readonly onBlur: () => void;
   readonly onFocus: () => void;
+  readonly authoring?: AuthoringCanvasBindings;
 }) {
   const field = form.nodes[node.uid];
   if (field?.kind !== "field") return null;
@@ -331,7 +349,7 @@ function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, on
   const descriptionId = issue === undefined ? (description.length > 0 ? `${node.uid}-help` : undefined) : `${node.uid}-issue`;
   const currentValue = getAtPath(value, node.runtimePath) ?? definition.value.emptyValue;
   const formatted = field.format === undefined ? undefined : formatStudioFieldValue(currentValue, field.format, locale);
-  return <PreviewLayout node={node}><label className="studio-field">
+  return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}><label className="studio-field">
     <span>{typeof snapshot.props["label"] === "string" ? snapshot.props["label"] : nodeLabel(form, node.uid)}</span>
     <PreviewFieldControl
       definition={definition}
@@ -383,6 +401,7 @@ interface PreviewNodeProps {
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
   readonly onStructureEvent: (event: StagesEvent) => void;
   readonly onWizardNavigate: (wizard: ContainerSnapshot, event: StagesEvent, validateCurrent: boolean) => Promise<void>;
+  readonly authoring?: AuthoringCanvasBindings;
 }
 
 function CollectionRowTestControls({ row, index, size, snapshot, canAdd, canRemove, disabled, onStructureEvent }: {
@@ -424,7 +443,7 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
   const snapshot = findPreviewSnapshot(snapshotNodes, path);
   const rows = getAtPath(value, path);
   const values = Array.isArray(rows) ? rows : [];
-  return <PreviewLayout node={node}><div className="studio-v1-preview__collection">
+  return <PreviewLayout node={node} {...(props.authoring === undefined ? {} : { authoring: props.authoring })}><div className="studio-v1-preview__collection">
       <p><strong>Collection scope:</strong> {path.join(".")} · size {values.length} · add {snapshot?.kind === "collection" && snapshot.canAdd ? "allowed" : "blocked"} · remove {snapshot?.kind === "collection" && snapshot.canRemove ? "allowed" : "blocked"}</p>
       <div className="studio-v1-preview__collection-actions">
         {collection?.kind === "collection" && isStudioVariantCollection(collection)
@@ -442,7 +461,7 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
       const rowSnapshot = snapshot?.kind === "collection" ? snapshot.nodes.find((candidate) => candidate.kind === "row" && candidate.path.at(-1) === index) : undefined;
       const rowKey = rowSnapshot?.kind === "row" ? rowSnapshot.id : `unavailable-${rowPath.join("\u0000")}`;
       return <div className="studio-v1-preview__row" data-row-index={index} key={rowKey}>{children.map((child) => (
-        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} expressionContext={{ ...props.expressionContext, row }} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
+        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} expressionContext={{ ...props.expressionContext, row }} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} {...(props.authoring === undefined ? {} : { authoring: props.authoring })} />
       ))}{rowSnapshot?.kind === "row" && <CollectionRowTestControls row={row} index={index} size={values.length} snapshot={rowSnapshot} canAdd={snapshot?.kind === "collection" && snapshot.canAdd === true} canRemove={snapshot?.kind === "collection" && snapshot.canRemove === true} disabled={snapshot?.kind !== "collection" || snapshot.state.disabled} onStructureEvent={onStructureEvent} />}</div>;
     })}</div></PreviewLayout>;
 }
@@ -460,7 +479,7 @@ function PreviewWizard(props: PreviewNodeProps & { readonly node: StudioRuntimeR
   const navigate = (name: string, target?: string) => snapshot?.kind === "wizard"
     ? void onWizardNavigate(snapshot, nodeEvent(name, snapshot.address, target === undefined ? {} : { payload: target }), documentWizard?.kind === "wizard" && documentWizard.navigation?.validateCurrent === true)
     : undefined;
-  return <PreviewLayout node={node}><div className="studio-v1-preview__wizard">
+  return <PreviewLayout node={node} {...(props.authoring === undefined ? {} : { authoring: props.authoring })}><div className="studio-v1-preview__wizard">
       {snapshot?.kind === "wizard" && <nav aria-label={`${nodeLabel(form, node.uid)} stages`}>
         <button type="button" disabled={snapshot.canPrevious !== true} onClick={() => navigate("wizard:previous")}>Previous</button>
         {snapshot.canGo === true && node.children.flatMap((stage) => visibleStageIdSet.has(runtimeIdFor(form, stage.uid) ?? "") ? [<button type="button" key={stage.uid} aria-current={runtimeIdFor(form, stage.uid) === activeStage ? "step" : undefined} onClick={() => navigate("wizard:go", runtimeIdFor(form, stage.uid))}>{nodeLabel(form, stage.uid)}</button>] : [])}
@@ -473,31 +492,31 @@ function PreviewWizard(props: PreviewNodeProps & { readonly node: StudioRuntimeR
         <small>Route simulation is adapter-only Test state; it dispatches the same guarded <code>wizard:go</code> command and is not stored in form data.</small>
       </section>}
       {stages.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={props.expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={props.expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} {...(props.authoring === undefined ? {} : { authoring: props.authoring })} />
     ))}</div></PreviewLayout>;
 }
 
 function PreviewNode(props: PreviewNodeProps) {
-  const { form, node, value, snapshotNodes, runtimePath, expressionContext, onInput, onStructureEvent, onWizardNavigate } = props;
+  const { form, node, value, snapshotNodes, runtimePath, expressionContext, onInput, onStructureEvent, onWizardNavigate, authoring } = props;
   if (node.hidden) return null;
-  if (node.kind === "block") return <PreviewDynamicBlock form={form} node={node} expressionContext={expressionContext} />;
+  if (node.kind === "block") return <PreviewDynamicBlock form={form} node={node} expressionContext={expressionContext} {...(authoring === undefined ? {} : { authoring })} />;
   const path = runtimePath ?? node.runtimePath;
   const snapshot = findPreviewSnapshot(snapshotNodes, path);
   if (snapshot === undefined || snapshot.state.visible === false) return null;
   if (node.kind === "group") {
-    return <PreviewLayout node={node}><fieldset className="studio-v1-preview__group">{node.children.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
+    return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}><fieldset className="studio-v1-preview__group">{node.children.map((child) => (
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} {...(authoring === undefined ? {} : { authoring })} />
     ))}</fieldset></PreviewLayout>;
   }
   if (node.kind === "collection") return <PreviewCollection {...props} node={node} path={path} />;
   if (node.kind === "wizard") return <PreviewWizard {...props} node={node} path={path} />;
-  if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
-    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} />
+  if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
+    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} {...(authoring === undefined ? {} : { authoring })} />
   ))}</div></PreviewLayout>;
   const requestedLocale = expressionContext.context !== null && typeof expressionContext.context === "object"
     ? (expressionContext.context as Readonly<Record<string, unknown>>)["locale"]
     : undefined;
-  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} locale={typeof requestedLocale === "string" ? requestedLocale : "en"} onInput={onInput} onBlur={() => onStructureEvent(fieldEvent("blur", path, { source: "adapter" }))} onFocus={() => onStructureEvent(fieldEvent("focus", path, { source: "adapter" }))} /> : null;
+  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} locale={typeof requestedLocale === "string" ? requestedLocale : "en"} onInput={onInput} onBlur={() => onStructureEvent(fieldEvent("blur", path, { source: "adapter" }))} onFocus={() => onStructureEvent(fieldEvent("focus", path, { source: "adapter" }))} {...(authoring === undefined ? {} : { authoring })} /> : null;
 }
 
 function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
@@ -731,7 +750,7 @@ function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { re
   return <section className="studio-v1-dynamic-state" aria-labelledby="studio-v1-dynamic-state-title"><h3 id="studio-v1-dynamic-state-title">Dynamic structure</h3><ul>{items.map((item) => <li key={item.uid}><span>{item.label}</span><strong>{item.state}</strong></li>)}</ul></section>;
 }
 
-export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, onNavigateProblem, project, resources: resourceCatalog, defaultLocale = "en", codecBindings = STUDIO_PREVIEW_CODEC_BINDINGS }: {
+export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, onNavigateProblem, project, resources: resourceCatalog, defaultLocale = "en", codecBindings = STUDIO_PREVIEW_CODEC_BINDINGS, variant = "bench", authoring }: {
   readonly form: StudioFormDocument;
   readonly compiled: CompiledStudioForm;
   readonly project?: StudioProjectDocument["project"];
@@ -741,6 +760,8 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   readonly onNavigateProblem?: (diagnostic: StudioProblem) => void;
   readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "title" | "value" | "context" | "extensions" | "services">>) => void;
   readonly onAddScenario: () => StudioScenario | undefined;
+  readonly variant?: "bench" | "canvas";
+  readonly authoring?: AuthoringCanvasBindings;
 }) {
   const previewRef = useRef<HTMLElement>(null);
   const initialScenario = form.scenarios[0];
@@ -939,6 +960,33 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     "--studio-preview-spacing": compiled.renderPlan.theme.spacing,
   } as CSSProperties;
 
+  const formSurface = <div className="studio-v1-preview__fields">
+    {compiled.renderPlan.nodes.map((node) => (
+      <PreviewNode
+        key={node.uid}
+        form={form}
+        node={node}
+        value={preview.snapshot.value}
+        snapshotNodes={preview.snapshot.nodes}
+        runtimePath={undefined}
+        expressionContext={{ value, context: { locale, ...scenario?.context }, extensions: scenario?.extensions, metadata: { revision: preview.snapshot.revision } }}
+        onInput={(renderNode, nextValue) => preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, {
+          payload: nextValue,
+          source: "adapter",
+        }))}
+        onStructureEvent={(event) => preview.controller.dispatch(event)}
+        onWizardNavigate={navigateWizard}
+        {...(authoring === undefined ? {} : { authoring })}
+      />
+    ))}
+  </div>;
+
+  if (variant === "canvas") return (
+    <section ref={previewRef} className="studio-v1-authoring-canvas" style={themeStyle} data-studio-theme="default" aria-label="Interactive form canvas">
+      {formSurface}
+    </section>
+  );
+
   return (
     <section ref={previewRef} className="studio-v1-preview" aria-labelledby="studio-v1-preview-title" style={themeStyle} data-studio-theme="default">
       <div className="studio-v1-section-heading">
@@ -1035,25 +1083,7 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
           <strong>{issue.severity}</strong> {issue.message ?? issue.code} <small>{visible ? "visible" : "hidden"}{targetUid === undefined ? "" : ` · ${nodeLabel(form, targetUid)}`}</small>
         </li>)}</ul>}
       </section>
-      <div className="studio-v1-preview__fields">
-        {compiled.renderPlan.nodes.map((node) => (
-          <PreviewNode
-            key={node.uid}
-            form={form}
-            node={node}
-            value={preview.snapshot.value}
-            snapshotNodes={preview.snapshot.nodes}
-            runtimePath={undefined}
-            expressionContext={{ value, context: { locale, ...scenario?.context }, extensions: scenario?.extensions, metadata: { revision: preview.snapshot.revision } }}
-            onInput={(renderNode, nextValue) => preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, {
-              payload: nextValue,
-              source: "adapter",
-            }))}
-            onStructureEvent={(event) => preview.controller.dispatch(event)}
-            onWizardNavigate={navigateWizard}
-          />
-        ))}
-      </div>
+      {formSurface}
     </section>
   );
 }
@@ -1396,6 +1426,8 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   });
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
+  const [surface, setSurface] = useState<"design" | "preview">("design");
+  const [drawer, setDrawer] = useState<"insert" | "layers" | "project" | undefined>();
   const [inspectionPropertyPath, setInspectionPropertyPath] = useState<readonly (number | string)[] | undefined>();
   const [projectImportSource, setProjectImportSource] = useState("");
   const [projectTransferReport, setProjectTransferReport] = useState("No project import or export has run.");
@@ -1409,7 +1441,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const lastSaveFailed = useRef(false);
 
   useEffect(() => { historyRef.current = history; }, [history]);
-  useEffect(() => { setLegacyPreview(previewLegacyStudioStorage(localStorage)); }, []);
+  useEffect(() => {
+    const preview = previewLegacyStudioStorage(localStorage);
+    setLegacyPreview(preview);
+    if (preview.kind !== "absent") setDrawer("project");
+  }, []);
 
   const refreshRepositoryState = useCallback(async () => {
     const [nextProjects, nextRecovery] = await Promise.all([repository.list(), repository.listRecovery()]);
@@ -1972,98 +2008,94 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     <main className="studio-v1-editor" data-testid="studio-v1-editor" aria-busy={loading}>
       <header className="studio-v1-toolbar">
         <div><strong>{history.present.project.title}</strong><span data-project-dirty={dirty}>{dirty ? "Unsaved project changes" : "Project saved"}</span><span data-preview-state="session-local">Preview session is separate</span></div>
-        <nav aria-label="Document history">
+        <nav className="studio-v1-toolbar__drawers" aria-label="Workbench panels">
+          {(["project", "layers", "insert"] as const).map((panel) => <Button
+            key={panel}
+            variant={drawer === panel ? "secondary" : "ghost"}
+            size="sm"
+            aria-pressed={drawer === panel}
+            onClick={() => setDrawer((current) => current === panel ? undefined : panel)}
+          >{panel[0]!.toUpperCase() + panel.slice(1)}</Button>)}
+        </nav>
+        <nav className="studio-v1-toolbar__surface" aria-label="Studio mode">
+          <Button variant={surface === "design" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "design"} onClick={() => setSurface("design")}>Design</Button>
+          <Button variant={surface === "preview" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "preview"} onClick={() => setSurface("preview")}>Preview</Button>
+        </nav>
+        <nav className="studio-v1-toolbar__history" aria-label="Document history">
           <Button variant="outline" size="sm" disabled={loading || history.past.length === 0} onClick={() => replaceHistory(undoStudioHistory(history))}>Undo</Button>
           <Button variant="outline" size="sm" disabled={loading || history.future.length === 0} onClick={() => replaceHistory(redoStudioHistory(history))}>Redo</Button>
           <Button size="sm" disabled={loading || !dirty} onClick={() => void save()}>Save draft</Button>
         </nav>
         <p role="status" aria-live="polite">{status}</p>
       </header>
-      <div className="studio-v1-workspace">
-        <div className="studio-v1-left-panel">
-          <StudioProjectPanel
-            projects={projects}
-            recovery={recovery}
-            activeUid={history.present.project.uid}
-            title={history.present.project.title}
-            legacy={legacyPreview}
-            disabled={loading}
-            onOpen={(uid) => void openProject(uid)}
-            onReload={() => void reloadProject()}
-            onCreate={() => void createProject(false)}
-            onDuplicate={() => void createProject(true)}
-            onRename={renameProject}
-            onDelete={() => void deleteProject()}
-            onRestore={(entry) => void restoreProject(entry)}
-            onDiscardRecovery={(id) => void discardRecovery(id)}
-            onMigrateLegacy={() => void migrateLegacy()}
-          />
-          <StudioOutline
-            project={history.present}
-            state={navigation.workbench}
+      <div className="studio-v1-workspace" data-surface={surface} data-drawer-open={drawer !== undefined}>
+        {drawer !== undefined && <aside className="studio-v1-left-panel" aria-label={`${drawer} panel`}>
+          <div className="studio-v1-drawer-heading"><strong>{drawer[0]!.toUpperCase() + drawer.slice(1)}</strong><Button variant="ghost" size="sm" aria-label={`Close ${drawer} panel`} onClick={() => setDrawer(undefined)}>×</Button></div>
+          {drawer === "project" && <>
+            <StudioProjectPanel
+              projects={projects} recovery={recovery} activeUid={history.present.project.uid} title={history.present.project.title}
+              legacy={legacyPreview} disabled={loading} onOpen={(uid) => void openProject(uid)} onReload={() => void reloadProject()}
+              onCreate={() => void createProject(false)} onDuplicate={() => void createProject(true)} onRename={renameProject}
+              onDelete={() => void deleteProject()} onRestore={(entry) => void restoreProject(entry)}
+              onDiscardRecovery={(id) => void discardRecovery(id)} onMigrateLegacy={() => void migrateLegacy()}
+            />
+            <ResourceCatalogEditor resources={history.present.resources} onUpdate={updateResources} />
+            <section className="studio-v1-palette" aria-labelledby="studio-v1-project-transfer-title">
+              <h2 id="studio-v1-project-transfer-title">Import & export</h2>
+              <label className="studio-field"><span>Studio project JSON</span><textarea className="ui-input" rows={8} value={projectImportSource} onChange={(event) => setProjectImportSource(event.currentTarget.value)} /></label>
+              <Button variant="outline" disabled={loading} onClick={() => setProjectImportSource(serializeStudioProject(history.present))}>Use current canonical JSON</Button>
+              <Button variant="outline" disabled={loading || projectImportSource.trim() === ""} onClick={importProject}>Import and validate</Button>
+              <Button variant="outline" disabled={loading} onClick={prepareExport}>Generate export artifacts</Button>
+              <p role="status" aria-live="polite" style={{ whiteSpace: "pre-wrap" }}>{projectTransferReport}</p>
+              {exportArtifacts.length > 0 && <>
+                <label className="studio-field"><span>Generated artifact</span><select value={activeExportPath} onChange={(event) => setActiveExportPath(event.currentTarget.value)}>{exportArtifacts.map((artifact) => <option key={artifact.path} value={artifact.path}>{artifact.path}</option>)}</select></label>
+                <label className="studio-field"><span>Artifact source</span><textarea className="ui-input" rows={12} readOnly value={exportArtifacts.find(({ path }) => path === activeExportPath)?.source ?? ""} /></label>
+              </>}
+            </section>
+          </>}
+          {drawer === "layers" && <StudioOutline
+            project={history.present} state={navigation.workbench}
             onChange={(workbench) => setNavigation((current) => ({ ...current, workbench }))}
             onActivateForm={(activeFormUid) => setNavigation((current) => ({ ...current, activeFormUid }))}
-            onMove={moveNode}
-            onDrop={dropNode}
-            onCopy={copyNodes}
-            onCut={cutNodes}
-            onPaste={pasteNodes}
-            onGroup={groupNodes}
-            onUngroup={ungroupNode}
-          />
-          <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
-            <h2 id="studio-v1-palette-title">Fields</h2>
-            {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => (
-              <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}>
-                Add {definition.displayName.toLowerCase()}
-              </Button>
-            ))}
+            onMove={moveNode} onDrop={dropNode} onCopy={copyNodes} onCut={cutNodes} onPaste={pasteNodes}
+            onGroup={groupNodes} onUngroup={ungroupNode}
+          />}
+          {drawer === "insert" && <>
+            <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
+              <h2 id="studio-v1-palette-title">Fields</h2>
+              {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}>Add {definition.displayName.toLowerCase()}</Button>)}
+            </section>
+            <section className="studio-v1-palette" aria-labelledby="studio-v1-content-palette-title">
+              <h2 id="studio-v1-content-palette-title">Content</h2>
+              {Object.values(STUDIO_BLOCK_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertBlock(definition)}>Add {definition.displayName.toLowerCase()}</Button>)}
+            </section>
+            <section className="studio-v1-palette" aria-labelledby="studio-v1-structure-palette-title">
+              <h2 id="studio-v1-structure-palette-title">Structure</h2>
+              <Button variant="outline" disabled={loading} onClick={() => insertStructure("group")}>Add group</Button>
+              <Button variant="outline" disabled={loading} onClick={() => insertStructure("collection")}>Add collection</Button>
+              <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant-collection")}>Add variant collection</Button>
+              <Button variant="outline" disabled={loading} onClick={() => insertStructure("wizard")}>Add wizard</Button>
+              <Button variant="outline" disabled={loading} onClick={() => insertStructure("stage")}>Add stage to selected wizard</Button>
+              <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant")}>Add variant to selected collection</Button>
+            </section>
+            <section className="studio-v1-palette" aria-labelledby="studio-v1-fragment-palette-title">
+              <h2 id="studio-v1-fragment-palette-title">Fragments</h2>
+              <Button variant="outline" disabled={loading || selectedNodes.length === 0} onClick={createFragment}>Create fragment from selection</Button>
+              {Object.values(history.present.fragments).map((fragment) => <Button key={fragment.uid} variant="outline" disabled={loading} onClick={() => insertFragment(fragment)}>Insert {fragment.title}</Button>)}
+            </section>
+          </>}
+        </aside>}
+        {surface === "design" ? <>
+          <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
+            <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks · click to select · drag ⠿ to move</span></div>
+            <ControlledPreview
+              form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources}
+              defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem}
+              onUpdateScenario={updateScenario} onAddScenario={addScenario} variant="canvas"
+              authoring={{ selectedUids: navigation.workbench.selectedUids, selectableUids: new Set(Object.keys(form.nodes) as Uid[]), onSelect: selectNode, onDrop: dropNode }}
+            />
           </section>
-          <section className="studio-v1-palette" aria-labelledby="studio-v1-content-palette-title">
-            <h2 id="studio-v1-content-palette-title">Content</h2>
-            {Object.values(STUDIO_BLOCK_DEFINITIONS).map((definition) => (
-              <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertBlock(definition)}>
-                Add {definition.displayName.toLowerCase()}
-              </Button>
-            ))}
-          </section>
-          <section className="studio-v1-palette" aria-labelledby="studio-v1-structure-palette-title">
-            <h2 id="studio-v1-structure-palette-title">Structure</h2>
-            <Button variant="outline" disabled={loading} onClick={() => insertStructure("group")}>Add group</Button>
-            <Button variant="outline" disabled={loading} onClick={() => insertStructure("collection")}>Add collection</Button>
-            <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant-collection")}>Add variant collection</Button>
-            <Button variant="outline" disabled={loading} onClick={() => insertStructure("wizard")}>Add wizard</Button>
-            <Button variant="outline" disabled={loading} onClick={() => insertStructure("stage")}>Add stage to selected wizard</Button>
-            <Button variant="outline" disabled={loading} onClick={() => insertStructure("variant")}>Add variant to selected collection</Button>
-          </section>
-          <section className="studio-v1-palette" aria-labelledby="studio-v1-fragment-palette-title">
-            <h2 id="studio-v1-fragment-palette-title">Fragments</h2>
-            <Button variant="outline" disabled={loading || selectedNodes.length === 0} onClick={createFragment}>Create fragment from selection</Button>
-            {Object.values(history.present.fragments).map((fragment) => <Button key={fragment.uid} variant="outline" disabled={loading} onClick={() => insertFragment(fragment)}>Insert {fragment.title}</Button>)}
-          </section>
-          <ResourceCatalogEditor resources={history.present.resources} onUpdate={updateResources} />
-          <section className="studio-v1-palette" aria-labelledby="studio-v1-project-transfer-title">
-            <h2 id="studio-v1-project-transfer-title">Import & export</h2>
-            <label className="studio-field"><span>Studio project JSON</span><textarea className="ui-input" rows={8} value={projectImportSource} onChange={(event) => setProjectImportSource(event.currentTarget.value)} /></label>
-            <Button variant="outline" disabled={loading} onClick={() => setProjectImportSource(serializeStudioProject(history.present))}>Use current canonical JSON</Button>
-            <Button variant="outline" disabled={loading || projectImportSource.trim() === ""} onClick={importProject}>Import and validate</Button>
-            <Button variant="outline" disabled={loading} onClick={prepareExport}>Generate export artifacts</Button>
-            <p role="status" aria-live="polite" style={{ whiteSpace: "pre-wrap" }}>{projectTransferReport}</p>
-            {exportArtifacts.length > 0 && <>
-              <label className="studio-field"><span>Generated artifact</span><select value={activeExportPath} onChange={(event) => setActiveExportPath(event.currentTarget.value)}>{exportArtifacts.map((artifact) => <option key={artifact.path} value={artifact.path}>{artifact.path}</option>)}</select></label>
-              <label className="studio-field"><span>Artifact source</span><textarea className="ui-input" rows={12} readOnly value={exportArtifacts.find(({ path }) => path === activeExportPath)?.source ?? ""} /></label>
-            </>}
-          </section>
-        </div>
-        <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
-          <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks</span></div>
-          <ol className="studio-v1-node-list">
-            {form.rootNodeUids.map((uid) => (
-              <CanvasNode key={uid} form={form} uid={uid} selectedUids={navigation.workbench.selectedUids} onSelect={selectNode} />
-            ))}
-          </ol>
-        </section>
-        <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title" tabIndex={-1} data-inspector-property={inspectionPropertyPath?.join(".")}>
+          <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title" tabIndex={-1} data-inspector-property={inspectionPropertyPath?.join(".")}>
           <h2 id="studio-v1-inspector-title">Inspector</h2>
           {inspectionPropertyPath !== undefined && <p role="status">Inspecting property: <code>{inspectionPropertyPath.join(".")}</code></p>}
           {formSelected ? <>
@@ -2097,9 +2129,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onCut={() => cutNodes(selectedNodes.map(({ uid }) => uid))}
             onPaste={() => { const uid = selectedNodes[0]?.uid; if (uid) pasteNodes(uid); }}
           />
-        </aside>
+          </aside>
+        </> : <div className="studio-v1-preview-workspace">
+          <ControlledPreview form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
+        </div>}
       </div>
-      <ControlledPreview form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
     </main>
   );
 }

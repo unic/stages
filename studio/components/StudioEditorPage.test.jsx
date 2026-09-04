@@ -111,6 +111,16 @@ function dynamicProjectSnapshot() {
   };
 }
 
+async function openWorkbenchPanel(user, name) {
+  const trigger = screen.getByRole("button", { name });
+  if (trigger.getAttribute("aria-pressed") !== "true") await user.click(trigger);
+}
+
+async function openPreview(user) {
+  const trigger = screen.getByRole("button", { name: "Preview" });
+  if (trigger.getAttribute("aria-pressed") !== "true") await user.click(trigger);
+}
+
 describe("StudioEditorPage interactions", () => {
   beforeEach(() => {
     useStagesStore.setState({
@@ -195,6 +205,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository();
     const first = render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("New local draft");
+    await openWorkbenchPanel(user, "Insert");
 
     await user.click(screen.getByRole("button", { name: "Add text field" }));
     const label = screen.getByRole("textbox", { name: "Label" });
@@ -222,6 +233,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Project");
 
     await user.click(screen.getByRole("button", { name: "Duplicate project" }));
     await screen.findByText("Project duplicated");
@@ -281,11 +293,13 @@ describe("StudioEditorPage interactions", () => {
     };
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Insert");
     await user.click(screen.getByRole("button", { name: "Add text field" }));
     await user.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText(/Local save failed: Local quota exhausted/);
     expect(screen.getByText("Unsaved project changes")).toBeVisible();
 
+    await openWorkbenchPanel(user, "Project");
     await user.click(screen.getByRole("button", { name: "Create project" }));
     await screen.findByText("Could not create a project because pending changes are not saved.");
     expect(screen.getByRole("textbox", { name: "Project title" })).toHaveValue("Outline project");
@@ -296,6 +310,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Project");
 
     await user.click(screen.getByRole("button", { name: "Generate export artifacts" }));
     expect(screen.getByText(/Generated 8 deterministic artifacts/)).toBeVisible();
@@ -317,6 +332,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([emptyProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Insert");
 
     for (const name of ["text field", "text area", "number", "choice", "checkbox", "date"]) {
       expect(screen.getByRole("button", { name: `Add ${name}` })).toBeVisible();
@@ -336,6 +352,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([emptyProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Insert");
 
     for (const name of ["heading", "message", "divider", "help text"]) {
       expect(screen.getByRole("button", { name: `Add ${name}` })).toBeVisible();
@@ -358,18 +375,26 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([emptyProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Insert");
 
     await user.click(screen.getByRole("button", { name: "Add variant collection" }));
     expect(screen.getByRole("group", { name: "Variant collection settings" })).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Discriminator" })).toHaveValue("kind");
+    await openWorkbenchPanel(user, "Layers");
     expect(document.querySelectorAll('[data-kind="variant"]')).toHaveLength(1);
+    await openWorkbenchPanel(user, "Insert");
     await user.click(screen.getByRole("button", { name: "Add variant to selected collection" }));
+    await openWorkbenchPanel(user, "Layers");
     expect(document.querySelectorAll('[data-kind="variant"]')).toHaveLength(2);
 
+    await openWorkbenchPanel(user, "Insert");
     await user.click(screen.getByRole("button", { name: "Add wizard" }));
     expect(screen.getByRole("group", { name: "Wizard settings" })).toBeVisible();
+    await openWorkbenchPanel(user, "Layers");
     expect(document.querySelectorAll('[data-kind="stage"]')).toHaveLength(1);
+    await openWorkbenchPanel(user, "Insert");
     await user.click(screen.getByRole("button", { name: "Add stage to selected wizard" }));
+    await openWorkbenchPanel(user, "Layers");
     expect(document.querySelectorAll('[data-kind="stage"]')).toHaveLength(2);
   });
 
@@ -378,6 +403,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
 
     const formItem = document.querySelector('[data-outline-uid="form_outline"]');
     const firstItem = document.querySelector('[data-outline-uid="field_first"]');
@@ -413,6 +439,7 @@ describe("StudioEditorPage interactions", () => {
     await user.keyboard("{ArrowRight}");
     expect(document.querySelector('[data-outline-uid="field_nested"]')).toBeTruthy();
 
+    await openPreview(user);
     expect(screen.getByText("No problems")).toBeVisible();
   });
 
@@ -421,6 +448,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
 
     let firstItem = document.querySelector('[data-outline-uid="field_first"]');
     let secondItem = document.querySelector('[data-outline-uid="field_second"]');
@@ -481,13 +509,41 @@ describe("StudioEditorPage interactions", () => {
     expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
   });
 
-  it("creates, reuses, overrides, edits, and detaches linked fragments", async () => {
+  it("selects and reorders nodes directly on the functional form canvas", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
 
+    const first = document.querySelector('[data-canvas-uid="field_first"]');
+    const dropGroup = document.querySelector('[data-canvas-uid="group_drop"]');
+    expect(first && dropGroup).toBeTruthy();
+    await user.click(first);
+    expect(first).toHaveAttribute("data-authoring-selected", "true");
+    expect(screen.getByRole("textbox", { name: "Label" })).toHaveValue("First field");
+
+    const data = new Map();
+    const dataTransfer = {
+      effectAllowed: "all",
+      dropEffect: "none",
+      setData: (type, value) => data.set(type, value),
+      getData: (type) => data.get(type) ?? "",
+    };
+    fireEvent.dragStart(screen.getByRole("button", { name: "Move field_second" }), { dataTransfer });
+    fireEvent.dragOver(dropGroup, { dataTransfer });
+    fireEvent.drop(dropGroup, { dataTransfer });
+    await screen.findByText("Second field moved to Drop group.");
+  });
+
+  it("creates, reuses, overrides, edits, and detaches linked fragments", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
+
     fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
+    await openWorkbenchPanel(user, "Insert");
     await user.click(screen.getByRole("button", { name: "Create fragment from selection" }));
     await screen.findByText("Fragment 1 created");
     expect(screen.getByText(/edits below update every linked instance/)).toBeVisible();
@@ -512,6 +568,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
 
     fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
     await user.click(screen.getByRole("checkbox", { name: "Conditional visibility" }));
@@ -539,6 +596,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository([dynamicProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
+    await openPreview(user);
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Named scenario" }), "scenario_readonly");
     await waitFor(() => {
