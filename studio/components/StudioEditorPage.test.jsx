@@ -558,6 +558,26 @@ describe("StudioEditorPage interactions", () => {
     await screen.findByText("Second field moved inside Drop group.");
   });
 
+  it("inserts an item at the exact canvas position opened between siblings", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    const insertBeforeSecond = screen.getByRole("button", { name: "Insert before Second field" });
+    fireEvent.contextMenu(insertBeforeSecond, { clientX: 40, clientY: 48 });
+    expect(screen.getByRole("menu", { name: "Insert item" })).toBeVisible();
+    await user.click(screen.getByRole("menuitem", { name: "Insert text field" }));
+    await screen.findByText("Text field added");
+
+    const root = document.querySelector(".studio-v1-authoring-canvas .studio-v1-preview__fields");
+    const rootUids = [...root.children].map((child) => child.getAttribute("data-canvas-uid"));
+    expect(rootUids.slice(0, 3)).toEqual(["field_first", "field_text", "field_second"]);
+    expect(screen.getByRole("textbox", { name: "Text field" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.queryByRole("textbox", { name: "Text field" })).toBeNull();
+  });
+
   it("creates, reuses, overrides, edits, and detaches linked fragments", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);

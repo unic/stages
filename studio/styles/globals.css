@@ -875,6 +875,36 @@ button, input, select, textarea { font: inherit; }
   z-index: 2;
   outline: 2px solid var(--studio-selection);
 }
+.studio-v1-authoring-insert {
+  position: absolute;
+  top: -0.65rem;
+  right: 0;
+  left: 1rem;
+  z-index: 6;
+  display: flex;
+  height: 1rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: linear-gradient(transparent 0.44rem, #0a94f8 0.44rem, #0a94f8 0.56rem, transparent 0.56rem);
+  padding: 0;
+  color: white;
+  opacity: 0;
+  cursor: context-menu;
+  transition: opacity 100ms;
+}
+.studio-v1-authoring-insert span {
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #0a94f8;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.studio-v1-authoring-node:hover > .studio-v1-authoring-insert,
+.studio-v1-authoring-insert:focus-visible { opacity: 1; }
 .studio-v1-authoring-node[data-drop-position="before"]::before,
 .studio-v1-authoring-node[data-drop-position="after"]::after {
   position: absolute;

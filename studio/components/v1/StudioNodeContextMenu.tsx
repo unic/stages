@@ -23,6 +23,19 @@ interface StudioNodeContextMenuProps {
   readonly onPaste: () => void;
 }
 
+export interface StudioInsertMenuItem {
+  readonly group: "content" | "fields" | "structure";
+  readonly label: string;
+  readonly disabled?: boolean;
+  readonly onSelect: () => void;
+}
+
+interface StudioInsertContextMenuProps {
+  readonly position: StudioContextMenuPosition;
+  readonly items: readonly StudioInsertMenuItem[];
+  readonly onClose: () => void;
+}
+
 function MenuItem({ children, disabled = false, onSelect }: {
   readonly children: ReactNode;
   readonly disabled?: boolean;
@@ -102,6 +115,66 @@ export function StudioNodeContextMenu({
       <MenuItem disabled={actionUids.length === 0} onSelect={() => run(onCopy)}>Copy <kbd aria-hidden="true">⌘ C</kbd></MenuItem>
       <MenuItem disabled={actionUids.length === 0} onSelect={() => run(onCut)}>Cut <kbd aria-hidden="true">⌘ X</kbd></MenuItem>
       <MenuItem disabled={!canPaste || !single} onSelect={() => run(onPaste)}>Paste <kbd aria-hidden="true">⌘ V</kbd></MenuItem>
+    </div>,
+    document.body,
+  );
+}
+
+export function StudioInsertContextMenu({ position, items, onClose }: StudioInsertContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    menuRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+    const dismiss = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) onCloseRef.current();
+    };
+    const keyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current();
+    };
+    const blur = () => onCloseRef.current();
+    window.addEventListener("pointerdown", dismiss);
+    window.addEventListener("blur", blur);
+    window.addEventListener("keydown", keyDown);
+    return () => {
+      window.removeEventListener("pointerdown", dismiss);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("keydown", keyDown);
+    };
+  }, []);
+
+  if (typeof document === "undefined") return null;
+  const left = Math.max(8, Math.min(position.x, window.innerWidth - 236));
+  const top = Math.max(8, Math.min(position.y, window.innerHeight - 430));
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="studio-v1-context-menu"
+      role="menu"
+      aria-label="Insert item"
+      style={{ left, top }}
+      onKeyDown={(event) => {
+        if (!["ArrowDown", "ArrowUp", "End", "Home"].includes(event.key)) return;
+        const menuItems = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
+        const currentIndex = menuItems.indexOf(document.activeElement as HTMLButtonElement);
+        const nextIndex = event.key === "Home" ? 0
+          : event.key === "End" ? menuItems.length - 1
+            : event.key === "ArrowDown" ? (currentIndex + 1) % menuItems.length
+              : (currentIndex - 1 + menuItems.length) % menuItems.length;
+        menuItems[nextIndex]?.focus();
+        event.preventDefault();
+      }}
+    >
+      {items.flatMap((item, index) => {
+        const separator = index > 0 && items[index - 1]?.group !== item.group;
+        return [
+          ...(separator ? [<hr key={`separator-${item.group}`} />] : []),
+          <MenuItem key={`${item.group}-${item.label}`} {...(item.disabled === undefined ? {} : { disabled: item.disabled })} onSelect={() => {
+            item.onSelect();
+            onClose();
+          }}>{item.label}</MenuItem>,
+        ];
+      })}
     </div>,
     document.body,
   );

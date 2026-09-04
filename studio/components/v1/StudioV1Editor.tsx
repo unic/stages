@@ -1,5 +1,6 @@
 import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from "react";
+import { canPlaceStudioNode } from "../../src/commands/engine";
 import {
   createStudioHistory,
   dispatchStudioCommand,
@@ -59,6 +60,7 @@ import {
   reconcileStudioWorkbench,
   revealStudioUid,
   selectStudioUid,
+  locateStudioNode,
   type StudioSelectionOptions,
   type StudioDropPosition,
   visibleStudioOutlineUids,
@@ -68,7 +70,7 @@ import { useStudioDocumentStartup } from "./StudioDocumentStartup";
 import { importStudioLegacyInput, STUDIO_SUPPORTED_DEFINITIONS } from "./StudioLegacyImport";
 import { StudioProjectPanel } from "./StudioProjectPanel";
 import { StudioOutline } from "./StudioOutline";
-import { StudioNodeContextMenu, type StudioContextMenuPosition } from "./StudioNodeContextMenu";
+import { StudioInsertContextMenu, StudioNodeContextMenu, type StudioContextMenuPosition, type StudioInsertMenuItem } from "./StudioNodeContextMenu";
 import { StudioExpressionEditor, type StudioExpressionReferenceOption } from "./StudioExpressionEditor";
 import { StudioValidationEditor } from "./StudioValidationEditor";
 import { StudioEventEditor, StudioLogicEditor } from "./StudioLogicEditor";
@@ -206,6 +208,14 @@ interface AuthoringCanvasBindings {
   readonly onSelect: (uid: Uid, options?: StudioSelectionOptions) => void;
   readonly onDrop: (uid: Uid, targetUid: Uid, position: StudioDropPosition) => void;
   readonly onContextMenu: (uid: Uid, position: StudioContextMenuPosition) => void;
+  readonly onInsertContextMenu: (placement: StudioInsertPlacement, position: StudioContextMenuPosition) => void;
+  readonly insertBeforeByUid: ReadonlyMap<Uid, StudioInsertPlacement>;
+}
+
+interface StudioInsertPlacement {
+  readonly parentUid: Uid | null;
+  readonly index: number;
+  readonly beforeLabel?: string;
 }
 
 function writeCanvasDragData(event: DragEvent<HTMLButtonElement>, uid: Uid): void {
@@ -221,7 +231,18 @@ function PreviewLayout({ node, children, authoring }: {
 }) {
   const selectable = authoring?.selectableUids.has(node.uid) === true;
   const selected = selectable && authoring.selectedUids.includes(node.uid);
+  const insertBefore = authoring?.insertBeforeByUid.get(node.uid);
   const [dropPosition, setDropPosition] = useState<StudioDropPosition | undefined>();
+  const openInsertMenu = (event: MouseEvent<HTMLButtonElement>) => {
+    if (insertBefore === undefined || authoring === undefined) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    authoring.onInsertContextMenu(insertBefore, {
+      x: event.clientX || rect.left + rect.width / 2,
+      y: event.clientY || rect.top + rect.height,
+    });
+  };
   const resolveDropPosition = (event: DragEvent<HTMLDivElement>): StudioDropPosition => {
     const rect = event.currentTarget.getBoundingClientRect();
     const offset = rect.height === 0 ? 0.5 : (event.clientY - rect.top) / rect.height;
@@ -277,6 +298,14 @@ function PreviewLayout({ node, children, authoring }: {
         if (uid && uid !== node.uid) authoring.onDrop(uid as Uid, node.uid, position);
       } : undefined}
     >
+      {selectable && insertBefore !== undefined && <button
+        type="button"
+        className="studio-v1-authoring-insert"
+        aria-label={`Insert before ${insertBefore.beforeLabel ?? node.uid}`}
+        title="Insert here"
+        onClick={openInsertMenu}
+        onContextMenu={openInsertMenu}
+      ><span aria-hidden="true">+</span></button>}
       {selectable && <button
         type="button"
         className="studio-v1-authoring-node__handle"
@@ -1413,6 +1442,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     };
   });
   const [canvasContextMenu, setCanvasContextMenu] = useState<(StudioContextMenuPosition & { readonly uid: Uid }) | undefined>();
+  const [canvasInsertMenu, setCanvasInsertMenu] = useState<(StudioContextMenuPosition & StudioInsertPlacement) | undefined>();
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
   const [surface, setSurface] = useState<"design" | "preview">("design");
@@ -1435,6 +1465,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       const target = event.target;
       if (!(target instanceof Element) || !target.closest(".studio-v1-canvas") || target.closest("[data-canvas-uid]")) return;
       setCanvasContextMenu(undefined);
+      setCanvasInsertMenu(undefined);
       setNavigation((current) => ({ ...current, workbench: clearStudioSelection(current.workbench) }));
     };
     document.addEventListener("pointerdown", clearCanvasSelection);
@@ -1572,6 +1603,14 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
     localization: { defaultLocale: history.present.project.defaultLocale, resources: history.present.resources },
   });
+  const insertBeforeByUid = new Map<Uid, StudioInsertPlacement>();
+  for (const uid of Object.keys(form.nodes) as Uid[]) {
+    const placement = locateStudioNode(form, uid);
+    const parent = placement?.parentUid === null || placement === undefined ? undefined : form.nodes[placement.parentUid];
+    if (placement !== undefined && parent?.kind !== "wizard" && !(parent?.kind === "collection" && isStudioVariantCollection(parent))) {
+      insertBeforeByUid.set(uid, { parentUid: placement.parentUid, index: placement.index, beforeLabel: nodeLabel(form, uid) });
+    }
+  }
 
   const replaceHistory = (nextHistory: StudioHistoryState) => {
     const nextOutline = createStudioOutlineModel(nextHistory.present);
@@ -1630,13 +1669,16 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       workbench: selectStudioUid(current.workbench, uid, visibleOutlineUids, options),
     }));
   };
-  const insertField = (definition: AnyStudioAuthoringFieldDefinition) => {
+  const insertField = (
+    definition: AnyStudioAuthoringFieldDefinition,
+    destination: StudioInsertPlacement = { parentUid: null, index: form.rootNodeUids.length },
+  ) => {
     const node = nextField(form, definition);
     const result = dispatchStudioCommand(history, {
       type: "node.insert",
       formUid: form.uid,
-      parentUid: null,
-      index: form.rootNodeUids.length,
+      parentUid: destination.parentUid,
+      index: destination.index,
       node,
     }, { label: `Add ${definition.displayName}` });
     if (result.ok) {
@@ -1649,13 +1691,16 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
-  const insertBlock = (definition: StudioBlockDefinition) => {
+  const insertBlock = (
+    definition: StudioBlockDefinition,
+    destination: StudioInsertPlacement = { parentUid: null, index: form.rootNodeUids.length },
+  ) => {
     const node = nextBlock(form, definition);
     const result = dispatchStudioCommand(history, {
       type: "node.insert",
       formUid: form.uid,
-      parentUid: null,
-      index: form.rootNodeUids.length,
+      parentUid: destination.parentUid,
+      index: destination.index,
       node,
     }, { label: `Add ${definition.displayName}` });
     if (result.ok) {
@@ -1668,7 +1713,10 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
-  const insertStructure = (kind: "collection" | "group" | "stage" | "variant" | "variant-collection" | "wizard") => {
+  const insertStructure = (
+    kind: "collection" | "group" | "stage" | "variant" | "variant-collection" | "wizard",
+    destination: StudioInsertPlacement = { parentUid: null, index: form.rootNodeUids.length },
+  ) => {
     const selected = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
     const identity = nextStructuralIdentity(form, kind === "variant-collection" ? "items" : kind);
     let command;
@@ -1682,7 +1730,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else if (kind === "wizard") {
       const stage = nextStructuralIdentity(form, "stage");
       command = {
-        type: "node.insert-subtree" as const, formUid: form.uid, parentUid: null, index: form.rootNodeUids.length,
+        type: "node.insert-subtree" as const, formUid: form.uid, parentUid: destination.parentUid, index: destination.index,
         rootUids: [identity.uid],
         nodes: {
           [identity.uid]: { ...identity, kind: "wizard" as const, stageUids: [stage.uid], initialStageUid: stage.uid, navigation: { nonLinear: false, validateCurrent: false }, presentation: { label: "Wizard" } },
@@ -1692,7 +1740,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else if (kind === "variant-collection") {
       const variant = nextStructuralIdentity(form, "variant");
       command = {
-        type: "node.insert-subtree" as const, formUid: form.uid, parentUid: null, index: form.rootNodeUids.length,
+        type: "node.insert-subtree" as const, formUid: form.uid, parentUid: destination.parentUid, index: destination.index,
         rootUids: [identity.uid],
         nodes: {
           [identity.uid]: { ...identity, kind: "collection" as const, discriminator: "kind", variantUids: [variant.uid], initialVariantUid: variant.uid, initialRows: 0, itemKey: { kind: "index" as const }, presentation: { label: "Variant collection" } },
@@ -1701,7 +1749,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       };
     } else {
       command = {
-        type: "node.insert" as const, formUid: form.uid, parentUid: null, index: form.rootNodeUids.length,
+        type: "node.insert" as const, formUid: form.uid, parentUid: destination.parentUid, index: destination.index,
         node: { ...identity, kind, childUids: [], ...(kind === "collection" ? { initialRows: 0, itemKey: { kind: "index" as const } } : {}), presentation: { label: kind === "group" ? "Group" : "Collection" } },
       };
     }
@@ -1713,6 +1761,31 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       workbench: selectStudioUid({ ...current.workbench, expandedUids: new Set([...current.workbench.expandedUids, selectedUid]) }, selectedUid, [...visibleOutlineUids, selectedUid]),
     }));
     setStatus(`${kind} added`);
+  };
+
+  const insertMenuItems = (destination: StudioInsertPlacement): readonly StudioInsertMenuItem[] => {
+    const parentKind = destination.parentUid === null ? "root" : form.nodes[destination.parentUid]?.kind;
+    const allowed = (kind: StudioNode["kind"]) => parentKind !== undefined && canPlaceStudioNode(parentKind, kind);
+    return [
+      ...Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => ({
+        group: "fields" as const,
+        label: `Insert ${definition.displayName.toLowerCase()}`,
+        disabled: !allowed("field"),
+        onSelect: () => insertField(definition, destination),
+      })),
+      ...Object.values(STUDIO_BLOCK_DEFINITIONS).map((definition) => ({
+        group: "content" as const,
+        label: `Insert ${definition.displayName.toLowerCase()}`,
+        disabled: !allowed("block"),
+        onSelect: () => insertBlock(definition, destination),
+      })),
+      ...(["group", "collection", "wizard", "variant-collection"] as const).map((kind) => ({
+        group: "structure" as const,
+        label: `Insert ${kind === "variant-collection" ? "variant collection" : kind}`,
+        disabled: !allowed(kind === "variant-collection" ? "collection" : kind),
+        onSelect: () => insertStructure(kind, destination),
+      })),
+    ];
   };
 
   const updateNode = (
@@ -2092,9 +2165,17 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               authoring={{
                 selectedUids: navigation.workbench.selectedUids,
                 selectableUids: new Set(Object.keys(form.nodes) as Uid[]),
+                insertBeforeByUid,
                 onSelect: selectNode,
                 onDrop: dropNode,
-                onContextMenu: (uid, position) => setCanvasContextMenu({ uid, ...position }),
+                onContextMenu: (uid, position) => {
+                  setCanvasInsertMenu(undefined);
+                  setCanvasContextMenu({ uid, ...position });
+                },
+                onInsertContextMenu: (placement, position) => {
+                  setCanvasContextMenu(undefined);
+                  setCanvasInsertMenu({ ...placement, ...position });
+                },
               }}
             />
           </section>
@@ -2135,6 +2216,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               onCopy={() => { copyNodes(actionUids); }} onCut={() => cutNodes(actionUids)} onPaste={() => pasteNodes(node.uid)}
             />;
           })()}
+          {canvasInsertMenu !== undefined && <StudioInsertContextMenu
+            position={canvasInsertMenu}
+            items={insertMenuItems(canvasInsertMenu)}
+            onClose={() => setCanvasInsertMenu(undefined)}
+          />}
         </> : <div className="studio-v1-preview-workspace">
           <ControlledPreview form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
         </div>}
