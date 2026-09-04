@@ -14,7 +14,6 @@ const SidePanel = () => {
   const store = useStagesStore();
 
   const handleEditFieldConfig = (path, config, isFieldsetItem) => {
-    console.log("--> handleEditFieldConfig <--");
     if (Array.isArray(path)) {
       const newConfig = isFieldsetItem ? [...config] : [...store.currentConfig];
       path.forEach((p) => {

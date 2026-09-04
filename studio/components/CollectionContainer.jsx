@@ -105,8 +105,8 @@ const CollectionContainer = ({
             e.shiftKey
           );
       }}
-      onMouseOver={() => setIsInEditMode(isEditMode ? true : false)}
-      onMouseOut={() =>
+      onMouseEnter={() => setIsInEditMode(isEditMode ? true : false)}
+      onMouseLeave={() =>
         setIsInEditMode(
           pathIsSelected(path, selectedElement, fieldsetId) ? true : false
         )

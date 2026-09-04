@@ -972,8 +972,13 @@ const Workspace = () => {
                         store.setActiveContextMenuInput(".");
                     }
                 }}>
-                <div style={{ position: "absolute", top: "18px", right: "24px", cursor: "pointer" }}>
-                    <span onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}><StagesIcon /></span>
+                <div style={{ position: "absolute", top: "18px", right: "24px" }}>
+                    <Button
+                        aria-label={store.isEditMode ? "Preview form" : "Switch to editor mode"}
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => store.isEditMode ? store.setPreviewMode() : store.setEditMode()}
+                    ><StagesIcon /></Button>
                 </div>
                 {store.isEditMode ? (
                     <div style={{ position: "absolute", top: "24px", right: "68px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>

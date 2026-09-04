@@ -62,9 +62,13 @@ const useStagesStore = create(
       ],
       updateGeneralConfig: (generalConfig) => set(() => ({ generalConfig })),
       setEditMode: () => set(() => ({ isEditMode: true })),
-      setEditorTabIndex: (index) => set(() => ({ editorTabIndex: index })),
+      setEditorTabIndex: (index) =>
+        set((state) =>
+          state.editorTabIndex === index ? state : { editorTabIndex: index }
+        ),
       setPreviewMode: () => set(() => ({ isEditMode: false })),
-      setData: (data) => set(() => ({ data })),
+      setData: (data) =>
+        set((state) => (Object.is(state.data, data) ? state : { data })),
       addSnapshot: () =>
         set(() => ({
           snapshots: [...get().snapshots, get().data],
@@ -106,9 +110,11 @@ const useStagesStore = create(
           }
           newUndoData.push(currentConfig);
           if (newUndoData.length > 25) newUndoData.shift();
-          get().setActiveUndoIndex(newUndoData.length - 1);
-          get().setUndoData(newUndoData);
-          return { currentConfig };
+          return {
+            currentConfig,
+            undoData: newUndoData,
+            activeUndoIndex: newUndoData.length - 1,
+          };
         }),
       updateFieldsetConfig: (newFieldsetConfig, fieldsetId) =>
         set((state) => {

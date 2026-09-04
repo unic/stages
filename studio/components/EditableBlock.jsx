@@ -73,8 +73,8 @@ const EditableBlock = ({
           );
         }
       }}
-      onMouseOver={() => setIsInEditMode(store.isEditMode ? true : false)}
-      onMouseOut={() =>
+      onMouseEnter={() => setIsInEditMode(store.isEditMode ? true : false)}
+      onMouseLeave={() =>
         setIsInEditMode(
           pathIsSelected(path, selectedElement, fieldsetId) ? true : false
         )
