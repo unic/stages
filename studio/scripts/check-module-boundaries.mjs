@@ -16,6 +16,9 @@ const BROWSER_GLOBALS = new Set([
   "sessionStorage",
   "indexedDB",
   "BroadcastChannel",
+  "fetch",
+  "XMLHttpRequest",
+  "WebSocket",
   "HTMLElement",
   "Storage",
 ]);
@@ -61,6 +64,14 @@ function isPropertyName(identifier) {
     || (ts.isMethodDeclaration(parent) && parent.name === identifier);
 }
 
+function isGlobalProperty(identifier) {
+  const parent = identifier.parent;
+  return ts.isPropertyAccessExpression(parent)
+    && parent.name === identifier
+    && ts.isIdentifier(parent.expression)
+    && parent.expression.text === "globalThis";
+}
+
 export async function checkStudioModuleBoundaries(sourceRoot) {
   const failures = [];
   for (const moduleName of PURE_MODULES) {
@@ -89,11 +100,19 @@ export async function checkStudioModuleBoundaries(sourceRoot) {
             failures.push(`${relativeFile}: pure modules cannot import src/${targetModule}.`);
           }
         }
-        if (ts.isIdentifier(node) && BROWSER_GLOBALS.has(node.text) && !isPropertyName(node)) {
+        if (ts.isIdentifier(node) && BROWSER_GLOBALS.has(node.text) && (!isPropertyName(node) || isGlobalProperty(node))) {
           const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
           failures.push(
             `${relativeFile}:${position.line + 1}: pure modules cannot use browser global ${node.text}.`,
           );
+        }
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && (node.expression.text === "eval" || node.expression.text === "Function")) {
+          const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+          failures.push(`${relativeFile}:${position.line + 1}: pure modules cannot evaluate source text.`);
+        }
+        if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "Function") {
+          const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+          failures.push(`${relativeFile}:${position.line + 1}: pure modules cannot construct functions from source text.`);
         }
         ts.forEachChild(node, visit);
       };

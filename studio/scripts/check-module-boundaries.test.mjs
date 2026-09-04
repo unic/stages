@@ -47,3 +47,17 @@ test("rejects framework, browser, storage, and outward module dependencies", asy
     "legacy/browser.ts:1: pure modules cannot use browser global sessionStorage.",
   ]);
 });
+
+test("rejects source evaluation and network access in pure modules", async (context) => {
+  const root = await fixture({
+    "expressions/evaluate.ts": "export const a = eval('1'); export const b = new Function('return 1'); export const c = Function('return 2'); void globalThis.fetch('/');",
+  });
+  context.after(() => rm(root, { recursive: true, force: true }));
+
+  assert.deepEqual(await checkStudioModuleBoundaries(root), [
+    "expressions/evaluate.ts:1: pure modules cannot construct functions from source text.",
+    "expressions/evaluate.ts:1: pure modules cannot evaluate source text.",
+    "expressions/evaluate.ts:1: pure modules cannot evaluate source text.",
+    "expressions/evaluate.ts:1: pure modules cannot use browser global fetch.",
+  ]);
+});

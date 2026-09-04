@@ -1,6 +1,6 @@
 # Studio project document v1
 
-Status: implemented through Session 15
+Status: implemented through Session 16
 
 Date: 2026-09-04
 
@@ -23,6 +23,16 @@ exact trusted-definition key/version requirements. Safe behavior is stored as
 a declarative expression AST; executable functions never enter the document.
 Scenarios keep preview value, context, and extensions separate from the project
 and controller runtime state.
+
+Expressions use a closed set of literal, reference, unary, binary, and
+conditional nodes. References can read form value, current-row value, context,
+extensions, and runtime metadata through safe own-property paths. Evaluation is
+synchronous and bounded by node, depth, path, string, and step budgets. Missing
+references, operand type mismatches, non-finite arithmetic, and limit failures
+return typed failures rather than throwing. The evaluator never calls document
+code, accessors, network APIs, or mutation APIs. Canonical expression JSON,
+stable dependency lists, and a readable text projection are available from
+`studio/src/expressions/`.
 
 Every editable entity UID is globally unique in a project. Map keys must equal
 the entity UID. Runtime IDs remain separately editable and reject the unsafe

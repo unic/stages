@@ -284,6 +284,13 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-inspector select { width: 100%; min-height: 2.35rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); background: white; padding: 0.45rem 0.65rem; color: var(--foreground); }
 .studio-v1-fragment-inspector > div { margin-top: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.1rem; }
 .studio-v1-fragment-inspector > .ui-button { width: 100%; margin-top: 1rem; }
+.studio-v1-expression-inspector > label { display: block; margin-top: 0.75rem; }
+.studio-expression-editor { display: grid; gap: 0.55rem; margin-top: 0.65rem; }
+.studio-expression-editor__node { display: grid; min-width: 0; gap: 0.55rem; border-inline-start: 2px solid #c7d2fe; padding-inline-start: 0.6rem; }
+.studio-expression-editor__node[data-expression-depth="0"] { border-inline-start: 0; padding-inline-start: 0; }
+.studio-expression-editor__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; }
+.studio-expression-editor__part-label { color: var(--muted-foreground); font-size: 0.72rem; font-weight: 650; text-transform: uppercase; }
+.studio-expression-editor__projection { display: block; overflow-wrap: anywhere; border-radius: calc(var(--radius) - 2px); background: #eef2ff; padding: 0.55rem; color: #3730a3; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; }
 .studio-v1-structure { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
 .studio-v1-structure h3 { margin: 0 0 0.65rem; font-size: 0.85rem; }
 .studio-v1-structure > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; margin-top: 0.4rem; }

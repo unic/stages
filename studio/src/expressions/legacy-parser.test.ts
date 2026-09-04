@@ -11,7 +11,7 @@ describe("legacy expression parser", () => {
         operand: {
           kind: "unary",
           operator: "!",
-          operand: { kind: "reference", scope: "interface", path: ["showAdvanced"] },
+          operand: { kind: "reference", scope: "context", path: ["showAdvanced"] },
         },
       },
     });

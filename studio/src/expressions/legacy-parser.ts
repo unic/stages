@@ -6,10 +6,10 @@ export type LegacyExpressionParseResult =
   | { readonly ok: true; readonly value: StudioExpression }
   | { readonly ok: false; readonly reason: string };
 
-const ROOTS = Object.freeze({ data: "value", interfaceState: "interface", itemData: "item" } as const);
+const ROOTS = Object.freeze({ data: "value", interfaceState: "context", itemData: "row" } as const);
 const PRECEDENCE: Readonly<Record<string, number>> = Object.freeze({
-  "||": 1, "&&": 2, "===": 3, "!==": 3, "<": 4, "<=": 4, ">": 4, ">=": 4,
-  "+": 5, "-": 5, "*": 6, "/": 6, "%": 6,
+  "??": 1, "||": 2, "&&": 3, "===": 4, "!==": 4, "<": 5, "<=": 5, ">": 5, ">=": 5,
+  "+": 6, "-": 6, "*": 7, "/": 7, "%": 7,
 });
 const BINARY = new Set(Object.keys(PRECEDENCE));
 
@@ -26,7 +26,7 @@ function tokenize(source: string): Token[] | undefined {
     if (identifier) { tokens.push({ type: "identifier", value: identifier[0] }); index += identifier[0].length; continue; }
     const string = /^(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/.exec(rest);
     if (string) { tokens.push({ type: "string", value: string[0] }); index += string[0].length; continue; }
-    const operator = /^(?:===|!==|&&|\|\||<=|>=|[!+\-*/%<>()?.:])/.exec(rest);
+    const operator = /^(?:===|!==|&&|\|\||\?\?|<=|>=|[!+\-*/%<>()?.:])/.exec(rest);
     if (!operator) return undefined;
     tokens.push({ type: "operator", value: operator[0] });
     index += operator[0].length;

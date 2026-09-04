@@ -49,6 +49,10 @@ Execution status:
   [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx)
   provide explicit reusable definitions, linked instances, declared overrides,
   provenance-aware compilation, legacy-fieldset migration, and detachment
+- Session 16 completed: [`../studio/src/expressions/index.ts`](../studio/src/expressions/index.ts)
+  provides the bounded safe AST evaluator, canonical serializer, dependency
+  analysis, and readable projection; the v1 inspector provides visual logic
+  authoring and value, row, context, extension, and metadata reference pickers
 
 Primary references:
 

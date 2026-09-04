@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import StudioEditorPage from "./StudioEditorPage";
@@ -346,6 +346,33 @@ describe("StudioEditorPage interactions", () => {
     await screen.findByText("Contact detached");
     expect(document.querySelector('[data-kind="fragment"][aria-selected="true"]')).toBeNull();
     expect(screen.getByRole("textbox", { name: "Primary contact" })).toBeVisible();
+  });
+
+  it("authors safe visibility and computed expressions with reference pickers and readable text", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
+    await user.click(screen.getByRole("checkbox", { name: "Conditional visibility" }));
+    const visibility = screen.getByLabelText("Visibility expression");
+    await user.selectOptions(within(visibility).getByRole("combobox", { name: "Expression" }), "reference");
+    const visibilityPath = within(visibility).getByRole("combobox", { name: "Reference path" });
+    await user.type(visibilityPath, "second");
+    expect(screen.getByLabelText("Visibility expression text")).toHaveTextContent("value.second");
+
+    await user.click(screen.getByRole("checkbox", { name: "Computed value" }));
+    const computed = screen.getByLabelText("Computed value expression");
+    expect(within(computed).getByRole("combobox", { name: "Reference source" })).toHaveValue("value");
+    expect(screen.getByLabelText("Computed value expression text")).toHaveTextContent("value");
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Local draft saved");
+    const saved = await repository.load(toUid("legacy_project"));
+    const field = saved.project.forms[toUid("form_outline")].nodes[toUid("field_first")];
+    expect(field.behavior.when).toEqual({ kind: "reference", scope: "value", path: ["second"] });
+    expect(field.computed).toEqual({ kind: "reference", scope: "value", path: [] });
   });
 
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {

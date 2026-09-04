@@ -13,6 +13,7 @@ import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/com
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
 import { isStudioVariantCollection, type JsonObject, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type Uid } from "../../src/document/types";
+import type { StudioExpression } from "../../src/expressions/types";
 import {
   STUDIO_FIELD_DEFINITIONS,
   STUDIO_BLOCK_DEFINITIONS,
@@ -49,6 +50,7 @@ import {
 import { Button } from "../ui/button";
 import { STUDIO_SUPPORTED_DEFINITIONS, useStudioDocumentStartup } from "./StudioDocumentStartup";
 import { StudioOutline } from "./StudioOutline";
+import { StudioExpressionEditor, type StudioExpressionReferenceOption } from "./StudioExpressionEditor";
 import {
   createStudioStructuralActions,
   type StudioEditorNavigationState,
@@ -125,6 +127,39 @@ function nodeDisplayLabel(node: StudioNode): string {
 function nodeLabel(form: StudioFormDocument, uid: Uid): string {
   const node = form.nodes[uid];
   return node === undefined ? uid : nodeDisplayLabel(node);
+}
+
+function expressionReferences(form: StudioFormDocument): readonly StudioExpressionReferenceOption[] {
+  const output: StudioExpressionReferenceOption[] = [];
+  const seen = new Set<string>();
+  const add = (scope: StudioExpressionReferenceOption["scope"], path: readonly string[], label: string) => {
+    const key = `${scope}:${path.join(".")}`;
+    if (path.length > 0 && !seen.has(key)) {
+      seen.add(key);
+      output.push({ scope, path, label });
+    }
+  };
+  for (const node of Object.values(form.nodes)) {
+    if (node.kind === "field") {
+      add("value", [node.runtimeId], nodeDisplayLabel(node));
+      add("row", [node.runtimeId], `${nodeDisplayLabel(node)} in current row`);
+    }
+  }
+  const walk = (scope: "context" | "extension", value: unknown, path: readonly string[] = []) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return;
+    for (const [key, child] of Object.entries(value)) {
+      if (!isSafeObjectKey(key)) continue;
+      const next = [...path, key];
+      add(scope, next, next.join("."));
+      walk(scope, child, next);
+    }
+  };
+  for (const scenario of form.scenarios) {
+    walk("context", scenario.context);
+    walk("extension", scenario.extensions);
+  }
+  for (const key of ["revision", "isDirty", "touched", "visited", "activeWizards"]) add("metadata", [key], key);
+  return output;
 }
 
 function CanvasNode({ form, uid, selectedUids, onSelect }: {
@@ -595,6 +630,31 @@ function FragmentInspector({ instance, fragment, onUpdate, onUpdateFragment, onU
   </fieldset>;
 }
 
+function ExpressionInspector({ node, form, onUpdate }: {
+  readonly node: StudioNode;
+  readonly form: StudioFormDocument;
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+}) {
+  const references = expressionReferences(form);
+  const when = node.behavior?.when;
+  const computed = node.kind === "field" ? node.computed : undefined;
+  const setWhen = (expression: StudioExpression | undefined) => {
+    const behavior = { ...node.behavior };
+    if (expression === undefined) delete behavior.when;
+    else behavior.when = expression;
+    onUpdate(node, { behavior: Object.keys(behavior).length === 0 ? undefined : behavior }, "Edit conditional visibility", `logic.when:${node.uid}`);
+  };
+  return <fieldset className="studio-v1-expression-inspector">
+    <legend>Logic</legend>
+    <label><input type="checkbox" checked={when !== undefined} onChange={(event) => setWhen(event.currentTarget.checked ? { kind: "literal", value: true } : undefined)} /> Conditional visibility</label>
+    {when !== undefined && <StudioExpressionEditor expression={when} label="Visibility expression" references={references} onChange={setWhen} />}
+    {node.kind === "field" && <>
+      <label><input type="checkbox" checked={computed !== undefined} onChange={(event) => onUpdate(node, { computed: event.currentTarget.checked ? { kind: "reference", scope: "value", path: [] } : undefined }, "Edit computed value", `logic.computed:${node.uid}`)} /> Computed value</label>
+      {computed !== undefined && <StudioExpressionEditor expression={computed} label="Computed value expression" references={references} onChange={(expression) => onUpdate(node, { computed: expression }, "Edit computed value", `logic.computed:${node.uid}`)} />}
+    </>}
+  </fieldset>;
+}
+
 function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach, onBulkLabel }: {
   readonly nodes: readonly StudioNode[];
   readonly form: StudioFormDocument;
@@ -662,6 +722,7 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
       {node.kind === "block" && <BlockInspector node={node} onUpdate={onUpdate} />}
       {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onUpdateFragmentNode={onUpdateFragmentNode} onDetach={onDetach} />}
       <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
+      <ExpressionInspector node={node} form={form} onUpdate={onUpdate} />
       <PresentationInspector node={node} onUpdate={onUpdate} />
     </div>
   );
