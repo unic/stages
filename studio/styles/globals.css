@@ -234,11 +234,24 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-toolbar > div span, .studio-v1-toolbar > p, .studio-v1-section-heading span { color: var(--muted-foreground); font-size: 0.82rem; }
 .studio-v1-toolbar nav { display: flex; gap: 0.45rem; }
 .studio-v1-toolbar > p { grid-column: 1 / -1; margin: 0; }
-.studio-v1-workspace { display: grid; grid-template-columns: 210px minmax(320px, 1fr) 280px; gap: 1px; background: var(--border); }
-.studio-v1-palette, .studio-v1-canvas, .studio-v1-inspector, .studio-v1-preview { background: var(--background); padding: 1rem; }
+.studio-v1-workspace { display: grid; grid-template-columns: 260px minmax(320px, 1fr) 280px; gap: 1px; background: var(--border); }
+.studio-v1-left-panel { display: grid; align-content: start; gap: 1px; background: var(--border); }
+.studio-v1-outline, .studio-v1-palette, .studio-v1-canvas, .studio-v1-inspector, .studio-v1-preview, .studio-v1-problems { background: var(--background); padding: 1rem; }
 .studio-v1-palette h2, .studio-v1-inspector h2, .studio-v1-section-heading h2 { margin: 0; font-size: 1rem; }
 .studio-v1-palette .ui-button { width: 100%; margin-top: 1rem; }
 .studio-v1-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.studio-v1-outline [role="tree"], .studio-v1-outline [role="group"] { margin: 0.65rem 0 0; padding: 0; list-style: none; }
+.studio-v1-outline [role="group"] { margin-top: 0; padding-left: 1rem; }
+.studio-v1-outline__item { border-radius: var(--radius); outline: none; }
+.studio-v1-outline__item:focus > .studio-v1-outline__row { box-shadow: inset 0 0 0 2px #2563eb; }
+.studio-v1-outline__item[aria-selected="true"] > .studio-v1-outline__row { background: rgb(37 99 235 / 0.1); color: #1d4ed8; }
+.studio-v1-outline__row { display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) auto; align-items: center; gap: 0.3rem; min-height: 2rem; border-radius: var(--radius); padding: 0.2rem 0.35rem; cursor: default; }
+.studio-v1-outline__row button { display: grid; width: 1.4rem; height: 1.4rem; place-items: center; border: 0; border-radius: 0.25rem; background: transparent; cursor: pointer; }
+.studio-v1-outline__row small { color: var(--muted-foreground); font-size: 0.68rem; }
+.studio-v1-outline__spacer { width: 1.4rem; }
+.studio-v1-outline__resources { margin-top: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+.studio-v1-outline__resources h3, .studio-v1-outline__resources p { margin: 0; font-size: 0.78rem; }
+.studio-v1-outline__resources p { margin-top: 0.3rem; color: var(--muted-foreground); }
 .studio-v1-node-list, .studio-v1-node__children { display: grid; gap: 0.55rem; margin: 1rem 0 0; padding: 0; list-style: none; }
 .studio-v1-node__children { margin: 0.55rem 0 0 1.2rem; }
 .studio-v1-node__select { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: white; padding: 0.7rem 0.8rem; text-align: left; cursor: pointer; }
@@ -246,6 +259,12 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-node__select small { color: var(--muted-foreground); }
 .studio-v1-inspector p { color: var(--muted-foreground); }
 .studio-v1-inspector .studio-field { margin-top: 1rem; }
+.studio-v1-inspector__bulk .ui-button { width: 100%; margin-top: 0.75rem; }
+.studio-v1-problems { margin-top: 1px; }
+.studio-v1-problems > p { color: var(--muted-foreground); }
+.studio-v1-problems ul { display: grid; gap: 0.4rem; margin: 0.8rem 0 0; padding: 0; list-style: none; }
+.studio-v1-problems li button { display: grid; width: 100%; grid-template-columns: minmax(12rem, 0.35fr) 1fr; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: white; padding: 0.55rem 0.7rem; text-align: left; cursor: pointer; }
+.studio-v1-problems li span { color: var(--muted-foreground); }
 .studio-v1-preview { margin-top: 1px; }
 .studio-v1-preview__fields { display: grid; max-width: 720px; gap: 1rem; margin: 1rem auto; }
 .studio-v1-preview__group { display: grid; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }

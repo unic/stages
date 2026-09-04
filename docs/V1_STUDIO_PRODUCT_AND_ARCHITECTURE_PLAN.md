@@ -21,6 +21,12 @@ Execution status:
   compiles the minimal text-and-group slice to public Stages v1 artifacts
 - Session 08 completed: [`../studio/src/runtime/index.ts`](../studio/src/runtime/index.ts)
   owns the controlled preview handshake and long-lived controller lifecycle
+- Session 09 completed: [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx)
+  connects document load, commands, preview, inspector, and local draft save
+- Session 10 completed: [`../studio/components/v1/StudioOutline.tsx`](../studio/components/v1/StudioOutline.tsx)
+  and [`../studio/src/editor/index.ts`](../studio/src/editor/index.ts) coordinate
+  keyboard navigation, UID-based selection and expansion, compatible bulk edits,
+  and Problems navigation
 
 Primary references:
 

@@ -10,19 +10,35 @@ import {
 } from "../../src/commands/history";
 import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm } from "../../src/compiler/compiler";
-import type { StudioRenderNode } from "../../src/compiler/types";
+import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode } from "../../src/compiler/types";
 import { toUid } from "../../src/document/uid";
-import type { JsonObject, StudioFieldNode, StudioFormDocument, Uid } from "../../src/document/types";
+import type { JsonObject, StudioFieldNode, StudioFormDocument, StudioNode, Uid } from "../../src/document/types";
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
 import { StudioProjectConflictError } from "../../src/projects/types";
 import type { StudioProjectRepository } from "../../src/projects/types";
 import { createStudioPreviewHost } from "../../src/runtime/preview-host";
 import { useStudioPreviewHost } from "../../src/runtime/use-studio-preview-host";
+import {
+  createStudioWorkbenchState,
+  createStudioOutlineModel,
+  reconcileStudioWorkbench,
+  revealStudioUid,
+  selectStudioUid,
+  type StudioSelectionOptions,
+  type StudioWorkbenchState,
+  visibleStudioOutlineUids,
+} from "../../src/editor";
 import { Button } from "../ui/button";
 import { STUDIO_SUPPORTED_DEFINITIONS, useStudioDocumentStartup } from "./StudioDocumentStartup";
+import { StudioOutline } from "./StudioOutline";
 
 interface StudioV1EditorProps {
   readonly repository?: StudioProjectRepository;
+}
+
+interface StudioEditorNavigationState {
+  readonly activeFormUid?: Uid;
+  readonly workbench: StudioWorkbenchState;
 }
 
 function firstForm(project: StudioHistoryState["present"]): StudioFormDocument | undefined {
@@ -48,20 +64,23 @@ function nextTextField(form: StudioFormDocument): StudioFieldNode {
   };
 }
 
-function nodeLabel(form: StudioFormDocument, uid: Uid): string {
-  const node = form.nodes[uid];
-  if (!node) return uid;
+function nodeDisplayLabel(node: StudioNode): string {
   const configured = (node.kind === "field" || node.kind === "block" ? node.props["label"] : undefined)
     ?? node.presentation?.["label"];
   if (typeof configured === "string" && configured.length > 0) return configured;
   return node.kind === "block" ? node.definition.key : node.runtimeId;
 }
 
-function CanvasNode({ form, uid, selectedUid, onSelect }: {
+function nodeLabel(form: StudioFormDocument, uid: Uid): string {
+  const node = form.nodes[uid];
+  return node === undefined ? uid : nodeDisplayLabel(node);
+}
+
+function CanvasNode({ form, uid, selectedUids, onSelect }: {
   readonly form: StudioFormDocument;
   readonly uid: Uid;
-  readonly selectedUid: Uid | undefined;
-  readonly onSelect: (uid: Uid) => void;
+  readonly selectedUids: readonly Uid[];
+  readonly onSelect: (uid: Uid, options?: StudioSelectionOptions) => void;
 }) {
   const node = form.nodes[uid];
   if (!node) return null;
@@ -73,8 +92,8 @@ function CanvasNode({ form, uid, selectedUid, onSelect }: {
       <button
         type="button"
         className="studio-v1-node__select"
-        aria-pressed={selectedUid === uid}
-        onClick={() => onSelect(uid)}
+        aria-pressed={selectedUids.includes(uid)}
+        onClick={(event) => onSelect(uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey })}
       >
         <span>{nodeLabel(form, uid)}</span>
         <small>{node.kind}</small>
@@ -82,7 +101,7 @@ function CanvasNode({ form, uid, selectedUid, onSelect }: {
       {children.length > 0 && (
         <ol className="studio-v1-node__children">
           {children.map((childUid) => (
-            <CanvasNode key={childUid} form={form} uid={childUid} selectedUid={selectedUid} onSelect={onSelect} />
+            <CanvasNode key={childUid} form={form} uid={childUid} selectedUids={selectedUids} onSelect={onSelect} />
           ))}
         </ol>
       )}
@@ -114,8 +133,7 @@ function PreviewNode({ form, node, value, onInput }: {
   );
 }
 
-function ControlledPreview({ form }: { readonly form: StudioFormDocument }) {
-  const compiled = useMemo(() => compileStudioForm(form), [form]);
+function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocument; readonly compiled: CompiledStudioForm }) {
   const scenario = form.scenarios[0];
   const [value, setValue] = useState<unknown>(() => scenario?.value ?? {});
   const [host] = useState(() => createStudioPreviewHost({
@@ -153,6 +171,88 @@ function ControlledPreview({ form }: { readonly form: StudioFormDocument }) {
   );
 }
 
+function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
+  readonly nodes: readonly StudioNode[];
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+  readonly onBulkLabel: (nodes: readonly StudioFieldNode[], label: string) => void;
+}) {
+  const [bulkLabel, setBulkLabel] = useState("");
+
+  if (nodes.length === 0) return <p>Select an item in the outline or canvas.</p>;
+  if (nodes.length > 1) {
+    const fields = nodes.filter((node): node is StudioFieldNode => node.kind === "field");
+    if (fields.length !== nodes.length) {
+      return <p>{nodes.length} items selected. This selection has no compatible bulk edits.</p>;
+    }
+    return (
+      <div className="studio-v1-inspector__bulk">
+        <p>{fields.length} fields selected</p>
+        <label className="studio-field">
+          <span>Label for selected fields</span>
+          <input className="ui-input" value={bulkLabel} onChange={(event) => setBulkLabel(event.currentTarget.value)} />
+        </label>
+        <Button disabled={bulkLabel.length === 0} onClick={() => onBulkLabel(fields, bulkLabel)}>Apply to {fields.length} fields</Button>
+      </div>
+    );
+  }
+
+  const node = nodes[0]!;
+  return (
+    <div>
+      <p><strong>{nodeDisplayLabel(node)}</strong> <small>{node.kind}</small></p>
+      {node.kind !== "block" && (
+        <label className="studio-field">
+          <span>Runtime ID</span>
+          <input
+            className="ui-input"
+            value={node.runtimeId}
+            onChange={(event) => onUpdate(node, { runtimeId: event.currentTarget.value }, "Rename runtime ID", `runtimeId:${node.uid}`)}
+          />
+        </label>
+      )}
+      {node.kind === "field" && (
+        <label className="studio-field">
+          <span>Label</span>
+          <input
+            className="ui-input"
+            value={String(node.props["label"] ?? "")}
+            onChange={(event) => onUpdate(
+              node,
+              { props: { ...node.props, label: event.currentTarget.value } satisfies JsonObject },
+              "Edit field label",
+              `props.label:${node.uid}`,
+            )}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+function ProblemsPanel({ diagnostics, onNavigate }: {
+  readonly diagnostics: readonly StudioDiagnostic[];
+  readonly onNavigate: (diagnostic: StudioDiagnostic) => void;
+}) {
+  return (
+    <section className="studio-v1-problems" aria-labelledby="studio-v1-problems-title">
+      <div className="studio-v1-section-heading">
+        <h2 id="studio-v1-problems-title">Problems</h2><span>{diagnostics.length}</span>
+      </div>
+      {diagnostics.length === 0 ? <p>No problems</p> : (
+        <ul>
+          {diagnostics.map((diagnostic) => (
+            <li key={`${diagnostic.code}:${diagnostic.entityUid ?? "form"}:${JSON.stringify(diagnostic.propertyPath)}:${diagnostic.message}`}>
+              <button type="button" onClick={() => onNavigate(diagnostic)}>
+                <strong>{diagnostic.code}</strong><span>{diagnostic.message}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorProps) {
   const startup = useStudioDocumentStartup();
   const repository = useMemo(() => repositoryProp ?? createIndexedDbProjectRepository({
@@ -162,7 +262,13 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     startup.project === undefined ? undefined : createStudioHistory(startup.project)
   ));
   const repositoryRevision = useRef<number | null>(null);
-  const [selectedUid, setSelectedUid] = useState<Uid | undefined>();
+  const [navigation, setNavigation] = useState<StudioEditorNavigationState>(() => {
+    const activeFormUid = startup.project === undefined ? undefined : firstForm(startup.project)?.uid;
+    return {
+      workbench: createStudioWorkbenchState(),
+      ...(activeFormUid === undefined ? {} : { activeFormUid }),
+    };
+  });
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
 
@@ -178,7 +284,15 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     void repository.load(startupProject.project.uid).then((saved) => {
       if (!active) return;
       const project = saved?.project ?? startupProject;
+      const loadedForm = firstForm(project);
       setHistory(createStudioHistory(project));
+      setNavigation({
+        ...(loadedForm === undefined ? {} : { activeFormUid: loadedForm.uid }),
+        workbench: createStudioWorkbenchState({
+          expandedUids: Object.values(project.forms).map(({ uid }) => uid),
+          ...(loadedForm === undefined ? {} : { focusedUid: loadedForm.uid }),
+        }),
+      });
       repositoryRevision.current = saved?.revision ?? null;
       setStatus(saved === undefined ? "New local draft" : "Local draft loaded");
       setLoading(false);
@@ -193,12 +307,41 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   if (history === undefined) {
     return <main className="studio-v1-empty"><h2>Document v1 could not start</h2><p>{status}</p></main>;
   }
-  const form = firstForm(history.present);
+  const form = navigation.activeFormUid === undefined
+    ? firstForm(history.present)
+    : history.present.forms[navigation.activeFormUid];
   if (form === undefined) {
     return <main className="studio-v1-empty"><h2>This project has no forms</h2></main>;
   }
-  const selected = selectedUid === undefined ? undefined : form.nodes[selectedUid];
   const dirty = isStudioHistoryDirty(history);
+  const outline = createStudioOutlineModel(history.present);
+  const visibleOutlineUids = visibleStudioOutlineUids(outline, navigation.workbench.expandedUids);
+  const selectedNodes = navigation.workbench.selectedUids.flatMap((uid) => {
+    const node = form.nodes[uid];
+    return node === undefined ? [] : [node];
+  });
+  const compiled = compileStudioForm(form);
+
+  const replaceHistory = (nextHistory: StudioHistoryState) => {
+    const nextOutline = createStudioOutlineModel(nextHistory.present);
+    const available = new Set(nextOutline.items.keys());
+    setHistory(nextHistory);
+    setNavigation((current) => ({
+      ...current,
+      workbench: reconcileStudioWorkbench(
+        current.workbench,
+        available,
+        visibleStudioOutlineUids(nextOutline, current.workbench.expandedUids),
+      ),
+    }));
+  };
+
+  const selectNode = (uid: Uid, options: StudioSelectionOptions = {}) => {
+    setNavigation((current) => ({
+      ...current,
+      workbench: selectStudioUid(current.workbench, uid, visibleOutlineUids, options),
+    }));
+  };
 
   const insertText = () => {
     const node = nextTextField(form);
@@ -211,21 +354,58 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     }, { label: "Add text field" });
     if (result.ok) {
       setHistory(result.history);
-      setSelectedUid(node.uid);
+      setNavigation((current) => ({
+        ...current,
+        workbench: selectStudioUid(current.workbench, node.uid, [...visibleOutlineUids, node.uid]),
+      }));
       setStatus("Text field added");
     } else setStatus(result.failure.message);
   };
 
-  const updateLabel = (label: string) => {
-    if (!selected || selected.kind !== "field") return;
+  const updateNode = (
+    node: StudioNode,
+    changes: Readonly<Record<string, unknown>>,
+    label: string,
+    coalesceKey?: string,
+  ) => {
     const result = dispatchStudioCommand(history, {
       type: "node.update",
       formUid: form.uid,
-      uid: selected.uid,
-      changes: { props: { ...selected.props, label } satisfies JsonObject },
-    }, { label: "Edit field label", coalesceKey: "props.label" });
+      uid: node.uid,
+      changes,
+    }, { label, ...(coalesceKey === undefined ? {} : { coalesceKey }) });
     if (result.ok) setHistory(result.history);
     else setStatus(result.failure.message);
+  };
+
+  const updateBulkLabel = (nodes: readonly StudioFieldNode[], label: string) => {
+    const result = dispatchStudioCommand(history, {
+      type: "transaction",
+      label: `Label ${nodes.length} fields`,
+      commands: nodes.map((node) => ({
+        type: "node.update" as const,
+        formUid: form.uid,
+        uid: node.uid,
+        changes: { props: { ...node.props, label } satisfies JsonObject },
+      })),
+    });
+    if (result.ok) {
+      setHistory(result.history);
+      setStatus(`${nodes.length} field labels updated`);
+    } else setStatus(result.failure.message);
+  };
+
+  const navigateProblem = (diagnostic: StudioDiagnostic) => {
+    const targetUid = diagnostic.entityUid ?? diagnostic.formUid;
+    if (targetUid === undefined) return;
+    setNavigation((current) => ({
+      ...current,
+      ...(diagnostic.formUid === undefined ? {} : { activeFormUid: diagnostic.formUid }),
+      workbench: revealStudioUid(current.workbench, targetUid, outline.parentByUid),
+    }));
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-outline-uid="${targetUid}"]`)?.focus();
+    });
   };
 
   const save = async () => {
@@ -250,33 +430,45 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       <header className="studio-v1-toolbar">
         <div><strong>{history.present.project.title}</strong><span>{dirty ? "Unsaved changes" : "Saved"}</span></div>
         <nav aria-label="Document history">
-          <Button variant="outline" size="sm" disabled={loading || history.past.length === 0} onClick={() => setHistory(undoStudioHistory(history))}>Undo</Button>
-          <Button variant="outline" size="sm" disabled={loading || history.future.length === 0} onClick={() => setHistory(redoStudioHistory(history))}>Redo</Button>
+          <Button variant="outline" size="sm" disabled={loading || history.past.length === 0} onClick={() => replaceHistory(undoStudioHistory(history))}>Undo</Button>
+          <Button variant="outline" size="sm" disabled={loading || history.future.length === 0} onClick={() => replaceHistory(redoStudioHistory(history))}>Redo</Button>
           <Button size="sm" disabled={loading || !dirty} onClick={() => void save()}>Save draft</Button>
         </nav>
         <p role="status" aria-live="polite">{status}</p>
       </header>
       <div className="studio-v1-workspace">
-        <aside className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
-          <h2 id="studio-v1-palette-title">Fields</h2>
-          <Button variant="outline" disabled={loading} onClick={insertText}>Add text field</Button>
-        </aside>
+        <div className="studio-v1-left-panel">
+          <StudioOutline
+            project={history.present}
+            state={navigation.workbench}
+            onChange={(workbench) => setNavigation((current) => ({ ...current, workbench }))}
+            onActivateForm={(activeFormUid) => setNavigation((current) => ({ ...current, activeFormUid }))}
+          />
+          <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
+            <h2 id="studio-v1-palette-title">Fields</h2>
+            <Button variant="outline" disabled={loading} onClick={insertText}>Add text field</Button>
+          </section>
+        </div>
         <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
           <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks</span></div>
           <ol className="studio-v1-node-list">
             {form.rootNodeUids.map((uid) => (
-              <CanvasNode key={uid} form={form} uid={uid} selectedUid={selectedUid} onSelect={setSelectedUid} />
+              <CanvasNode key={uid} form={form} uid={uid} selectedUids={navigation.workbench.selectedUids} onSelect={selectNode} />
             ))}
           </ol>
         </section>
         <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title">
           <h2 id="studio-v1-inspector-title">Inspector</h2>
-          {selected?.kind === "field" ? (
-            <label className="studio-field"><span>Label</span><input className="ui-input" value={String(selected.props["label"] ?? "")} onChange={(event) => updateLabel(event.currentTarget.value)} /></label>
-          ) : <p>Select a field on the canvas.</p>}
+          <SelectionInspector
+            key={selectedNodes.map(({ uid }) => uid).join("\u0000")}
+            nodes={selectedNodes}
+            onUpdate={updateNode}
+            onBulkLabel={updateBulkLabel}
+          />
         </aside>
       </div>
-      <ControlledPreview form={form} />
+      <ProblemsPanel diagnostics={compiled.diagnostics} onNavigate={navigateProblem} />
+      <ControlledPreview form={form} compiled={compiled} />
     </main>
   );
 }

@@ -5,6 +5,51 @@ import StudioEditorPage from "./StudioEditorPage";
 import useStagesStore from "./store";
 import editorConfig from "./configTemplates/initialConfig";
 import { createMemoryProjectRepository } from "../src/projects";
+import { toUid } from "../src/document";
+
+function outlineProjectSnapshot() {
+  const project = {
+    format: "stages-studio",
+    formatVersion: 1,
+    project: { uid: toUid("legacy_project"), title: "Outline project", defaultLocale: "en" },
+    forms: {
+      [toUid("form_outline")]: {
+        uid: toUid("form_outline"),
+        title: "Registration",
+        runtime: { schemaId: "registration", schemaVersion: 1 },
+        rootNodeUids: [toUid("field_first"), toUid("field_second"), toUid("wizard_journey")],
+        nodes: {
+          [toUid("field_first")]: {
+            uid: toUid("field_first"), kind: "field", runtimeId: "first", definition: { key: "text", version: 1 }, props: { label: "First field" },
+          },
+          [toUid("field_second")]: {
+            uid: toUid("field_second"), kind: "field", runtimeId: "second", definition: { key: "text", version: 1 }, props: { label: "Second field" },
+          },
+          [toUid("wizard_journey")]: {
+            uid: toUid("wizard_journey"), kind: "wizard", runtimeId: "journey", stageUids: [toUid("stage_details")], presentation: { label: "Journey" },
+          },
+          [toUid("stage_details")]: {
+            uid: toUid("stage_details"), kind: "stage", runtimeId: "details", childUids: [toUid("field_nested")], presentation: { label: "Details" },
+          },
+          [toUid("field_nested")]: {
+            uid: toUid("field_nested"), kind: "field", runtimeId: "nested", definition: { key: "text", version: 1 }, props: { label: "Nested field" },
+          },
+        },
+        scenarios: [],
+        settings: {},
+      },
+    },
+    fragments: {},
+    resources: {},
+  };
+  return {
+    uid: project.project.uid,
+    title: project.project.title,
+    revision: 1,
+    updatedAt: "2026-09-04T00:00:00.000Z",
+    project,
+  };
+}
 
 describe("StudioEditorPage interactions", () => {
   beforeEach(() => {
@@ -87,6 +132,51 @@ describe("StudioEditorPage interactions", () => {
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
     expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
+  });
+
+  it("coordinates keyboard outline navigation, multi-selection, bulk edits, and Problems", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    const formItem = document.querySelector('[data-outline-uid="form_outline"]');
+    const firstItem = document.querySelector('[data-outline-uid="field_first"]');
+    const secondItem = document.querySelector('[data-outline-uid="field_second"]');
+    const wizardItem = document.querySelector('[data-outline-uid="wizard_journey"]');
+    expect(formItem).toBeTruthy();
+    expect(firstItem).toBeTruthy();
+    expect(secondItem).toBeTruthy();
+    expect(wizardItem).toBeTruthy();
+
+    await act(async () => { formItem.focus(); });
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(document.activeElement).toBe(firstItem);
+    expect(firstItem).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("textbox", { name: "Label" })).toHaveValue("First field");
+    fireEvent.change(screen.getByRole("textbox", { name: "Runtime ID" }), { target: { value: "renamed" } });
+    expect(firstItem).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("textbox", { name: "Runtime ID" })).toHaveValue("renamed");
+
+    fireEvent.click(secondItem, { ctrlKey: true });
+    expect(firstItem).toHaveAttribute("aria-selected", "true");
+    expect(secondItem).toHaveAttribute("aria-selected", "true");
+    await user.type(screen.getByRole("textbox", { name: "Label for selected fields" }), "Shared label");
+    await user.click(screen.getByRole("button", { name: "Apply to 2 fields" }));
+    expect(screen.getAllByRole("textbox", { name: "Shared label" })).toHaveLength(2);
+
+    await act(async () => { wizardItem.focus(); });
+    await user.keyboard("{ArrowRight}");
+    const stageItem = document.querySelector('[data-outline-uid="stage_details"]');
+    expect(stageItem).toBeTruthy();
+    await user.keyboard("{ArrowRight}");
+    expect(document.activeElement).toBe(stageItem);
+    await user.keyboard("{ArrowRight}");
+    expect(document.querySelector('[data-outline-uid="field_nested"]')).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /compiler\.unsupported-node-kind.*wizard/ }));
+    expect(wizardItem).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(document.activeElement).toBe(wizardItem));
   });
 
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {
