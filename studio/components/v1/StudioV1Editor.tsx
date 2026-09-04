@@ -42,6 +42,7 @@ import { StudioProjectConflictError } from "../../src/projects/types";
 import type { StudioProjectRepository } from "../../src/projects/types";
 import { createStudioPreviewHost } from "../../src/runtime/preview-host";
 import { useStudioPreviewHost } from "../../src/runtime/use-studio-preview-host";
+import { createStudioSupportReport, filterAndGroupStudioProblems, inspectStudioRuntime, type StudioProblem, type StudioProblemGroupBy } from "../../src/runtime/observability";
 import { focusFirstVisibleValidationError, inspectStudioValidation } from "../../src/validation/inspection";
 import { formatStudioFieldValue, resolveStudioMessage, studioScenarioLocale } from "../../src/localization";
 import {
@@ -132,6 +133,16 @@ function nextProjectUid(project: StudioProjectDocument, stem: string): Uid {
   return uid;
 }
 
+function keyedOccurrences<T>(values: readonly T[], identity: (value: T) => string): readonly { readonly key: string; readonly value: T }[] {
+  const counts = new Map<string, number>();
+  return values.map((value) => {
+    const base = identity(value);
+    const occurrence = (counts.get(base) ?? 0) + 1;
+    counts.set(base, occurrence);
+    return { key: `${base}:${occurrence}`, value };
+  });
+}
+
 function nodeDisplayLabel(node: StudioNode): string {
   const configured = (node.kind === "field" || node.kind === "block" ? node.props["label"] ?? node.props["text"] : undefined)
     ?? node.presentation?.["label"];
@@ -190,7 +201,7 @@ function CanvasNode({ form, uid, selectedUids, onSelect }: {
     : node.kind === "variant" ? node.childUids
     : node.kind === "wizard" ? node.stageUids : [];
   return (
-    <li className="studio-v1-node" data-canvas-kind={node.kind}>
+    <li className="studio-v1-node" data-canvas-kind={node.kind} data-canvas-uid={uid}>
       <button
         type="button"
         className="studio-v1-node__select"
@@ -691,11 +702,13 @@ function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { re
   return <section className="studio-v1-dynamic-state" aria-labelledby="studio-v1-dynamic-state-title"><h3 id="studio-v1-dynamic-state-title">Dynamic structure</h3><ul>{items.map((item) => <li key={item.uid}><span>{item.label}</span><strong>{item.state}</strong></li>)}</ul></section>;
 }
 
-export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, resources: resourceCatalog, defaultLocale = "en" }: {
+export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario, onNavigateProblem, project, resources: resourceCatalog, defaultLocale = "en" }: {
   readonly form: StudioFormDocument;
   readonly compiled: CompiledStudioForm;
+  readonly project?: StudioProjectDocument["project"];
   readonly resources?: StudioResourceCatalog;
   readonly defaultLocale?: string;
+  readonly onNavigateProblem?: (diagnostic: StudioProblem) => void;
   readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => void;
   readonly onAddScenario: () => StudioScenario | undefined;
 }) {
@@ -753,6 +766,29 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   const [validationScope, setValidationScope] = useState<string>("form");
   const [validationMessage, setValidationMessage] = useState("Validation has not run.");
   const validationInspection = inspectStudioValidation(preview.snapshot, compiled.sourceMap);
+  const problems: readonly StudioProblem[] = [...compiled.diagnostics, ...preview.diagnostics];
+  const runtimeInspection = inspectStudioRuntime(preview.snapshot, preview.host.acceptedRevision, preview.host.pendingProposal);
+  const [supportStatus, setSupportStatus] = useState("Support report not copied.");
+  const copySupportReport = async () => {
+    const report = createStudioSupportReport({
+      project: project ?? { uid: form.uid, title: form.title },
+      form: { uid: form.uid, title: form.title, schemaId: form.runtime.schemaId, schemaVersion: form.runtime.schemaVersion },
+      snapshot: preview.snapshot,
+      acceptedRevision: preview.host.acceptedRevision,
+      canonicalValue: preview.host.canonicalValue,
+      ...(preview.host.pendingProposal === undefined ? {} : { pendingProposal: preview.host.pendingProposal }),
+      ...(lastProposal === undefined ? {} : { lastTransaction: lastProposal }),
+      problems,
+      context: scenario?.context,
+      extensions: scenario?.extensions,
+    });
+    try {
+      await navigator.clipboard.writeText(report);
+      setSupportStatus("Redacted support report copied.");
+    } catch {
+      setSupportStatus("Clipboard access was unavailable.");
+    }
+  };
   const navigateWizard = async (
     wizard: ContainerSnapshot,
     event: StagesEvent,
@@ -824,8 +860,9 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     <section ref={previewRef} className="studio-v1-preview" aria-labelledby="studio-v1-preview-title" style={themeStyle} data-studio-theme="default">
       <div className="studio-v1-section-heading">
         <h2 id="studio-v1-preview-title">Preview</h2>
-        <span>{compiled.diagnostics.length + preview.diagnostics.length} problems</span>
+        <span>{problems.length} problems</span>
       </div>
+      <ProblemsPanel diagnostics={problems} onNavigate={onNavigateProblem ?? (() => {})} />
       <section className="studio-v1-scenarios" aria-labelledby="studio-v1-scenarios-title">
         <h3 id="studio-v1-scenarios-title">Scenario</h3>
         <label className="studio-field"><span>Named scenario</span><select value={scenario?.uid ?? ""} onChange={(event) => {
@@ -858,16 +895,28 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
         <p role="status" aria-live="polite">{eventMessage}</p>
         {lastProposal && <div className="studio-v1-transaction">
           <p>Transaction {lastProposal.transactionId}: {lastProposal.events.length} event{lastProposal.events.length === 1 ? "" : "s"}, {lastProposal.patches.length} ordered patch{lastProposal.patches.length === 1 ? "" : "es"}. Owner policy: {proposalPolicy}.</p>
-          <ol>{lastProposal.patches.map((patch, index) => <li key={index}><code>{patch.op} {patch.path.join(".") || "(root)"}{patch.op === "set" ? ` = ${JSON.stringify(patch.value)}` : ""}</code></li>)}</ol>
+          <ol>{keyedOccurrences(lastProposal.patches, (patch) => `${patch.op}:${JSON.stringify(patch.path)}:${patch.op === "set" ? JSON.stringify(patch.value) : ""}`).map(({ key, value: patch }) => <li key={key}><code>{patch.op} {patch.path.join(".") || "(root)"}{patch.op === "set" ? ` = ${JSON.stringify(patch.value)}` : ""}</code></li>)}</ol>
         </div>}
       </section>
       <DynamicStructurePanel form={form} nodes={compiled.renderPlan.nodes} snapshots={preview.snapshot.nodes} value={value} scenario={scenario} />
       <section className="studio-v1-runtime-diagnostics" aria-labelledby="studio-v1-runtime-diagnostics-title">
-        <h3 id="studio-v1-runtime-diagnostics-title">Runtime diagnostics</h3>
-        {preview.diagnostics.length === 0 ? <p>No runtime diagnostics.</p> : <ul>{preview.diagnostics.map((diagnostic) => <li key={`${diagnostic.code}:${JSON.stringify(diagnostic.runtimeAddress)}:${diagnostic.message}`}>
-          <strong>{diagnostic.code}</strong> {diagnostic.message}{diagnostic.runtimePath === undefined ? "" : ` · ${diagnostic.runtimePath.join(".") || "form"}`}
-        </li>)}</ul>}
+        <h3 id="studio-v1-runtime-diagnostics-title">Runtime observability</h3>
+        <dl className="studio-v1-observability-grid">
+          <div><dt>Preview state</dt><dd>{runtimeInspection.stale ? "Stale — awaiting or reconciling owner acceptance" : "Current"}</dd></div>
+          <div><dt>Revision</dt><dd>{runtimeInspection.revision} (accepted {runtimeInspection.acceptedRevision})</dd></div>
+          <div><dt>Validation</dt><dd>{runtimeInspection.validation.status} · {runtimeInspection.validation.issues.length} issues · {runtimeInspection.validation.pendingCount} pending</dd></div>
+          <div><dt>Active stages</dt><dd>{runtimeInspection.activeStages.map(({ path, activeStage }) => `${path.join(".") || "form"}: ${activeStage}`).join(", ") || "None"}</dd></div>
+          <div><dt>Row keys</dt><dd>{runtimeInspection.rows.map(({ path, rowKey }) => `${path.join(".")}: ${rowKey}`).join(", ") || "None"}</dd></div>
+        </dl>
+        {lastProposal === undefined ? <p>No runtime transaction has been proposed.</p> : <details className="studio-v1-transaction-observation"><summary>Last transaction {lastProposal.transactionId}</summary>
+          <p>{lastProposal.events.length} events · {lastProposal.patches.length} patches · source {lastProposal.source}</p>
+          <ol>{keyedOccurrences(lastProposal.events, (event) => `${event.name}:${JSON.stringify(event.target)}:${JSON.stringify(event.payload)}`).map(({ key, value: event }) => <li key={key}><code>{event.name}</code> → <code>{JSON.stringify(event.target)}</code></li>)}</ol>
+          <ol>{keyedOccurrences(lastProposal.patches, (patch) => `${patch.op}:${JSON.stringify(patch.path)}:${patch.op === "set" ? JSON.stringify(patch.value) : ""}`).map(({ key, value: patch }) => <li key={key}><code>{patch.op} {patch.path.join(".") || "(root)"}</code></li>)}</ol>
+        </details>}
         <small>Key collisions appear as <code>schema.duplicate-row-key</code>; the conflicting row branch is omitted until the canonical value supplies unique keys.</small>
+        <div><Button type="button" variant="outline" size="sm" onClick={() => void copySupportReport()}>Copy redacted support report</Button></div>
+        <p role="status" aria-live="polite">{supportStatus}</p>
+        <small>Optional telemetry is a trusted host port and receives event names, codes, revisions, and counts only—never values or credentials.</small>
       </section>
       <section className="studio-v1-validation-state" aria-labelledby="studio-v1-validation-state-title">
         <h3 id="studio-v1-validation-state-title">Validation state</h3>
@@ -1186,25 +1235,40 @@ function StructureControls({ nodes, canPaste, onMove, onGroup, onUngroup, onConv
 }
 
 function ProblemsPanel({ diagnostics, onNavigate }: {
-  readonly diagnostics: readonly StudioDiagnostic[];
-  readonly onNavigate: (diagnostic: StudioDiagnostic) => void;
+  readonly diagnostics: readonly StudioProblem[];
+  readonly onNavigate: (diagnostic: StudioProblem) => void;
 }) {
+  const [source, setSource] = useState<"all" | StudioProblem["source"]>("all");
+  const [severity, setSeverity] = useState<"all" | StudioProblem["severity"]>("all");
+  const [formUid, setFormUid] = useState<"all" | Uid>("all");
+  const [entityUid, setEntityUid] = useState<"all" | Uid>("all");
+  const [groupBy, setGroupBy] = useState<StudioProblemGroupBy>("source");
+  const groups = filterAndGroupStudioProblems(diagnostics, { source, severity, formUid, entityUid }, groupBy);
+  const visibleCount = groups.reduce((count, group) => count + group.problems.length, 0);
+  const formUids = [...new Set(diagnostics.flatMap((diagnostic) => diagnostic.formUid === undefined ? [] : [diagnostic.formUid]))];
+  const entityUids = [...new Set(diagnostics.flatMap((diagnostic) => diagnostic.entityUid === undefined ? [] : [diagnostic.entityUid]))];
   return (
     <section className="studio-v1-problems" aria-labelledby="studio-v1-problems-title">
       <div className="studio-v1-section-heading">
-        <h2 id="studio-v1-problems-title">Problems</h2><span>{diagnostics.length}</span>
+        <h2 id="studio-v1-problems-title">Problems</h2><span>{visibleCount} of {diagnostics.length}</span>
       </div>
-      {diagnostics.length === 0 ? <p>No problems</p> : (
-        <ul>
-          {diagnostics.map((diagnostic) => (
+      <div className="studio-v1-problem-filters" aria-label="Problem filters">
+        <label>Source<select aria-label="Problem source" value={source} onChange={(event) => setSource(event.currentTarget.value as typeof source)}><option value="all">All</option><option value="compiler">Compiler</option><option value="runtime">Runtime</option></select></label>
+        <label>Severity<select aria-label="Problem severity" value={severity} onChange={(event) => setSeverity(event.currentTarget.value as typeof severity)}><option value="all">All</option><option value="error">Error</option><option value="warning">Warning</option><option value="info">Info</option></select></label>
+        <label>Form<select aria-label="Problem form" value={formUid} onChange={(event) => setFormUid(event.currentTarget.value as typeof formUid)}><option value="all">All</option>{formUids.map((uid) => <option key={uid} value={uid}>{uid}</option>)}</select></label>
+        <label>Entity<select aria-label="Problem entity" value={entityUid} onChange={(event) => setEntityUid(event.currentTarget.value as typeof entityUid)}><option value="all">All</option>{entityUids.map((uid) => <option key={uid} value={uid}>{uid}</option>)}</select></label>
+        <label>Group by<select aria-label="Group problems by" value={groupBy} onChange={(event) => setGroupBy(event.currentTarget.value as StudioProblemGroupBy)}><option value="source">Source</option><option value="severity">Severity</option><option value="form">Form</option><option value="entity">Entity</option></select></label>
+      </div>
+      {visibleCount === 0 ? <p>{diagnostics.length === 0 ? "No problems" : "No matching problems"}</p> : groups.map((group) => <section key={group.key} className="studio-v1-problem-group" aria-label={`${groupBy}: ${group.label}`}>
+        <h3>{group.label} <span>{group.problems.length}</span></h3><ul>
+          {group.problems.map((diagnostic) => (
             <li key={`${diagnostic.code}:${diagnostic.entityUid ?? "form"}:${JSON.stringify(diagnostic.propertyPath)}:${diagnostic.message}`}>
               <button type="button" onClick={() => onNavigate(diagnostic)}>
-                <strong>{diagnostic.code}</strong><span>{diagnostic.message}</span>
+                <strong><small>{diagnostic.severity}</small> <code>{diagnostic.code}</code></strong><span>{diagnostic.message}<small>{diagnostic.propertyPath === undefined ? "" : ` · property ${diagnostic.propertyPath.join(".")}`}{diagnostic.runtimePath === undefined ? "" : ` · path ${diagnostic.runtimePath.join(".") || "form"}`}{diagnostic.runtimeAddress === undefined ? "" : ` · address ${JSON.stringify(diagnostic.runtimeAddress)}`}</small></span>
               </button>
             </li>
           ))}
-        </ul>
-      )}
+        </ul></section>) }
     </section>
   );
 }
@@ -1227,6 +1291,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   });
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
+  const [inspectionPropertyPath, setInspectionPropertyPath] = useState<readonly (number | string)[] | undefined>();
 
   useEffect(() => {
     if (startup.project === undefined) {
@@ -1531,7 +1596,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
   } = createStudioStructuralActions({ history, form, navigation, replaceHistory, setNavigation, setStatus });
 
-  const navigateProblem = (diagnostic: StudioDiagnostic) => {
+  const navigateProblem = (diagnostic: StudioProblem) => {
     const targetUid = diagnostic.entityUid ?? diagnostic.formUid;
     if (targetUid === undefined) return;
     setNavigation((current) => ({
@@ -1539,8 +1604,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       ...(diagnostic.formUid === undefined ? {} : { activeFormUid: diagnostic.formUid }),
       workbench: revealStudioUid(current.workbench, targetUid, outline.parentByUid),
     }));
+    setInspectionPropertyPath(diagnostic.propertyPath);
     requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(`[data-outline-uid="${targetUid}"]`)?.focus();
+      document.querySelector<HTMLElement>(`[data-outline-uid="${targetUid}"]`)?.scrollIntoView({ block: "nearest" });
+      document.querySelector<HTMLElement>(`[data-canvas-uid="${targetUid}"]`)?.scrollIntoView({ block: "nearest" });
+      document.querySelector<HTMLElement>(".studio-v1-inspector")?.focus();
     });
   };
 
@@ -1627,8 +1695,9 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             ))}
           </ol>
         </section>
-        <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title">
+        <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title" tabIndex={-1} data-inspector-property={inspectionPropertyPath?.join(".")}>
           <h2 id="studio-v1-inspector-title">Inspector</h2>
+          {inspectionPropertyPath !== undefined && <p role="status">Inspecting property: <code>{inspectionPropertyPath.join(".")}</code></p>}
           {formSelected ? <>
             <StudioEventEditor events={form.events} form={form} references={expressionReferences(form)} onChange={updateFormEvents} />
             <StudioLogicEditor kind="transform" rules={form.transforms} form={form} references={expressionReferences(form)} onChange={updateFormTransforms} />
@@ -1662,8 +1731,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           />
         </aside>
       </div>
-      <ProblemsPanel diagnostics={compiled.diagnostics} onNavigate={navigateProblem} />
-      <ControlledPreview form={compiled.expandedForm} compiled={compiled} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
+      <ControlledPreview form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
     </main>
   );
 }

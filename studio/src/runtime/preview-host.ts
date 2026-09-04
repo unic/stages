@@ -14,6 +14,7 @@ import type {
   StudioPreviewHostOptions,
   StudioPreviewHostUpdate,
   StudioRuntimeDiagnostic,
+  StudioTelemetryEvent,
 } from "./types";
 
 function callbacksFrom(input: StudioPreviewCallbacks): StudioPreviewCallbacks {
@@ -21,6 +22,7 @@ function callbacksFrom(input: StudioPreviewCallbacks): StudioPreviewCallbacks {
     ...(input.onProposal === undefined ? {} : { onProposal: input.onProposal }),
     ...(input.onDiagnostic === undefined ? {} : { onDiagnostic: input.onDiagnostic }),
     ...(input.onControllerChange === undefined ? {} : { onControllerChange: input.onControllerChange }),
+    ...(input.telemetry === undefined ? {} : { telemetry: input.telemetry }),
   };
 }
 
@@ -75,6 +77,7 @@ class PreviewHost implements StudioPreviewHost {
   private controllerUnsubscribe: (() => void) | undefined;
   private readonly listeners = new Set<() => void>();
   private destroyedValue = false;
+  private acceptedRevisionValue = 0;
 
   constructor(options: StudioPreviewHostOptions) {
     this.compiledValue = options.compiled;
@@ -84,12 +87,14 @@ class PreviewHost implements StudioPreviewHost {
     this.creationValue = creationFrom(options);
     this.callbacksValue = callbacksFrom(options);
     this.controllerValue = this.createController();
+    this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
     this.observeController();
   }
 
   get controller(): StudioPreviewController { return this.controllerValue; }
   get canonicalValue(): unknown { return this.canonicalValueValue; }
   get pendingProposal(): StagesChange<unknown> | undefined { return this.pendingProposalValue; }
+  get acceptedRevision(): number { return this.acceptedRevisionValue; }
   get destroyed(): boolean { return this.destroyedValue; }
 
   getSnapshot = () => this.controllerValue.getSnapshot();
@@ -144,7 +149,10 @@ class PreviewHost implements StudioPreviewHost {
     if (!Object.is(this.contextValue, previousContext)) dynamic.context = this.contextValue;
     if (input.compiled.schemaInput !== previousCompiled.schemaInput) dynamic.schema = input.compiled.schemaInput;
     if (this.extensionsValue !== previousExtensions) dynamic.extensions = this.extensionsValue;
-    if (Object.keys(dynamic).length > 0) this.controllerValue.update(dynamic);
+    if (Object.keys(dynamic).length > 0) {
+      this.controllerValue.update(dynamic);
+      if (dynamic.value !== undefined) this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
+    }
   }
 
   acceptProposal(transactionId: number, replacementValue?: unknown): boolean {
@@ -153,6 +161,8 @@ class PreviewHost implements StudioPreviewHost {
     this.pendingProposalValue = undefined;
     this.canonicalValueValue = value;
     this.controllerValue.update({ value });
+    this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
+    this.emitTelemetry({ name: "preview.proposal-accepted", transactionId });
     return true;
   }
 
@@ -160,6 +170,8 @@ class PreviewHost implements StudioPreviewHost {
     if (this.destroyedValue || this.pendingProposalValue?.transactionId !== transactionId) return false;
     this.pendingProposalValue = undefined;
     this.controllerValue.update({ value: this.canonicalValueValue });
+    this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
+    this.emitTelemetry({ name: "preview.proposal-rejected", transactionId });
     return true;
   }
 
@@ -168,6 +180,7 @@ class PreviewHost implements StudioPreviewHost {
     this.pendingProposalValue = undefined;
     this.canonicalValueValue = value;
     this.controllerValue.update({ value });
+    this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
   }
 
   destroy(): void {
@@ -209,12 +222,15 @@ class PreviewHost implements StudioPreviewHost {
     this.observeController();
     previous.destroy();
     this.callbacksValue.onControllerChange?.(this.controllerValue);
+    this.acceptedRevisionValue = this.controllerValue.getSnapshot().revision;
+    this.emitTelemetry({ name: "preview.recreated" });
     this.notify();
   }
 
   private receiveProposal(proposal: StagesChange<unknown>): void {
     if (this.destroyedValue) return;
     this.pendingProposalValue = proposal;
+    this.emitTelemetry({ name: "preview.proposal", transactionId: proposal.transactionId, eventCount: proposal.events.length, patchCount: proposal.patches.length });
     this.callbacksValue.onProposal?.(proposal);
   }
 
@@ -227,10 +243,23 @@ class PreviewHost implements StudioPreviewHost {
         this.compiledValue.renderPlan.formUid,
       ),
     );
+    this.emitTelemetry({ name: "preview.diagnostic", code: diagnostic.code, severity: diagnostic.severity });
   }
 
   private notify(): void {
+    const snapshot = this.controllerValue.getSnapshot();
+    if (this.pendingProposalValue === undefined && Object.is(snapshot.value, this.canonicalValueValue)) {
+      this.acceptedRevisionValue = snapshot.revision;
+    }
     for (const listener of this.listeners) listener();
+  }
+
+  private emitTelemetry(event: StudioTelemetryEvent): void {
+    try {
+      this.callbacksValue.telemetry?.emit(event);
+    } catch {
+      // Optional observability must never alter controlled runtime behavior.
+    }
   }
 }
 

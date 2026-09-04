@@ -17,10 +17,23 @@ export interface StudioRuntimeDiagnostic extends Omit<StudioDiagnostic, "source"
   readonly source: "runtime";
 }
 
+export type StudioTelemetryEvent =
+  | Readonly<{ name: "preview.proposal"; transactionId: number; eventCount: number; patchCount: number }>
+  | Readonly<{ name: "preview.proposal-accepted"; transactionId: number }>
+  | Readonly<{ name: "preview.proposal-rejected"; transactionId: number }>
+  | Readonly<{ name: "preview.diagnostic"; code: string; severity: StudioRuntimeDiagnostic["severity"] }>
+  | Readonly<{ name: "preview.recreated" }>;
+
+/** Optional trusted-host port. Telemetry receives metadata only, never values, payloads, or credentials. */
+export interface StudioTelemetryPort {
+  emit(event: StudioTelemetryEvent): void;
+}
+
 export interface StudioPreviewCallbacks {
   readonly onProposal?: (proposal: StagesChange<unknown>) => void;
   readonly onDiagnostic?: (diagnostic: StudioRuntimeDiagnostic) => void;
   readonly onControllerChange?: (controller: StudioPreviewController) => void;
+  readonly telemetry?: StudioTelemetryPort;
 }
 
 export interface StudioPreviewCreationOptions {
@@ -48,6 +61,7 @@ export interface StudioPreviewHost {
   readonly controller: StudioPreviewController;
   readonly canonicalValue: unknown;
   readonly pendingProposal: StagesChange<unknown> | undefined;
+  readonly acceptedRevision: number;
   readonly destroyed: boolean;
   getSnapshot(): StudioPreviewSnapshot;
   getDiagnostics(): readonly StudioRuntimeDiagnostic[];

@@ -87,6 +87,14 @@ describe("Studio advanced collection and wizard Test mode", () => {
     };
     renderPreview(form);
     await waitFor(() => expect(screen.getAllByText("schema.duplicate-row-key").length).toBeGreaterThan(0));
+    expect(screen.getByLabelText("Problem source")).toHaveValue("all");
+    fireEvent.change(screen.getByLabelText("Problem source"), { target: { value: "compiler" } });
+    expect(screen.getByText("No matching problems")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Problem source"), { target: { value: "runtime" } });
+    fireEvent.change(screen.getByLabelText("Group problems by"), { target: { value: "severity" } });
+    expect(screen.getByRole("region", { name: "severity: error" })).toBeInTheDocument();
+    expect(screen.getByText(/Revision/).parentElement?.textContent).toMatch(/accepted/);
+    expect(screen.getByRole("button", { name: "Copy redacted support report" })).toBeInTheDocument();
     expect(screen.getByText(/conflicting row branch is omitted/)).toBeInTheDocument();
   });
 
