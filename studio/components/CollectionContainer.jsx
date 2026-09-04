@@ -11,6 +11,9 @@ import {
   parseTemplateLiterals,
   textHasTemplateLiterals,
 } from "./helpers";
+import { useShallow } from "zustand/react/shallow";
+
+const EMPTY_DATA = Object.freeze({});
 
 const CollectionContainer = ({
   children,
@@ -27,7 +30,15 @@ const CollectionContainer = ({
   width,
   inGroup,
 }) => {
-  const store = useStagesStore();
+  const usesTemplateData = textHasTemplateLiterals(label)
+    || textHasTemplateLiterals(secondaryText);
+  const store = useStagesStore(useShallow((state) => ({
+    data: usesTemplateData ? state.data : EMPTY_DATA,
+    onChangeBlockWidth: state.onChangeBlockWidth,
+    onUpdateLabel: state.onUpdateLabel,
+    onUpdateSecondaryText: state.onUpdateSecondaryText,
+    setActiveContextMenuInput: state.setActiveContextMenuInput,
+  })));
   const [isInEditMode, setIsInEditMode] = useState(
     isEditMode && pathIsSelected(path, selectedElement, fieldsetId)
   );
@@ -64,7 +75,7 @@ const CollectionContainer = ({
     const newLabel = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
     setLabelText(newLabel);
     store.onUpdateLabel(path, newLabel);
-  }, []);
+  }, [path, store.onUpdateLabel]);
 
   const handleEditSecondaryText = useCallback((evt) => {
     const sanitizeConf = {
@@ -77,7 +88,7 @@ const CollectionContainer = ({
     );
     setSecText(newSecondaryText);
     store.onUpdateSecondaryText(path, newSecondaryText);
-  }, []);
+  }, [path, store.onUpdateSecondaryText]);
 
   return (
     <Container
@@ -85,7 +96,6 @@ const CollectionContainer = ({
       isEditMode={isEditMode}
       isFieldConfigEditor={isFieldConfigEditor}
       inGroup={inGroup}
-      store={store}
       transform={transform}
       width={width}
       className="flex"

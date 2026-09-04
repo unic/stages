@@ -15,7 +15,9 @@ const StageContainer = ({
   contextMenuRef,
   fieldsetId,
 }) => {
-  const store = useStagesStore();
+  const setActiveContextMenuInput = useStagesStore(
+    (state) => state.setActiveContextMenuInput
+  );
   const [isInEditMode, setIsInEditMode] = useState(
     isEditMode && pathIsSelected(path, selectedElement, fieldsetId)
   );
@@ -49,7 +51,7 @@ const StageContainer = ({
       onContextMenu={(e) => {
         if (contextMenuRef && contextMenuRef.current) {
           contextMenuRef.current.show(e);
-          store.setActiveContextMenuInput(
+          setActiveContextMenuInput(
             fieldsetId ? `{${fieldsetId}}.${path}` : path
           );
         }

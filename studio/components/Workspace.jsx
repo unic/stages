@@ -4,6 +4,7 @@ import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
 import Sugar from "sugar";
 import { DndContext } from '@dnd-kit/core';
+import { useShallow } from 'zustand/react/shallow';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { StudioContextMenu } from './ui/studio-context-menu';
@@ -46,7 +47,34 @@ import interfaceStateConfig from './configTemplates/interfaceStateConfig';
 const Workspace = () => {
     const toast = useRef(null);
     const contextMenuRef = useRef(null);
-    const store = useStagesStore();
+    const store = useStagesStore(useShallow((state) => ({
+        activeContextMenuInput: state.activeContextMenuInput,
+        addFieldset: state.addFieldset,
+        addSnapshot: state.addSnapshot,
+        clipboard: state.clipboard,
+        currentConfig: state.currentConfig,
+        data: state.data,
+        fieldsets: state.fieldsets,
+        generalConfig: state.generalConfig,
+        isEditMode: state.isEditMode,
+        onUpdateFormTitle: state.onUpdateFormTitle,
+        previewSize: state.previewSize,
+        redo: state.redo,
+        removePathFromSelectedElements: state.removePathFromSelectedElements,
+        selectedElement: state.selectedElement,
+        setActiveContextMenuInput: state.setActiveContextMenuInput,
+        setClipboard: state.setClipboard,
+        setData: state.setData,
+        setEditMode: state.setEditMode,
+        setEditorTabIndex: state.setEditorTabIndex,
+        setPreviewMode: state.setPreviewMode,
+        setSelectedElement: state.setSelectedElement,
+        switchPreviewSize: state.switchPreviewSize,
+        undo: state.undo,
+        updateCurrentConfig: state.updateCurrentConfig,
+        updateFieldsetConfig: state.updateFieldsetConfig,
+    })));
+    const keyDownHandlerRef = useRef(null);
     const [formTitle, setFormTitle] = useState(store.generalConfig.title || "Form");
 
     const handleEditFormTitle = useCallback(evt => {
@@ -57,29 +85,38 @@ const Workspace = () => {
         const newTitle = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
         setFormTitle(newTitle);
         store.onUpdateFormTitle(newTitle);
-    }, []);
+    }, [store.onUpdateFormTitle]);
 
     const onKeyPress = (e) => {
-        if (e.key === "c" && (e.ctrlKey || e.metaKey)) {
+        if (!store.isEditMode || !(e.ctrlKey || e.metaKey)) return;
+        const target = e.target;
+        if (
+            target instanceof HTMLElement &&
+            (target.isContentEditable || target.closest("input, textarea, select"))
+        ) return;
+
+        const key = e.key.toLowerCase();
+        if (key === "c") {
             if (store.selectedElement && typeof store.selectedElement === "string") handleCopyField(store.selectedElement);
         }
-        if (e.key === "v" && (e.ctrlKey || e.metaKey)) {
+        if (key === "v") {
             handlePasteField(store.selectedElement);
         }
-        if (e.key === "x" && (e.ctrlKey || e.metaKey)) {
+        if (key === "x") {
             if (store.selectedElement && typeof store.selectedElement === "string") handleCutField(store.selectedElement);
         }
-        if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
-            store.undo();
+        if (key === "z") {
+            if (e.shiftKey) store.redo();
+            else store.undo();
         }
-        if (e.key === "z" && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-            store.redo();
-        }
+        if (["c", "v", "x", "z"].includes(key)) e.preventDefault();
     };
+    keyDownHandlerRef.current = onKeyPress;
 
     useEffect(() => {
-        document.addEventListener('keydown', onKeyPress);
-        return () => document.removeEventListener('keydown', onKeyPress);
+        const handleKeyDown = (event) => keyDownHandlerRef.current?.(event);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     const rootContextMenuItems = [
@@ -199,7 +236,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         if (path === fieldsetId) fieldset = undefined;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         store.setClipboard(_.get(newConfig, realPath));
         _.unset(newConfig, realPath);
@@ -222,7 +259,7 @@ const Workspace = () => {
             fieldset = _.find(store.fieldsets, { id: fieldsetId });
             path = path.slice(path.indexOf("}") + 2);
         }
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const newFieldConfig = {
@@ -242,7 +279,7 @@ const Workspace = () => {
     const handleConvertToGroup = (path) => {
         console.log("--> handleConvertToGroup <--");
         store.removePathFromSelectedElements(path);
-        const newConfig = [...store.currentConfig];
+        const newConfig = _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const newFieldConfig = _.get(newConfig, realPath);
         if (newFieldConfig.type !== "collection" && newFieldConfig.type !== "wizard") return;
@@ -265,7 +302,7 @@ const Workspace = () => {
     const handleConvertToCollection = (path) => {
         console.log("--> handleConvertToCollection <--");
         store.removePathFromSelectedElements(path);
-        const newConfig = [...store.currentConfig];
+        const newConfig = _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const newFieldConfig = _.get(newConfig, realPath);
         if (newFieldConfig.type !== "group" && newFieldConfig.type !== "wizard") return;
@@ -284,7 +321,7 @@ const Workspace = () => {
     const handleConvertToWizard = (path) => {
         console.log("--> handleConvertToWizard <--");
         store.removePathFromSelectedElements(path);
-        const newConfig = [...store.currentConfig];
+        const newConfig = _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const newFieldConfig = _.get(newConfig, realPath);
         if (newFieldConfig.type !== "group" && newFieldConfig.type !== "collection") return;
@@ -303,7 +340,7 @@ const Workspace = () => {
 
     const handleCreateFieldset = (path) => {
         console.log("--> handleCreateFieldset <--");
-        const newConfig = [...store.currentConfig];
+        const newConfig = _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const newFieldConfig = {
@@ -326,7 +363,7 @@ const Workspace = () => {
             fieldset = _.find(store.fieldsets, { id: fieldsetId });
             path = path.slice(path.indexOf("}") + 2);
         }
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const lastArrayIndex = realPath.lastIndexOf("[");
@@ -364,7 +401,7 @@ const Workspace = () => {
             fieldset = _.find(store.fieldsets, { id: fieldsetId });
             path = path.slice(path.indexOf("}") + 2);
         }
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -396,7 +433,7 @@ const Workspace = () => {
 
     const handleDisconnectFieldset = (path) => {
         console.log("--> handleDisconnectFieldset <--");
-        const newConfig = [...store.currentConfig];
+        const newConfig = _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const fieldset = _.find(store.fieldsets, { id: oldFieldConfig.type });
@@ -421,7 +458,7 @@ const Workspace = () => {
             fieldset = _.find(store.fieldsets, { id: fieldsetId });
             path = path.slice(path.indexOf("}") + 2);
         }
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const oldFieldConfig = _.get(newConfig, realPath);
         const newTempId = createNewFieldID(path, "collection", store);
@@ -461,7 +498,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         if (store.clipboard) {
-            const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+            const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
             const realPath = getConfigPathFromDataPath(path, newConfig);
             const configToInsert = {...store.clipboard, id: createNewFieldID(path, store.clipboard.id, store)};
             console.log({ realPath, configToInsert });
@@ -486,7 +523,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -517,7 +554,7 @@ const Workspace = () => {
         console.log("--> handleInsertFieldsetBetweenFields <--");
         // Add new fieldset between fields:
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = [...store.currentConfig];
+        const newConfig = _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -550,7 +587,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -601,7 +638,7 @@ const Workspace = () => {
             fieldset = _.find(store.fieldsets, { id: fieldsetId });
             path = path.slice(path.indexOf("}") + 2);
         }
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -662,7 +699,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -755,7 +792,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -800,7 +837,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -836,7 +873,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -873,7 +910,7 @@ const Workspace = () => {
             path = path.slice(path.indexOf("}") + 2);
         }
         const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-        const newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+        const newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
         const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
         const lastArrayIndex = realPath.lastIndexOf("[");
         const parentOfRealPath = realPath.substring(0, lastArrayIndex);
@@ -911,7 +948,7 @@ const Workspace = () => {
         }
         if (store.clipboard) {
             const addIndexOffset = path.slice(-1) === "+" ? 1 : 0;
-            let newConfig = fieldset ? [...fieldset.config] : [...store.currentConfig];
+            let newConfig = fieldset ? _.cloneDeep(fieldset.config) : _.cloneDeep(store.currentConfig);
             const realPath = getConfigPathFromDataPath(path.slice(-1) === "+" ? path.slice(0, -1) : path, newConfig);
             const lastArrayIndex = realPath.lastIndexOf("[");
             const parentOfRealPath = realPath.substring(0, lastArrayIndex);

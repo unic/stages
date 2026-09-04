@@ -5,6 +5,7 @@ import { GripHorizontal } from "lucide-react";
 import useStagesStore from "./store";
 import BlockPathLabel from "./BlockPathLabel";
 import { pathIsSelected, getWidth } from "./helpers";
+import { useShallow } from "zustand/react/shallow";
 
 const EditableBlock = ({
   field,
@@ -17,7 +18,13 @@ const EditableBlock = ({
   fieldsetId,
   width,
 }) => {
-  const store = useStagesStore();
+  const store = useStagesStore(useShallow((state) => ({
+    isEditMode: state.isEditMode,
+    onChangeBlockWidth: state.onChangeBlockWidth,
+    setActiveContextMenuInput: state.setActiveContextMenuInput,
+    setEditorTabIndex: state.setEditorTabIndex,
+    setSelectedElement: state.setSelectedElement,
+  })));
   const [isInEditMode, setIsInEditMode] = useState(
     store.isEditMode && pathIsSelected(path, selectedElement, fieldsetId)
   );

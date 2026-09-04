@@ -25,7 +25,7 @@ const Container = styled.div`
       ? getWidth(
           props.inGroup,
           props.isFieldConfigEditor,
-          props.store.isEditMode,
+          props.isEditMode,
           props.width
         )
       : "auto"};
@@ -33,7 +33,7 @@ const Container = styled.div`
     getWidth(
       props.inGroup,
       props.isFieldConfigEditor,
-      props.store.isEditMode,
+      props.isEditMode,
       props.width
     )};
   transform: ${(props) =>

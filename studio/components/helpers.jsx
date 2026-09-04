@@ -245,5 +245,7 @@ export const removeNonMatchingProperties = (config, type) => {
 };
 
 export const textHasTemplateLiterals = (text) => {
-  return text.indexOf("{{") !== -1 && text.indexOf("}}") !== -1;
+  return typeof text === "string"
+    && text.indexOf("{{") !== -1
+    && text.indexOf("}}") !== -1;
 };

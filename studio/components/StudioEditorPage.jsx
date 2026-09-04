@@ -5,14 +5,13 @@ import SidePanel from "./SidePanel";
 import Workspace from "./Workspace";
 
 export default function StudioEditorPage() {
-  const store = useStagesStore();
+  const isEditMode = useStagesStore((state) => state.isEditMode);
 
   useEffect(() => {
     useStagesStore.persist.rehydrate();
   }, []);
 
-  if (!store) return <div role="alert">The editor could not be loaded.</div>;
-  if (!store.isEditMode) return <Workspace />;
+  if (!isEditMode) return <Workspace />;
 
   return (
     <EditorShell>

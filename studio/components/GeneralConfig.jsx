@@ -2,6 +2,7 @@ import useStagesStore from "./store";
 import isoLangs from "./isoLangs";
 import { truncateString } from "./helpers";
 import { StudioV1Form } from "./v1/StudioV1Preview";
+import { useShallow } from "zustand/react/shallow";
 
 const generalConfigFields = [
   {
@@ -71,7 +72,10 @@ const generalConfigFields = [
 ];
 
 const GeneralConfig = () => {
-  const store = useStagesStore();
+  const store = useStagesStore(useShallow((state) => ({
+    generalConfig: state.generalConfig,
+    updateGeneralConfig: state.updateGeneralConfig,
+  })));
 
   return (
     <StudioV1Form

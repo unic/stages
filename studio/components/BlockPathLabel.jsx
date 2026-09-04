@@ -42,7 +42,7 @@ const BlockPathLabel = ({
   setFormCounter,
 }) => {
   const indexOfLastPathDot = path.lastIndexOf(".");
-  const store = useStagesStore();
+  const onUpdatePath = useStagesStore((state) => state.onUpdatePath);
   const [editablePath, setEditablePath] = useState(
     indexOfLastPathDot === -1 ? path : path.substring(indexOfLastPathDot + 1)
   );
@@ -70,10 +70,10 @@ const BlockPathLabel = ({
       sanitizeConf
     ).replace(/\s/g, "X");
     setEditablePath(newEditablePath);
-    store.onUpdatePath(nonEditablePath, editablePath, newEditablePath);
+    onUpdatePath(nonEditablePath, editablePath, newEditablePath);
     if (typeof setFormCounter === "function")
       setFormCounter((formCounter) => formCounter + 1);
-  }, []);
+  }, [editablePath, nonEditablePath, onUpdatePath, setFormCounter]);
 
   return (
     <>

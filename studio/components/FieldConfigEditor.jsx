@@ -11,6 +11,7 @@ import {
 } from "./helpers";
 import _ from "lodash";
 import { StudioV1Form } from "./v1/StudioV1Preview";
+import { useShallow } from "zustand/react/shallow";
 
 const parseConfig = (config) => {
   if (Array.isArray(config)) {
@@ -96,7 +97,11 @@ const getSelectedConfig = (config, selectedElement, store) => {
 };
 
 const FieldConfigEditor = ({ handleEditFieldConfig }) => {
-  const store = useStagesStore();
+  const store = useStagesStore(useShallow((state) => ({
+    currentConfig: state.currentConfig,
+    fieldsets: state.fieldsets,
+    selectedElement: state.selectedElement,
+  })));
   const path = store.selectedElement;
   const isFieldsetItem =
     typeof store.selectedElement === "string" &&

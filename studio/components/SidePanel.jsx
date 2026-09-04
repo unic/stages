@@ -9,13 +9,23 @@ import { GitFork } from "lucide-react";
 import FieldConfigEditor from "./FieldConfigEditor";
 import useStagesStore from "./store";
 import { getConfigPathFromDataPath, downloadFile } from "./helpers";
+import { useShallow } from "zustand/react/shallow";
 
 const SidePanel = () => {
-  const store = useStagesStore();
+  const store = useStagesStore(useShallow((state) => ({
+    currentConfig: state.currentConfig,
+    editorTabIndex: state.editorTabIndex,
+    fieldsets: state.fieldsets,
+    selectedElement: state.selectedElement,
+    setEditorTabIndex: state.setEditorTabIndex,
+    setSelectedElement: state.setSelectedElement,
+    updateCurrentConfig: state.updateCurrentConfig,
+    updateFieldsetConfig: state.updateFieldsetConfig,
+  })));
 
   const handleEditFieldConfig = (path, config, isFieldsetItem) => {
     if (Array.isArray(path)) {
-      const newConfig = isFieldsetItem ? [...config] : [...store.currentConfig];
+      const newConfig = isFieldsetItem ? _.cloneDeep(config) : _.cloneDeep(store.currentConfig);
       path.forEach((p) => {
         // p = path, config = diff
         const realPath = getConfigPathFromDataPath(p, newConfig);
@@ -43,8 +53,8 @@ const SidePanel = () => {
           })
         : {};
       const newConfig = isFieldsetItem
-        ? [...fieldset.config]
-        : [...store.currentConfig];
+        ? _.cloneDeep(fieldset.config)
+        : _.cloneDeep(store.currentConfig);
       const realPath = getConfigPathFromDataPath(path, newConfig);
       if (realPath && Object.keys(config).length > 0) {
         const oldConfig = _.get(

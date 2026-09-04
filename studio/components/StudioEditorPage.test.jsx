@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import StudioEditorPage from "./StudioEditorPage";
@@ -51,5 +51,33 @@ describe("StudioEditorPage interactions", () => {
     await waitFor(() => expect(useStagesStore.getState().currentConfig[1].label).toBe("Full name"));
     expect(updates - updatesBeforeTyping).toBeLessThanOrEqual(10);
     unsubscribe();
+  });
+
+  it("keeps native input shortcuts isolated and handles editor redo once", async () => {
+    const firstConfig = structuredClone(editorConfig);
+    const secondConfig = structuredClone(editorConfig);
+    const thirdConfig = structuredClone(editorConfig);
+    secondConfig[1].label = "Second";
+    thirdConfig[1].label = "Third";
+    useStagesStore.setState({
+      currentConfig: secondConfig,
+      isEditMode: true,
+      undoData: [firstConfig, secondConfig, thirdConfig],
+      activeUndoIndex: 1,
+    });
+    render(<StudioEditorPage />);
+    const canvasInput = await waitFor(() => {
+      const input = document.querySelector('input[name="username"]');
+      expect(input).toBeTruthy();
+      return input;
+    });
+
+    fireEvent.keyDown(canvasInput, { key: "z", metaKey: true });
+    expect(useStagesStore.getState().activeUndoIndex).toBe(1);
+
+    fireEvent.keyDown(document, { key: "z", metaKey: true, shiftKey: true });
+    expect(useStagesStore.getState().activeUndoIndex).toBe(2);
+    expect(useStagesStore.getState().currentConfig[1].label).toBe("Third");
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
   });
 });

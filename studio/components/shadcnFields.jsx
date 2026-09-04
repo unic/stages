@@ -24,6 +24,9 @@ import {
 } from "./ui/field-controls";
 import useStagesStore from "./store";
 import { parseTemplateLiterals, textHasTemplateLiterals } from "./helpers";
+import { useShallow } from "zustand/react/shallow";
+
+const EMPTY_DATA = Object.freeze({});
 
 const isValid = (value, config) => {
   if (config.isRequired && (value === "" || typeof value === "undefined"))
@@ -75,7 +78,14 @@ const InputWrapper = ({
   isValidating,
   errorRenderer,
 }) => {
-  const store = useStagesStore();
+  const usesTemplateData = textHasTemplateLiterals(label)
+    || textHasTemplateLiterals(secondaryText);
+  const store = useStagesStore(useShallow((state) => ({
+    data: usesTemplateData ? state.data : EMPTY_DATA,
+    isEditMode: state.isEditMode,
+    onUpdateLabel: state.onUpdateLabel,
+    onUpdateSecondaryText: state.onUpdateSecondaryText,
+  })));
   const [labelText, setLabelText] = React.useState(
     label ? parseTemplateLiterals(label, store.data) : ""
   );
@@ -101,7 +111,7 @@ const InputWrapper = ({
     const newLabel = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
     setLabelText(newLabel);
     store.onUpdateLabel(id, newLabel);
-  }, []);
+  }, [id, store.onUpdateLabel]);
 
   const handleEditSecondaryText = useCallback((evt) => {
     const sanitizeConf = {
@@ -114,7 +124,7 @@ const InputWrapper = ({
     );
     setSecText(newSecondaryText);
     store.onUpdateSecondaryText(id, newSecondaryText);
-  }, []);
+  }, [id, store.onUpdateSecondaryText]);
 
   if (isInInspector) {
     return (
@@ -193,7 +203,13 @@ const InputWrapper = ({
 };
 
 const MappedHeading = (props) => {
-  const store = useStagesStore();
+  const usesTemplateData = textHasTemplateLiterals(props.title)
+    || textHasTemplateLiterals(props.text);
+  const store = useStagesStore(useShallow((state) => ({
+    data: usesTemplateData ? state.data : EMPTY_DATA,
+    onUpdateText: state.onUpdateText,
+    onUpdateTitle: state.onUpdateTitle,
+  })));
   const [title, setTitle] = React.useState(
     props.title ? parseTemplateLiterals(props.title, store.data) : ""
   );
@@ -217,7 +233,7 @@ const MappedHeading = (props) => {
     const newTitle = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
     setTitle(newTitle);
     store.onUpdateTitle(props.id, newTitle);
-  }, []);
+  }, [props.id, store.onUpdateTitle]);
 
   const handleEditText = useCallback((evt) => {
     const sanitizeConf = {
@@ -227,7 +243,7 @@ const MappedHeading = (props) => {
     const newText = sanitizeHtml(evt.currentTarget.innerHTML, sanitizeConf);
     setText(newText);
     store.onUpdateText(props.id, newText);
-  }, []);
+  }, [props.id, store.onUpdateText]);
 
   return (
     <div>

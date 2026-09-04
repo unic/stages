@@ -11,7 +11,10 @@ const InsertBlock = ({
   isStage,
   fieldsetId,
 }) => {
-  const store = useStagesStore();
+  const isEditMode = useStagesStore((state) => state.isEditMode);
+  const setActiveContextMenuInput = useStagesStore(
+    (state) => state.setActiveContextMenuInput
+  );
   const [isHover, setIsHover] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
     id: `droppable-${path}`,
@@ -25,7 +28,7 @@ const InsertBlock = ({
     setIsHover(false);
   };
 
-  if (!store.isEditMode || isFieldConfigEditor) return null;
+  if (!isEditMode || isFieldConfigEditor) return null;
 
   return (
     <div
@@ -45,13 +48,13 @@ const InsertBlock = ({
         alignContent: "center",
         flexDirection: "column",
         lineHeight: "100%",
-        opacity: (isHover || isOver) && store.isEditMode ? 1 : 0,
-        cursor: isHover && store.isEditMode ? "pointer" : "default",
+        opacity: (isHover || isOver) && isEditMode ? 1 : 0,
+        cursor: isHover && isEditMode ? "pointer" : "default",
       }}
       onContextMenu={(e) => {
         if (contextMenuRef && contextMenuRef.current) {
           contextMenuRef.current.show(e);
-          store.setActiveContextMenuInput(
+          setActiveContextMenuInput(
             isStage
               ? `stage > ${fieldsetId ? `{${fieldsetId}}.${path}` : path}`
               : `insert > ${fieldsetId ? `{${fieldsetId}}.${path}` : path}`,

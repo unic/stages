@@ -16,6 +16,14 @@ const initialGeneralConfig = {
   },
 };
 
+const updateConfigProperty = (config, dataPath, property, value) => {
+  const configPath = `${getConfigPathFromDataPath(dataPath, config)}.${property}`;
+  if (_.get(config, configPath) === value) return null;
+  const nextConfig = _.cloneDeep(config);
+  _.set(nextConfig, configPath, value);
+  return nextConfig;
+};
+
 const useStagesStore = create(
   persist(
     (set, get) => ({
@@ -30,7 +38,7 @@ const useStagesStore = create(
       generalConfig: initialGeneralConfig,
       activeStep: 0,
       undoData: [initialConfig],
-      activeUndoIndex: 1,
+      activeUndoIndex: 0,
       previewSize: "desktop",
       fieldsets: [
         {
@@ -60,195 +68,215 @@ const useStagesStore = create(
           ],
         },
       ],
-      updateGeneralConfig: (generalConfig) => set(() => ({ generalConfig })),
-      setEditMode: () => set(() => ({ isEditMode: true })),
-      setEditorTabIndex: (index) =>
-        set((state) =>
-          state.editorTabIndex === index ? state : { editorTabIndex: index }
-        ),
-      setPreviewMode: () => set(() => ({ isEditMode: false })),
-      setData: (data) =>
-        set((state) => (Object.is(state.data, data) ? state : { data })),
+      updateGeneralConfig: (generalConfig) => {
+        if (_.isEqual(get().generalConfig, generalConfig)) return;
+        set({ generalConfig });
+      },
+      setEditMode: () => {
+        if (get().isEditMode) return;
+        set({ isEditMode: true });
+      },
+      setEditorTabIndex: (index) => {
+        if (get().editorTabIndex === index) return;
+        set({ editorTabIndex: index });
+      },
+      setPreviewMode: () => {
+        if (!get().isEditMode) return;
+        set({ isEditMode: false });
+      },
+      setData: (data) => {
+        if (_.isEqual(get().data, data)) return;
+        set({ data });
+      },
       addSnapshot: () =>
         set(() => ({
           snapshots: [...get().snapshots, get().data],
           editorTabIndex: 2,
         })),
-      removeSnapshot: (index) =>
-        set(() => ({
-          snapshots: get().snapshots.filter((_, i) => i !== index),
-        })),
-      useSnapshot: (index) => set(() => ({ data: get().snapshots[index] })),
-      setUndoData: (undoData) => set(() => ({ undoData })),
-      setActiveUndoIndex: (activeUndoIndex) => set(() => ({ activeUndoIndex })),
-      switchPreviewSize: (size) => set(() => ({ previewSize: size })),
-      undo: () =>
-        set((state) => {
-          if (state.activeUndoIndex > 0) {
-            const newIndex = state.activeUndoIndex - 1;
-            const oldConfig = state.undoData[newIndex];
-            return { activeUndoIndex: newIndex, currentConfig: oldConfig };
-          } else {
-            return { activeUndoIndex: 0 };
-          }
-        }),
-      redo: () =>
-        set((state) => {
-          if (state.activeUndoIndex < state.undoData.length - 1) {
-            const newIndex = state.activeUndoIndex + 1;
-            const oldConfig = state.undoData[newIndex];
-            return { activeUndoIndex: newIndex, currentConfig: oldConfig };
-          } else {
-            return { activeUndoIndex: state.activeUndoIndex };
-          }
-        }),
-      updateCurrentConfig: (currentConfig) =>
-        set((state) => {
-          const newUndoData = [...state.undoData];
-          if (state.activeUndoIndex < newUndoData.length - 1) {
-            newUndoData.splice(state.activeUndoIndex + 1);
-          }
-          newUndoData.push(currentConfig);
-          if (newUndoData.length > 25) newUndoData.shift();
-          return {
-            currentConfig,
-            undoData: newUndoData,
-            activeUndoIndex: newUndoData.length - 1,
-          };
-        }),
-      updateFieldsetConfig: (newFieldsetConfig, fieldsetId) =>
-        set((state) => {
-          const newFieldsets = [...state.fieldsets];
-          const index = _.findIndex(newFieldsets, { id: fieldsetId });
-          if (index > -1) {
-            newFieldsets[index].config = newFieldsetConfig;
-          }
-          return { fieldsets: newFieldsets };
-        }),
-      setSelectedElement: (selectedElement, isShiftKey) =>
+      removeSnapshot: (index) => {
+        const snapshots = get().snapshots;
+        if (index < 0 || index >= snapshots.length) return;
+        set({ snapshots: snapshots.filter((_, itemIndex) => itemIndex !== index) });
+      },
+      useSnapshot: (index) => {
+        const state = get();
+        const data = state.snapshots[index];
+        if (data === undefined || _.isEqual(state.data, data)) return;
+        set({ data });
+      },
+      setUndoData: (undoData) => {
+        if (_.isEqual(get().undoData, undoData)) return;
+        set({ undoData });
+      },
+      setActiveUndoIndex: (activeUndoIndex) => {
+        if (get().activeUndoIndex === activeUndoIndex) return;
+        set({ activeUndoIndex });
+      },
+      switchPreviewSize: (size) => {
+        if (get().previewSize === size) return;
+        set({ previewSize: size });
+      },
+      undo: () => {
+        const state = get();
+        if (state.activeUndoIndex <= 0) return;
+        const activeUndoIndex = state.activeUndoIndex - 1;
+        set({
+          activeUndoIndex,
+          currentConfig: state.undoData[activeUndoIndex],
+        });
+      },
+      redo: () => {
+        const state = get();
+        if (state.activeUndoIndex >= state.undoData.length - 1) return;
+        const activeUndoIndex = state.activeUndoIndex + 1;
+        set({
+          activeUndoIndex,
+          currentConfig: state.undoData[activeUndoIndex],
+        });
+      },
+      updateCurrentConfig: (currentConfig) => {
+        const state = get();
+        if (_.isEqual(state.currentConfig, currentConfig)) return;
+        const newUndoData = [...state.undoData];
+        if (state.activeUndoIndex < newUndoData.length - 1) {
+          newUndoData.splice(state.activeUndoIndex + 1);
+        }
+        newUndoData.push(currentConfig);
+        if (newUndoData.length > 25) newUndoData.shift();
+        set({
+          currentConfig,
+          undoData: newUndoData,
+          activeUndoIndex: newUndoData.length - 1,
+        });
+      },
+      updateFieldsetConfig: (newFieldsetConfig, fieldsetId) => {
+        const fieldsets = get().fieldsets;
+        const index = _.findIndex(fieldsets, { id: fieldsetId });
+        if (
+          index === -1 ||
+          _.isEqual(fieldsets[index].config, newFieldsetConfig)
+        ) return;
+        set({
+          fieldsets: fieldsets.map((fieldset) =>
+            fieldset.id === fieldsetId
+              ? { ...fieldset, config: newFieldsetConfig }
+              : fieldset
+          ),
+        });
+      },
+      setSelectedElement: (selectedElement, isShiftKey) => {
+        if (!isShiftKey && Object.is(get().selectedElement, selectedElement)) {
+          return;
+        }
         set((state) => {
           if (isShiftKey && state.selectedElement) {
             if (Array.isArray(state.selectedElement)) {
               if (state.selectedElement.indexOf(selectedElement) !== -1) {
+                const remaining = state.selectedElement.filter(
+                  (path) => path !== selectedElement
+                );
                 return {
-                  selectedElement: state.selectedElement.filter(
-                    (p) => p !== selectedElement
-                  ),
+                  selectedElement: remaining.length === 0
+                    ? ""
+                    : remaining.length === 1
+                      ? remaining[0]
+                      : remaining,
                 };
               }
               return {
                 selectedElement: [...state.selectedElement, selectedElement],
               };
             }
-            return {
-              selectedElement: [selectedElement, state.selectedElement],
-            };
-          } else {
-            return { selectedElement };
-          }
-        }),
-      setActiveContextMenuInput: (activeContextMenuInput) =>
-        set(() => ({ activeContextMenuInput })),
-      setClipboard: (clipboard) => set(() => ({ clipboard })),
-      removePathFromSelectedElements: (path) =>
-        set((state) => {
-          if (Array.isArray(state.selectedElement)) {
-            const newElements = state.selectedElement.filter((p) => p !== path);
-            if (newElements.length > 1) {
-              return { selectedElement: newElements };
-            } else {
-              return { selectedElement: newElements[0] };
+            if (state.selectedElement === selectedElement) {
+              return { selectedElement: "" };
             }
-          } else if (path === state.selectedElement) {
-            return { selectedElement: "" };
+            return {
+              selectedElement: [state.selectedElement, selectedElement],
+            };
           }
-          return { selectedElement: state.selectedElement };
-        }),
-      addFieldset: (id, label, config, path) =>
-        set((state) => {
-          const fieldsetIndex = _.findIndex(state.fieldsets, { id: id });
-          const newFieldset = { id, label, config, path };
-          if (fieldsetIndex === -1) {
-            return { fieldsets: [...state.fieldsets, newFieldset] };
-          }
-          return { fieldsets: state.fieldsets };
-        }),
-      onChangeBlockWidth: (path, width) =>
-        set((state) => {
-          const newConfig = [...state.currentConfig];
-          const previewSize = get().previewSize;
-          _.set(
-            newConfig,
-            `${getConfigPathFromDataPath(
-              path,
-              state.currentConfig
-            )}.blockWidth.${previewSize}`,
-            width === "S" ? "small" : width === "M" ? "medium" : "large"
-          );
-          return { currentConfig: newConfig };
-        }),
-      onUpdateLabel: (path, label) =>
-        set((state) => {
-          const newConfig = [...state.currentConfig];
-          _.set(
-            newConfig,
-            `${getConfigPathFromDataPath(path, state.currentConfig)}.label`,
-            label
-          );
-          return { currentConfig: newConfig };
-        }),
-      onUpdateSecondaryText: (path, secondaryText) =>
-        set((state) => {
-          const newConfig = [...state.currentConfig];
-          _.set(
-            newConfig,
-            `${getConfigPathFromDataPath(
-              path,
-              state.currentConfig
-            )}.secondaryText`,
-            secondaryText
-          );
-          return { currentConfig: newConfig };
-        }),
-      onUpdateTitle: (path, title) =>
-        set((state) => {
-          const newConfig = [...state.currentConfig];
-          _.set(
-            newConfig,
-            `${getConfigPathFromDataPath(path, state.currentConfig)}.title`,
-            title
-          );
-          return { currentConfig: newConfig };
-        }),
-      onUpdateText: (path, text) =>
-        set((state) => {
-          const newConfig = [...state.currentConfig];
-          _.set(
-            newConfig,
-            `${getConfigPathFromDataPath(path, state.currentConfig)}.text`,
-            text
-          );
-          return { currentConfig: newConfig };
-        }),
-      onUpdateFormTitle: (title) =>
-        set((state) => {
-          const newGeneralConfig = { ...state.generalConfig };
-          newGeneralConfig.title = title;
-          return { generalConfig: newGeneralConfig };
-        }),
-      onUpdatePath: (nonEditablePath, editablePath, newEditablePath) =>
-        set((state) => {
-          const newConfig = [...state.currentConfig];
-          _.set(
-            newConfig,
-            `${getConfigPathFromDataPath(
-              nonEditablePath + editablePath,
-              state.currentConfig
-            )}.id`,
-            newEditablePath
-          );
-          return { currentConfig: newConfig };
-        }),
+          return { selectedElement };
+        });
+      },
+      setActiveContextMenuInput: (activeContextMenuInput) => {
+        if (get().activeContextMenuInput === activeContextMenuInput) return;
+        set({ activeContextMenuInput });
+      },
+      setClipboard: (clipboard) => {
+        if (_.isEqual(get().clipboard, clipboard)) return;
+        set({ clipboard });
+      },
+      removePathFromSelectedElements: (path) => {
+        const selectedElement = get().selectedElement;
+        if (Array.isArray(selectedElement)) {
+          if (!selectedElement.includes(path)) return;
+          const remaining = selectedElement.filter((item) => item !== path);
+          set({
+            selectedElement: remaining.length === 0
+              ? ""
+              : remaining.length === 1
+                ? remaining[0]
+                : remaining,
+          });
+          return;
+        }
+        if (path === selectedElement) set({ selectedElement: "" });
+      },
+      addFieldset: (id, label, config, path) => {
+        const fieldsets = get().fieldsets;
+        if (_.findIndex(fieldsets, { id }) !== -1) return;
+        set({ fieldsets: [...fieldsets, { id, label, config, path }] });
+      },
+      onChangeBlockWidth: (path, width) => {
+        const state = get();
+        const configPath = getConfigPathFromDataPath(path, state.currentConfig);
+        const nextWidth =
+          width === "S" ? "small" : width === "M" ? "medium" : "large";
+        const widthPath = `${configPath}.blockWidth.${state.previewSize}`;
+        if (_.get(state.currentConfig, widthPath) === nextWidth) return;
+        const currentConfig = _.cloneDeep(state.currentConfig);
+        _.set(currentConfig, widthPath, nextWidth);
+        set({ currentConfig });
+      },
+      onUpdateLabel: (path, label) => {
+        const currentConfig = updateConfigProperty(get().currentConfig, path, "label", label);
+        if (currentConfig) set({ currentConfig });
+      },
+      onUpdateSecondaryText: (path, secondaryText) => {
+        const currentConfig = updateConfigProperty(
+          get().currentConfig,
+          path,
+          "secondaryText",
+          secondaryText
+        );
+        if (currentConfig) set({ currentConfig });
+      },
+      onUpdateTitle: (path, title) => {
+        const currentConfig = updateConfigProperty(get().currentConfig, path, "title", title);
+        if (currentConfig) set({ currentConfig });
+      },
+      onUpdateText: (path, text) => {
+        const currentConfig = updateConfigProperty(get().currentConfig, path, "text", text);
+        if (currentConfig) set({ currentConfig });
+      },
+      onUpdateFormTitle: (title) => {
+        const generalConfig = get().generalConfig;
+        if (generalConfig.title === title) return;
+        set({ generalConfig: { ...generalConfig, title } });
+      },
+      onUpdatePath: (nonEditablePath, editablePath, newEditablePath) => {
+        if (editablePath === newEditablePath) return;
+        const state = get();
+        const currentConfig = _.cloneDeep(state.currentConfig);
+        _.set(
+          currentConfig,
+          `${getConfigPathFromDataPath(
+            nonEditablePath + editablePath,
+            state.currentConfig
+          )}.id`,
+          newEditablePath
+        );
+        set({ currentConfig });
+      },
     }),
     {
       name: "stages-studio-storage-0.1",

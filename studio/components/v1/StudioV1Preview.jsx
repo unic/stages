@@ -13,6 +13,8 @@ import { convertLegacyConfig, prepareStudioValue, studioPresentationKey } from "
 const ARRAY_FIELDS = new Set(["chips", "multiselect"]);
 const BOOLEAN_FIELDS = new Set(["checkbox", "switch", "toggle"]);
 const NUMBER_FIELDS = new Set(["number", "rating", "slider"]);
+// This identity is a useMemo dependency; an inline default creates a schema/update loop.
+const EMPTY_FIELDSETS = Object.freeze([]);
 
 function initialValue(type) {
   if (ARRAY_FIELDS.has(type)) return [];
@@ -359,7 +361,7 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
 
 export function StudioV1Form({
   config,
-  fieldsets = [],
+  fieldsets = EMPTY_FIELDSETS,
   value,
   onChange,
   previewSize = "desktop",
@@ -373,6 +375,9 @@ export function StudioV1Form({
   handleEditGroup,
 }) {
   const formRef = useRef(null);
+  // The Stages controller is long-lived, so its callback must not capture an old render.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const [message, setMessage] = useState("");
   const converted = useMemo(() => convertLegacyConfig(config, {
     fieldTypes: Object.keys(fields),
@@ -384,7 +389,7 @@ export function StudioV1Form({
       schema: converted.schema,
       fields,
       value: preparedValue,
-      onChange: ({ value: nextValue }) => onChange(nextValue),
+      onChange: ({ value: nextValue }) => onChangeRef.current(nextValue),
     }),
     { value: preparedValue, schema: converted.schema },
   );

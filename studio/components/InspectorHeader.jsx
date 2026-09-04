@@ -5,9 +5,18 @@ import { Search } from "lucide-react";
 import { Filter } from "lucide-react";
 import { AutoComplete } from "./ui/field-controls";
 import { getAllPaths } from "./helpers";
+import { useShallow } from "zustand/react/shallow";
 
 const GeneralConfig = () => {
-  const store = useStagesStore();
+  const store = useStagesStore(useShallow((state) => ({
+    archive: state.archive,
+    currentConfig: state.currentConfig,
+    fork: state.fork,
+    generalConfig: state.generalConfig,
+    publish: state.publish,
+    setEditorTabIndex: state.setEditorTabIndex,
+    setSelectedElement: state.setSelectedElement,
+  })));
   const allPaths = getAllPaths(store.currentConfig);
   const [searchValue, setSearchValue] = useState("");
   const [items, setItems] = useState(allPaths);

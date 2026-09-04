@@ -3,9 +3,14 @@ import { Button } from "./ui/button";
 import InspectorSpacer from "./InspectorSpacer";
 import useStagesStore from "./store";
 import { truncateString } from "./helpers";
+import { useShallow } from "zustand/react/shallow";
 
 const DataInspector = () => {
-  const store = useStagesStore();
+  const store = useStagesStore(useShallow((state) => ({
+    removeSnapshot: state.removeSnapshot,
+    snapshots: state.snapshots,
+    useSnapshot: state.useSnapshot,
+  })));
   return (
     <div>
       <h3>Data Snapshots</h3>
