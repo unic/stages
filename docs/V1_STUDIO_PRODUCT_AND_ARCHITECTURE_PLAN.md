@@ -4,6 +4,12 @@ Status: proposed multi-session implementation roadmap
 
 Last reviewed against the implementation: 2026-09-04
 
+Execution status:
+
+- Session 01 completed: [`../studio/LEGACY_POC_BASELINE.md`](../studio/LEGACY_POC_BASELINE.md)
+- Session 02 completed: [`../studio/docs/decisions/README.md`](../studio/docs/decisions/README.md)
+  and [`../studio/docs/PRODUCT_GATES.md`](../studio/docs/PRODUCT_GATES.md)
+
 Primary references:
 
 - [`V1_ARCHITECTURE_PLAN.md`](./V1_ARCHITECTURE_PLAN.md)
