@@ -1,6 +1,11 @@
 import type { DataPath, NodeAddress, StagesSchema } from "@stages/core";
 import type { JsonObject, StudioNode, Uid } from "../document";
-import type { StudioFieldRegistry } from "../registry";
+import type {
+  StudioBlockKey,
+  StudioFieldRegistry,
+  StudioLayoutSpec,
+  StudioThemeTokens,
+} from "../registry";
 
 export type { StudioFieldRegistry } from "../registry";
 
@@ -29,17 +34,35 @@ export interface StudioSourceMap {
   readonly uidByAddress: ReadonlyMap<string, Uid>;
 }
 
-export interface StudioRenderNode {
+interface StudioRenderNodeBase {
   readonly uid: Uid;
-  readonly kind: Extract<StudioNode["kind"], "field" | "group">;
-  readonly runtimePath: DataPath;
-  readonly runtimeAddress: NodeAddress;
   readonly presentation: JsonObject;
+  readonly layout: StudioLayoutSpec;
+  readonly hidden: boolean;
   readonly children: readonly StudioRenderNode[];
 }
 
+export type StudioRuntimeRenderKind = Exclude<StudioNode["kind"], "block">;
+
+export interface StudioRuntimeRenderNode<TKind extends StudioRuntimeRenderKind = StudioRuntimeRenderKind> extends StudioRenderNodeBase {
+  readonly kind: TKind;
+  readonly runtimePath: DataPath;
+  readonly runtimeAddress: NodeAddress;
+}
+
+export interface StudioBlockRenderNode extends StudioRenderNodeBase {
+  readonly kind: "block";
+  readonly definition: StudioBlockKey;
+  readonly props: JsonObject;
+}
+
+export type StudioRenderNode = StudioBlockRenderNode | {
+  readonly [TKind in StudioRuntimeRenderKind]: StudioRuntimeRenderNode<TKind>;
+}[StudioRuntimeRenderKind];
+
 export interface StudioRenderPlan {
   readonly formUid: Uid;
+  readonly theme: StudioThemeTokens;
   readonly nodes: readonly StudioRenderNode[];
 }
 

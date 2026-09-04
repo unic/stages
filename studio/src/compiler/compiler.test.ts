@@ -3,6 +3,7 @@ import { evaluateSchema, initialFieldValue, type DynamicMetaSnapshot } from "@st
 import projectV1 from "../document/fixtures/project-v1.json";
 import { serializeStudioProject, toUid, validateStudioProject } from "../document";
 import type { StudioFormDocument, StudioGroupNode, StudioProjectDocument } from "../document";
+import { DEFAULT_STUDIO_THEME } from "../registry";
 import {
   compileStudioForm,
   studioRuntimeAddressKey,
@@ -148,5 +149,55 @@ describe("minimal Studio compiler", () => {
     expect(first).toEqual(second);
     expect(first.schema.nodes).not.toBe(second.schema.nodes);
     expect(first.renderPlan.nodes).not.toBe(second.renderPlan.nodes);
+  });
+
+  it("interleaves decorative content without adding submitted values and preserves future-container order", () => {
+    const headingUid = toUid("block_heading");
+    const hiddenUid = toUid("block_hidden_help");
+    const dividerUid = toUid("block_divider");
+    const collectionUid = toUid("collection_people");
+    const messageUid = toUid("block_collection_message");
+    const wizardUid = toUid("wizard_signup");
+    const stageUid = toUid("stage_details");
+    const stageHelpUid = toUid("block_stage_help");
+    const form: StudioFormDocument = {
+      uid: formUid,
+      title: "Presentation ordering",
+      runtime: { schemaId: "presentation-order", schemaVersion: 1 },
+      rootNodeUids: [headingUid, hiddenUid, fieldUid, collectionUid, dividerUid, wizardUid],
+      nodes: {
+        [headingUid]: { uid: headingUid, kind: "block", definition: { key: "block:heading", version: 1 }, props: { text: "Start", level: "2" } },
+        [hiddenUid]: { uid: hiddenUid, kind: "block", definition: { key: "block:help", version: 1 }, props: { text: "Hidden" }, behavior: { when: { kind: "literal", value: false } } },
+        [fieldUid]: { uid: fieldUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Name" } },
+        [collectionUid]: { uid: collectionUid, kind: "collection", runtimeId: "people", childUids: [messageUid] },
+        [messageUid]: { uid: messageUid, kind: "block", definition: { key: "block:message", version: 1 }, props: { text: "One per guest", tone: "info" } },
+        [dividerUid]: { uid: dividerUid, kind: "block", definition: { key: "block:divider", version: 1 }, props: { label: "Continue" } },
+        [wizardUid]: { uid: wizardUid, kind: "wizard", runtimeId: "signup", stageUids: [stageUid] },
+        [stageUid]: { uid: stageUid, kind: "stage", runtimeId: "details", childUids: [stageHelpUid] },
+        [stageHelpUid]: { uid: stageHelpUid, kind: "block", definition: { key: "block:help", version: 1 }, props: { text: "Stage help" } },
+      },
+      scenarios: [],
+      settings: { theme: { ...DEFAULT_STUDIO_THEME, accent: "#be123c" } },
+    };
+    const compiled = compileStudioForm(form);
+
+    expect(compiled.schema.nodes).toEqual([expect.objectContaining({ kind: "field", id: "name" })]);
+    expect(compiled.renderPlan.nodes.map(({ uid }) => uid)).toEqual(form.rootNodeUids);
+    expect(compiled.renderPlan.nodes[1]).toMatchObject({ uid: hiddenUid, kind: "block", hidden: true });
+    expect(compiled.renderPlan.nodes[3]).toMatchObject({
+      uid: collectionUid,
+      kind: "collection",
+      children: [{ uid: messageUid, kind: "block" }],
+    });
+    expect(compiled.renderPlan.nodes[5]).toMatchObject({
+      uid: wizardUid,
+      children: [{ uid: stageUid, children: [{ uid: stageHelpUid, kind: "block" }] }],
+    });
+    expect(compiled.renderPlan.theme.accent).toBe("#be123c");
+    expect(compiled.diagnostics.map(({ code }) => code)).toEqual([
+      "compiler.unsupported-node-kind",
+      "compiler.unsupported-node-kind",
+      "compiler.unsupported-node-kind",
+    ]);
   });
 });

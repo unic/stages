@@ -3,7 +3,10 @@ import type { StudioFormDocument, StudioNode, Uid } from "../document";
 import { isSafeObjectKey } from "../document";
 import {
   STUDIO_RUNTIME_FIELDS,
+  studioBlockDefinition,
   studioFieldDefinition,
+  studioPresentationLayout,
+  studioTheme,
   validateStudioFieldProps,
 } from "../registry";
 import { studioRuntimeAddressKey, studioRuntimePathKey } from "./source-map";
@@ -26,7 +29,7 @@ interface CompileContext {
 }
 
 interface CompiledNode {
-  readonly schema: NodeConfig<unknown, StudioFieldRegistry, unknown>;
+  readonly schema?: NodeConfig<unknown, StudioFieldRegistry, unknown>;
   readonly render: StudioRenderNode;
 }
 
@@ -64,7 +67,9 @@ function unsupportedBehavior(
   runtimePath: DataPath,
   runtimeAddress: NodeAddress,
 ): void {
-  if (node.behavior?.when !== undefined) diagnostic(
+  if (node.behavior?.when !== undefined && !(
+    node.behavior.when.kind === "literal" && typeof node.behavior.when.value === "boolean"
+  )) diagnostic(
     context,
     "compiler.unsupported-behavior",
     "Conditional visibility is not supported by the minimal compiler.",
@@ -88,6 +93,16 @@ function unsupportedBehavior(
     "Document validators are not supported by the minimal compiler.",
     { entityUid: node.uid, propertyPath: ["nodes", node.uid, "validators"], runtimePath, runtimeAddress },
   );
+}
+
+function isStaticallyHidden(node: StudioNode): boolean {
+  return node.behavior?.when?.kind === "literal" && node.behavior.when.value === false;
+}
+
+function renderChildren(node: StudioNode): readonly Uid[] {
+  if (node.kind === "wizard") return node.stageUids;
+  if (node.kind === "group" || node.kind === "collection" || node.kind === "stage") return node.childUids;
+  return [];
 }
 
 function compileSiblings(
@@ -141,13 +156,33 @@ function compileNode(
   context.visited.add(node.uid);
   context.visiting.add(node.uid);
 
-  if (node.kind !== "field" && node.kind !== "group") {
-    diagnostic(context, "compiler.unsupported-node-kind", `Node kind ${node.kind} is not supported by the minimal compiler.`, {
-      entityUid: node.uid,
-      propertyPath: ["nodes", node.uid, "kind"],
-    });
+  const presentation = node.presentation ?? {};
+  const layout = studioPresentationLayout(presentation);
+  const hidden = isStaticallyHidden(node);
+
+  if (node.kind === "block") {
+    const definition = studioBlockDefinition(node.definition);
+    unsupportedBehavior(context, node, parentPath, parentAddress);
     context.visiting.delete(node.uid);
-    return undefined;
+    if (!definition) {
+      diagnostic(context, "compiler.unsupported-block-definition", `Block definition ${node.definition.key}@${node.definition.version} is not supported.`, {
+        entityUid: node.uid,
+        propertyPath: ["nodes", node.uid, "definition"],
+      });
+      return undefined;
+    }
+    return {
+      render: {
+        uid: node.uid,
+        kind: "block",
+        definition: definition.key,
+        props: node.props,
+        presentation,
+        layout,
+        hidden,
+        children: [],
+      },
+    };
   }
   if (!isSafeObjectKey(node.runtimeId) || node.runtimeId.length === 0 || node.runtimeId.length > 128) {
     diagnostic(context, "compiler.invalid-runtime-id", `Runtime ID ${JSON.stringify(node.runtimeId)} is invalid.`, {
@@ -162,7 +197,6 @@ function compileNode(
   const runtimeAddress: NodeAddress = [...parentAddress, { kind: "node", id: node.runtimeId }];
   recordSource(context, node.uid, runtimePath, runtimeAddress);
   unsupportedBehavior(context, node, runtimePath, runtimeAddress);
-  const presentation = node.presentation ?? {};
 
   if (node.kind === "field") {
     context.visiting.delete(node.uid);
@@ -206,18 +240,40 @@ function compileNode(
         runtimePath,
         runtimeAddress,
         presentation,
+        layout,
+        hidden,
         children: [],
       },
     };
   }
 
-  const children = compileSiblings(context, node.childUids, runtimePath, runtimeAddress);
+  const children = compileSiblings(context, renderChildren(node), runtimePath, runtimeAddress);
   context.visiting.delete(node.uid);
+  if (node.kind !== "group") {
+    diagnostic(context, "compiler.unsupported-node-kind", `Node kind ${node.kind} is not supported by the minimal runtime compiler.`, {
+      entityUid: node.uid,
+      propertyPath: ["nodes", node.uid, "kind"],
+      runtimePath,
+      runtimeAddress,
+    });
+    return {
+      render: {
+        uid: node.uid,
+        kind: node.kind,
+        runtimePath,
+        runtimeAddress,
+        presentation,
+        layout,
+        hidden,
+        children: children.map((child) => child.render),
+      },
+    };
+  }
   return {
     schema: {
       kind: "group",
       id: node.runtimeId,
-      nodes: children.map((child) => child.schema),
+      nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
       ...(typeof node.behavior?.disabled === "boolean" ? { disabled: node.behavior.disabled } : {}),
     },
     render: {
@@ -226,6 +282,8 @@ function compileNode(
       runtimePath,
       runtimeAddress,
       presentation,
+      layout,
+      hidden,
       children: children.map((child) => child.render),
     },
   };
@@ -254,10 +312,14 @@ export function compileStudioForm(form: StudioFormDocument): CompiledStudioForm 
     schema: {
       id: form.runtime.schemaId,
       version: form.runtime.schemaVersion,
-      nodes: nodes.map((node) => node.schema),
+      nodes: nodes.flatMap((node) => node.schema === undefined ? [] : [node.schema]),
     },
     fields: STUDIO_RUNTIME_FIELDS,
-    renderPlan: { formUid: form.uid, nodes: nodes.map((node) => node.render) },
+    renderPlan: {
+      formUid: form.uid,
+      theme: studioTheme(form.settings["theme"]),
+      nodes: nodes.map((node) => node.render),
+    },
     sourceMap: {
       byUid: context.byUid,
       uidByPath: context.uidByPath,

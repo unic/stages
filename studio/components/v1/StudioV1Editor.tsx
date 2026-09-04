@@ -1,5 +1,5 @@
 import { fieldEvent, getAtPath } from "@stages/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   createStudioHistory,
   dispatchStudioCommand,
@@ -10,16 +10,26 @@ import {
 } from "../../src/commands/history";
 import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm } from "../../src/compiler/compiler";
-import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode } from "../../src/compiler/types";
+import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
 import type { JsonObject, StudioFieldNode, StudioFormDocument, StudioNode, Uid } from "../../src/document/types";
 import {
   STUDIO_FIELD_DEFINITIONS,
+  STUDIO_BLOCK_DEFINITIONS,
+  STUDIO_BREAKPOINTS,
+  createStudioBlockNode,
   createStudioFieldNode,
+  studioBlockDefinition,
   studioFieldDefinition,
+  studioLayout,
   validateStudioFieldProps,
   type AnyStudioAuthoringFieldDefinition,
+  type StudioBlockDefinition,
+  type StudioBreakpoint,
+  type StudioAlignment,
+  type StudioLayoutSpec,
   type StudioPropControl,
+  type StudioWidth,
 } from "../../src/registry";
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
 import { StudioProjectConflictError } from "../../src/projects/types";
@@ -66,8 +76,19 @@ function nextField(form: StudioFormDocument, definition: AnyStudioAuthoringField
   return { ...node, props: { ...node.props, label: definition.displayName } };
 }
 
+function nextBlock(form: StudioFormDocument, definition: StudioBlockDefinition) {
+  const stem = definition.key.slice("block:".length);
+  let suffix = 1;
+  let uid = toUid(`block_${stem}`);
+  while (form.nodes[uid] !== undefined) {
+    suffix += 1;
+    uid = toUid(`block_${stem}_${suffix}`);
+  }
+  return createStudioBlockNode(definition, uid);
+}
+
 function nodeDisplayLabel(node: StudioNode): string {
-  const configured = (node.kind === "field" || node.kind === "block" ? node.props["label"] : undefined)
+  const configured = (node.kind === "field" || node.kind === "block" ? node.props["label"] ?? node.props["text"] : undefined)
     ?? node.presentation?.["label"];
   if (typeof configured === "string" && configured.length > 0) return configured;
   return node.kind === "block" ? node.definition.key : node.runtimeId;
@@ -111,59 +132,113 @@ function CanvasNode({ form, uid, selectedUids, onSelect }: {
   );
 }
 
-function PreviewNode({ form, node, value, onInput }: {
-  readonly form: StudioFormDocument;
-  readonly node: StudioRenderNode;
-  readonly value: unknown;
-  readonly onInput: (node: StudioRenderNode, value: boolean | number | string) => void;
+function PreviewLayout({ node, children }: { readonly node: StudioRenderNode; readonly children: ReactNode }) {
+  return (
+    <div
+      className="studio-v1-preview__layout"
+      data-width-mobile={node.layout.width.mobile}
+      data-width-tablet={node.layout.width.tablet}
+      data-width-desktop={node.layout.width.desktop}
+      data-align-mobile={node.layout.align.mobile}
+      data-align-tablet={node.layout.align.tablet}
+      data-align-desktop={node.layout.align.desktop}
+      style={{ "--studio-layout-columns-mobile": node.layout.columns.mobile, "--studio-layout-columns-tablet": node.layout.columns.tablet, "--studio-layout-columns-desktop": node.layout.columns.desktop } as CSSProperties}
+    >{children}</div>
+  );
+}
+
+function PreviewBlock({ node }: { readonly node: Extract<StudioRenderNode, { readonly kind: "block" }> }) {
+  const text = String(node.props["text"] ?? node.props["label"] ?? "");
+  let content: ReactNode;
+  if (node.definition === "block:heading") {
+    if (node.props["level"] === "3") content = <h3>{text}</h3>;
+    else if (node.props["level"] === "4") content = <h4>{text}</h4>;
+    else content = <h2>{text}</h2>;
+  } else if (node.definition === "block:message") {
+    content = <aside role="note" data-tone={String(node.props["tone"] ?? "info")}>{text}</aside>;
+  } else if (node.definition === "block:help") content = <p role="note">{text}</p>;
+  else content = <div role="separator">{text}</div>;
+  return <PreviewLayout node={node}>{content}</PreviewLayout>;
+}
+
+function PreviewFieldControl({ definition, field, node, currentValue, descriptionId, onInput }: {
+  readonly definition: AnyStudioAuthoringFieldDefinition;
+  readonly field: StudioFieldNode;
+  readonly node: StudioRuntimeRenderNode<"field">;
+  readonly currentValue: unknown;
+  readonly descriptionId?: string;
+  readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
 }) {
-  if (node.kind === "group") {
-    return <fieldset className="studio-v1-preview__group">{node.children.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} onInput={onInput} />
-    ))}</fieldset>;
+  const common = { className: "ui-input", "aria-describedby": descriptionId };
+  if (definition.preview.control === "checkbox") {
+    return <input {...common} type="checkbox" checked={Boolean(currentValue)} onChange={(event) => onInput(node, event.currentTarget.checked)} />;
   }
-  const label = nodeLabel(form, node.uid);
-  const field = form.nodes[node.uid];
-  if (field?.kind !== "field") return null;
-  const definition = studioFieldDefinition(field.definition);
-  if (!definition) return null;
-  const currentValue = getAtPath(value, node.runtimePath) ?? definition.value.emptyValue;
-  const description = typeof field.props["helpText"] === "string" ? field.props["helpText"] : "";
-  const descriptionId = description.length > 0 ? `${node.uid}-help` : undefined;
-  const common = {
-    className: "ui-input",
-    "aria-describedby": descriptionId,
-  };
-  const control = definition.preview.control === "checkbox" ? (
-    <input {...common} type="checkbox" checked={Boolean(currentValue)} onChange={(event) => onInput(node, event.currentTarget.checked)} />
-  ) : definition.preview.control === "textarea" ? (
-    <textarea {...common} rows={typeof field.props["rows"] === "number" ? field.props["rows"] : 4} value={String(currentValue)} onChange={(event) => onInput(node, event.currentTarget.value)} />
-  ) : definition.preview.control === "select" ? (
-    <select {...common} value={String(currentValue)} onChange={(event) => onInput(node, event.currentTarget.value)}>
+  if (definition.preview.control === "textarea") {
+    return <textarea {...common} rows={typeof field.props["rows"] === "number" ? field.props["rows"] : 4} value={String(currentValue)} onChange={(event) => onInput(node, event.currentTarget.value)} />;
+  }
+  if (definition.preview.control === "select") {
+    return <select {...common} value={String(currentValue)} onChange={(event) => onInput(node, event.currentTarget.value)}>
       <option value="">Choose…</option>
       {String(field.props["options"] ?? "").split("\n").map((option) => option.trim()).filter(Boolean).map((option) => (
         <option key={option} value={option}>{option}</option>
       ))}
-    </select>
-  ) : (
-    <input
-      {...common}
-      type={definition.preview.control}
-      value={String(currentValue)}
-      placeholder={typeof field.props["placeholder"] === "string" ? field.props["placeholder"] : undefined}
-      min={typeof field.props["min"] === "number" || typeof field.props["min"] === "string" ? field.props["min"] : undefined}
-      max={typeof field.props["max"] === "number" || typeof field.props["max"] === "string" ? field.props["max"] : undefined}
-      step={typeof field.props["step"] === "number" ? field.props["step"] : undefined}
-      onChange={(event) => onInput(node, definition.value.kind === "number" ? event.currentTarget.valueAsNumber : event.currentTarget.value)}
+    </select>;
+  }
+  return <input
+    {...common}
+    type={definition.preview.control}
+    value={String(currentValue)}
+    placeholder={typeof field.props["placeholder"] === "string" ? field.props["placeholder"] : undefined}
+    min={typeof field.props["min"] === "number" || typeof field.props["min"] === "string" ? field.props["min"] : undefined}
+    max={typeof field.props["max"] === "number" || typeof field.props["max"] === "string" ? field.props["max"] : undefined}
+    step={typeof field.props["step"] === "number" ? field.props["step"] : undefined}
+    onChange={(event) => onInput(node, definition.value.kind === "number" ? event.currentTarget.valueAsNumber : event.currentTarget.value)}
+  />;
+}
+
+function PreviewField({ form, node, value, onInput }: {
+  readonly form: StudioFormDocument;
+  readonly node: StudioRuntimeRenderNode<"field">;
+  readonly value: unknown;
+  readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+}) {
+  const field = form.nodes[node.uid];
+  if (field?.kind !== "field") return null;
+  const definition = studioFieldDefinition(field.definition);
+  if (!definition) return null;
+  const description = typeof field.props["helpText"] === "string" ? field.props["helpText"] : "";
+  const descriptionId = description.length > 0 ? `${node.uid}-help` : undefined;
+  return <PreviewLayout node={node}><label className="studio-field">
+    <span>{nodeLabel(form, node.uid)}</span>
+    <PreviewFieldControl
+      definition={definition}
+      field={field}
+      node={node}
+      currentValue={getAtPath(value, node.runtimePath) ?? definition.value.emptyValue}
+      {...(descriptionId === undefined ? {} : { descriptionId })}
+      onInput={onInput}
     />
-  );
-  return (
-    <label className="studio-field">
-      <span>{label}</span>
-      {control}
-      {descriptionId && <small id={descriptionId}>{description}</small>}
-    </label>
-  );
+    {descriptionId && <small id={descriptionId}>{description}</small>}
+  </label></PreviewLayout>;
+}
+
+function PreviewNode({ form, node, value, onInput }: {
+  readonly form: StudioFormDocument;
+  readonly node: StudioRenderNode;
+  readonly value: unknown;
+  readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+}) {
+  if (node.hidden) return null;
+  if (node.kind === "block") return <PreviewBlock node={node} />;
+  if (node.kind === "group") {
+    return <PreviewLayout node={node}><fieldset className="studio-v1-preview__group">{node.children.map((child) => (
+      <PreviewNode key={child.uid} form={form} node={child} value={value} onInput={onInput} />
+    ))}</fieldset></PreviewLayout>;
+  }
+  if (node.kind !== "field") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
+      <PreviewNode key={child.uid} form={form} node={child} value={value} onInput={onInput} />
+  ))}</div></PreviewLayout>;
+  return <PreviewField form={form} node={node} value={value} onInput={onInput} />;
 }
 
 function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
@@ -228,6 +303,59 @@ function FieldInspector({ node, onUpdate }: {
   </fieldset>;
 }
 
+function BlockInspector({ node, onUpdate }: {
+  readonly node: Extract<StudioNode, { readonly kind: "block" }>;
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+}) {
+  const definition = studioBlockDefinition(node.definition);
+  if (!definition) return <p>This content definition is not available.</p>;
+  return <fieldset className="studio-v1-block-inspector">
+    <legend>{definition.displayName} properties</legend>
+    {definition.props.map((control) => <label className="studio-field" key={control.key}>
+      <span>{control.label}</span>
+      {control.control === "textarea" ? (
+        <textarea className="ui-input" value={String(node.props[control.key] ?? control.defaultValue)} onChange={(event) => onUpdate(node, { props: { ...node.props, [control.key]: event.currentTarget.value } satisfies JsonObject }, `Edit ${definition.displayName}`, `props.${control.key}:${node.uid}`)} />
+      ) : control.control === "select" ? (
+        <select className="ui-input" value={String(node.props[control.key] ?? control.defaultValue)} onChange={(event) => onUpdate(node, { props: { ...node.props, [control.key]: event.currentTarget.value } satisfies JsonObject }, `Edit ${definition.displayName}`, `props.${control.key}:${node.uid}`)}>
+          {control.options?.map(({ label, value }) => <option key={value} value={value}>{label}</option>)}
+        </select>
+      ) : (
+        <input className="ui-input" value={String(node.props[control.key] ?? control.defaultValue)} onChange={(event) => onUpdate(node, { props: { ...node.props, [control.key]: event.currentTarget.value } satisfies JsonObject }, `Edit ${definition.displayName}`, `props.${control.key}:${node.uid}`)} />
+      )}
+    </label>)}
+  </fieldset>;
+}
+
+function PresentationInspector({ node, onUpdate }: {
+  readonly node: StudioNode;
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+}) {
+  const layout = studioLayout(node.presentation?.["layout"]);
+  const update = (key: "align" | "columns" | "width", breakpoint: StudioBreakpoint, value: number | string) => {
+    const nextLayout: StudioLayoutSpec = key === "width"
+      ? { ...layout, width: { ...layout.width, [breakpoint]: value as StudioWidth } }
+      : key === "columns"
+        ? { ...layout, columns: { ...layout.columns, [breakpoint]: value as number } }
+        : { ...layout, align: { ...layout.align, [breakpoint]: value as StudioAlignment } };
+    onUpdate(node, { presentation: { ...node.presentation, layout: nextLayout } satisfies JsonObject }, `Edit ${breakpoint} ${key}`, `presentation.layout.${key}.${breakpoint}:${node.uid}`);
+  };
+  return <fieldset className="studio-v1-layout-inspector">
+    <legend>Responsive layout</legend>
+    {STUDIO_BREAKPOINTS.map((breakpoint) => <fieldset key={breakpoint}>
+      <legend>{breakpoint[0]?.toUpperCase()}{breakpoint.slice(1)}</legend>
+      <label className="studio-field"><span>Width</span><select value={layout.width[breakpoint]} onChange={(event) => update("width", breakpoint, event.currentTarget.value)}>
+        {(["full", "three-quarters", "two-thirds", "half", "third", "quarter"] as const).map((width) => <option key={width} value={width}>{width}</option>)}
+      </select></label>
+      <label className="studio-field"><span>Columns</span><select value={layout.columns[breakpoint]} onChange={(event) => update("columns", breakpoint, Number(event.currentTarget.value))}>
+        {[1, 2, 3, 4].map((columns) => <option key={columns} value={columns}>{columns}</option>)}
+      </select></label>
+      <label className="studio-field"><span>Alignment</span><select value={layout.align[breakpoint]} onChange={(event) => update("align", breakpoint, event.currentTarget.value)}>
+        {(["stretch", "start", "center", "end"] as const).map((align) => <option key={align} value={align}>{align}</option>)}
+      </select></label>
+    </fieldset>)}
+  </fieldset>;
+}
+
 function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocument; readonly compiled: CompiledStudioForm }) {
   const scenario = form.scenarios[0];
   const [value, setValue] = useState<unknown>(() => scenario?.value ?? {});
@@ -241,9 +369,18 @@ function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocume
   }, []);
   const input = useMemo(() => ({ compiled, value, onProposal }), [compiled, onProposal, value]);
   const preview = useStudioPreviewHost(host, input);
+  const themeStyle = {
+    "--studio-preview-background": compiled.renderPlan.theme.background,
+    "--studio-preview-foreground": compiled.renderPlan.theme.foreground,
+    "--studio-preview-muted": compiled.renderPlan.theme.muted,
+    "--studio-preview-border": compiled.renderPlan.theme.border,
+    "--studio-preview-accent": compiled.renderPlan.theme.accent,
+    "--studio-preview-radius": compiled.renderPlan.theme.radius,
+    "--studio-preview-spacing": compiled.renderPlan.theme.spacing,
+  } as CSSProperties;
 
   return (
-    <section className="studio-v1-preview" aria-labelledby="studio-v1-preview-title">
+    <section className="studio-v1-preview" aria-labelledby="studio-v1-preview-title" style={themeStyle} data-studio-theme="default">
       <div className="studio-v1-section-heading">
         <h2 id="studio-v1-preview-title">Preview</h2>
         <span>{compiled.diagnostics.length + preview.diagnostics.length} problems</span>
@@ -325,6 +462,8 @@ function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
       {node.kind === "field" && (
         <FieldInspector node={node} onUpdate={onUpdate} />
       )}
+      {node.kind === "block" && <BlockInspector node={node} onUpdate={onUpdate} />}
+      <PresentationInspector node={node} onUpdate={onUpdate} />
     </div>
   );
 }
@@ -502,6 +641,25 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
+  const insertBlock = (definition: StudioBlockDefinition) => {
+    const node = nextBlock(form, definition);
+    const result = dispatchStudioCommand(history, {
+      type: "node.insert",
+      formUid: form.uid,
+      parentUid: null,
+      index: form.rootNodeUids.length,
+      node,
+    }, { label: `Add ${definition.displayName}` });
+    if (result.ok) {
+      setHistory(result.history);
+      setNavigation((current) => ({
+        ...current,
+        workbench: selectStudioUid(current.workbench, node.uid, [...visibleOutlineUids, node.uid]),
+      }));
+      setStatus(`${definition.displayName} added`);
+    } else setStatus(result.failure.message);
+  };
+
   const updateNode = (
     node: StudioNode,
     changes: Readonly<Record<string, unknown>>,
@@ -599,6 +757,14 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             <h2 id="studio-v1-palette-title">Fields</h2>
             {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => (
               <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}>
+                Add {definition.displayName.toLowerCase()}
+              </Button>
+            ))}
+          </section>
+          <section className="studio-v1-palette" aria-labelledby="studio-v1-content-palette-title">
+            <h2 id="studio-v1-content-palette-title">Content</h2>
+            {Object.values(STUDIO_BLOCK_DEFINITIONS).map((definition) => (
+              <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertBlock(definition)}>
                 Add {definition.displayName.toLowerCase()}
               </Button>
             ))}

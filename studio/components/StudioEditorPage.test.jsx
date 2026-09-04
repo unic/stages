@@ -172,6 +172,28 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.queryByRole("spinbutton", { name: "Number" })).toBeNull();
   });
 
+  it("authors decorative content without creating a preview form value", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([emptyProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    for (const name of ["heading", "message", "divider", "help text"]) {
+      expect(screen.getByRole("button", { name: `Add ${name}` })).toBeVisible();
+    }
+    await user.click(screen.getByRole("button", { name: "Add heading" }));
+    expect(screen.getByRole("heading", { name: "Heading", level: 2 })).toBeVisible();
+    await user.clear(screen.getByRole("textbox", { name: "Heading" }));
+    await user.type(screen.getByRole("textbox", { name: "Heading" }), "About you");
+    expect(screen.getByRole("heading", { name: "About you", level: 2 })).toBeVisible();
+    expect(screen.queryByRole("textbox", { name: "About you" })).toBeNull();
+    await user.selectOptions(screen.getAllByRole("combobox", { name: "Width" })[2], "half");
+    expect(screen.getByRole("heading", { name: "About you", level: 2 }).closest(".studio-v1-preview__layout")).toHaveAttribute("data-width-desktop", "half");
+    expect(document.querySelector('[data-studio-theme="default"]')).toHaveStyle({
+      "--studio-preview-background": "#ffffff",
+    });
+  });
+
   it("coordinates keyboard outline navigation, multi-selection, bulk edits, and Problems", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);

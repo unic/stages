@@ -2,15 +2,13 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { StudioProjectDocument } from "../../src/document/types";
 import { importLegacyStudioProject } from "../../src/legacy/importer";
 import type { LegacyImportDiagnostic } from "../../src/legacy/types";
-import { STUDIO_FIELD_DEFINITIONS, STUDIO_SUPPORTED_DEFINITIONS as SUPPORTED_FIELDS } from "../../src/registry";
+import { STUDIO_BLOCK_DEFINITIONS, STUDIO_FIELD_DEFINITIONS, STUDIO_SUPPORTED_DEFINITIONS as SUPPORTED_FIELDS } from "../../src/registry";
 import shadcnFields from "../shadcnFields";
 
 export const STUDIO_SUPPORTED_DEFINITIONS: Readonly<Record<string, readonly number[]>> = Object.freeze(Object.fromEntries([
   ...Object.keys(shadcnFields).map((key) => [key, Object.freeze([1])]),
   ...Object.entries(SUPPORTED_FIELDS),
-  "block:divider",
-  "block:heading",
-  "block:message",
+  ...Object.values(STUDIO_BLOCK_DEFINITIONS).map(({ key, version }) => [key, Object.freeze([version])]),
 ].map((entry) => Array.isArray(entry) ? entry : [entry, Object.freeze([1])])));
 
 const STUDIO_LEGACY_FIELD_TYPES = Object.freeze([

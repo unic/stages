@@ -35,6 +35,10 @@ Execution status:
   defines the typed authoring contract for text, textarea, number, choice,
   checkbox, and date fields; the compiler, palette, inspector, and preview now
   consume that shared metadata
+- Session 13 completed: [`../studio/src/registry/presentation.ts`](../studio/src/registry/presentation.ts)
+  and [`../studio/src/compiler/types.ts`](../studio/src/compiler/types.ts)
+  keep content blocks, explicit responsive layout, and theme tokens in the
+  presentation render plan without adding domain-value fields
 
 Primary references:
 

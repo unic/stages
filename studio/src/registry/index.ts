@@ -1,6 +1,8 @@
 import type { FieldDefinition } from "@stages/core";
 import type { JsonObject, JsonValue, StudioDefinitionRef, StudioFieldNode } from "../document";
 
+export * from "./presentation";
+
 export type StudioFieldKey = "checkbox" | "choice" | "date" | "number" | "text" | "textarea";
 export type StudioFieldValueKind = "boolean" | "number" | "string";
 export type StudioInspectorControlKind = "checkbox" | "number" | "select" | "text" | "textarea";
