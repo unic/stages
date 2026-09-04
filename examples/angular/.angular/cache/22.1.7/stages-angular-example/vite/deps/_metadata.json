@@ -1,41 +1,37 @@
 {
-  "hash": "0afdb298",
-  "configHash": "2f472767",
+  "hash": "a5f5496c",
+  "configHash": "a7108483",
   "lockfileHash": "2068da7c",
-  "browserHash": "da6da4a5",
+  "browserHash": "5d225af1",
   "optimized": {
     "@angular/core": {
       "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
       "file": "@angular_core.js",
-      "fileHash": "62b2d3a7",
+      "fileHash": "538c9aa0",
       "needsInterop": false
     },
     "@angular/platform-browser": {
       "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
       "file": "@angular_platform-browser.js",
-      "fileHash": "845ee943",
+      "fileHash": "232600a6",
       "needsInterop": false
     },
     "@stages/angular": {
-      "src": "../../../../../../../../packages/angular/dist/index.js",
+      "src": "../../../../../../node_modules/@stages/angular/dist/index.js",
       "file": "@stages_angular.js",
-      "fileHash": "f2a58ce7",
+      "fileHash": "606ea1bc",
       "needsInterop": false
     },
     "@stages/core": {
-      "src": "../../../../../../../../packages/core/dist/index.js",
+      "src": "../../../../../../node_modules/@stages/core/dist/index.js",
       "file": "@stages_core.js",
-      "fileHash": "98257e2b",
+      "fileHash": "e4ce4150",
       "needsInterop": false
     }
   },
   "chunks": {
-    "core-C-3UcH5M": {
-      "file": "core-C-3UcH5M.js",
-      "isDynamicEntry": false
-    },
-    "defineProperty-wQpB4Zl9": {
-      "file": "defineProperty-wQpB4Zl9.js",
+    "core-D2yLGcAz": {
+      "file": "core-D2yLGcAz.js",
       "isDynamicEntry": false
     }
   }

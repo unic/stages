@@ -1,4 +1,4 @@
-//#region ../../packages/core/dist/path.js
+//#region node_modules/@stages/core/dist/path.js
 var unsafeKeys$1 = /* @__PURE__ */ new Set([
 	"__proto__",
 	"prototype",
@@ -66,7 +66,7 @@ function pathsEqual(left, right) {
 	return left.length === right.length && left.every((segment, index) => segment === right[index]);
 }
 //#endregion
-//#region ../../packages/core/dist/schema.js
+//#region node_modules/@stages/core/dist/schema.js
 function addressKey$1(address) {
 	return address.map((segment) => `${segment.kind}:${segment.id.length}:${segment.id}`).join("/");
 }
@@ -434,7 +434,7 @@ function initialFieldValue(definition) {
 	return typeof definition.initialValue === "function" ? definition.initialValue() : definition.initialValue;
 }
 //#endregion
-//#region ../../packages/core/dist/collections.js
+//#region node_modules/@stages/core/dist/collections.js
 function validInsertionIndex(index, length) {
 	return Number.isSafeInteger(index) && index >= 0 && index <= length;
 }
@@ -512,7 +512,7 @@ function reduceCollectionCommand(current, command, constraints = {}) {
 	};
 }
 //#endregion
-//#region ../../packages/core/dist/serialization.js
+//#region node_modules/@stages/core/dist/serialization.js
 var SerializationError = class extends TypeError {
 	constructor(code, message, path = []) {
 		super(`${message} at ${JSON.stringify(path)}.`);
@@ -611,7 +611,7 @@ function migrateSerializedState(input, migrations) {
 	}
 }
 //#endregion
-//#region ../../packages/core/dist/controller.js
+//#region node_modules/@stages/core/dist/controller.js
 var emptyValidation = {
 	status: "unknown",
 	isValid: false,
@@ -1949,7 +1949,7 @@ function stages(options) {
 	};
 }
 //#endregion
-//#region ../../packages/core/dist/events.js
+//#region node_modules/@stages/core/dist/events.js
 function eventOptions(init) {
 	return {
 		...Object.prototype.hasOwnProperty.call(init, "payload") ? { payload: init.payload } : {},

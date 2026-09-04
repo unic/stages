@@ -15,7 +15,8 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
-            "styles": ["src/styles.css"]
+            "styles": ["src/styles.css"],
+            "preserveSymlinks": true
           },
           "configurations": {
             "production": {
