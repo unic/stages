@@ -4,6 +4,7 @@ export type StudioExpressionScope =
   | "context"
   | "extension"
   | "metadata"
+  | "event"
   /** Retained so previously imported document-v1 drafts remain readable. */
   | "interface"
   /** Retained so previously imported document-v1 drafts remain readable. */
@@ -59,6 +60,7 @@ export interface StudioExpressionContext {
   readonly context?: unknown;
   readonly extensions?: unknown;
   readonly metadata?: unknown;
+  readonly event?: unknown;
 }
 
 export interface StudioExpressionDependency {

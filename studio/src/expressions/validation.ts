@@ -7,7 +7,7 @@ import {
 } from "./types";
 
 const BINARY_OPERATORS = new Set(["+", "-", "*", "/", "%", "===", "!==", "<", "<=", ">", ">=", "&&", "||", "??"]);
-const SCOPES = new Set(["value", "row", "context", "extension", "metadata", "interface", "item"]);
+const SCOPES = new Set(["value", "row", "context", "extension", "metadata", "event", "interface", "item"]);
 const NODE_KEYS = Object.freeze({
   literal: new Set(["kind", "value"]),
   reference: new Set(["kind", "scope", "path"]),

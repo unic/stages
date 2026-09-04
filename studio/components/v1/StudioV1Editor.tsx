@@ -1,4 +1,4 @@
-import { fieldEvent, getAtPath, nodeEvent, type DataPath, type RenderNodeSnapshot, type StagesEvent } from "@stages/core";
+import { fieldEvent, formEvent, getAtPath, nodeEvent, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   createStudioHistory,
@@ -12,7 +12,7 @@ import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
-import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type StudioScenario, type StudioValidatorSpec, type Uid } from "../../src/document/types";
+import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioEventDefinition, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioLogicRule, type StudioNode, type StudioProjectDocument, type StudioScenario, type StudioValidatorSpec, type Uid } from "../../src/document/types";
 import type { StudioExpression, StudioExpressionContext } from "../../src/expressions/types";
 import { evaluateStudioExpression } from "../../src/expressions/evaluator";
 import {
@@ -57,6 +57,7 @@ import { STUDIO_SUPPORTED_DEFINITIONS, useStudioDocumentStartup } from "./Studio
 import { StudioOutline } from "./StudioOutline";
 import { StudioExpressionEditor, type StudioExpressionReferenceOption } from "./StudioExpressionEditor";
 import { StudioValidationEditor } from "./StudioValidationEditor";
+import { StudioEventEditor, StudioLogicEditor } from "./StudioLogicEditor";
 import {
   createStudioStructuralActions,
   type StudioEditorNavigationState,
@@ -603,6 +604,11 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
   const [activeScenarioUid, setActiveScenarioUid] = useState<Uid | undefined>(initialScenario?.uid);
   const scenario = form.scenarios.find(({ uid }) => uid === activeScenarioUid) ?? form.scenarios[0];
   const [value, setValue] = useState<unknown>(() => initialScenario?.value ?? createEmptyStudioScenarioValue(form));
+  const [proposalPolicy, setProposalPolicy] = useState<"accept" | "reject">("accept");
+  const [lastProposal, setLastProposal] = useState<StagesChange<unknown> | undefined>();
+  const [eventMessage, setEventMessage] = useState("No named event dispatched.");
+  const [activeEventId, setActiveEventId] = useState(form.events?.[0]?.id ?? "");
+  const hostRef = useRef<ReturnType<typeof createStudioPreviewHost> | undefined>(undefined);
   const extensionCodecs = useMemo(() => Object.fromEntries(
     [...new Set([STUDIO_PREVIEW_SERVICE_EXTENSION, ...form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {}))])].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
   ), [form.scenarios]);
@@ -612,11 +618,17 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
     ...(initialScenario?.context === undefined ? {} : { context: initialScenario.context }),
     extensions: studioPreviewServiceExtensions(initialScenario?.extensions, initialScenario?.services),
     extensionCodecs,
-    onProposal: (proposal) => setValue(proposal.value),
+    onProposal: (proposal) => { setLastProposal(proposal); setValue(proposal.value); },
   }));
   const onProposal = useCallback((proposal: Parameters<NonNullable<Parameters<typeof createStudioPreviewHost>[0]["onProposal"]>>[0]) => {
-    setValue(proposal.value);
-  }, []);
+    setLastProposal(proposal);
+    if (proposalPolicy === "accept") setValue(proposal.value);
+    else queueMicrotask(() => hostRef.current?.rejectProposal(proposal.transactionId));
+  }, [proposalPolicy]);
+  useEffect(() => {
+    hostRef.current = host;
+    return () => { if (hostRef.current === host) hostRef.current = undefined; };
+  }, [host]);
   const input = useMemo(() => ({
     compiled,
     value,
@@ -629,6 +641,34 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
   const [validationScope, setValidationScope] = useState<string>("form");
   const [validationMessage, setValidationMessage] = useState("Validation has not run.");
   const validationInspection = inspectStudioValidation(preview.snapshot, compiled.sourceMap);
+  const dispatchNamedEvent = (definition: StudioEventDefinition, count = 1) => {
+    let payload: unknown;
+    if (definition.payload !== undefined) {
+      const result = evaluateStudioExpression(definition.payload, {
+        value: preview.snapshot.value,
+        context: scenario?.context,
+        extensions: scenario?.extensions,
+        metadata: { revision: preview.snapshot.revision },
+      });
+      if (!result.ok) { setEventMessage(`Payload failed: ${result.message}`); return; }
+      payload = result.value;
+    }
+    const init = { ...(definition.payload === undefined ? {} : { payload }), source: definition.source ?? "user" };
+    let stagesEvent: StagesEvent;
+    if (definition.target.kind === "form") stagesEvent = formEvent(definition.name, init);
+    else {
+      const entry = compiled.sourceMap.byUid.get(definition.target.uid);
+      const targetNode = form.nodes[definition.target.uid];
+      if (entry === undefined || targetNode === undefined) { setEventMessage("Event target is unavailable in the compiled preview."); return; }
+      stagesEvent = targetNode.kind === "field"
+        ? fieldEvent(definition.name, entry.runtimePath, init)
+        : nodeEvent(definition.name, entry.runtimeAddress, init);
+    }
+    preview.controller.batch(() => {
+      for (let index = 0; index < count; index += 1) preview.controller.dispatch(stagesEvent);
+    });
+    setEventMessage(`${definition.title} dispatched${count > 1 ? ` ${count} times in one batch` : ""}.`);
+  };
   const validate = async () => {
     const entry = validationScope === "form" ? undefined : compiled.sourceMap.byUid.get(toUid(validationScope));
     const result = await preview.controller.validate({
@@ -669,6 +709,19 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
           <ScenarioObjectEditor scenario={scenario} property="context" label="Context JSON" onUpdate={onUpdateScenario} />
           <ScenarioObjectEditor scenario={scenario} property="extensions" label="Feature flags JSON" onUpdate={onUpdateScenario} />
           <ScenarioObjectEditor scenario={scenario} property="services" label="Async service mocks JSON" onUpdate={onUpdateScenario} />
+        </div>}
+      </section>
+      <section className="studio-v1-event-tools" aria-labelledby="studio-v1-event-tools-title">
+        <h3 id="studio-v1-event-tools-title">Events and transaction order</h3>
+        <p>Event → field reducer → target-to-root transforms → controlled proposal</p>
+        <label className="studio-field"><span>Named event</span><select value={activeEventId} onChange={(event) => setActiveEventId(event.currentTarget.value)}><option value="">Choose an event</option>{(form.events ?? []).map((definition) => <option key={definition.id} value={definition.id}>{definition.title}</option>)}</select></label>
+        <label className="studio-field"><span>Proposal owner</span><select value={proposalPolicy} onChange={(event) => setProposalPolicy(event.currentTarget.value as "accept" | "reject")}><option value="accept">Accept proposals</option><option value="reject">Reject proposals</option></select></label>
+        <Button type="button" size="sm" disabled={activeEventId === ""} onClick={() => { const definition = form.events?.find(({ id }) => id === activeEventId); if (definition) dispatchNamedEvent(definition); }}>Dispatch</Button>
+        <Button type="button" variant="outline" size="sm" disabled={activeEventId === ""} onClick={() => { const definition = form.events?.find(({ id }) => id === activeEventId); if (definition) dispatchNamedEvent(definition, 2); }}>Dispatch twice as batch</Button>
+        <p role="status" aria-live="polite">{eventMessage}</p>
+        {lastProposal && <div className="studio-v1-transaction">
+          <p>Transaction {lastProposal.transactionId}: {lastProposal.events.length} event{lastProposal.events.length === 1 ? "" : "s"}, {lastProposal.patches.length} ordered patch{lastProposal.patches.length === 1 ? "" : "es"}. Owner policy: {proposalPolicy}.</p>
+          <ol>{lastProposal.patches.map((patch, index) => <li key={index}><code>{patch.op} {patch.path.join(".") || "(root)"}{patch.op === "set" ? ` = ${JSON.stringify(patch.value)}` : ""}</code></li>)}</ol>
         </div>}
       </section>
       <DynamicStructurePanel form={form} nodes={compiled.renderPlan.nodes} snapshots={preview.snapshot.nodes} value={value} scenario={scenario} />
@@ -835,6 +888,12 @@ function supportsValidators(node: StudioNode): boolean {
   return node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment";
 }
 
+function nodeTransforms(node: StudioNode): readonly StudioLogicRule[] | undefined {
+  return node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment"
+    ? node.transforms
+    : undefined;
+}
+
 function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach, onBulkLabel }: {
   readonly nodes: readonly StudioNode[];
   readonly form: StudioFormDocument;
@@ -903,6 +962,20 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
       {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onUpdateFragmentNode={onUpdateFragmentNode} onDetach={onDetach} />}
       <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
       <ExpressionInspector node={node} form={form} onUpdate={onUpdate} />
+      {supportsValidators(node) && <StudioLogicEditor
+        kind="transform"
+        rules={nodeTransforms(node)}
+        form={form}
+        references={expressionReferences(form)}
+        onChange={(transforms, label) => onUpdate(node, { transforms }, label, `transforms:${node.uid}`)}
+      />}
+      {node.kind === "field" && <StudioLogicEditor
+        kind="reducer"
+        rules={node.reducers}
+        form={form}
+        references={expressionReferences(form)}
+        onChange={(reducers, label) => onUpdate(node, { reducers }, label, `reducers:${node.uid}`)}
+      />}
       {supportsValidators(node) && <StudioValidationEditor
         validators={nodeValidators(node)}
         references={expressionReferences(form)}
@@ -1176,6 +1249,18 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     else setStatus(result.failure.message);
   };
 
+  const updateFormEvents = (events: readonly StudioEventDefinition[] | undefined, label: string) => {
+    const result = dispatchStudioCommand(history, { type: "form.update", formUid: form.uid, changes: { events } }, { label, coalesceKey: `events:${form.uid}` });
+    if (result.ok) setHistory(result.history);
+    else setStatus(result.failure.message);
+  };
+
+  const updateFormTransforms = (transforms: readonly StudioLogicRule[] | undefined, label: string) => {
+    const result = dispatchStudioCommand(history, { type: "form.update", formUid: form.uid, changes: { transforms } }, { label, coalesceKey: `transforms:${form.uid}` });
+    if (result.ok) setHistory(result.history);
+    else setStatus(result.failure.message);
+  };
+
   const updateBulkLabel = (nodes: readonly StudioFieldNode[], label: string) => {
     const result = dispatchStudioCommand(history, {
       type: "transaction",
@@ -1372,12 +1457,16 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         </section>
         <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title">
           <h2 id="studio-v1-inspector-title">Inspector</h2>
-          {formSelected ? <StudioValidationEditor
-            validators={form.validators}
-            references={expressionReferences(form)}
-            ownerLabel="form"
-            onChange={updateFormValidators}
-          /> : <SelectionInspector
+          {formSelected ? <>
+            <StudioEventEditor events={form.events} form={form} references={expressionReferences(form)} onChange={updateFormEvents} />
+            <StudioLogicEditor kind="transform" rules={form.transforms} form={form} references={expressionReferences(form)} onChange={updateFormTransforms} />
+            <StudioValidationEditor
+              validators={form.validators}
+              references={expressionReferences(form)}
+              ownerLabel="form"
+              onChange={updateFormValidators}
+            />
+          </> : <SelectionInspector
             key={selectedNodes.map(({ uid }) => uid).join("\u0000")}
             nodes={selectedNodes}
             form={form}

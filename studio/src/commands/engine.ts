@@ -368,11 +368,18 @@ function executeSingle(
 
   if (command.type === "form.update") {
     const keys = Object.keys(command.changes);
-    if (keys.some((key) => key !== "validators")) return fail("command.invalid-update", "Form updates may change validators only.", commandPath, { formUid: form.uid });
+    if (keys.some((key) => key !== "events" && key !== "transforms" && key !== "validators")) return fail("command.invalid-update", "Form updates may change events, transforms, and validators only.", commandPath, { formUid: form.uid });
     if (keys.length === 0 || keys.every((key) => Object.is((form as unknown as Record<string, unknown>)[key], command.changes[key as keyof typeof command.changes]))) return { ok: true, document: project, affectedUids: [], changed: false };
-    const next = { ...form } as StudioFormDocument & { validators?: StudioFormDocument["validators"] };
-    if (command.changes.validators === undefined) delete next.validators;
-    else next.validators = command.changes.validators;
+    const next = { ...form } as StudioFormDocument & {
+      events?: StudioFormDocument["events"];
+      transforms?: StudioFormDocument["transforms"];
+      validators?: StudioFormDocument["validators"];
+    };
+    for (const key of keys as Array<keyof typeof command.changes>) {
+      const value = command.changes[key];
+      if (value === undefined) delete next[key];
+      else (next as unknown as Record<string, unknown>)[key] = value;
+    }
     return commit(project, next, [form.uid], commandPath);
   }
 

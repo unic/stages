@@ -63,7 +63,7 @@ function ReferenceEditor({ expression, references, onChange }: {
   const options = references.filter((option) => option.scope === scope);
   return <div className="studio-expression-editor__row">
     <label className="studio-field"><span>Reference source</span><select value={scope} onChange={(event) => onChange({ kind: "reference", scope: event.currentTarget.value as StudioExpressionScope, path: [] })}>
-      <option value="value">Form value</option><option value="row">Current row</option><option value="context">Context</option><option value="extension">Extension</option><option value="metadata">Metadata</option>
+      <option value="value">Form value</option><option value="row">Current row</option><option value="context">Context</option><option value="extension">Extension</option><option value="metadata">Metadata</option><option value="event">Event</option>
     </select></label>
     <label className="studio-field"><span>Reference path</span><input className="ui-input" list={listId} value={expression.path.join(".")} aria-invalid={expression.path.some((segment) => !isSafeObjectKey(segment))} onChange={(event) => {
       const path = parsePath(event.currentTarget.value);

@@ -5,6 +5,22 @@ declare const project: document.StudioProjectDocument;
 
 const formUid = document.toUid("form_event");
 const form = project.forms[formUid];
+const namedEvent: document.StudioEventDefinition = {
+  id: "copy",
+  title: "Copy billing address",
+  name: "address:copy-billing",
+  target: { kind: "form" },
+  source: "user",
+};
+const transform: document.StudioLogicRule = {
+  id: "copy-address",
+  on: namedEvent.name,
+  actions: [{
+    op: "set",
+    target: { kind: "node", uid: formUid },
+    value: { kind: "reference", scope: "event", path: ["payload"] },
+  }],
+};
 
 if (form) {
   const compiled = compiler.compileStudioForm(form);
@@ -16,3 +32,6 @@ if (form) {
   void text;
   void sourceEntry;
 }
+
+void namedEvent;
+void transform;

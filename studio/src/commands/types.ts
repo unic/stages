@@ -17,7 +17,11 @@ export type StudioCommand =
   | {
     readonly type: "form.update";
     readonly formUid: Uid;
-    readonly changes: { readonly validators: StudioFormDocument["validators"] | undefined };
+    readonly changes: {
+      readonly events?: StudioFormDocument["events"] | undefined;
+      readonly transforms?: StudioFormDocument["transforms"] | undefined;
+      readonly validators?: StudioFormDocument["validators"] | undefined;
+    };
   }
   | {
     readonly type: "scenario.insert";

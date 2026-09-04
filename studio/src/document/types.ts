@@ -19,6 +19,32 @@ export interface StudioNodeBehavior {
   readonly presentWhen?: StudioExpression;
 }
 
+export type StudioEventPolicy = string | readonly string[];
+
+export type StudioPatchTarget =
+  | { readonly kind: "event-target" }
+  | { readonly kind: "node"; readonly uid: Uid };
+
+export type StudioPatchAction =
+  | { readonly op: "set"; readonly target: StudioPatchTarget; readonly value: StudioExpression }
+  | { readonly op: "remove"; readonly target: StudioPatchTarget };
+
+export interface StudioLogicRule {
+  readonly id: string;
+  readonly on: StudioEventPolicy;
+  readonly when?: StudioExpression;
+  readonly actions: readonly StudioPatchAction[];
+}
+
+export interface StudioEventDefinition {
+  readonly id: string;
+  readonly title: string;
+  readonly name: string;
+  readonly target: { readonly kind: "form" } | { readonly kind: "node"; readonly uid: Uid };
+  readonly payload?: StudioExpression;
+  readonly source?: "user" | "adapter" | "system";
+}
+
 interface StudioNodeBase {
   readonly uid: Uid;
   readonly presentation?: JsonObject;
@@ -28,6 +54,7 @@ interface StudioNodeBase {
 
 interface StudioValidatedNodeBase extends StudioNodeBase {
   readonly validators?: readonly StudioValidatorSpec[];
+  readonly transforms?: readonly StudioLogicRule[];
 }
 
 export interface StudioFieldNode extends StudioValidatedNodeBase {
@@ -37,6 +64,7 @@ export interface StudioFieldNode extends StudioValidatedNodeBase {
   readonly props: JsonObject;
   readonly computed?: StudioExpression;
   readonly derivedProps?: Readonly<Record<string, StudioExpression>>;
+  readonly reducers?: readonly StudioLogicRule[];
 }
 
 export interface StudioGroupNode extends StudioValidatedNodeBase {
@@ -211,6 +239,8 @@ export interface StudioFormDocument {
   readonly rootNodeUids: readonly Uid[];
   readonly nodes: Readonly<Record<Uid, StudioNode>>;
   readonly validators?: readonly StudioValidatorSpec[];
+  readonly events?: readonly StudioEventDefinition[];
+  readonly transforms?: readonly StudioLogicRule[];
   readonly scenarios: readonly StudioScenario[];
   readonly settings: JsonObject;
 }

@@ -54,6 +54,63 @@ function validEventPolicy(value: unknown): boolean {
     : Array.isArray(value) && value.length > 0 && value.every((event) => typeof event === "string" && event.length > 0);
 }
 
+function validateLogicRules(
+  value: unknown,
+  path: DiagnosticPath,
+  failures: StudioDocumentDiagnostic[],
+  details: { readonly formUid?: Uid; readonly entityUid?: Uid },
+): void {
+  if (value === undefined) return;
+  if (!Array.isArray(value)) { failures.push(issue("document.invalid-logic-rules", "Logic rules must be an array.", path, details)); return; }
+  const ids = new Set<string>();
+  value.forEach((candidate, index) => {
+    const rulePath = [...path, index];
+    if (!isPlainRecord(candidate)) { failures.push(issue("document.invalid-logic-rule", "Logic rule must be an object.", rulePath, details)); return; }
+    const id = own(candidate, "id");
+    if (typeof id !== "string" || id.trim().length === 0 || !isSafeObjectKey(id)) failures.push(issue("document.invalid-logic-id", "Logic rule id must be a non-empty safe key.", [...rulePath, "id"], details));
+    else if (ids.has(id)) failures.push(issue("document.duplicate-logic-id", `Logic rule ID ${id} is duplicated.`, [...rulePath, "id"], details));
+    else ids.add(id);
+    if (!validEventPolicy(own(candidate, "on"))) failures.push(issue("document.invalid-logic-events", "Logic rule on must be a non-empty event or event array.", [...rulePath, "on"], details));
+    if (own(candidate, "when") !== undefined && !isStudioExpression(own(candidate, "when"))) failures.push(issue("document.invalid-expression", "Logic rule when must be a safe expression AST.", [...rulePath, "when"], details));
+    const actions = own(candidate, "actions");
+    if (!Array.isArray(actions) || actions.length === 0) { failures.push(issue("document.invalid-patch-actions", "Logic rule actions must be a non-empty array.", [...rulePath, "actions"], details)); return; }
+    actions.forEach((action, actionIndex) => {
+      const actionPath = [...rulePath, "actions", actionIndex];
+      if (!isPlainRecord(action) || (own(action, "op") !== "set" && own(action, "op") !== "remove")) { failures.push(issue("document.invalid-patch-action", "Patch action must use set or remove.", actionPath, details)); return; }
+      const target = own(action, "target");
+      if (!isPlainRecord(target) || (own(target, "kind") !== "event-target" && (own(target, "kind") !== "node" || !isUid(own(target, "uid"))))) failures.push(issue("document.invalid-patch-target", "Patch target must reference the event target or a Studio node UID.", [...actionPath, "target"], details));
+      if (own(action, "op") === "set" && !isStudioExpression(own(action, "value"))) failures.push(issue("document.invalid-expression", "Set patches require a safe value expression.", [...actionPath, "value"], details));
+      if (own(action, "op") === "remove" && Object.prototype.hasOwnProperty.call(action, "value")) failures.push(issue("document.invalid-patch-action", "Remove patches cannot define a value expression.", [...actionPath, "value"], details));
+    });
+  });
+}
+
+function validateEventDefinitions(
+  value: unknown,
+  path: DiagnosticPath,
+  failures: StudioDocumentDiagnostic[],
+  details: { readonly formUid: Uid; readonly entityUid: Uid },
+): void {
+  if (value === undefined) return;
+  if (!Array.isArray(value)) { failures.push(issue("document.invalid-events", "events must be an array.", path, details)); return; }
+  const ids = new Set<string>();
+  value.forEach((candidate, index) => {
+    const eventPath = [...path, index];
+    if (!isPlainRecord(candidate)) { failures.push(issue("document.invalid-event", "Event definition must be an object.", eventPath, details)); return; }
+    const id = own(candidate, "id");
+    if (typeof id !== "string" || id.trim().length === 0 || !isSafeObjectKey(id)) failures.push(issue("document.invalid-event-id", "Event id must be a non-empty safe key.", [...eventPath, "id"], details));
+    else if (ids.has(id)) failures.push(issue("document.duplicate-event-id", `Event ID ${id} is duplicated.`, [...eventPath, "id"], details));
+    else ids.add(id);
+    if (typeof own(candidate, "title") !== "string" || (own(candidate, "title") as string).trim().length === 0) failures.push(issue("document.invalid-event-title", "Event title must be non-empty text.", [...eventPath, "title"], details));
+    if (typeof own(candidate, "name") !== "string" || (own(candidate, "name") as string).trim().length === 0) failures.push(issue("document.invalid-event-name", "Event name must be non-empty text.", [...eventPath, "name"], details));
+    const target = own(candidate, "target");
+    if (!isPlainRecord(target) || (own(target, "kind") !== "form" && (own(target, "kind") !== "node" || !isUid(own(target, "uid"))))) failures.push(issue("document.invalid-event-target", "Event target must be the form or a Studio node UID.", [...eventPath, "target"], details));
+    if (own(candidate, "payload") !== undefined && !isStudioExpression(own(candidate, "payload"))) failures.push(issue("document.invalid-expression", "Event payload must be a safe expression AST.", [...eventPath, "payload"], details));
+    const source = own(candidate, "source");
+    if (source !== undefined && source !== "user" && source !== "adapter" && source !== "system") failures.push(issue("document.invalid-event-source", "Event source must be user, adapter, or system.", [...eventPath, "source"], details));
+  });
+}
+
 function validateValidators(
   value: unknown,
   path: DiagnosticPath,
@@ -404,6 +461,8 @@ export function validateStudioProject(
       if (formKey !== formUid) failures.push(issue("document.uid-key-mismatch", `Form key ${formKey} does not match uid ${formUid}.`, formPath, { formUid, entityUid: formUid }));
       if (typeof own(formUnknown, "title") !== "string") failures.push(issue("document.invalid-title", "Form title must be a string.", [...formPath, "title"], { formUid }));
       validateValidators(own(formUnknown, "validators"), [...formPath, "validators"], failures, { formUid, entityUid: formUid });
+      validateEventDefinitions(own(formUnknown, "events"), [...formPath, "events"], failures, { formUid, entityUid: formUid });
+      validateLogicRules(own(formUnknown, "transforms"), [...formPath, "transforms"], failures, { formUid, entityUid: formUid });
       const runtime = own(formUnknown, "runtime");
       if (!isPlainRecord(runtime) || typeof own(runtime, "schemaId") !== "string" || !Number.isSafeInteger(own(runtime, "schemaVersion")) || (own(runtime, "schemaVersion") as number) < 1) {
         failures.push(issue("document.invalid-runtime", "runtime requires schemaId and a positive integer schemaVersion.", [...formPath, "runtime"], { formUid }));
@@ -434,6 +493,10 @@ export function validateStudioProject(
           if (Object.prototype.hasOwnProperty.call(node, "legacy") && !isPlainRecord(own(node, "legacy"))) failures.push(issue("document.invalid-legacy-metadata", "legacy must be a JSON object.", [...nodePath, "legacy"], details));
           if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateValidators(own(node, "validators"), [...nodePath, "validators"], failures, details);
           else if (Object.prototype.hasOwnProperty.call(node, "validators")) failures.push(issue("document.invalid-validator-owner", `${String(kind)} nodes cannot own validators.`, [...nodePath, "validators"], details));
+          if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateLogicRules(own(node, "transforms"), [...nodePath, "transforms"], failures, details);
+          else if (Object.prototype.hasOwnProperty.call(node, "transforms")) failures.push(issue("document.invalid-transform-owner", `${String(kind)} nodes cannot own transforms.`, [...nodePath, "transforms"], details));
+          if (kind === "field") validateLogicRules(own(node, "reducers"), [...nodePath, "reducers"], failures, details);
+          else if (Object.prototype.hasOwnProperty.call(node, "reducers")) failures.push(issue("document.invalid-reducer-owner", "Only field nodes can own reducers.", [...nodePath, "reducers"], details));
           if (kind === "group" || kind === "collection" || kind === "stage") {
             const discriminated = kind === "collection" && Object.prototype.hasOwnProperty.call(node, "variantUids");
             const childKey = discriminated ? "variantUids" : "childUids";
@@ -570,7 +633,12 @@ export function validateStudioProject(
           const kind = own(nodeUnknown, "kind");
           const runtimeId = own(nodeUnknown, "runtimeId");
           if (kind !== "block" && (typeof runtimeId !== "string" || runtimeId.length === 0 || runtimeId.length > 128 || !isSafeObjectKey(runtimeId))) failures.push(issue("document.invalid-runtime-id", "runtimeId must be a non-empty safe key of at most 128 characters.", [...nodePath, "runtimeId"], isUid(nodeUid) ? { entityUid: nodeUid } : {}));
-          if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") validateValidators(own(nodeUnknown, "validators"), [...nodePath, "validators"], failures, isUid(nodeUid) ? { entityUid: nodeUid } : {});
+          if (kind === "field" || kind === "group" || kind === "collection" || kind === "wizard" || kind === "fragment") {
+            const details = isUid(nodeUid) ? { entityUid: nodeUid } : {};
+            validateValidators(own(nodeUnknown, "validators"), [...nodePath, "validators"], failures, details);
+            validateLogicRules(own(nodeUnknown, "transforms"), [...nodePath, "transforms"], failures, details);
+          }
+          if (kind === "field") validateLogicRules(own(nodeUnknown, "reducers"), [...nodePath, "reducers"], failures, isUid(nodeUid) ? { entityUid: nodeUid } : {});
           if (kind === "fragment") {
             checkInstance(nodeUnknown, nodePath, isUid(nodeUid) ? nodeUid : undefined);
           } else if (kind === "field" || kind === "block") {

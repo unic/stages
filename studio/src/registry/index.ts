@@ -186,7 +186,13 @@ const date = define({
 });
 
 export const STUDIO_FIELD_DEFINITIONS = Object.freeze({ text, textarea, number, choice, checkbox, date });
-export interface StudioFieldRegistry {
+export type StudioRuntimeFieldDefinition =
+  | FieldDefinition<boolean, JsonObject, StudioFieldKey>
+  | FieldDefinition<number, JsonObject, StudioFieldKey>
+  | FieldDefinition<string, JsonObject, StudioFieldKey>
+  | FieldDefinition<unknown, JsonObject, string>;
+
+export interface StudioFieldRegistry extends Readonly<Record<string, StudioRuntimeFieldDefinition>> {
   readonly text: (typeof text)["runtime"];
   readonly textarea: (typeof textarea)["runtime"];
   readonly number: (typeof number)["runtime"];

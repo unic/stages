@@ -1,11 +1,12 @@
-import type { CollectionVariantConfig, DataPath, DynamicConfigContext, NodeAddress, NodeConfig, NodeResolverContext, StageNodeConfig, StagesSchema } from "@stages/core";
-import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioNode, StudioValidatorSpec, Uid } from "../document";
+import type { CollectionVariantConfig, DataPath, DynamicConfigContext, FieldDefinition, NodeAddress, NodeConfig, NodeResolverContext, StageNodeConfig, StagesSchema } from "@stages/core";
+import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioLogicRule, StudioNode, StudioValidatorSpec, Uid } from "../document";
 import { isSafeObjectKey, isStudioVariantCollection, toUid } from "../document";
 import { evaluateStudioExpression } from "../expressions/evaluator";
 import { studioExpressionDependencies } from "../expressions/serialization";
 import type { StudioExpression } from "../expressions/types";
 import {
   STUDIO_RUNTIME_FIELDS,
+  type StudioRuntimeFieldDefinition,
   studioBlockDefinition,
   studioFieldDefinition,
   studioPresentationLayout,
@@ -14,6 +15,7 @@ import {
 } from "../registry";
 import { studioRuntimeAddressKey, studioRuntimePathKey } from "./source-map";
 import { compileStudioValidators } from "../validation/catalog";
+import { compileStudioReducer, compileStudioTransforms } from "../logic/compiler";
 import type {
   CompiledStudioForm,
   StudioDiagnostic,
@@ -35,6 +37,8 @@ interface CompileContext {
   readonly presenceByAddress: Map<string, StudioExpression>;
   readonly variantPresence: Map<string, StudioExpression>;
   readonly serviceBindings: StudioCompileOptions["serviceBindings"];
+  readonly targetPaths: ReadonlyMap<Uid, DataPath>;
+  readonly fields: Record<string, StudioRuntimeFieldDefinition>;
 }
 
 interface FragmentProvenance {
@@ -59,12 +63,23 @@ function virtualFragmentUid(instanceUids: readonly Uid[], nodeUid: Uid): Uid {
 
 function remapNodeChildren(node: StudioNode, uidMap: ReadonlyMap<Uid, Uid>): StudioNode {
   const remap = (uids: readonly Uid[]) => uids.map((uid) => uidMap.get(uid) ?? uid);
-  if (node.kind === "wizard") return { ...node, stageUids: remap(node.stageUids), ...(node.initialStageUid === undefined ? {} : { initialStageUid: uidMap.get(node.initialStageUid) ?? node.initialStageUid }) };
-  if (node.kind === "collection") return isStudioVariantCollection(node)
-    ? { ...node, variantUids: remap(node.variantUids), ...(node.initialVariantUid === undefined ? {} : { initialVariantUid: uidMap.get(node.initialVariantUid) ?? node.initialVariantUid }) }
-    : { ...node, childUids: remap(node.childUids) };
-  if (node.kind === "group" || node.kind === "stage" || node.kind === "variant") return { ...node, childUids: remap(node.childUids) };
-  return node;
+  const remapRules = (rules: readonly StudioLogicRule[]): readonly StudioLogicRule[] => rules.map((rule) => ({
+    ...rule,
+    actions: rule.actions.map((action) => action.target.kind === "node"
+      ? { ...action, target: { ...action.target, uid: uidMap.get(action.target.uid) ?? action.target.uid } }
+      : action),
+  }));
+  const common: StudioNode = node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment"
+    ? { ...node, ...(node.transforms === undefined ? {} : { transforms: remapRules(node.transforms) }) }
+    : node;
+  if (common.kind === "field" && common.reducers !== undefined) return { ...common, reducers: remapRules(common.reducers) };
+  if (common.kind === "wizard") return { ...common, stageUids: remap(common.stageUids), ...(common.initialStageUid === undefined ? {} : { initialStageUid: uidMap.get(common.initialStageUid) ?? common.initialStageUid }) };
+  if (common.kind === "collection") {
+    if (common.variantUids !== undefined) return { ...common, variantUids: remap(common.variantUids), ...(common.initialVariantUid === undefined ? {} : { initialVariantUid: uidMap.get(common.initialVariantUid) ?? common.initialVariantUid }) };
+    return { ...common, childUids: remap(common.childUids) };
+  }
+  if (common.kind === "group" || common.kind === "stage" || common.kind === "variant") return { ...common, childUids: remap(common.childUids) };
+  return common;
 }
 
 /** Purely expands linked resources to the ordinary node graph consumed by core. */
@@ -128,6 +143,7 @@ export function expandStudioFragments(
       ...(instance.presentation === undefined ? {} : { presentation: instance.presentation }),
       ...(instance.behavior === undefined ? {} : { behavior: instance.behavior }),
       ...(instance.validators === undefined ? {} : { validators: instance.validators }),
+      ...(instance.transforms === undefined ? {} : { transforms: instance.transforms }),
       ...(instance.legacy === undefined ? {} : { legacy: instance.legacy }),
     };
   };
@@ -189,6 +205,39 @@ function unsupportedBehavior(
 function validatorsForNode(node: StudioNode): readonly StudioValidatorSpec[] | undefined {
   if (node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment") return node.validators;
   return undefined;
+}
+
+function indexRuntimePaths(form: StudioFormDocument): ReadonlyMap<Uid, DataPath> {
+  const paths = new Map<Uid, DataPath>();
+  const visiting = new Set<Uid>();
+  const visit = (uid: Uid, parentPath: DataPath) => {
+    if (visiting.has(uid)) return;
+    const node = form.nodes[uid];
+    if (!node) return;
+    visiting.add(uid);
+    const path = node.kind === "block" || node.kind === "variant" ? parentPath : [...parentPath, node.runtimeId];
+    if (node.kind !== "block") paths.set(uid, path);
+    for (const childUid of renderChildren(node)) visit(childUid, path);
+    visiting.delete(uid);
+  };
+  for (const uid of form.rootNodeUids) visit(uid, []);
+  paths.set(form.uid, []);
+  return paths;
+}
+
+function compiledTransforms(
+  context: CompileContext,
+  rules: StudioFormDocument["transforms"],
+  owner: { readonly entityUid: Uid; readonly propertyPath: readonly (number | string)[]; readonly runtimePath: DataPath; readonly runtimeAddress: NodeAddress },
+) {
+  const transforms = compileStudioTransforms(rules, {
+    pathsByUid: context.targetPaths,
+    onIssue: (entry) => diagnostic(context, entry.code, entry.message, {
+      ...owner,
+      propertyPath: [...owner.propertyPath, entry.ruleIndex, "actions", entry.actionIndex, "target"],
+    }),
+  });
+  return transforms.length === 0 ? {} : { transforms };
 }
 
 function compiledValidators(
@@ -365,6 +414,9 @@ function compileNode(
     runtimePath,
     runtimeAddress,
   });
+  const transforms = node.kind === "field" || node.kind === "group" || node.kind === "collection" || node.kind === "wizard" || node.kind === "fragment"
+    ? compiledTransforms(context, node.transforms, { entityUid: node.uid, propertyPath: ["nodes", node.uid, "transforms"], runtimePath, runtimeAddress })
+    : {};
 
   if (node.kind === "field") {
     context.visiting.delete(node.uid);
@@ -394,13 +446,30 @@ function compileNode(
         runtimeAddress,
       },
     );
+    let type = definition.key as string;
+    if (node.reducers !== undefined && node.reducers.length > 0) {
+      type = `${definition.key}__studio__${node.uid}`;
+      context.fields[type] = {
+        ...definition.runtime,
+        reduce: compileStudioReducer(node.reducers, definition.runtime.reduce as FieldDefinition<unknown>["reduce"], {
+          pathsByUid: context.targetPaths,
+          onIssue: (entry) => diagnostic(context, entry.code, entry.message, {
+            entityUid: node.uid,
+            propertyPath: ["nodes", node.uid, "reducers", entry.ruleIndex, "actions", entry.actionIndex, "target"],
+            runtimePath,
+            runtimeAddress,
+          }),
+        }),
+      } as FieldDefinition<unknown, JsonObject, string>;
+    }
     return {
       schema: {
         kind: "field",
         id: node.runtimeId,
-        type: definition.key,
+        type,
         props: node.props,
         ...compiledBehavior(node),
+        ...transforms,
         ...validation,
         ...(node.derivedProps === undefined ? {} : {
           deriveProps: (resolverContext: NodeResolverContext<unknown, unknown>) => Object.fromEntries(
@@ -464,6 +533,7 @@ function compileNode(
       id: node.runtimeId,
       nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
       ...compiledBehavior(node),
+      ...transforms,
       ...validation,
     },
     render,
@@ -485,6 +555,7 @@ function compileNode(
       ...(node.max === undefined ? {} : { max: node.max }),
       ...(itemKey === undefined ? {} : { itemKey }),
       ...compiledBehavior(node),
+      ...transforms,
       ...validation,
     };
     const schema: NodeConfig<unknown, StudioFieldRegistry, unknown> = isStudioVariantCollection(node)
@@ -514,6 +585,7 @@ function compileNode(
       ...(initialStage === undefined ? {} : { initialStage }),
       ...(node.navigation === undefined ? {} : { navigation: node.navigation }),
       ...compiledBehavior(node),
+      ...transforms,
       ...validation,
     },
     render,
@@ -623,6 +695,8 @@ export function compileStudioForm(
     presenceByAddress: new Map(),
     variantPresence: new Map(),
     serviceBindings: options.serviceBindings,
+    targetPaths: indexRuntimePaths(expanded.form),
+    fields: { ...STUDIO_RUNTIME_FIELDS },
   };
   recordSource(context, expanded.form.uid, [], []);
   const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);
@@ -634,10 +708,19 @@ export function compileStudioForm(
       { entityUid: uid, propertyPath: ["nodes", uid] },
     );
   }
+  form.events?.forEach((definition, index) => {
+    if (definition.target.kind === "node" && !context.targetPaths.has(definition.target.uid)) diagnostic(
+      context,
+      "compiler.invalid-event-target",
+      `Named event target ${definition.target.uid} does not resolve to a runtime node.`,
+      { entityUid: form.uid, propertyPath: ["events", index, "target"] },
+    );
+  });
   const schema: StagesSchema<unknown, StudioFieldRegistry, unknown> = {
     id: form.runtime.schemaId,
     version: form.runtime.schemaVersion,
     nodes: nodes.flatMap((node) => node.schema === undefined ? [] : [node.schema]),
+    ...compiledTransforms(context, form.transforms, { entityUid: form.uid, propertyPath: ["transforms"], runtimePath: [], runtimeAddress: [] }),
     ...compiledValidators(context, form.validators, { propertyPath: ["validators"], runtimePath: [], runtimeAddress: [] }),
   };
   const schemaInput = context.presenceByAddress.size === 0 && context.variantPresence.size === 0
@@ -650,7 +733,7 @@ export function compileStudioForm(
     expandedForm: expanded.form,
     schema,
     schemaInput,
-    fields: STUDIO_RUNTIME_FIELDS,
+    fields: context.fields as StudioFieldRegistry,
     renderPlan: {
       formUid: expanded.form.uid,
       theme: studioTheme(expanded.form.settings["theme"]),

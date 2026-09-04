@@ -177,6 +177,19 @@ describe("Studio document validation", () => {
     misplacedForm["nodes"] = { stage_root: { uid: "stage_root", kind: "stage", runtimeId: "root", childUids: [] } };
     expectCode(misplaced, "document.invalid-node-placement");
   });
+
+  it("validates named events, reducer metadata, transform predicates, and patch actions", () => {
+    const input = validProject();
+    const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    const nodes = form["nodes"] as Record<string, Record<string, unknown>>;
+    form["events"] = [{ id: "copy", title: "Copy", name: "address:copy", target: { kind: "node", uid: "field_title" }, payload: { kind: "literal", value: "ok" } }];
+    form["transforms"] = [{ id: "root_copy", on: "address:copy", actions: [{ op: "set", target: { kind: "node", uid: "field_title" }, value: { kind: "reference", scope: "event", path: ["payload"] } }] }];
+    nodes["field_title"]!["reducers"] = [{ id: "normalize", on: ["input", "blur"], when: { kind: "literal", value: true }, actions: [{ op: "remove", target: { kind: "event-target" } }] }];
+    expect(validateStudioProject(input, { supportedDefinitions: definitions }).ok).toBe(true);
+
+    ((form["transforms"] as Record<string, unknown>[])[0]!["actions"] as Record<string, unknown>[])[0]!["target"] = { kind: "node", uid: "unsafe uid" };
+    expectCode(input, "document.invalid-patch-target");
+  });
 });
 
 describe("Studio project migrations and serialization", () => {

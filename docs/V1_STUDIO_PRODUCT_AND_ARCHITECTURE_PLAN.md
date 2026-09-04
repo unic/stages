@@ -71,6 +71,12 @@ Execution status:
   define exact-version trusted async-service ports, environment bindings, and
   transport-free deterministic pending/success/failure/stale/cancelled preview
   scenarios with cancellation and stale-result evidence
+- Session 20 completed: [`../studio/src/logic/compiler.ts`](../studio/src/logic/compiler.ts),
+  [`../studio/components/v1/StudioLogicEditor.tsx`](../studio/components/v1/StudioLogicEditor.tsx),
+  and [`../studio/docs/EVENTS_AND_TRANSFORMS.md`](../studio/docs/EVENTS_AND_TRANSFORMS.md)
+  author named events, field reducers, target-to-root transforms, safe
+  predicates, and ordered set/remove patches with compile-time target checks,
+  controlled proposal inspection, and exact transaction evidence
 
 Primary references:
 

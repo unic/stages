@@ -19,6 +19,7 @@ function scopeValue(scope: StudioExpressionScope, context: StudioExpressionConte
   if (scope === "row" || scope === "item") return context.row;
   if (scope === "context" || scope === "interface") return context.context;
   if (scope === "extension") return context.extensions;
+  if (scope === "event") return context.event;
   return context.metadata;
 }
 
