@@ -1,0 +1,6 @@
+interface:
+  display_name: "Stages Prepare Release"
+  short_description: "Validate a Stages release candidate"
+  default_prompt: "Use $stages-prepare-release to validate this release candidate without publishing it."
+policy:
+  allow_implicit_invocation: false

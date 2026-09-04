@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stages Find Context"
+  short_description: "Find authoritative Stages code and docs"
+  default_prompt: "Use $stages-find-context to locate authoritative context for this Stages topic."

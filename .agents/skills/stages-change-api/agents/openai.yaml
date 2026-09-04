@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stages Change API"
+  short_description: "Safely change a public Stages contract"
+  default_prompt: "Use $stages-change-api to implement this public contract change with compatibility evidence."

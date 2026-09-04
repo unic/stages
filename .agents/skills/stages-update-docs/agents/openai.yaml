@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stages Update Docs"
+  short_description: "Build a checked documentation slice"
+  default_prompt: "Use $stages-update-docs to implement and verify this Stages documentation change."

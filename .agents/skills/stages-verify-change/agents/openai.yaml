@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stages Verify Change"
+  short_description: "Select and run safe Stages verification"
+  default_prompt: "Use $stages-verify-change to plan or run verification for the current changes."
