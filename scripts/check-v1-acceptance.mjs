@@ -21,8 +21,8 @@ const criteria = [
   ["`snapshot.validation.isValid`", [["packages/core/test/validation.test.mjs", "wizard validation gates unknown, pending, invalid, warning, and hidden-stage navigation"]]],
   ["Serialization either round-trips exactly", [["packages/core/test/serialization.test.mjs", "a value codec round-trips non-JSON domain values"], ["packages/core/test/serialization.test.mjs", "JSON encoding rejects unsupported values with precise paths"]]],
   ["Recreated state preserves value", [["packages/core/test/serialization.test.mjs", "revealed validation state survives recreation"], ["packages/core/test/controller.test.mjs", "engine row keys and touched state follow rows through moves and recreation"]]],
-  ["A custom non-native component", [["packages/dom/test/dom.test.mjs", "DOM view tokens can render arbitrary custom controls"], ["packages/react/test/react.test.mjs", "React field binding renders an opaque view"]]],
-  ["The same core controller contract", [["packages/test-kit/test/adapter-contract.test.mjs", "Vue-style refs consume snapshots"], ["packages/test-kit/test/adapter-contract.test.mjs", "Angular-style change detection consumes the identical contract"]]],
+  ["A custom non-native component", [["packages/dom/test/dom.test.mjs", "DOM view tokens can render arbitrary custom controls"], ["packages/react/test/react.test.mjs", "React field binding renders an opaque view"], ["packages/vue/test/vue.test.mjs", "Vue field binding renders an opaque view"]]],
+  ["The same core controller contract", [["packages/vue/test/vue.test.mjs", "Vue controller ownership watches controlled input"], ["packages/test-kit/test/adapter-contract.test.mjs", "Angular-style change detection consumes the identical contract"]]],
   ["Migration docs explicitly map or reject", [["scripts/check-v1-docs.mjs", "legacyConcepts"], ["docs/MIGRATING_TO_V1.md", "Package and root-export map"]]],
 ];
 
@@ -55,7 +55,7 @@ async function TypeScriptSources(directory) {
   return files;
 }
 
-for (const packageName of ["core", "dom", "react", "test-kit"]) {
+for (const packageName of ["core", "dom", "react", "vue", "test-kit"]) {
   for (const file of await TypeScriptSources(path.join(root, "packages", packageName, "src"))) {
     const source = await readFile(file, "utf8");
     assert(!/\bany\b/.test(source), `${path.relative(root, file)} contains an explicit any escape hatch.`);

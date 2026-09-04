@@ -1,0 +1,74 @@
+---
+title: Vue API reference
+description: Runtime and type contracts exported by @stages/vue.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
+# Vue API reference
+
+`@stages/vue` is ESM, depends on the matching `@stages/core` release, and has
+Vue 3.3 or newer as a peer dependency.
+
+For usage and lifecycle guidance, see the [Vue adapter guide](/adapters/vue).
+
+## Runtime exports
+
+```ts
+function useStagesController<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+): ShallowRef<StagesSnapshot<TValue>>;
+
+function useStages<TValue, TFields, TContext>(
+  factory: () => StagesController<TValue, TFields, TContext>,
+  input: MaybeRefOrGetter<StagesUpdate<TValue, TFields, TContext>>,
+): UseStagesResult<TValue, TFields, TContext>;
+
+function useStagesField<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: DataPath,
+): ComputedRef<FieldSnapshot>;
+
+function useStagesCollection<TValue, TFields, TContext, TPath extends DataPath>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: TPath,
+): ComputedRef<VueCollectionBinding<CollectionItemAtPath<TValue, TPath>>>;
+
+function useStagesWizard<TValue, TFields, TContext>(
+  controller: StagesController<TValue, TFields, TContext>,
+  path: DataPath,
+): ComputedRef<VueWizardBinding>;
+```
+
+`StagesField` is a Vue component accepting `controller`, `path`, and an
+optional `id`. It throws when the path does not resolve to a field or the field
+has no registered view.
+
+`StagesFieldProps` members are `controller`, `path`, and `id`.
+
+## Field types
+
+`VueFieldProps<TValue, TProps>` contains `id`, the public `field` snapshot,
+typed `props`, and `emit()`. `VueFieldView<TValue, TProps>` is a
+Vue `Component` receiving those props.
+
+Its exact members are `id`, `field`, `props`, and `emit`.
+
+`UseStagesResult` contains `controller` and the reactive `snapshot`.
+
+## Structural bindings
+
+`VueCollectionBinding<TItem>` contains `items`, `canAdd`, and `add(value)`.
+Each `VueCollectionItemBinding<TItem>` contains `key`, `index`, `value`,
+`address`, move/remove capabilities, `fieldPath(field)`, `remove()`, and
+`moveTo(index)`.
+
+The exact collection capability members are `canRemove`, `canMovePrevious`,
+and `canMoveNext`; command names are `add`, `fieldPath`, `remove`, and `moveTo`.
+
+`VueWizardBinding` contains `activeStage`, ordered `stages`, navigation
+capabilities `canPrevious`, `canNext`, and `canGo`, plus `previous()`, `next()`,
+and `go()`. Each
+`VueWizardStageBinding` exposes its `id`, `path`, `address`, active/disabled
+state, and validation snapshot through `active`, `disabled`, and `validation`.
+The exact command member names are `previous`, `next`, and `go`.

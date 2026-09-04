@@ -16,6 +16,9 @@ Install `@stages/core` plus only the adapter packages your application uses.
 # React application
 npm install @stages/core@1.0.0-alpha.0 @stages/react@1.0.0-alpha.0
 
+# Vue application
+npm install @stages/core@1.0.0-alpha.0 @stages/vue@1.0.0-alpha.0
+
 # Framework-free DOM application
 npm install @stages/core@1.0.0-alpha.0 @stages/dom@1.0.0-alpha.0
 
@@ -35,6 +38,7 @@ tag is available publicly.
 | Module format | ESM-only (`"type": "module"`; import and type entry points) |
 | Package alignment | Keep all `@stages/*` packages on the exact same version |
 | React peer | React 17 or newer for `@stages/react` |
+| Vue peer | Vue 3.3 or newer for `@stages/vue` |
 | Core runtime | No runtime dependencies and no DOM or framework globals |
 | DOM boundary | `@stages/dom` needs browser DOM types and globals at runtime |
 | Server use | Pure core APIs and controller creation do not require DOM globals; UI adapters keep their own runtime boundaries |
@@ -59,7 +63,7 @@ npm run test:v1
 npm run release:check:v1
 ```
 
-The release check builds and typechecks all four packages, verifies packed
+The release check builds and typechecks all five packages, verifies packed
 consumers, builds the docs and example applications, and runs the acceptance
 and performance gates.
 
@@ -68,6 +72,6 @@ Next: create a registry, schema, controlled value owner, and teardown in
 
 ## Evidence
 
-Version, ESM, dependency, and peer requirements come from the four
+Version, ESM, dependency, and peer requirements come from the five
 [`packages/*/package.json`](https://github.com/unic/stages/tree/master/packages)
 export maps and are exercised by the packed-package verification script.

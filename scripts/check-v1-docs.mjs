@@ -409,6 +409,21 @@ for (const { symbol } of reactPackage.exports) {
   assert.ok(reactReference.includes(symbol), `React reference is missing export ${symbol}`);
 }
 
+const vueSource = await readRoot("packages/vue/src/index.ts");
+const vueReference = guideEntries.find(({ relativePath }) => relativePath === "reference/vue.mdx")?.source;
+assert.ok(vueReference, "missing Vue API reference");
+for (const [interfaceName, expectedMembers] of Object.entries(manifest.contracts.vueMembers)) {
+  assertSameInventory(publicInterfaceMembers(vueSource, interfaceName), expectedMembers, `${interfaceName} Vue members`);
+  for (const member of expectedMembers) {
+    assert.ok(vueReference.includes(`\`${member}\``), `Vue reference is missing ${interfaceName}.${member}`);
+  }
+}
+const vuePackage = manifest.packages.find(({ package: packageName }) => packageName === "@stages/vue");
+assert.ok(vuePackage, "missing Vue package coverage record");
+for (const { symbol } of vuePackage.exports) {
+  assert.ok(vueReference.includes(symbol), `Vue reference is missing export ${symbol}`);
+}
+
 const domSource = await readRoot("packages/dom/src/index.ts");
 const domReference = guideEntries.find(({ relativePath }) => relativePath === "reference/dom.mdx")?.source;
 assert.ok(domReference, "missing DOM API reference");
@@ -454,7 +469,7 @@ for (const nonFeature of manifest.contracts.architectureNonFeatures) {
   assert.ok(boundaryPage.includes(nonFeature), `core boundaries are missing ${nonFeature}`);
 }
 const packageManifests = await Promise.all(
-  ["core", "dom", "react", "test-kit"].map(async (name) =>
+  ["core", "dom", "react", "vue", "test-kit"].map(async (name) =>
     JSON.parse(await readRoot(`packages/${name}/package.json`))),
 );
 const packageVersions = packageManifests.map(({ version }) => version);
@@ -532,6 +547,7 @@ function memberReferencePattern(member) {
 const publicInterfaceSources = [
   { packageName: "@stages/core", sources: [controllerTypes, schemaSource, eventSource] },
   { packageName: "@stages/react", sources: [reactSource] },
+  { packageName: "@stages/vue", sources: [vueSource] },
   { packageName: "@stages/dom", sources: [domSource] },
   { packageName: "@stages/test-kit", sources: [testKitSource] },
 ];
@@ -1022,7 +1038,7 @@ assert.doesNotMatch(migration, /controller\.reset\(\)|focusFirstVisibleIssue\(\)
 assert.match(api, /MIGRATING_TO_V1\.md/);
 
 const packageReadmes = await Promise.all(
-  ["core", "dom", "react", "test-kit"].map((name) => readRoot(`packages/${name}/README.md`)),
+  ["core", "dom", "react", "vue", "test-kit"].map((name) => readRoot(`packages/${name}/README.md`)),
 );
 for (const readme of packageReadmes) assert.match(readme, /MIGRATING_TO_V1\.md/);
 
@@ -1035,10 +1051,12 @@ const persistenceMemberCount = Object.values(manifest.contracts.persistenceMembe
   .reduce((count, members) => count + members.length, 0);
 const reactMemberCount = Object.values(manifest.contracts.reactMembers)
   .reduce((count, members) => count + members.length, 0);
+const vueMemberCount = Object.values(manifest.contracts.vueMembers)
+  .reduce((count, members) => count + members.length, 0);
 const domMemberCount = Object.values(manifest.contracts.domMembers)
   .reduce((count, members) => count + members.length, 0);
 const testKitMemberCount = Object.values(manifest.contracts.testKitMembers)
   .reduce((count, members) => count + members.length, 0);
 console.log(
-  `v1 documentation check passed (${guideEntries.length} pages, ${referenceEntries.length} versioned references, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${publicInterfaceMemberCount} public interface members, ${typeAliasMemberCount} public object-union members, ${literalValueCount} literal contract values, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${reactMemberCount} React members, ${domMemberCount} DOM members, ${testKitMemberCount} test-kit members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
+  `v1 documentation check passed (${guideEntries.length} pages, ${referenceEntries.length} versioned references, ${requiredDemos.length} live demos, ${exportCount} manifest exports, ${publicInterfaceMemberCount} public interface members, ${typeAliasMemberCount} public object-union members, ${literalValueCount} literal contract values, ${snapshotMemberCount} snapshot members, ${validationMemberCount} validation members, ${persistenceMemberCount} persistence members, ${reactMemberCount} React members, ${vueMemberCount} Vue members, ${domMemberCount} DOM members, ${testKitMemberCount} test-kit members, ${manifest.contracts.diagnosticMembers.length} diagnostic members, ${manifest.contracts.serializedMetaMembers.length} serialized metadata members, ${manifest.contracts.serializationErrors.length} serialization errors, ${manifest.contracts.diagnostics.length} diagnostics, ${rootExports.length} legacy exports, ${legacyConcepts.length} migration concepts)`,
 );

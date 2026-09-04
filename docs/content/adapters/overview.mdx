@@ -13,6 +13,7 @@ layout, focus strategy, routing, network calls, and controller acceptance.
 | Path | Package | Choose it when |
 | --- | --- | --- |
 | [React](/adapters/react/lifecycle) | `@stages/react` | Components and hooks own rendering |
+| [Vue](/adapters/vue) | `@stages/vue` | Components and the Composition API own rendering |
 | [DOM](/adapters/dom/mounting) | `@stages/dom` | Native DOM rendering without a framework |
 | [Custom](/adapters/custom/contract) | Core + `@stages/test-kit` | Binding another UI runtime |
 
@@ -26,6 +27,6 @@ The boundary follows the package export maps, adapter implementations, and
 shared controller tests. Each adapter guide links to its focused integration
 tests.
 
-**Next:** Follow the [React lifecycle guide](/adapters/react/lifecycle), choose
-the [DOM mounting guide](/adapters/dom/mounting), or implement a
+**Next:** Follow the [React lifecycle guide](/adapters/react/lifecycle), the
+[Vue adapter guide](/adapters/vue), choose the [DOM mounting guide](/adapters/dom/mounting), or implement a
 [custom adapter](/adapters/custom/contract).

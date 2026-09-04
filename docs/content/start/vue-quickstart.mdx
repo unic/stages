@@ -1,0 +1,57 @@
+---
+title: Vue quickstart
+description: Render a controlled Stages field with an application-owned Vue view.
+---
+
+# Vue quickstart
+
+`@stages/vue` connects a Stages controller to Vue 3's Composition API. The
+adapter owns subscriptions and scope teardown; your application owns the
+accepted value, field components, markup, and styling.
+
+```ts
+import { computed, h, ref } from "vue";
+import { stages } from "@stages/core";
+import { StagesField, useStages, type VueFieldView } from "@stages/vue";
+
+const TextField: VueFieldView<string, { readonly label: string }> = (binding) =>
+  h("label", [
+    binding.props.label,
+    h("input", {
+      id: binding.id,
+      value: binding.field.value,
+      onInput: (event: Event) =>
+        binding.emit("input", (event.currentTarget as HTMLInputElement).value),
+    }),
+  ]);
+
+const value = ref({ name: "" });
+const { controller, snapshot } = useStages(
+  () => stages({
+    schema: {
+      id: "profile",
+      version: 1,
+      nodes: [{ kind: "field", id: "name", type: "text", props: { label: "Name" } }],
+    },
+    fields: {
+      text: {
+        view: TextField,
+        initialValue: "",
+        reduce: ({ event }) => event.name === "input"
+          ? { value: event.payload as string }
+          : undefined,
+      },
+    },
+    value: value.value,
+    onChange: ({ value: proposed }) => { value.value = proposed; },
+  }),
+  computed(() => ({ value: value.value })),
+);
+```
+
+Use `<StagesField :controller="controller" :path="['name']" />` in a template,
+or `h(StagesField, { controller, path: ["name"] })` in a render function.
+`snapshot` is a shallow ref and is automatically unsubscribed when the current
+Vue effect scope is disposed.
+
+Next: [Vue adapter guide](/adapters/vue) or [Vue API reference](/reference/vue).

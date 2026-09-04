@@ -1,0 +1,19 @@
+{
+  "name": "@stages/example-vue",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.consumer.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.consumer.json --noEmit"
+  },
+  "dependencies": {
+    "@stages/core": "file:../../packages/core",
+    "@stages/vue": "file:../../packages/vue",
+    "vue": "^3.5.21"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}

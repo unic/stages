@@ -26,7 +26,7 @@ function run(command, args, cwd = repository) {
   return result.stdout.trim();
 }
 
-const packageDirectories = ["core", "dom", "react", "test-kit"];
+const packageDirectories = ["core", "dom", "react", "vue", "test-kit"];
 const expectedRepository = "git+https://github.com/unic/stages.git";
 const rootLicense = readFileSync(join(repository, "LICENSE"), "utf8");
 
@@ -115,6 +115,9 @@ try {
   const reactManifest = JSON.parse(readFileSync(join(repository, "packages/react/package.json"), "utf8"));
   assert.equal(reactManifest.peerDependencies?.react, ">=17.0.0");
   assert.deepEqual(reactManifest.dependencies, { "@stages/core": coreManifest.version });
+  const vueManifest = JSON.parse(readFileSync(join(repository, "packages/vue/package.json"), "utf8"));
+  assert.equal(vueManifest.peerDependencies?.vue, ">=3.3.0");
+  assert.deepEqual(vueManifest.dependencies, { "@stages/core": coreManifest.version });
   const testKitManifest = JSON.parse(readFileSync(join(repository, "packages/test-kit/package.json"), "utf8"));
   assert.deepEqual(testKitManifest.dependencies, { "@stages/core": coreManifest.version });
 
@@ -133,9 +136,11 @@ try {
     artifacts.get("@stages/core"),
     artifacts.get("@stages/dom"),
     artifacts.get("@stages/react"),
+    artifacts.get("@stages/vue"),
     artifacts.get("@stages/test-kit"),
   ], consumerDirectory);
   symlinkSync(join(repository, "node_modules/react"), join(consumerDirectory, "node_modules/react"), "dir");
+  symlinkSync(join(repository, "node_modules/vue"), join(consumerDirectory, "node_modules/vue"), "dir");
   mkdirSync(join(consumerDirectory, "node_modules/@types"), { recursive: true });
   symlinkSync(
     join(repository, "node_modules/@types/react"),
@@ -148,11 +153,15 @@ import assert from "node:assert/strict";
 import { fieldEvent, formEvent, nodeEvent, stages } from "@stages/core";
 import { createDomFields } from "@stages/dom";
 import { StagesField, useStagesCollection, useStagesWizard } from "@stages/react";
+import { StagesField as VueStagesField, useStagesCollection as useVueStagesCollection, useStagesWizard as useVueStagesWizard } from "@stages/vue";
 import { bindAdapter } from "@stages/test-kit";
 
 assert.equal(typeof StagesField, "function");
 assert.equal(typeof useStagesCollection, "function");
 assert.equal(typeof useStagesWizard, "function");
+assert.equal(typeof VueStagesField, "object");
+assert.equal(typeof useVueStagesCollection, "function");
+assert.equal(typeof useVueStagesWizard, "function");
 assert.deepEqual(fieldEvent("input", ["name"], { payload: "Ada" }), {
   name: "input",
   target: { kind: "field", path: ["name"] },
@@ -291,7 +300,7 @@ adapter.destroy();
   }, null, 2));
   run(join(repository, "node_modules/.bin/tsc"), ["-p", join(consumerDirectory, "tsconfig.json")], consumerDirectory);
 
-  console.log("Verified 4 release-candidate package tarballs and an isolated packed runtime/type consumer.");
+  console.log("Verified 5 release-candidate package tarballs and an isolated packed runtime/type consumer.");
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }

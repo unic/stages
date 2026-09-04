@@ -16,6 +16,7 @@ export and major runtime concept to its v1 disposition.
 | `@stages/core` | Schema, controller, events, validation, collections, and serialization | None |
 | `@stages/dom` | Dependency-free renderer and native field definitions | `@stages/core` |
 | `@stages/react` | React lifecycle and selector bindings | `@stages/core`; React is a peer |
+| `@stages/vue` | Vue Composition API lifecycle and selector bindings | `@stages/core`; Vue is a peer |
 | `@stages/test-kit` | Framework adapter contract harness | `@stages/core` |
 
 All packages are ESM-only during the alpha and expose declarations through
@@ -336,6 +337,20 @@ snapshot, and emitter; they own equivalent semantics for their markup.
 destroys after a real unmount. React views receive an ID, field snapshot,
 resolved props, and `emit(name, payload?)`. Markup, layouts, error focus, and
 accessibility policy remain application-owned.
+
+## Vue adapter
+
+- `useStages(factory, input)` owns controller lifecycle and watches controlled updates;
+- `useStagesController(controller)` exposes the whole snapshot as a shallow ref;
+- `useStagesField(controller, path)` exposes one field as a computed ref;
+- `StagesField` renders its registered Vue view;
+- `useStagesCollection(controller, path)` returns a computed binding with stable row commands;
+- `useStagesWizard(controller, path)` returns computed stage metadata and navigation.
+
+Vue views receive an ID, field snapshot, resolved props, and
+`emit(name, payload?)`. Composition API subscriptions are released with their
+effect scope, and a controller created by `useStages()` is destroyed on scope
+disposal. Markup and accessibility policy remain application-owned.
 
 ## Test-kit adapter harness
 

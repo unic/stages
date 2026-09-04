@@ -1,0 +1,27 @@
+# Vue adapter
+
+`@stages/vue` provides Composition API bindings without imposing a component
+library or visual design.
+
+- `useStages(factory, input)` creates a controller, watches a ref, computed ref,
+  or getter of controlled updates, and destroys the controller with its scope.
+- `useStagesController(controller)` exposes the complete snapshot as a shallow ref.
+- `useStagesField(controller, path)` exposes one field as a computed ref.
+- `StagesField` renders the opaque Vue component registered by a field definition.
+- `useStagesCollection(controller, path)` returns a computed collection binding
+  with stable row keys and add, remove, and move commands.
+- `useStagesWizard(controller, path)` returns a computed wizard binding with
+  stage metadata and guarded navigation commands.
+
+Refs returned from `setup()` are automatically unwrapped in Vue templates. In
+JavaScript and render functions, access structural bindings with
+`collection.value` or `wizard.value`. Keep the input to `useStages` reactive,
+normally with `computed(() => ({ value: value.value, context }))`.
+
+All field markup, issue announcements, labels, and focus behavior remain the
+application's responsibility. Use each collection item's `key` as Vue's
+`:key`, and use the supplied `fieldPath()` after row moves rather than building
+index paths yourself.
+
+See the runnable [`examples/vue`](https://github.com/unic/stages/tree/master/examples/vue)
+workspace wizard and the [exact API reference](/reference/vue).

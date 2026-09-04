@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "preserveSymlinks": true,
+    "paths": {
+      "@stages/core": ["./node_modules/@stages/core/dist/index.d.ts"],
+      "@stages/vue": ["./node_modules/@stages/vue/dist/index.d.ts"]
+    }
+  }
+}

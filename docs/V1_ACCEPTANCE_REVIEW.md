@@ -11,7 +11,7 @@ and that core remains dependency-, framework-, and browser-global-free.
 | ID | State | Primary executable evidence |
 | --- | --- | --- |
 | AC-01 | Automated | Core manifest and packed-package verification |
-| AC-02 | Automated | Packed Node consumer imports all four packages without browser globals |
+| AC-02 | Automated | Packed Node consumer imports all five packages without browser globals |
 | AC-03 | Automated | Strict package builds and source escape-hatch audit |
 | AC-04 | Automated | Exhaustive structural permutation and deep-tree test |
 | AC-05 | Automated | Frozen-schema and seeded immutable-operation tests |
@@ -25,8 +25,8 @@ and that core remains dependency-, framework-, and browser-global-free.
 | AC-13 | Automated | Full-form and wizard validation state matrix |
 | AC-14 | Automated | Strict JSON failure and custom-codec round-trip tests |
 | AC-15 | Automated | Durable recreation, wizard location, and row identity tests |
-| AC-16 | Automated | DOM and React opaque custom-view tests |
-| AC-17 | Automated | DOM, React, Vue-style, and Angular-style adapter proofs |
+| AC-16 | Automated | DOM, React, and Vue opaque custom-view tests |
+| AC-17 | Automated | DOM, React, Vue, and Angular-style adapter proofs |
 | AC-18 | Automated | Executable 0.x API and migration inventory |
 
 ## Promotion evidence still requiring maintainers

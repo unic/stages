@@ -13,6 +13,7 @@ compatible with the historical `react-stages` 0.x package.
 - `@stages/core` — dependency-free controller and schema runtime
 - `@stages/dom` — accessible native-DOM reference adapter
 - `@stages/react` — React lifecycle, field, collection, and wizard bindings
+- `@stages/vue` — Vue Composition API lifecycle, field, collection, and wizard bindings
 - `@stages/test-kit` — reusable adapter contract harness
 
 ## Quick start
@@ -51,6 +52,7 @@ controller = stages({
 
 - [`examples/vanilla`](examples/vanilla/README.md) — DOM adapter wizard
 - [`examples/react`](examples/react/README.md) — React workspace wizard
+- [`examples/vue`](examples/vue/README.md) — Vue workspace wizard
 - [`studio`](studio) — v1-backed visual form editor
 - [`docs`](docs) — v1 documentation application
 

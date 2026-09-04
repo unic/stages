@@ -118,6 +118,28 @@
       ]
     },
     {
+      "package": "@stages/vue",
+      "entrypoint": "packages/vue/src/index.ts",
+      "tests": ["packages/vue/test/vue.test.mjs"],
+      "defaultReference": "/reference/vue",
+      "exports": [
+        { "symbol": "StagesField", "kind": "runtime", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "useStages", "kind": "runtime", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "useStagesCollection", "kind": "runtime", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "useStagesController", "kind": "runtime", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "useStagesField", "kind": "runtime", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "useStagesWizard", "kind": "runtime", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "VueCollectionBinding", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "VueCollectionItemBinding", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "VueFieldProps", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "VueFieldView", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "VueWizardBinding", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "VueWizardStageBinding", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "StagesFieldProps", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" },
+        { "symbol": "UseStagesResult", "kind": "type", "guide": "/adapters/vue", "reference": "/reference/vue", "status": "complete" }
+      ]
+    },
+    {
       "package": "@stages/dom",
       "entrypoint": "packages/dom/src/index.ts",
       "tests": ["packages/dom/test/dom.test.mjs"],
@@ -220,6 +242,15 @@
       "ReactCollectionBinding": ["items", "canAdd", "add"],
       "ReactWizardStageBinding": ["id", "path", "address", "active", "disabled", "validation"],
       "ReactWizardBinding": ["activeStage", "stages", "canPrevious", "canNext", "canGo", "previous", "next", "go"],
+      "StagesFieldProps": ["controller", "path", "id"]
+    },
+    "vueMembers": {
+      "VueFieldProps": ["id", "field", "props", "emit"],
+      "UseStagesResult": ["controller", "snapshot"],
+      "VueCollectionItemBinding": ["key", "index", "value", "address", "canRemove", "canMovePrevious", "canMoveNext", "fieldPath", "remove", "moveTo"],
+      "VueCollectionBinding": ["items", "canAdd", "add"],
+      "VueWizardStageBinding": ["id", "path", "address", "active", "disabled", "validation"],
+      "VueWizardBinding": ["activeStage", "stages", "canPrevious", "canNext", "canGo", "previous", "next", "go"],
       "StagesFieldProps": ["controller", "path", "id"]
     },
     "domMembers": {
