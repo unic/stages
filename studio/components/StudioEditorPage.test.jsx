@@ -194,6 +194,8 @@ describe("StudioEditorPage interactions", () => {
     document.body.append(container);
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const root = hydrateRoot(container, element);
+    await waitFor(() => expect(within(container).getByRole("button", { name: "Project" })).toBeInTheDocument());
+    fireEvent.click(within(container).getByRole("button", { name: "Project" }));
     await waitFor(() => expect(container).toHaveTextContent("Legacy project found"));
     expect(consoleError.mock.calls.flat().join(" ")).not.toContain("Hydration failed");
     await act(async () => root.unmount());
@@ -275,6 +277,7 @@ describe("StudioEditorPage interactions", () => {
     const repository = createMemoryProjectRepository();
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("New local draft");
+    await openWorkbenchPanel(user, "Project");
     expect(screen.getByText(/Legacy registration · 1 top-level blocks/)).toBeVisible();
     expect(localStorage.getItem("stages-studio-storage-0.1")).not.toBeNull();
 

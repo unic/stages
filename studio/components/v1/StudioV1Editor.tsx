@@ -1444,7 +1444,6 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   useEffect(() => {
     const preview = previewLegacyStudioStorage(localStorage);
     setLegacyPreview(preview);
-    if (preview.kind !== "absent") setDrawer("project");
   }, []);
 
   const refreshRepositoryState = useCallback(async () => {
@@ -2015,7 +2014,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             size="sm"
             aria-pressed={drawer === panel}
             onClick={() => setDrawer((current) => current === panel ? undefined : panel)}
-          >{panel[0]!.toUpperCase() + panel.slice(1)}</Button>)}
+          >{panel[0]!.toUpperCase() + panel.slice(1)}{panel === "project" && legacyPreview.kind !== "absent" ? <span className="studio-v1-toolbar__notice" aria-hidden="true" title="Legacy project available" /> : null}</Button>)}
         </nav>
         <nav className="studio-v1-toolbar__surface" aria-label="Studio mode">
           <Button variant={surface === "design" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "design"} onClick={() => setSurface("design")}>Design</Button>
