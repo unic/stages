@@ -4,7 +4,10 @@ import sanitizeHtml from "sanitize-html";
 import _ from "lodash";
 import Sugar from "sugar";
 import { DndContext } from '@dnd-kit/core';
-import { ContextMenu, ScrollPanel, Toast } from './primeCompat';
+import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
+import { StudioContextMenu } from './ui/studio-context-menu';
+import { Toaster } from './ui/toast';
 import {
     Undo,
     Redo,
@@ -960,8 +963,8 @@ const Workspace = () => {
     const now = new Date();
 
     return (
-        <ScrollPanel style={{ width: "100%",height: '100vh', background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
-            <Toast position="center" ref={toast} />
+        <ScrollArea style={{ width: "100%",height: '100vh', background: store.isEditMode ? "url(/editor-bg-pattern.svg)" : "transparent" }}>
+            <Toaster ref={toast} />
             <div style={{ padding: "16px", position: "relative", minHeight: "100vh" }} onContextMenu={(e) => {
                     if (contextMenuRef && contextMenuRef.current) {
                         contextMenuRef.current.show(e);
@@ -973,28 +976,28 @@ const Workspace = () => {
                 </div>
                 {store.isEditMode ? (
                     <div style={{ position: "absolute", top: "24px", right: "68px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
-                        <button title="undo" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.undo()}><Undo color="#999" size={16} /></button>
-                        <button title="redo" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.redo()}><Redo color="#999" size={16} /></button>
+                        <Button title="undo" size="icon" variant="ghost" onClick={() => store.undo()}><Undo size={16} /></Button>
+                        <Button title="redo" size="icon" variant="ghost" onClick={() => store.redo()}><Redo size={16} /></Button>
                     </div>
                 ) : null}
                 {store.isEditMode ? (
                     <div style={{ position: "absolute", top: "24px", right: "134px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
-                        <button
+                        <Button
                             title="add snapshot"
-                            type="button"
-                            style={{ border: "none", background: "transparent", cursor: "pointer" }}
+                            size="icon"
+                            variant="ghost"
                             onClick={() => {
                                 store.addSnapshot();
                                 toast.current.show({severity:'success', summary: 'Success!', detail:'New data snapshot created.', life: 2000});
                             }}
-                        ><Camera color="#999" size={16} /></button>
+                        ><Camera size={16} /></Button>
                     </div>
                 ) : null}
                 {store.isEditMode ? (
                     <div style={{ position: "absolute", top: "24px", right: "172px", border: "1px #ddd solid", background: "#fff", borderRadius: "3px", height: "24px", padding: "2px 0" }}>
-                        <button title="mobile" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("mobile")}><Smartphone color={store.previewSize === "mobile" ? "#000" : "#999"} size={16} /></button>
-                        <button title="tablet" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("tablet")}><Tablet color={store.previewSize === "tablet" ? "#000" : "#999"} size={16} /></button>
-                        <button title="desktop" type="button" style={{ border: "none", background: "transparent", cursor: "pointer" }} onClick={() => store.switchPreviewSize("desktop")}><Monitor color={store.previewSize === "desktop" ? "#000" : "#999"} size={16} /></button>
+                        <Button title="mobile" size="icon" variant={store.previewSize === "mobile" ? "secondary" : "ghost"} onClick={() => store.switchPreviewSize("mobile")}><Smartphone size={16} /></Button>
+                        <Button title="tablet" size="icon" variant={store.previewSize === "tablet" ? "secondary" : "ghost"} onClick={() => store.switchPreviewSize("tablet")}><Tablet size={16} /></Button>
+                        <Button title="desktop" size="icon" variant={store.previewSize === "desktop" ? "secondary" : "ghost"} onClick={() => store.switchPreviewSize("desktop")}><Monitor size={16} /></Button>
                     </div>
                 ) : null}
                 {!store.isEditMode ? (
@@ -1032,7 +1035,7 @@ const Workspace = () => {
                     </h2>
                 </div>
                 {store.isEditMode ? (
-                    <ContextMenu
+                    <StudioContextMenu
                         model={
                             store.activeContextMenuInput === "." ? 
                             rootContextMenuItems : store.activeContextMenuInput.startsWith("insert > ") ? 
@@ -1040,7 +1043,6 @@ const Workspace = () => {
                             stageContextMenuItems : fieldContextMenuItems
                         }
                         ref={contextMenuRef}
-                        breakpoint="767px"
                     />
                 ) : null}
                 {!store.isEditMode ? <div><br /></div> : null}
@@ -1071,7 +1073,7 @@ const Workspace = () => {
                     />
                 )}
             </div>
-        </ScrollPanel>
+        </ScrollArea>
     );
 };
 

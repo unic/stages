@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import useStagesStore from "./store";
-import { Button } from "./primeCompat";
+import { Button } from "./ui/button";
 import { Search } from "lucide-react";
 import { Filter } from "lucide-react";
-import { AutoComplete } from "./primeCompat";
+import { AutoComplete } from "./ui/field-controls";
 import { getAllPaths } from "./helpers";
 
 const GeneralConfig = () => {
@@ -29,13 +29,13 @@ const GeneralConfig = () => {
         </div>
         <div style={{ marginTop: "-6px", fontSize: "14px" }}>
           {store.generalConfig.status === "draft" && (
-            <Button link label="publish" onClick={() => store.publish()} />
+            <Button variant="link" onClick={() => store.publish()}>Publish</Button>
           )}
           {store.generalConfig.status === "published" && (
-            <Button link label="archive" onClick={() => store.archive()} />
+            <Button variant="link" onClick={() => store.archive()}>Archive</Button>
           )}
           {store.generalConfig.status === "archived" && (
-            <Button link label="fork" onClick={() => store.fork()} />
+            <Button variant="link" onClick={() => store.fork()}>Fork</Button>
           )}
         </div>
       </div>
@@ -45,10 +45,8 @@ const GeneralConfig = () => {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div>
-          <span className="p-input-icon-right" style={{ margin: "16px 0" }}>
+          <span className="studio-search" style={{ margin: "16px 0" }}>
             <AutoComplete
-              dropdown={true}
-              dropdownIcon={<Search color="#fff" size={16} />}
               placeholder="stepkey.fieldkey"
               value={searchValue}
               suggestions={items}
@@ -59,6 +57,7 @@ const GeneralConfig = () => {
                 store.setEditorTabIndex(1);
               }}
             />
+            <Search aria-hidden="true" size={16} />
           </span>
         </div>
         <div style={{ paddingTop: "24px" }}>

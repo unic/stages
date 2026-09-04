@@ -21,7 +21,7 @@ import {
   SelectButton,
   Slider,
   ToggleButton,
-} from "./primeCompat";
+} from "./ui/field-controls";
 import useStagesStore from "./store";
 import { parseTemplateLiterals, textHasTemplateLiterals } from "./helpers";
 
@@ -40,6 +40,7 @@ const removeStagesProps = (props) => {
         ? cleanedProps.errorRenderer(cleanedProps.error, props)
         : cleanedProps.errorRenderer
       : cleanedProps.error;
+  if (cleanedProps.tooltip && !cleanedProps.title) cleanedProps.title = cleanedProps.tooltip;
   delete cleanedProps.customValidation;
   delete cleanedProps.errorRenderer;
   delete cleanedProps.validateOn;
@@ -51,6 +52,12 @@ const removeStagesProps = (props) => {
   delete cleanedProps.regexValidation;
   delete cleanedProps.isInInspector;
   delete cleanedProps.blockWidth;
+  delete cleanedProps.tooltip;
+  delete cleanedProps.filter;
+  delete cleanedProps.isInterfaceState;
+  delete cleanedProps.autoResize;
+  delete cleanedProps.showTime;
+  delete cleanedProps.hideOnDateTimeSelect;
   return cleanedProps;
 };
 
@@ -131,7 +138,7 @@ const InputWrapper = ({
         </div>
         <div>&nbsp;</div>
         <div style={{ minWidth: "204px", flexGrow: 1 }}>
-          <div className="p-inputgroup w-full">{children}</div>
+          <div className="field-control-group w-full">{children}</div>
         </div>
       </div>
     );
@@ -139,7 +146,7 @@ const InputWrapper = ({
 
   return (
     <div
-      className="field"
+      className="studio-field"
       style={
         isDisabled
           ? { opacity: 0.5, minWidth: "auto", marginBottom: 0 }
@@ -171,10 +178,10 @@ const InputWrapper = ({
           />
         </div>
       ) : null}
-      <div className="p-inputgroup w-full">
-        {prefix && <span className="p-inputgroup-addon">{prefix}</span>}
+      <div className="field-control-group w-full">
+        {prefix && <span className="field-control-addon">{prefix}</span>}
         {children}
-        {suffix && <span className="p-inputgroup-addon">{suffix}</span>}
+        {suffix && <span className="field-control-addon">{suffix}</span>}
       </div>
       {error && !isValidating ? (
         errorRenderer ? (
@@ -295,11 +302,7 @@ const MappedInputText = (props) => {
     >
       <InputText
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
-        tooltipOptions={{
-          position: props.isInInspector ? "left" : "right",
-          showDelay: 500,
-        }}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -329,7 +332,7 @@ const MappedInputTextBlur = (props) => {
         showDelay: 500,
       }}
     >
-      <InputText {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <InputText {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -347,7 +350,7 @@ const MappedInputMask = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <InputMask {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <InputMask {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -366,11 +369,7 @@ const MappedInputTextarea = (props) => {
     >
       <InputTextarea
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
-        tooltipOptions={{
-          position: props.isInInspector ? "left" : "right",
-          showDelay: 500,
-        }}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -389,7 +388,7 @@ const MappedEditor = (props) => {
       isInInspector={props.isInInspector}
     >
       <div style={{ overflow: "hidden", width: "100%" }}>
-        <Editor {...mappedProps} className={props.error ? "p-invalid" : ""} />
+        <Editor {...mappedProps} className={props.error ? "is-invalid" : ""} />
       </div>
     </InputWrapper>
   );
@@ -411,7 +410,7 @@ const MappedDropdown = (props) => {
       <Dropdown
         {...mappedProps}
         filter={props.showFilter || false}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -433,7 +432,7 @@ const MappedMultiSelect = (props) => {
       <MultiSelect
         {...mappedProps}
         filter={props.showFilter || false}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -455,7 +454,7 @@ const MappedSelectButton = (props) => {
     >
       <SelectButton
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -482,7 +481,7 @@ const MappedCalendar = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <Calendar {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <Calendar {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -499,7 +498,7 @@ const MappedCheckbox = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <Checkbox {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <Checkbox {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -519,7 +518,7 @@ const MappedInputSwitch = (props) => {
     >
       <InputSwitch
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -540,7 +539,7 @@ const MappedToggleButton = (props) => {
     >
       <ToggleButton
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -559,7 +558,7 @@ const MappedRating = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <Rating {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <Rating {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -580,7 +579,7 @@ const MappedInputNumber = (props) => {
     >
       <InputNumber
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -599,7 +598,7 @@ const MappedSlider = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <Slider {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <Slider {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -616,7 +615,7 @@ const MappedChips = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <Chips {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <Chips {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -636,7 +635,7 @@ const MappedColorPicker = (props) => {
     >
       <ColorPicker
         {...mappedProps}
-        className={props.error ? "p-invalid" : ""}
+        className={props.error ? "is-invalid" : ""}
       />
     </InputWrapper>
   );
@@ -654,7 +653,7 @@ const MappedPassword = (props) => {
       isRequired={props.isRequired}
       isInInspector={props.isInInspector}
     >
-      <Password {...mappedProps} className={props.error ? "p-invalid" : ""} />
+      <Password {...mappedProps} className={props.error ? "is-invalid" : ""} />
     </InputWrapper>
   );
 };
@@ -681,7 +680,7 @@ const MappedDivider = (props) => {
   );
 };
 
-const primeFields = {
+const shadcnFields = {
   text: {
     component: MappedInputText,
     isValid: isValid,
@@ -768,4 +767,4 @@ const primeFields = {
   },
 };
 
-export default primeFields;
+export default shadcnFields;

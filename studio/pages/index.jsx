@@ -1,4 +1,3 @@
-import { Grid, MantineProvider } from "@mantine/core";
 import styled from "@emotion/styled";
 
 import Logo from "../components/Logo";
@@ -30,14 +29,13 @@ const Header = styled.div`
 
 export default function Page() {
   return (
-    <MantineProvider withNormalizeCSS>
-      <div>
+    <div>
         <Header>
           <Logo />
           <PageSlogan />
         </Header>
-        <Grid m={{ base: "12px", sm: "64px" }} gutter="80px">
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+        <div className="marketing-grid">
+          <div>
             <Card>
               <h3>ANY LEVEL OF COMPLEXITY</h3>
               <p>
@@ -46,8 +44,8 @@ export default function Page() {
                 wizards.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>DATA STORAGE OR WEBHOOKS</h3>
               <p>
@@ -55,8 +53,8 @@ export default function Page() {
                 your own content management system.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>PUBLISHING WORK-FLOW</h3>
               <p>
@@ -64,8 +62,8 @@ export default function Page() {
                 team or leave it simple and publish yourself.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>FORM SPANNING RELATIONSHIPS</h3>
               <p>
@@ -73,8 +71,8 @@ export default function Page() {
                 and create a whole application of connected forms.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>LIBRARY OF PRE-MADE VALIDATIONS</h3>
               <p>
@@ -83,8 +81,8 @@ export default function Page() {
                 forms.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>EXPORT FORMS TO REACT</h3>
               <p>
@@ -93,8 +91,8 @@ export default function Page() {
                 project.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>MODULAR BY DESIGN</h3>
               <p>
@@ -102,8 +100,8 @@ export default function Page() {
                 want, by simply referencing it by its path.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>DYNAMIC TEMPLATE LITERALS</h3>
               <p>
@@ -111,8 +109,8 @@ export default function Page() {
                 summaries, can reference any form data and aggregations of it.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>VISUAL EDITING</h3>
               <p>
@@ -121,8 +119,8 @@ export default function Page() {
                 field to a new location.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>PROFESSIONAL FEATURES</h3>
               <p>
@@ -131,8 +129,8 @@ export default function Page() {
                 form.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>ACCESSIBILITY</h3>
               <p>
@@ -141,8 +139,8 @@ export default function Page() {
                 features.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>THEMING</h3>
               <p>
@@ -151,8 +149,8 @@ export default function Page() {
                 no limits are placed on what you can do.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>VERSION CONTROL</h3>
               <p>
@@ -161,8 +159,8 @@ export default function Page() {
                 non-private forms.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>PATHS TO EVERYTHING</h3>
               <p>
@@ -171,8 +169,8 @@ export default function Page() {
                 permission to do that.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>FIELD TYPES</h3>
               <p>
@@ -181,8 +179,8 @@ export default function Page() {
                 creations.
               </p>
             </Card>
-          </Grid.Col>
-          <Grid.Col xs={12} sm={6} lg={4} xl={3}>
+          </div>
+          <div>
             <Card>
               <h3>BOT SPAM PREVENTION</h3>
               <p>
@@ -190,8 +188,8 @@ export default function Page() {
                 has powerfull anti-bot spam built in to prevent this.
               </p>
             </Card>
-          </Grid.Col>
-        </Grid>
+          </div>
+        </div>
         <ImageContainer>
           <div>
             <img
@@ -484,6 +482,5 @@ export default function Page() {
           </div>
         </InfoCard>
       </div>
-    </MantineProvider>
   );
 }

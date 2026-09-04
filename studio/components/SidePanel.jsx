@@ -1,5 +1,7 @@
 import _ from "lodash";
-import { Button, ScrollPanel, TabMenu } from "./primeCompat";
+import { Button } from "./ui/button";
+import { ScrollArea } from "./ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import GeneralConfig from "./GeneralConfig";
 import DataInspector from "./DataInspector";
 import InspectorHeader from "./InspectorHeader";
@@ -100,17 +102,15 @@ const SidePanel = () => {
       >
         <InspectorHeader />
         <div style={{ backgroundColor: "#fff", padding: "0" }}>
-          <TabMenu
-            model={[
-              { label: "General Config" },
-              { label: "Inspector" },
-              { label: "Data" },
-            ]}
-            activeIndex={store.editorTabIndex}
-            onTabChange={(e) => store.setEditorTabIndex(e.index)}
-          />
+          <Tabs value={String(store.editorTabIndex)} onValueChange={(value) => store.setEditorTabIndex(Number(value))}>
+            <TabsList aria-label="Editor panels">
+              <TabsTrigger value="0">General</TabsTrigger>
+              <TabsTrigger value="1">Inspector</TabsTrigger>
+              <TabsTrigger value="2">Data</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-        <ScrollPanel style={{ height: "calc(100vh - 320px)", flexGrow: 1 }}>
+        <ScrollArea style={{ height: "calc(100vh - 320px)", flexGrow: 1 }}>
           <div style={{ padding: "16px 12px" }}>
             {store.editorTabIndex === 1 ? (
               <FieldConfigEditor
@@ -121,7 +121,7 @@ const SidePanel = () => {
             {store.editorTabIndex === 0 ? <GeneralConfig /> : null}
             {store.editorTabIndex === 2 ? <DataInspector /> : null}
           </div>
-        </ScrollPanel>
+        </ScrollArea>
         <div
           style={{
             backgroundColor: "#fff",
@@ -136,8 +136,7 @@ const SidePanel = () => {
           </div>
           <div>
             <Button
-              link
-              severity="secondary"
+              variant="link"
               onClick={handleExportToJson}
               style={{ padding: 0, fontSize: "14px" }}
             >

@@ -57,7 +57,7 @@ const kitchensinkConfig = [
     align: "center",
     layout: "horizontal",
     borderType: "dashed",
-    text: "Prime React Fields",
+    text: "shadcn/ui fields",
   },
   {
     id: "text",

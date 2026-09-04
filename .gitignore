@@ -2,6 +2,7 @@
 node_modules/
 packages/*/dist/
 examples/*/dist/
+studio/coverage/
 
 # Optional npm cache directory
 .npm

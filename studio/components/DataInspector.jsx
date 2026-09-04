@@ -1,4 +1,5 @@
-import { Message } from "./primeCompat";
+import { Message } from "./ui/field-controls";
+import { Button } from "./ui/button";
 import InspectorSpacer from "./InspectorSpacer";
 import useStagesStore from "./store";
 import { truncateString } from "./helpers";
@@ -22,8 +23,8 @@ const DataInspector = () => {
               {truncateString(JSON.stringify(store.snapshots[i]), 26)}
             </span>
             <span>
-              <button onClick={() => store.useSnapshot(i)}>Use</button>{" "}
-              <button onClick={() => store.removeSnapshot(i)}>Remove</button>
+              <Button size="sm" variant="outline" onClick={() => store.useSnapshot(i)}>Use</Button>{" "}
+              <Button size="sm" variant="ghost" onClick={() => store.removeSnapshot(i)}>Remove</Button>
             </span>
           </li>
         ))}

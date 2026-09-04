@@ -1,8 +1,8 @@
 import { Fragment, useMemo, useRef, useState } from "react";
 import { stages } from "@stages/core";
 import { StagesField, useStages } from "@stages/react";
-import { Button } from "../primeCompat";
-import primeFields from "../primeFields";
+import { Button } from "../ui/button";
+import shadcnFields from "../shadcnFields";
 import EditableBlock from "../EditableBlock";
 import GroupContainer from "../GroupContainer";
 import CollectionContainer from "../CollectionContainer";
@@ -23,7 +23,7 @@ function initialValue(type) {
 }
 
 function createFieldRegistry() {
-  return Object.fromEntries(Object.entries(primeFields).map(([type, definition]) => {
+  return Object.fromEntries(Object.entries(shadcnFields).map(([type, definition]) => {
     const LegacyField = definition.component;
     function StudioField({ id, field, props, emit }) {
       const issue = field.state.visibleIssues[0];
@@ -111,9 +111,9 @@ function EditorRow({ controller, node, index, size, canRemove, presentation, pre
         {...editorProps}
       />
       <div style={{ position: "absolute", top: "10px", right: "10px", display: "flex", gap: "4px" }}>
-        <button type="button" disabled={index === 0} aria-label={`Move ${node.id} up`} onClick={() => nodeEvent(controller, node, "collection:move", { to: index - 1 })}>↑</button>
-        <button type="button" disabled={index === size - 1} aria-label={`Move ${node.id} down`} onClick={() => nodeEvent(controller, node, "collection:move", { to: index + 1 })}>↓</button>
-        <button type="button" disabled={!canRemove} aria-label={`Remove ${node.id}`} onClick={() => nodeEvent(controller, node, "collection:remove")}>−</button>
+        <Button size="icon" variant="outline" disabled={index === 0} aria-label={`Move ${node.id} up`} onClick={() => nodeEvent(controller, node, "collection:move", { to: index - 1 })}>↑</Button>
+        <Button size="icon" variant="outline" disabled={index === size - 1} aria-label={`Move ${node.id} down`} onClick={() => nodeEvent(controller, node, "collection:move", { to: index + 1 })}>↓</Button>
+        <Button size="icon" variant="outline" disabled={!canRemove} aria-label={`Remove ${node.id}`} onClick={() => nodeEvent(controller, node, "collection:remove")}>−</Button>
       </div>
     </div>
   );
@@ -177,9 +177,9 @@ function EditorNode({ controller, node, presentation, previewSize, parentKind, e
           />
         ))}
         {Array.isArray(meta.variants) ? meta.variants.map((variant) => (
-          <button key={variant} type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add", { variant })} style={{ margin: "0 0 8px 8px" }}>add {variant}</button>
+          <Button key={variant} size="sm" variant="outline" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add", { variant })} style={{ margin: "0 0 8px 8px" }}>Add {variant}</Button>
         )) : (
-          <button type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")} style={{ margin: "0 0 8px 8px" }}>add row</button>
+          <Button size="sm" variant="outline" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")} style={{ margin: "0 0 8px 8px" }}>Add row</Button>
         )}
       </CollectionContainer>
     );
@@ -275,15 +275,16 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
           style={{ position: "relative", display: "flex", flexWrap: "wrap", width: "100%", margin: "4px 8px 12px", padding: "8px 46px 8px 0", border: "1px dashed #ddd", borderRadius: "3px" }}
         >
           <Nodes controller={controller} nodes={node.nodes} presentation={presentation} previewSize={previewSize} rowCanRemove={rowCanRemove} />
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="outline"
             disabled={!rowCanRemove}
             aria-label={`Remove ${node.id}`}
             onClick={() => nodeEvent(controller, node, "collection:remove")}
             style={{ position: "absolute", top: "10px", right: "10px" }}
           >
             remove
-          </button>
+          </Button>
         </div>
       );
     }
@@ -298,15 +299,16 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
             {stages.map((stage) => {
               const stageMeta = presentationFor(stage, presentation);
               return (
-                <button
+                <Button
                   key={stage.id}
-                  type="button"
+                  size="sm"
+                  variant={stage.active ? "secondary" : "ghost"}
                   disabled={stage.state.disabled || !node.canGo}
                   aria-current={stage.active ? "step" : undefined}
                   onClick={() => nodeEvent(controller, node, "wizard:go", stage.id)}
                 >
                   {stageMeta.label || stage.id}
-                </button>
+                </Button>
               );
             })}
           </nav>
@@ -314,8 +316,8 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
             <Nodes controller={controller} nodes={node.nodes} presentation={presentation} previewSize={previewSize} rowCanRemove={rowCanRemove} />
           </div>
           <div style={{ display: "flex", gap: "8px", margin: "12px 0" }}>
-            <button type="button" disabled={!node.canPrevious} onClick={() => nodeEvent(controller, node, "wizard:previous")}>Previous</button>
-            <button type="button" disabled={!node.canNext} onClick={() => nodeEvent(controller, node, "wizard:next")}>Next</button>
+            <Button variant="outline" disabled={!node.canPrevious} onClick={() => nodeEvent(controller, node, "wizard:previous")}>Previous</Button>
+            <Button disabled={!node.canNext} onClick={() => nodeEvent(controller, node, "wizard:next")}>Next</Button>
           </div>
         </section>
       );
@@ -328,17 +330,18 @@ function Nodes({ controller, nodes, presentation, previewSize, rowCanRemove }) {
           {meta.secondaryText ? <div style={{ color: "#999", marginBottom: "12px" }}>{meta.secondaryText}</div> : null}
           <Nodes controller={controller} nodes={node.nodes} presentation={presentation} previewSize={previewSize} rowCanRemove={node.canRemove} />
           {Array.isArray(meta.variants) ? meta.variants.map((variant) => (
-            <button
+            <Button
               key={variant}
-              type="button"
+              size="sm"
+              variant="outline"
               disabled={!node.canAdd}
               onClick={() => nodeEvent(controller, node, "collection:add", { variant })}
               style={{ marginRight: "6px" }}
             >
               add {variant}
-            </button>
+            </Button>
           )) : (
-            <button type="button" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")}>add row</button>
+            <Button size="sm" variant="outline" disabled={!node.canAdd} onClick={() => nodeEvent(controller, node, "collection:add")}>Add row</Button>
           )}
         </section>
       );

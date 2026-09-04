@@ -1,7 +1,10 @@
+import { Button } from "./ui/button";
+
 const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
   return (
-    <button
-      type="button"
+    <Button
+      size="icon"
+      variant="outline"
       style={{
         border: "1px solid #ddd",
         borderColor:
@@ -36,7 +39,7 @@ const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
       }}
     >
       {size}
-    </button>
+    </Button>
   );
 };
 

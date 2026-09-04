@@ -47,18 +47,6 @@ const generalConfigFields = [
     })),
   },
   {
-    id: "components",
-    type: "select",
-    label: "Field Components",
-    defaultValue: "plain",
-    isInInspector: true,
-    options: [
-      { value: "plain", text: "Stages Plain Fields" },
-      { value: "prime", text: "Prime React" },
-      { value: "radix", text: "Radix UI" },
-    ],
-  },
-  {
     id: "date",
     type: "group",
     label: "Date",
