@@ -31,6 +31,10 @@ Execution status:
   and [`../studio/src/commands/clipboard.ts`](../studio/src/commands/clipboard.ts)
   provide structural compatibility, wrap/unwrap, conversion, cross-container
   movement, and clipboard commands shared by pointer and keyboard authoring
+- Session 12 completed: [`../studio/src/registry/index.ts`](../studio/src/registry/index.ts)
+  defines the typed authoring contract for text, textarea, number, choice,
+  checkbox, and date fields; the compiler, palette, inspector, and preview now
+  consume that shared metadata
 
 Primary references:
 

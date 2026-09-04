@@ -11,8 +11,16 @@ import {
 import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode } from "../../src/compiler/types";
-import { toUid } from "../../src/document/uid";
+import { isSafeObjectKey, toUid } from "../../src/document/uid";
 import type { JsonObject, StudioFieldNode, StudioFormDocument, StudioNode, Uid } from "../../src/document/types";
+import {
+  STUDIO_FIELD_DEFINITIONS,
+  createStudioFieldNode,
+  studioFieldDefinition,
+  validateStudioFieldProps,
+  type AnyStudioAuthoringFieldDefinition,
+  type StudioPropControl,
+} from "../../src/registry";
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
 import { StudioProjectConflictError } from "../../src/projects/types";
 import type { StudioProjectRepository } from "../../src/projects/types";
@@ -44,23 +52,18 @@ function firstForm(project: StudioHistoryState["present"]): StudioFormDocument |
   return Object.values(project.forms)[0];
 }
 
-function nextTextField(form: StudioFormDocument): StudioFieldNode {
+function nextField(form: StudioFormDocument, definition: AnyStudioAuthoringFieldDefinition): StudioFieldNode {
   let suffix = 1;
-  let uid = toUid("field_text");
-  let runtimeId = "text";
+  let uid = toUid(`field_${definition.key}`);
+  let runtimeId: string = definition.key;
   const runtimeIds = new Set(Object.values(form.nodes).flatMap((node) => node.kind === "block" ? [] : [node.runtimeId]));
   while (form.nodes[uid] !== undefined || runtimeIds.has(runtimeId)) {
     suffix += 1;
-    uid = toUid(`field_text_${suffix}`);
-    runtimeId = `text${suffix}`;
+    uid = toUid(`field_${definition.key}_${suffix}`);
+    runtimeId = `${definition.key}${suffix}`;
   }
-  return {
-    uid,
-    kind: "field",
-    runtimeId,
-    definition: { key: "text", version: 1 },
-    props: { label: "Text field" },
-  };
+  const node = createStudioFieldNode(definition, { uid, runtimeId });
+  return { ...node, props: { ...node.props, label: definition.displayName } };
 }
 
 function nodeDisplayLabel(node: StudioNode): string {
@@ -112,7 +115,7 @@ function PreviewNode({ form, node, value, onInput }: {
   readonly form: StudioFormDocument;
   readonly node: StudioRenderNode;
   readonly value: unknown;
-  readonly onInput: (node: StudioRenderNode, value: string) => void;
+  readonly onInput: (node: StudioRenderNode, value: boolean | number | string) => void;
 }) {
   if (node.kind === "group") {
     return <fieldset className="studio-v1-preview__group">{node.children.map((child) => (
@@ -120,16 +123,109 @@ function PreviewNode({ form, node, value, onInput }: {
     ))}</fieldset>;
   }
   const label = nodeLabel(form, node.uid);
+  const field = form.nodes[node.uid];
+  if (field?.kind !== "field") return null;
+  const definition = studioFieldDefinition(field.definition);
+  if (!definition) return null;
+  const currentValue = getAtPath(value, node.runtimePath) ?? definition.value.emptyValue;
+  const description = typeof field.props["helpText"] === "string" ? field.props["helpText"] : "";
+  const descriptionId = description.length > 0 ? `${node.uid}-help` : undefined;
+  const common = {
+    className: "ui-input",
+    "aria-describedby": descriptionId,
+  };
+  const control = definition.preview.control === "checkbox" ? (
+    <input {...common} type="checkbox" checked={Boolean(currentValue)} onChange={(event) => onInput(node, event.currentTarget.checked)} />
+  ) : definition.preview.control === "textarea" ? (
+    <textarea {...common} rows={typeof field.props["rows"] === "number" ? field.props["rows"] : 4} value={String(currentValue)} onChange={(event) => onInput(node, event.currentTarget.value)} />
+  ) : definition.preview.control === "select" ? (
+    <select {...common} value={String(currentValue)} onChange={(event) => onInput(node, event.currentTarget.value)}>
+      <option value="">Choose…</option>
+      {String(field.props["options"] ?? "").split("\n").map((option) => option.trim()).filter(Boolean).map((option) => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+  ) : (
+    <input
+      {...common}
+      type={definition.preview.control}
+      value={String(currentValue)}
+      placeholder={typeof field.props["placeholder"] === "string" ? field.props["placeholder"] : undefined}
+      min={typeof field.props["min"] === "number" || typeof field.props["min"] === "string" ? field.props["min"] : undefined}
+      max={typeof field.props["max"] === "number" || typeof field.props["max"] === "string" ? field.props["max"] : undefined}
+      step={typeof field.props["step"] === "number" ? field.props["step"] : undefined}
+      onChange={(event) => onInput(node, definition.value.kind === "number" ? event.currentTarget.valueAsNumber : event.currentTarget.value)}
+    />
+  );
   return (
     <label className="studio-field">
       <span>{label}</span>
-      <input
-        className="ui-input"
-        value={String(getAtPath(value, node.runtimePath) ?? "")}
-        onChange={(event) => onInput(node, event.currentTarget.value)}
-      />
+      {control}
+      {descriptionId && <small id={descriptionId}>{description}</small>}
     </label>
   );
+}
+
+function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
+  if (control.control === "checkbox") return typeof draft === "boolean"
+    ? { ok: true, value: draft }
+    : { ok: false, message: `${control.label} must be true or false.` };
+  if (typeof draft !== "string") return { ok: false, message: `${control.label} must be text.` };
+  if (control.required && draft.trim().length === 0) return { ok: false, message: `${control.label} is required.` };
+  if (control.control !== "number") return { ok: true, value: draft };
+  if (draft.trim().length === 0 || !Number.isFinite(Number(draft))) return { ok: false, message: `${control.label} must be a finite number.` };
+  const value = Number(draft);
+  if (control.min !== undefined && value < control.min) return { ok: false, message: `${control.label} must be at least ${control.min}.` };
+  if (control.max !== undefined && value > control.max) return { ok: false, message: `${control.label} must be at most ${control.max}.` };
+  return { ok: true, value };
+}
+
+function FieldInspector({ node, onUpdate }: {
+  readonly node: StudioFieldNode;
+  readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
+}) {
+  const definition = studioFieldDefinition(node.definition);
+  const [drafts, setDrafts] = useState<Readonly<Record<string, string | boolean>>>(() => Object.fromEntries(
+    definition?.props.map((control) => [control.key, control.control === "checkbox"
+      ? Boolean(node.props[control.key] ?? control.defaultValue)
+      : String(node.props[control.key] ?? control.defaultValue ?? "")]) ?? [],
+  ));
+  const [errors, setErrors] = useState<Readonly<Record<string, string>>>({});
+  if (!definition) return <p>This field definition is not available.</p>;
+  const change = (control: StudioPropControl, draft: string | boolean) => {
+    setDrafts((current) => ({ ...current, [control.key]: draft }));
+    const parsed = parseControlDraft(control, draft);
+    if (!parsed.ok) {
+      setErrors((current) => ({ ...current, [control.key]: parsed.message }));
+      return;
+    }
+    const nextProps = { ...node.props, [control.key]: parsed.value } satisfies JsonObject;
+    const issue = validateStudioFieldProps(definition, nextProps)[0];
+    if (issue) {
+      setErrors((current) => ({ ...current, [control.key]: issue.message }));
+      return;
+    }
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[control.key];
+      return next;
+    });
+    onUpdate(node, { props: nextProps }, `Edit ${definition.displayName} ${control.label.toLowerCase()}`, `props.${control.key}:${node.uid}`);
+  };
+  return <fieldset className="studio-v1-field-inspector">
+    <legend>{definition.displayName} properties</legend>
+    {definition.props.map((control) => {
+      const errorId = errors[control.key] ? `${node.uid}-${control.key}-error` : undefined;
+      const draft = drafts[control.key] ?? (control.control === "checkbox" ? false : "");
+      return <label className="studio-field" key={control.key}>
+        <span>{control.label}</span>
+        {control.control === "textarea" ? <textarea className="ui-input" value={String(draft)} aria-invalid={Boolean(errorId)} aria-describedby={errorId} onChange={(event) => change(control, event.currentTarget.value)} />
+          : control.control === "checkbox" ? <input type="checkbox" checked={Boolean(draft)} aria-invalid={Boolean(errorId)} aria-describedby={errorId} onChange={(event) => change(control, event.currentTarget.checked)} />
+            : <input className="ui-input" type={control.control === "number" ? "text" : "text"} inputMode={control.control === "number" ? "decimal" : undefined} value={String(draft)} aria-invalid={Boolean(errorId)} aria-describedby={errorId} onChange={(event) => change(control, event.currentTarget.value)} />}
+        {errorId && <small id={errorId} role="alert">{errors[control.key]}</small>}
+      </label>;
+    })}
+  </fieldset>;
 }
 
 function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocument; readonly compiled: CompiledStudioForm }) {
@@ -176,6 +272,11 @@ function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
   readonly onBulkLabel: (nodes: readonly StudioFieldNode[], label: string) => void;
 }) {
   const [bulkLabel, setBulkLabel] = useState("");
+  const [runtimeIdDraft, setRuntimeIdDraft] = useState(() => {
+    const selected = nodes[0];
+    return selected?.kind === "block" || selected === undefined ? "" : selected.runtimeId;
+  });
+  const [runtimeIdError, setRuntimeIdError] = useState("");
 
   if (nodes.length === 0) return <p>Select an item in the outline or canvas.</p>;
   if (nodes.length > 1) {
@@ -204,25 +305,25 @@ function SelectionInspector({ nodes, onUpdate, onBulkLabel }: {
           <span>Runtime ID</span>
           <input
             className="ui-input"
-            value={node.runtimeId}
-            onChange={(event) => onUpdate(node, { runtimeId: event.currentTarget.value }, "Rename runtime ID", `runtimeId:${node.uid}`)}
+            value={runtimeIdDraft}
+            aria-invalid={runtimeIdError.length > 0}
+            aria-describedby={runtimeIdError.length > 0 ? `${node.uid}-runtime-id-error` : undefined}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              setRuntimeIdDraft(value);
+              if (value.length === 0 || value.length > 128 || !isSafeObjectKey(value)) {
+                setRuntimeIdError("Runtime ID must be a safe, non-empty identifier of at most 128 characters.");
+                return;
+              }
+              setRuntimeIdError("");
+              onUpdate(node, { runtimeId: value }, "Rename runtime ID", `runtimeId:${node.uid}`);
+            }}
           />
+          {runtimeIdError.length > 0 && <small id={`${node.uid}-runtime-id-error`} role="alert">{runtimeIdError}</small>}
         </label>
       )}
       {node.kind === "field" && (
-        <label className="studio-field">
-          <span>Label</span>
-          <input
-            className="ui-input"
-            value={String(node.props["label"] ?? "")}
-            onChange={(event) => onUpdate(
-              node,
-              { props: { ...node.props, label: event.currentTarget.value } satisfies JsonObject },
-              "Edit field label",
-              `props.label:${node.uid}`,
-            )}
-          />
-        </label>
+        <FieldInspector node={node} onUpdate={onUpdate} />
       )}
     </div>
   );
@@ -382,22 +483,22 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     }));
   };
 
-  const insertText = () => {
-    const node = nextTextField(form);
+  const insertField = (definition: AnyStudioAuthoringFieldDefinition) => {
+    const node = nextField(form, definition);
     const result = dispatchStudioCommand(history, {
       type: "node.insert",
       formUid: form.uid,
       parentUid: null,
       index: form.rootNodeUids.length,
       node,
-    }, { label: "Add text field" });
+    }, { label: `Add ${definition.displayName}` });
     if (result.ok) {
       setHistory(result.history);
       setNavigation((current) => ({
         ...current,
         workbench: selectStudioUid(current.workbench, node.uid, [...visibleOutlineUids, node.uid]),
       }));
-      setStatus("Text field added");
+      setStatus(`${definition.displayName} added`);
     } else setStatus(result.failure.message);
   };
 
@@ -496,7 +597,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           />
           <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
             <h2 id="studio-v1-palette-title">Fields</h2>
-            <Button variant="outline" disabled={loading} onClick={insertText}>Add text field</Button>
+            {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => (
+              <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}>
+                Add {definition.displayName.toLowerCase()}
+              </Button>
+            ))}
           </section>
         </div>
         <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">

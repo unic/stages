@@ -1,4 +1,4 @@
-import type { StudioProjectDocument, Uid } from "../document/types";
+import type { StudioDefinitionRef, StudioProjectDocument, Uid } from "../document/types";
 
 export interface LegacyStudioInput {
   readonly config: unknown;
@@ -9,6 +9,7 @@ export interface LegacyStudioInput {
 
 export interface LegacyImportOptions {
   readonly fieldTypes: readonly string[];
+  readonly fieldDefinitionAliases?: Readonly<Record<string, StudioDefinitionRef>>;
   readonly blockTypes?: readonly string[];
   readonly projectUid?: Uid;
   readonly formUid?: Uid;

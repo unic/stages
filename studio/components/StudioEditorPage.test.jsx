@@ -54,6 +54,22 @@ function outlineProjectSnapshot() {
   };
 }
 
+function emptyProjectSnapshot() {
+  const snapshot = outlineProjectSnapshot();
+  const form = snapshot.project.forms[toUid("form_outline")];
+  return {
+    ...snapshot,
+    title: "Empty project",
+    project: {
+      ...snapshot.project,
+      project: { ...snapshot.project.project, title: "Empty project" },
+      forms: {
+        [toUid("form_outline")]: { ...form, rootNodeUids: [], nodes: {} },
+      },
+    },
+  };
+}
+
 describe("StudioEditorPage interactions", () => {
   beforeEach(() => {
     useStagesStore.setState({
@@ -135,6 +151,25 @@ describe("StudioEditorPage interactions", () => {
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
     expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
+  });
+
+  it("generates the field palette and keeps invalid inspector drafts out of command history", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([emptyProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    for (const name of ["text field", "text area", "number", "choice", "checkbox", "date"]) {
+      expect(screen.getByRole("button", { name: `Add ${name}` })).toBeVisible();
+    }
+
+    await user.click(screen.getByRole("button", { name: "Add number" }));
+    expect(screen.getByRole("spinbutton", { name: "Number" })).toBeVisible();
+    fireEvent.change(screen.getByRole("textbox", { name: "Minimum" }), { target: { value: "-" } });
+    expect(screen.getByRole("alert")).toHaveTextContent("Minimum must be a finite number.");
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.queryByRole("spinbutton", { name: "Number" })).toBeNull();
   });
 
   it("coordinates keyboard outline navigation, multi-selection, bulk edits, and Problems", async () => {

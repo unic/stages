@@ -115,7 +115,7 @@ describe("Studio preview host", () => {
     expect(latest).toHaveBeenCalledTimes(1);
     expect(first).not.toHaveBeenCalled();
 
-    const changedRegistry = { text: { ...artifact.fields.text } };
+    const changedRegistry = { ...artifact.fields, text: { ...artifact.fields.text } };
     host.update({
       compiled: { ...artifact, fields: changedRegistry },
       value: initialValue,

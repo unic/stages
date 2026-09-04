@@ -80,6 +80,29 @@ describe("legacy Studio project importer", () => {
     }
   });
 
+  it("normalizes migrated legacy field aliases at the import boundary", () => {
+    const result = importLegacyStudioProject({ config: [
+      { id: "meal", type: "select", label: "Meal" },
+      { id: "arrival", type: "calendar", label: "Arrival" },
+    ] }, {
+      fieldTypes: ["select", "calendar"],
+      fieldDefinitionAliases: {
+        select: { key: "choice", version: 1 },
+        calendar: { key: "date", version: 1 },
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const form = result.value.forms[toUid("legacy_form")]!;
+    expect(form.rootNodeUids.map((uid) => {
+      const node = form.nodes[uid];
+      return node?.kind === "field" ? node.definition : undefined;
+    })).toEqual([
+      { key: "choice", version: 1 },
+      { key: "date", version: 1 },
+    ]);
+  });
+
   it("retains unsupported expression source inertly and never executes it", () => {
     let calls = 0;
     const source = () => { calls += 1; return true; };

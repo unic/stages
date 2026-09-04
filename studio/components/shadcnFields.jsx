@@ -24,6 +24,7 @@ import {
 } from "./ui/field-controls";
 import useStagesStore from "./store";
 import { parseTemplateLiterals, textHasTemplateLiterals } from "./helpers";
+import { createMigratedLegacyViews } from "./v1/legacyFieldAdapters";
 import { useShallow } from "zustand/react/shallow";
 
 const EMPTY_DATA = Object.freeze({});
@@ -693,40 +694,24 @@ const MappedDivider = (props) => {
 };
 
 const shadcnFields = {
-  text: {
-    component: MappedInputText,
-    isValid: isValid,
-  },
+  ...createMigratedLegacyViews({
+    text: { component: MappedInputText, isValid },
+    textarea: { component: MappedInputTextarea, isValid },
+    number: { component: MappedInputNumber, isValid },
+    choice: { component: MappedDropdown, isValid },
+    checkbox: { component: MappedCheckbox, isValid },
+    date: { component: MappedCalendar, isValid },
+  }),
   blurtext: {
     component: MappedInputTextBlur,
-    isValid: isValid,
-  },
-  number: {
-    component: MappedInputNumber,
     isValid: isValid,
   },
   slider: {
     component: MappedSlider,
     isValid: isValid,
   },
-  textarea: {
-    component: MappedInputTextarea,
-    isValid: isValid,
-  },
   editor: {
     component: MappedEditor,
-    isValid: isValid,
-  },
-  select: {
-    component: MappedDropdown,
-    isValid: isValid,
-  },
-  calendar: {
-    component: MappedCalendar,
-    isValid: isValid,
-  },
-  checkbox: {
-    component: MappedCheckbox,
     isValid: isValid,
   },
   switch: {

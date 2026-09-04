@@ -1,15 +1,8 @@
-import type {
-  DataPath,
-  FieldDefinition,
-  NodeAddress,
-  StagesSchema,
-} from "@stages/core";
+import type { DataPath, NodeAddress, StagesSchema } from "@stages/core";
 import type { JsonObject, StudioNode, Uid } from "../document";
+import type { StudioFieldRegistry } from "../registry";
 
-export type StudioTextFieldDefinition = FieldDefinition<string, JsonObject, "text">;
-export interface StudioFieldRegistry {
-  readonly text: StudioTextFieldDefinition;
-}
+export type { StudioFieldRegistry } from "../registry";
 
 export interface StudioDiagnostic {
   readonly code: string;

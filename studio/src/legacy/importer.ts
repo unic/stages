@@ -28,6 +28,7 @@ interface ImportContext {
   readonly nodes: Record<string, StudioNode>;
   readonly usedUids: Set<string>;
   readonly fieldTypes: Set<string>;
+  readonly fieldDefinitionAliases: Readonly<Record<string, { readonly key: string; readonly version: number }>>;
   readonly blockTypes: Set<string>;
   readonly fieldsets: Map<string, Record<string, unknown>>;
 }
@@ -284,11 +285,12 @@ function importNodes(
     } else if (context.blockTypes.has(type)) {
       context.nodes[uid] = { ...common, kind: "block", definition: { key: `block:${type}`, version: 1 }, props: props(item, context, itemPath) };
     } else if (context.fieldTypes.has(type)) {
+      const definition = context.fieldDefinitionAliases[type] ?? { key: type, version: 1 };
       context.nodes[uid] = {
         ...common,
         kind: "field",
         runtimeId: id,
-        definition: { key: type, version: 1 },
+        definition,
         props: props(item, context, itemPath),
         ...(item["isRequired"] === true ? { validators: [{ kind: "required", message: `${String(item["label"] ?? id)} is required.` }] } : {}),
       };
@@ -320,6 +322,7 @@ export function importLegacyStudioProject(
     nodes: {},
     usedUids: new Set<string>(),
     fieldTypes: new Set(options.fieldTypes),
+    fieldDefinitionAliases: options.fieldDefinitionAliases ?? {},
     blockTypes: new Set(options.blockTypes ?? DEFAULT_BLOCK_TYPES),
     fieldsets,
   };
@@ -360,7 +363,10 @@ export function importLegacyStudioProject(
     resources: { migration: { source: "studio-poc" } },
   };
   const supportedDefinitions = Object.fromEntries([
-    ...options.fieldTypes.map((key) => [key, [1] as const]),
+    ...options.fieldTypes.map((key) => {
+      const reference = options.fieldDefinitionAliases?.[key] ?? { key, version: 1 };
+      return [reference.key, [reference.version] as const];
+    }),
     ...(options.blockTypes ?? DEFAULT_BLOCK_TYPES).map((key) => [`block:${key}`, [1] as const]),
   ]);
   const validated = validateStudioProject(candidate, { supportedDefinitions });

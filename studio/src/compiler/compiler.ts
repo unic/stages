@@ -1,6 +1,11 @@
 import type { DataPath, NodeAddress, NodeConfig } from "@stages/core";
 import type { StudioFormDocument, StudioNode, Uid } from "../document";
 import { isSafeObjectKey } from "../document";
+import {
+  STUDIO_RUNTIME_FIELDS,
+  studioFieldDefinition,
+  validateStudioFieldProps,
+} from "../registry";
 import { studioRuntimeAddressKey, studioRuntimePathKey } from "./source-map";
 import type {
   CompiledStudioForm,
@@ -9,20 +14,6 @@ import type {
   StudioRenderNode,
   StudioSourceMapEntry,
 } from "./types";
-
-export const STUDIO_TEXT_FIELD_DEFINITION = Object.freeze({
-  view: "text",
-  initialValue: "",
-  reduce({ event }) {
-    return event.name === "input" && typeof event.payload === "string"
-      ? { value: event.payload }
-      : undefined;
-  },
-} satisfies StudioFieldRegistry["text"]);
-
-export const STUDIO_MINIMAL_FIELDS: StudioFieldRegistry = Object.freeze({
-  text: STUDIO_TEXT_FIELD_DEFINITION,
-});
 
 interface CompileContext {
   readonly form: StudioFormDocument;
@@ -175,7 +166,8 @@ function compileNode(
 
   if (node.kind === "field") {
     context.visiting.delete(node.uid);
-    if (node.definition.key !== "text" || node.definition.version !== 1) {
+    const definition = studioFieldDefinition(node.definition);
+    if (!definition) {
       diagnostic(
         context,
         "compiler.unsupported-field-definition",
@@ -189,11 +181,22 @@ function compileNode(
       );
       return undefined;
     }
+    for (const issue of validateStudioFieldProps(definition, node.props)) diagnostic(
+      context,
+      "compiler.invalid-field-prop",
+      issue.message,
+      {
+        entityUid: node.uid,
+        propertyPath: ["nodes", node.uid, "props", issue.key],
+        runtimePath,
+        runtimeAddress,
+      },
+    );
     return {
       schema: {
         kind: "field",
         id: node.runtimeId,
-        type: "text",
+        type: definition.key,
         props: node.props,
         ...(typeof node.behavior?.disabled === "boolean" ? { disabled: node.behavior.disabled } : {}),
       },
@@ -253,7 +256,7 @@ export function compileStudioForm(form: StudioFormDocument): CompiledStudioForm 
       version: form.runtime.schemaVersion,
       nodes: nodes.map((node) => node.schema),
     },
-    fields: STUDIO_MINIMAL_FIELDS,
+    fields: STUDIO_RUNTIME_FIELDS,
     renderPlan: { formUid: form.uid, nodes: nodes.map((node) => node.render) },
     sourceMap: {
       byUid: context.byUid,
