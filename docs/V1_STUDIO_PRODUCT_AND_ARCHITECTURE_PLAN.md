@@ -9,6 +9,8 @@ Execution status:
 - Session 01 completed: [`../studio/LEGACY_POC_BASELINE.md`](../studio/LEGACY_POC_BASELINE.md)
 - Session 02 completed: [`../studio/docs/decisions/README.md`](../studio/docs/decisions/README.md)
   and [`../studio/docs/PRODUCT_GATES.md`](../studio/docs/PRODUCT_GATES.md)
+- Session 03 completed: strict Studio TypeScript and dependency boundaries are
+  enforced by `npm --prefix studio run check`
 
 Primary references:
 

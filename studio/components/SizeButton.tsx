@@ -1,6 +1,21 @@
+import type { MouseEvent } from "react";
 import { Button } from "./ui/button";
 
-const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
+export type BlockWidthSize = "S" | "M" | "L";
+
+export interface SizeButtonProps {
+  readonly size: BlockWidthSize;
+  readonly isActive: boolean;
+  readonly type?: "fieldset" | "field";
+  readonly onChangeBlockWidth?: (size: BlockWidthSize) => void;
+}
+
+export default function SizeButton({
+  size,
+  isActive,
+  type,
+  onChangeBlockWidth,
+}: SizeButtonProps) {
   return (
     <Button
       size="icon"
@@ -33,14 +48,12 @@ const SizeButton = ({ size, isActive, type, onChangeBlockWidth }) => {
         width: "14px",
         textAlign: "center",
       }}
-      onClick={(e) => {
-        e.preventDefault();
-        if (onChangeBlockWidth) onChangeBlockWidth(size);
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        onChangeBlockWidth?.(size);
       }}
     >
       {size}
     </Button>
   );
-};
-
-export default SizeButton;
+}

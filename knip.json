@@ -71,17 +71,21 @@
     },
     "studio": {
       "entry": [
-        "pages/**/*.{js,jsx}",
-        "components/**/*.{test.js,test.jsx}",
-        "components/v1/*.test.mjs"
+        "pages/**/*.{js,jsx,ts,tsx}",
+        "components/**/*.test.{js,jsx,ts,tsx}",
+        "components/v1/*.test.mjs",
+        "scripts/*.mjs",
+        "src/index.ts"
       ],
       "project": [
-        "pages/**/*.{js,jsx}",
-        "components/**/*.{js,jsx,mjs}",
+        "pages/**/*.{js,jsx,ts,tsx}",
+        "components/**/*.{js,jsx,mjs,ts,tsx}",
         "lib/**/*.js",
         "shared/**/*.js",
-        "test/**/*.js",
-        "*.config.{js,mjs}"
+        "scripts/**/*.mjs",
+        "src/**/*.ts",
+        "test/**/*.{js,ts}",
+        "*.config.{js,mjs,ts}"
       ],
       "includeEntryExports": true
     },

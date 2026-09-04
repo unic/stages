@@ -9,7 +9,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: "./test/setup.js",
+    setupFiles: "./test/setup.ts",
     css: true,
     include: ["components/**/*.benchmark.{js,jsx}"],
   },

@@ -9,6 +9,8 @@ node_modules/
 .env.test
 
 .next
+next-env.d.ts
+*.tsbuildinfo
 .vercel
 out
 out/

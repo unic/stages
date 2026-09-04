@@ -1,6 +1,6 @@
-import { forwardRef } from "react";
+import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { Slot } from "radix-ui";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 const buttonVariants = cva("ui-button", {
@@ -23,8 +23,14 @@ const buttonVariants = cva("ui-button", {
   defaultVariants: { variant: "default", size: "default" },
 });
 
-export const Button = forwardRef(function Button(
-  { className, variant, size, asChild = false, ...props },
+export interface ButtonProps
+  extends ComponentPropsWithoutRef<"button">,
+    VariantProps<typeof buttonVariants> {
+  readonly asChild?: boolean;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { className, variant, size, asChild = false, type, ...props },
   ref,
 ) {
   const Comp = asChild ? Slot.Root : "button";
@@ -32,7 +38,7 @@ export const Button = forwardRef(function Button(
     <Comp
       ref={ref}
       className={cn(buttonVariants({ variant, size }), className)}
-      {...(!asChild && props.type === undefined ? { type: "button" } : {})}
+      {...(!asChild && type === undefined ? { type: "button" as const } : { type })}
       {...props}
     />
   );

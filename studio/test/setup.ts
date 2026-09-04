@@ -1,21 +1,28 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
 });
 
-class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+class TestResizeObserver implements ResizeObserver {
+  readonly root = null;
+  readonly rootMargin = "0px";
+  readonly thresholds = [0];
+
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): ResizeObserverEntry[] { return []; }
 }
 
-window.ResizeObserver = ResizeObserver;
+window.ResizeObserver = TestResizeObserver;
 window.matchMedia ??= () => ({
   matches: false,
+  media: "",
+  onchange: null,
   addListener() {},
   removeListener() {},
   addEventListener() {},

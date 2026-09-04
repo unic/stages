@@ -103,7 +103,7 @@ for Gate A. Domain modules cannot depend on either Next.js router.
 - [x] Local-beta and hosted-product boundaries are named.
 - [x] Browser, accessibility, data-loss, project-size, publication, and routing
   decisions are explicit.
-- [ ] Strict TypeScript module boundaries run in CI.
+- [x] Strict TypeScript module boundaries run in CI.
 - [ ] Document v1 and its migration policy are reviewed.
 
 The remaining Gate A work belongs to Sessions 03 and 04.
