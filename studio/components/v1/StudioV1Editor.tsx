@@ -12,8 +12,9 @@ import type { StudioHistoryState } from "../../src/commands/types";
 import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
-import { isStudioVariantCollection, type JsonObject, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type Uid } from "../../src/document/types";
-import type { StudioExpression } from "../../src/expressions/types";
+import { isStudioVariantCollection, type JsonObject, type JsonValue, type StudioFieldNode, type StudioFormDocument, type StudioFragmentDefinition, type StudioFragmentInstanceNode, type StudioNode, type StudioProjectDocument, type StudioScenario, type Uid } from "../../src/document/types";
+import type { StudioExpression, StudioExpressionContext } from "../../src/expressions/types";
+import { evaluateStudioExpression } from "../../src/expressions/evaluator";
 import {
   STUDIO_FIELD_DEFINITIONS,
   STUDIO_BLOCK_DEFINITIONS,
@@ -59,6 +60,11 @@ import {
 interface StudioV1EditorProps {
   readonly repository?: StudioProjectRepository;
 }
+
+const STUDIO_JSON_EXTENSION_CODEC = Object.freeze({
+  encode: (extensionValue: unknown) => extensionValue as JsonValue,
+  decode: (extensionValue: JsonValue) => extensionValue,
+});
 
 function firstForm(project: StudioHistoryState["present"]): StudioFormDocument | undefined {
   return Object.values(project.forms)[0];
@@ -108,6 +114,7 @@ function nextProjectUid(project: StudioProjectDocument, stem: string): Uid {
     ...Object.keys(project.forms),
     ...Object.keys(project.fragments),
     ...Object.values(project.forms).flatMap((form) => Object.keys(form.nodes)),
+    ...Object.values(project.forms).flatMap((form) => form.scenarios.map(({ uid }) => uid)),
     ...Object.values(project.fragments).flatMap((fragment) => Object.keys(fragment.nodes)),
   ]);
   const safeStem = stem.replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 118) || "entity";
@@ -225,15 +232,28 @@ function PreviewBlock({ node }: { readonly node: Extract<StudioRenderNode, { rea
   return <PreviewLayout node={node}>{content}</PreviewLayout>;
 }
 
-function PreviewFieldControl({ definition, field, node, currentValue, descriptionId, onInput }: {
+function PreviewDynamicBlock({ form, node, expressionContext }: {
+  readonly form: StudioFormDocument;
+  readonly node: Extract<StudioRenderNode, { readonly kind: "block" }>;
+  readonly expressionContext: StudioExpressionContext;
+}) {
+  const source = form.nodes[node.uid];
+  const present = source?.behavior?.presentWhen === undefined ? undefined : evaluateStudioExpression(source.behavior.presentWhen, expressionContext);
+  const visible = source?.behavior?.when === undefined ? undefined : evaluateStudioExpression(source.behavior.when, expressionContext);
+  if ((present?.ok && present.value === false) || (visible?.ok && visible.value === false)) return null;
+  return <PreviewBlock node={node} />;
+}
+
+function PreviewFieldControl({ definition, field, node, currentValue, descriptionId, disabled, onInput }: {
   readonly definition: AnyStudioAuthoringFieldDefinition;
   readonly field: StudioFieldNode;
   readonly node: StudioRuntimeRenderNode<"field">;
   readonly currentValue: unknown;
   readonly descriptionId?: string;
+  readonly disabled: boolean;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
 }) {
-  const common = { className: "ui-input", "aria-describedby": descriptionId };
+  const common = { className: "ui-input", "aria-describedby": descriptionId, disabled };
   if (definition.preview.control === "checkbox") {
     return <input {...common} type="checkbox" checked={Boolean(currentValue)} onChange={(event) => onInput(node, event.currentTarget.checked)} />;
   }
@@ -260,9 +280,10 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
   />;
 }
 
-function PreviewField({ form, node, value, onInput }: {
+function PreviewField({ form, node, snapshot, value, onInput }: {
   readonly form: StudioFormDocument;
   readonly node: StudioRuntimeRenderNode<"field">;
+  readonly snapshot: Extract<RenderNodeSnapshot, { readonly kind: "field" }>;
   readonly value: unknown;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
 }) {
@@ -270,15 +291,16 @@ function PreviewField({ form, node, value, onInput }: {
   if (field?.kind !== "field") return null;
   const definition = studioFieldDefinition(field.definition);
   if (!definition) return null;
-  const description = typeof field.props["helpText"] === "string" ? field.props["helpText"] : "";
+  const description = typeof snapshot.props["helpText"] === "string" ? snapshot.props["helpText"] : "";
   const descriptionId = description.length > 0 ? `${node.uid}-help` : undefined;
   return <PreviewLayout node={node}><label className="studio-field">
-    <span>{nodeLabel(form, node.uid)}</span>
+    <span>{typeof snapshot.props["label"] === "string" ? snapshot.props["label"] : nodeLabel(form, node.uid)}</span>
     <PreviewFieldControl
       definition={definition}
       field={field}
       node={node}
       currentValue={getAtPath(value, node.runtimePath) ?? definition.value.emptyValue}
+      disabled={snapshot.state.disabled}
       {...(descriptionId === undefined ? {} : { descriptionId })}
       onInput={onInput}
     />
@@ -315,6 +337,7 @@ interface PreviewNodeProps {
   readonly value: unknown;
   readonly snapshotNodes: readonly RenderNodeSnapshot[];
   readonly runtimePath: DataPath | undefined;
+  readonly expressionContext: StudioExpressionContext;
   readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
   readonly onStructureEvent: (event: StagesEvent) => void;
 }
@@ -341,7 +364,7 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
       const rowSnapshot = snapshot?.kind === "collection" ? snapshot.nodes[index] : undefined;
       const rowKey = rowSnapshot?.kind === "row" ? rowSnapshot.id : `unavailable-${JSON.stringify(row)}`;
       return <div className="studio-v1-preview__row" data-row-index={index} key={rowKey}>{children.map((child) => (
-        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
+        <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} expressionContext={{ ...props.expressionContext, row }} onInput={onInput} onStructureEvent={onStructureEvent} />
       ))}<button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canRemove === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:remove", snapshot.address, { payload: { index } }))}>Remove row {index + 1}</button></div>;
     })}</div></PreviewLayout>;
 }
@@ -358,26 +381,28 @@ function PreviewWizard(props: PreviewNodeProps & { readonly node: StudioRuntimeR
         <button type="button" disabled={snapshot.canNext !== true} onClick={() => onStructureEvent(nodeEvent("wizard:next", snapshot.address))}>Next</button>
       </nav>}
       {stages.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={props.expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
     ))}</div></PreviewLayout>;
 }
 
 function PreviewNode(props: PreviewNodeProps) {
-  const { form, node, value, snapshotNodes, runtimePath, onInput, onStructureEvent } = props;
+  const { form, node, value, snapshotNodes, runtimePath, expressionContext, onInput, onStructureEvent } = props;
   if (node.hidden) return null;
-  if (node.kind === "block") return <PreviewBlock node={node} />;
+  if (node.kind === "block") return <PreviewDynamicBlock form={form} node={node} expressionContext={expressionContext} />;
   const path = runtimePath ?? node.runtimePath;
+  const snapshot = findPreviewSnapshot(snapshotNodes, path);
+  if (snapshot === undefined || snapshot.state.visible === false) return null;
   if (node.kind === "group") {
     return <PreviewLayout node={node}><fieldset className="studio-v1-preview__group">{node.children.map((child) => (
-      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
+      <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
     ))}</fieldset></PreviewLayout>;
   }
   if (node.kind === "collection") return <PreviewCollection {...props} node={node} path={path} />;
   if (node.kind === "wizard") return <PreviewWizard {...props} node={node} path={path} />;
   if (node.kind === "stage" || node.kind === "variant") return <PreviewLayout node={node}><div className={`studio-v1-preview__${node.kind}`}>{node.children.map((child) => (
-    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} onInput={onInput} onStructureEvent={onStructureEvent} />
+    <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, path, child)} expressionContext={expressionContext} onInput={onInput} onStructureEvent={onStructureEvent} />
   ))}</div></PreviewLayout>;
-  return <PreviewField form={form} node={{ ...node, runtimePath: path }} value={value} onInput={onInput} />;
+  return snapshot.kind === "field" ? <PreviewField form={form} node={{ ...node, runtimePath: path }} snapshot={snapshot} value={value} onInput={onInput} /> : null;
 }
 
 function parseControlDraft(control: StudioPropControl, draft: string | boolean): { readonly ok: true; readonly value: boolean | number | string } | { readonly ok: false; readonly message: string } {
@@ -495,18 +520,96 @@ function PresentationInspector({ node, onUpdate }: {
   </fieldset>;
 }
 
-function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocument; readonly compiled: CompiledStudioForm }) {
-  const scenario = form.scenarios[0];
-  const [value, setValue] = useState<unknown>(() => scenario?.value ?? createEmptyStudioScenarioValue(form));
+function ScenarioObjectEditor({ scenario, property, label, onUpdate }: {
+  readonly scenario: StudioScenario;
+  readonly property: "context" | "extensions";
+  readonly label: string;
+  readonly onUpdate: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => void;
+}) {
+  const [draft, setDraft] = useState(() => JSON.stringify(scenario[property] ?? {}, null, 2));
+  const [error, setError] = useState("");
+  return <label className="studio-field"><span>{label}</span><textarea className="ui-input" rows={4} value={draft} aria-invalid={error.length > 0} onChange={(event) => {
+    const source = event.currentTarget.value;
+    setDraft(source);
+    try {
+      const value = JSON.parse(source) as unknown;
+      if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("Expected a JSON object.");
+      setError("");
+      onUpdate(scenario, { [property]: value as JsonObject });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Invalid JSON object.");
+    }
+  }} />{error.length > 0 && <small role="alert">{error}</small>}</label>;
+}
+
+function dynamicSnapshotMap(nodes: readonly RenderNodeSnapshot[]): ReadonlyMap<string, RenderNodeSnapshot> {
+  const output = new Map<string, RenderNodeSnapshot>();
+  const visit = (node: RenderNodeSnapshot) => {
+    const key = JSON.stringify(node.address.filter((segment) => segment.kind === "node"));
+    if (!output.has(key)) output.set(key, node);
+    if (node.kind !== "field") for (const child of node.nodes) visit(child);
+  };
+  for (const node of nodes) visit(node);
+  return output;
+}
+
+function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { readonly form: StudioFormDocument; readonly nodes: readonly StudioRenderNode[]; readonly snapshots: readonly RenderNodeSnapshot[]; readonly value: unknown; readonly scenario: StudioScenario | undefined }) {
+  const byAddress = dynamicSnapshotMap(snapshots);
+  const items: Array<{ readonly uid: Uid; readonly label: string; readonly state: string }> = [];
+  const resolvesFalse = (expression: StudioExpression | undefined) => {
+    if (expression === undefined) return false;
+    const result = evaluateStudioExpression(expression, { value, context: scenario?.context, extensions: scenario?.extensions, metadata: {} });
+    return result.ok && result.value === false;
+  };
+  const visit = (node: StudioRenderNode, inheritedState?: string) => {
+    let state = inheritedState;
+    if (node.kind !== "block") {
+      const snapshot = byAddress.get(JSON.stringify(node.runtimeAddress));
+      const documentNode = form.nodes[node.uid];
+      if (snapshot !== undefined) state = !snapshot.state.visible ? "dormant" : snapshot.state.disabled ? "disabled (possibly inherited)" : "active";
+      else if (state === undefined || state === "active") state = resolvesFalse(documentNode?.behavior?.presentWhen)
+        ? "structurally absent"
+        : resolvesFalse(documentNode?.behavior?.when) && node.kind !== "stage" ? "dormant" : "structurally absent";
+      items.push({ uid: node.uid, label: node.runtimePath.join(".") || node.uid, state });
+    }
+    for (const child of node.children) visit(child, state);
+  };
+  for (const node of nodes) visit(node);
+  return <section className="studio-v1-dynamic-state" aria-labelledby="studio-v1-dynamic-state-title"><h3 id="studio-v1-dynamic-state-title">Dynamic structure</h3><ul>{items.map((item) => <li key={item.uid}><span>{item.label}</span><strong>{item.state}</strong></li>)}</ul></section>;
+}
+
+function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: {
+  readonly form: StudioFormDocument;
+  readonly compiled: CompiledStudioForm;
+  readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => void;
+  readonly onAddScenario: () => StudioScenario | undefined;
+}) {
+  const initialScenario = form.scenarios[0];
+  const [activeScenarioUid, setActiveScenarioUid] = useState<Uid | undefined>(initialScenario?.uid);
+  const scenario = form.scenarios.find(({ uid }) => uid === activeScenarioUid) ?? form.scenarios[0];
+  const [value, setValue] = useState<unknown>(() => initialScenario?.value ?? createEmptyStudioScenarioValue(form));
+  const extensionCodecs = useMemo(() => Object.fromEntries(
+    [...new Set(form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {})))].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
+  ), [form.scenarios]);
   const [host] = useState(() => createStudioPreviewHost({
     compiled,
     value,
+    ...(initialScenario?.context === undefined ? {} : { context: initialScenario.context }),
+    ...(initialScenario?.extensions === undefined ? {} : { extensions: initialScenario.extensions }),
+    extensionCodecs,
     onProposal: (proposal) => setValue(proposal.value),
   }));
   const onProposal = useCallback((proposal: Parameters<NonNullable<Parameters<typeof createStudioPreviewHost>[0]["onProposal"]>>[0]) => {
     setValue(proposal.value);
   }, []);
-  const input = useMemo(() => ({ compiled, value, onProposal }), [compiled, onProposal, value]);
+  const input = useMemo(() => ({
+    compiled,
+    value,
+    ...(scenario?.context === undefined ? {} : { context: scenario.context }),
+    ...(scenario?.extensions === undefined ? {} : { extensions: scenario.extensions }),
+    extensionCodecs,
+    onProposal,
+  }), [compiled, extensionCodecs, onProposal, scenario?.context, scenario?.extensions, value]);
   const preview = useStudioPreviewHost(host, input);
   const themeStyle = {
     "--studio-preview-background": compiled.renderPlan.theme.background,
@@ -524,6 +627,22 @@ function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocume
         <h2 id="studio-v1-preview-title">Preview</h2>
         <span>{compiled.diagnostics.length + preview.diagnostics.length} problems</span>
       </div>
+      <section className="studio-v1-scenarios" aria-labelledby="studio-v1-scenarios-title">
+        <h3 id="studio-v1-scenarios-title">Scenario</h3>
+        <label className="studio-field"><span>Named scenario</span><select value={scenario?.uid ?? ""} onChange={(event) => {
+          const next = form.scenarios.find(({ uid }) => uid === event.currentTarget.value);
+          if (next) { setActiveScenarioUid(next.uid); setValue(next.value); }
+        }}><option value="">Generated empty value</option>{form.scenarios.map((item) => <option key={item.uid} value={item.uid}>{item.title}</option>)}</select></label>
+        <Button variant="outline" size="sm" onClick={() => {
+          const added = onAddScenario();
+          if (added) { setActiveScenarioUid(added.uid); setValue(added.value); }
+        }}>Add scenario</Button>
+        {scenario && <div key={scenario.uid} className="studio-v1-scenarios__objects">
+          <ScenarioObjectEditor scenario={scenario} property="context" label="Context JSON" onUpdate={onUpdateScenario} />
+          <ScenarioObjectEditor scenario={scenario} property="extensions" label="Feature flags JSON" onUpdate={onUpdateScenario} />
+        </div>}
+      </section>
+      <DynamicStructurePanel form={form} nodes={compiled.renderPlan.nodes} snapshots={preview.snapshot.nodes} value={value} scenario={scenario} />
       <div className="studio-v1-preview__fields">
         {compiled.renderPlan.nodes.map((node) => (
           <PreviewNode
@@ -533,6 +652,7 @@ function ControlledPreview({ form, compiled }: { readonly form: StudioFormDocume
             value={preview.snapshot.value}
             snapshotNodes={preview.snapshot.nodes}
             runtimePath={undefined}
+            expressionContext={{ value, context: scenario?.context, extensions: scenario?.extensions, metadata: { revision: preview.snapshot.revision } }}
             onInput={(renderNode, nextValue) => preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, {
               payload: nextValue,
               source: "adapter",
@@ -637,20 +757,29 @@ function ExpressionInspector({ node, form, onUpdate }: {
 }) {
   const references = expressionReferences(form);
   const when = node.behavior?.when;
+  const disabled = node.behavior?.disabled;
+  const disabledExpression: StudioExpression | undefined = typeof disabled === "boolean" ? { kind: "literal", value: disabled } : disabled;
+  const presentWhen = node.behavior?.presentWhen;
   const computed = node.kind === "field" ? node.computed : undefined;
-  const setWhen = (expression: StudioExpression | undefined) => {
+  const setBehavior = (key: "disabled" | "presentWhen" | "when", expression: StudioExpression | undefined) => {
     const behavior = { ...node.behavior };
-    if (expression === undefined) delete behavior.when;
-    else behavior.when = expression;
-    onUpdate(node, { behavior: Object.keys(behavior).length === 0 ? undefined : behavior }, "Edit conditional visibility", `logic.when:${node.uid}`);
+    if (expression === undefined) delete behavior[key];
+    else behavior[key] = expression;
+    onUpdate(node, { behavior: Object.keys(behavior).length === 0 ? undefined : behavior }, `Edit dynamic ${key}`, `logic.${key}:${node.uid}`);
   };
   return <fieldset className="studio-v1-expression-inspector">
     <legend>Logic</legend>
-    <label><input type="checkbox" checked={when !== undefined} onChange={(event) => setWhen(event.currentTarget.checked ? { kind: "literal", value: true } : undefined)} /> Conditional visibility</label>
-    {when !== undefined && <StudioExpressionEditor expression={when} label="Visibility expression" references={references} onChange={setWhen} />}
+    <label><input type="checkbox" checked={when !== undefined} onChange={(event) => setBehavior("when", event.currentTarget.checked ? { kind: "literal", value: true } : undefined)} /> Conditional visibility</label>
+    {when !== undefined && <StudioExpressionEditor expression={when} label="Visibility expression" references={references} onChange={(expression) => setBehavior("when", expression)} />}
+    <label><input type="checkbox" checked={disabled !== undefined} onChange={(event) => setBehavior("disabled", event.currentTarget.checked ? { kind: "literal", value: false } : undefined)} /> Dynamic disabled state</label>
+    {disabledExpression !== undefined && <StudioExpressionEditor expression={disabledExpression} label="Disabled expression" references={references} onChange={(expression) => setBehavior("disabled", expression)} />}
+    <label><input type="checkbox" checked={presentWhen !== undefined} onChange={(event) => setBehavior("presentWhen", event.currentTarget.checked ? { kind: "literal", value: true } : undefined)} /> Conditional structure</label>
+    {presentWhen !== undefined && <StudioExpressionEditor expression={presentWhen} label="Structure expression" references={references.filter(({ scope }) => scope !== "row")} onChange={(expression) => setBehavior("presentWhen", expression)} />}
     {node.kind === "field" && <>
       <label><input type="checkbox" checked={computed !== undefined} onChange={(event) => onUpdate(node, { computed: event.currentTarget.checked ? { kind: "reference", scope: "value", path: [] } : undefined }, "Edit computed value", `logic.computed:${node.uid}`)} /> Computed value</label>
       {computed !== undefined && <StudioExpressionEditor expression={computed} label="Computed value expression" references={references} onChange={(expression) => onUpdate(node, { computed: expression }, "Edit computed value", `logic.computed:${node.uid}`)} />}
+      <label><input type="checkbox" checked={node.derivedProps?.["label"] !== undefined} onChange={(event) => onUpdate(node, { derivedProps: event.currentTarget.checked ? { ...node.derivedProps, label: { kind: "literal", value: String(node.props["label"] ?? "") } } : undefined }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)} /> Derived label</label>
+      {node.derivedProps?.["label"] !== undefined && <StudioExpressionEditor expression={node.derivedProps["label"]} label="Derived label expression" references={references} onChange={(expression) => onUpdate(node, { derivedProps: { ...node.derivedProps, label: expression } }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)} />}
     </>}
   </fieldset>;
 }
@@ -1000,6 +1129,27 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } else setStatus(result.failure.message);
   };
 
+  const addScenario = (): StudioScenario | undefined => {
+    const number = form.scenarios.length + 1;
+    const scenario: StudioScenario = {
+      uid: nextProjectUid(history.present, `scenario_${number}`),
+      title: `Scenario ${number}`,
+      value: createEmptyStudioScenarioValue(form, history.present.fragments),
+      context: {},
+      extensions: {},
+    };
+    const result = dispatchStudioCommand(history, { type: "scenario.insert", formUid: form.uid, index: form.scenarios.length, scenario }, { label: `Add ${scenario.title}` });
+    if (!result.ok) { setStatus(result.failure.message); return undefined; }
+    setHistory(result.history);
+    setStatus(`${scenario.title} added`);
+    return scenario;
+  };
+
+  const updateScenario = (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => {
+    const result = dispatchStudioCommand(history, { type: "scenario.update", formUid: form.uid, uid: scenario.uid, changes }, { label: `Edit ${scenario.title}`, coalesceKey: `scenario:${scenario.uid}:${Object.keys(changes)[0] ?? "settings"}` });
+    if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
+  };
+
   const createFragment = () => {
     const uids = selectedNodes.map(({ uid }) => uid);
     if (uids.length === 0) { setStatus("Select one or more nodes to create a fragment."); return; }
@@ -1182,7 +1332,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         </aside>
       </div>
       <ProblemsPanel diagnostics={compiled.diagnostics} onNavigate={navigateProblem} />
-      <ControlledPreview form={compiled.expandedForm} compiled={compiled} />
+      <ControlledPreview form={compiled.expandedForm} compiled={compiled} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
     </main>
   );
 }

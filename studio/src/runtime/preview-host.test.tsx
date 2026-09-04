@@ -4,7 +4,7 @@ import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
 import { compileStudioForm, type CompiledStudioForm } from "../compiler";
-import { toUid, validateStudioProject } from "../document";
+import { toUid, validateStudioProject, type StudioFieldNode, type StudioFormDocument } from "../document";
 import {
   createStudioPreviewHost,
   useStudioPreviewHost,
@@ -99,7 +99,7 @@ describe("Studio preview host", () => {
     const initialRevision = host.getSnapshot().revision;
 
     host.update({
-      compiled: { ...artifact, schema: { ...artifact.schema } },
+      compiled: { ...artifact, schema: { ...artifact.schema }, schemaInput: { ...artifact.schema } },
       value: initialValue,
       context: { locale: "de-CH" },
       extensions: {},
@@ -127,6 +127,44 @@ describe("Studio preview host", () => {
     originalController.dispatch(fieldEvent("input", ["event", "title"], { payload: "Stale" }));
     await publish();
     expect(latest).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves the last valid dynamic tree, recovers, and diagnoses incompatible identity", async () => {
+    const dynamicUid = toUid("field_dynamic");
+    const dynamicForm: StudioFormDocument = {
+      uid: formUid, title: "Dynamic", runtime: { schemaId: "dynamic", schemaVersion: 1 }, rootNodeUids: [dynamicUid],
+      nodes: {
+        [dynamicUid]: {
+          uid: dynamicUid, kind: "field", runtimeId: "dynamic", definition: { key: "text", version: 1 }, props: { label: "Dynamic" },
+          behavior: { presentWhen: { kind: "reference", scope: "context", path: ["enabled"] } },
+        },
+      }, scenarios: [], settings: {},
+    };
+    const dynamicCompiled = compileStudioForm(dynamicForm);
+    const host = createStudioPreviewHost({ compiled: dynamicCompiled, value: { dynamic: "" }, context: { enabled: true } });
+    expect(host.getSnapshot().nodes.map(({ id }) => id)).toEqual(["dynamic"]);
+
+    host.update({ compiled: dynamicCompiled, value: { dynamic: "" }, context: {} });
+    await publish();
+    expect(host.getSnapshot().nodes.map(({ id }) => id)).toEqual(["dynamic"]);
+    expect(host.getSnapshot().diagnostics).toContainEqual(expect.objectContaining({ code: "schema.factory-failed" }));
+
+    host.update({ compiled: dynamicCompiled, value: { dynamic: "" }, context: { enabled: false } });
+    await publish();
+    expect(host.getSnapshot().nodes).toEqual([]);
+    expect(host.getSnapshot().diagnostics).toEqual([]);
+
+    host.update({ compiled: dynamicCompiled, value: { dynamic: "" }, context: { enabled: true } });
+    await publish();
+    expect(host.getSnapshot().nodes.map(({ id }) => id)).toEqual(["dynamic"]);
+
+    const incompatible = compileStudioForm({
+      ...dynamicForm,
+      nodes: { ...dynamicForm.nodes, [dynamicUid]: { ...dynamicForm.nodes[dynamicUid] as StudioFieldNode, definition: { key: "number", version: 1 } } },
+    });
+    host.update({ compiled: incompatible, value: { dynamic: 0 }, context: { enabled: true } });
+    await publish();
+    expect(host.getSnapshot().diagnostics).toContainEqual(expect.objectContaining({ code: "schema.incompatible-identity" }));
   });
 
   it("maps runtime diagnostics back to Studio UIDs and tears down terminally", async () => {

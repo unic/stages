@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { evaluateSchema, initialFieldValue, type DynamicMetaSnapshot } from "@stages/core";
 import projectV1 from "../document/fixtures/project-v1.json";
 import { serializeStudioProject, toUid, validateStudioProject } from "../document";
-import type { JsonObject, StudioFormDocument, StudioGroupNode, StudioNode, StudioProjectDocument, Uid } from "../document";
+import type { JsonObject, StudioFieldNode, StudioFormDocument, StudioGroupNode, StudioNode, StudioProjectDocument, Uid } from "../document";
 import { DEFAULT_STUDIO_THEME } from "../registry";
 import {
   compileStudioForm,
@@ -31,6 +31,63 @@ const meta: DynamicMetaSnapshot = {
 };
 
 describe("minimal Studio compiler", () => {
+  it("compiles visibility, disabled inheritance, derived props, optional structure, and dynamic stages", () => {
+    const companyUid = toUid("group_company");
+    const companyNameUid = toUid("field_company_name");
+    const notesUid = toUid("field_notes");
+    const wizardUid = toUid("wizard_dynamic");
+    const detailsUid = toUid("stage_dynamic_details");
+    const reviewUid = toUid("stage_dynamic_review");
+    const reference = (scope: "context" | "extension", ...path: string[]) => ({ kind: "reference" as const, scope, path });
+    const equals = (left: ReturnType<typeof reference>, value: string | boolean) => ({ kind: "binary" as const, operator: "===" as const, left, right: { kind: "literal" as const, value } });
+    const form: StudioFormDocument = {
+      uid: formUid, title: "Dynamic", runtime: { schemaId: "dynamic", schemaVersion: 1 },
+      rootNodeUids: [companyUid, notesUid, wizardUid],
+      nodes: {
+        [companyUid]: {
+          uid: companyUid, kind: "group", runtimeId: "company", childUids: [companyNameUid],
+          behavior: {
+            when: equals(reference("context", "plan"), "business"),
+            disabled: { kind: "unary", operator: "!", operand: reference("context", "canEdit") },
+          },
+        },
+        [companyNameUid]: {
+          uid: companyNameUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Company" },
+          derivedProps: {
+            label: { kind: "conditional", condition: equals(reference("context", "locale"), "de"), whenTrue: { kind: "literal", value: "Firma" }, whenFalse: { kind: "literal", value: "Company" } },
+          },
+        },
+        [notesUid]: {
+          uid: notesUid, kind: "field", runtimeId: "notes", definition: { key: "text", version: 1 }, props: { label: "Notes" },
+          behavior: { presentWhen: equals(reference("extension", "features", "notes"), true) },
+        },
+        [wizardUid]: { uid: wizardUid, kind: "wizard", runtimeId: "flow", stageUids: [detailsUid, reviewUid] },
+        [detailsUid]: { uid: detailsUid, kind: "stage", runtimeId: "details", childUids: [] },
+        [reviewUid]: { uid: reviewUid, kind: "stage", runtimeId: "review", childUids: [], behavior: { when: reference("context", "canReview") } },
+      }, scenarios: [], settings: {},
+    };
+    const compiled = compileStudioForm(form);
+    expect(compiled.diagnostics).toEqual([]);
+    const personal = evaluateSchema({
+      schema: compiled.schemaInput, fields: compiled.fields, value: { company: { name: "" }, notes: "", flow: {} },
+      context: { plan: "personal", canEdit: true, locale: "en", canReview: false },
+      meta: { ...meta, extensions: { features: { notes: false } } },
+    });
+    expect(personal.nodes.map(({ config }) => config.id)).toEqual(["company", "flow"]);
+    expect(personal.nodes[0]).toMatchObject({ visible: false, disabled: false, children: [{ props: { label: "Company" } }] });
+    expect(personal.nodes[1]).toMatchObject({ branches: [{ id: "details" }] });
+
+    const business = evaluateSchema({
+      schema: compiled.schemaInput, fields: compiled.fields, value: { company: { name: "" }, notes: "", flow: {} },
+      context: { plan: "business", canEdit: false, locale: "de", canReview: true },
+      meta: { ...meta, extensions: { features: { notes: true } } },
+    });
+    expect(business.diagnostics).toEqual([]);
+    expect(business.nodes.map(({ config }) => config.id)).toEqual(["company", "notes", "flow"]);
+    expect(business.nodes[0]).toMatchObject({ visible: true, disabled: true, children: [{ disabled: true, props: { label: "Firma" } }] });
+    expect(business.nodes[2]).toMatchObject({ branches: [{ id: "details" }, { id: "review" }] });
+  });
+
   it("expands multiple linked instances with overrides and definition provenance", () => {
     const fragmentUid = toUid("fragment_address");
     const definitionFieldUid = toUid("fragment_street");
@@ -194,6 +251,23 @@ describe("minimal Studio compiler", () => {
       propertyPath: ["nodes", duplicateUid, "runtimeId"],
       runtimePath: ["event", "title"],
     });
+  });
+
+  it("rejects row-dependent factory structure while retaining the static node", () => {
+    const original = project().forms[formUid]!;
+    const form: StudioFormDocument = {
+      ...original,
+      nodes: {
+        ...original.nodes,
+        [fieldUid]: {
+          ...original.nodes[fieldUid] as StudioFieldNode,
+          behavior: { presentWhen: { kind: "reference", scope: "row", path: ["enabled"] } },
+        },
+      },
+    };
+    const compiled = compileStudioForm(form);
+    expect(compiled.diagnostics).toContainEqual(expect.objectContaining({ code: "compiler.invalid-factory-expression", entityUid: fieldUid }));
+    expect(compiled.schemaInput).toBe(compiled.schema);
   });
 
   it("is deterministic and does not share generated arrays between compilations", () => {

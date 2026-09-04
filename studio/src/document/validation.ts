@@ -335,6 +335,7 @@ export function validateStudioProject(
           else if (isPlainRecord(behavior)) {
             if (Object.prototype.hasOwnProperty.call(behavior, "when") && !isStudioExpression(own(behavior, "when"))) failures.push(issue("document.invalid-expression", "behavior.when must be a safe expression AST.", [...nodePath, "behavior", "when"], details));
             if (Object.prototype.hasOwnProperty.call(behavior, "disabled") && typeof own(behavior, "disabled") !== "boolean" && !isStudioExpression(own(behavior, "disabled"))) failures.push(issue("document.invalid-expression", "behavior.disabled must be a boolean or safe expression AST.", [...nodePath, "behavior", "disabled"], details));
+            if (Object.prototype.hasOwnProperty.call(behavior, "presentWhen") && !isStudioExpression(own(behavior, "presentWhen"))) failures.push(issue("document.invalid-expression", "behavior.presentWhen must be a safe expression AST.", [...nodePath, "behavior", "presentWhen"], details));
           }
           if (Object.prototype.hasOwnProperty.call(node, "legacy") && !isPlainRecord(own(node, "legacy"))) failures.push(issue("document.invalid-legacy-metadata", "legacy must be a JSON object.", [...nodePath, "legacy"], details));
           if (kind === "group" || kind === "collection" || kind === "stage") {
@@ -396,6 +397,11 @@ export function validateStudioProject(
             if (!isPlainRecord(own(node, "props"))) failures.push(issue("document.invalid-props", `${kind} props must be a JSON object.`, [...nodePath, "props"], details));
             if (kind === "field") {
               if (Object.prototype.hasOwnProperty.call(node, "computed") && !isStudioExpression(own(node, "computed"))) failures.push(issue("document.invalid-expression", "computed must be a safe expression AST.", [...nodePath, "computed"], details));
+              const derivedProps = own(node, "derivedProps");
+              if (derivedProps !== undefined && !isPlainRecord(derivedProps)) failures.push(issue("document.invalid-derived-props", "derivedProps must be an expression map.", [...nodePath, "derivedProps"], details));
+              else if (isPlainRecord(derivedProps)) for (const [key, expression] of Object.entries(derivedProps)) {
+                if (!isSafeObjectKey(key) || !isStudioExpression(expression)) failures.push(issue("document.invalid-expression", `derivedProps.${key} must be a safe expression AST.`, [...nodePath, "derivedProps", key], details));
+              }
               if (Object.prototype.hasOwnProperty.call(node, "validators") && !Array.isArray(own(node, "validators"))) failures.push(issue("document.invalid-validators", "validators must be an array.", [...nodePath, "validators"], details));
             }
           } else failures.push(issue("document.unknown-node-kind", "Unknown node kind.", [...nodePath, "kind"], details));

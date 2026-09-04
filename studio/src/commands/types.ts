@@ -5,6 +5,7 @@ import type {
   StudioFragmentInstanceNode,
   StudioNode,
   StudioProjectDocument,
+  StudioScenario,
   StudioStageNode,
   Uid,
 } from "../document";
@@ -12,6 +13,18 @@ import type {
 export type StudioNodeChanges = Readonly<Record<string, unknown>>;
 
 export type StudioCommand =
+  | {
+    readonly type: "scenario.insert";
+    readonly formUid: Uid;
+    readonly index: number;
+    readonly scenario: StudioScenario;
+  }
+  | {
+    readonly type: "scenario.update";
+    readonly formUid: Uid;
+    readonly uid: Uid;
+    readonly changes: Partial<Pick<StudioScenario, "title" | "value" | "context" | "extensions">>;
+  }
   | {
     readonly type: "node.insert";
     readonly formUid: Uid;
@@ -124,6 +137,7 @@ export type StudioCommandFailureCode =
   | "command.invariant"
   | "command.incompatible-placement"
   | "command.node-not-found"
+  | "command.scenario-not-found"
   | "command.non-contiguous-selection"
   | "command.unresolved-clipboard-dependency"
   | "command.uid-conflict";

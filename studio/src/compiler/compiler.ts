@@ -1,6 +1,9 @@
-import type { CollectionVariantConfig, DataPath, NodeAddress, NodeConfig, StageNodeConfig } from "@stages/core";
+import type { CollectionVariantConfig, DataPath, DynamicConfigContext, NodeAddress, NodeConfig, NodeResolverContext, StageNodeConfig, StagesSchema } from "@stages/core";
 import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioNode, Uid } from "../document";
 import { isSafeObjectKey, isStudioVariantCollection, toUid } from "../document";
+import { evaluateStudioExpression } from "../expressions/evaluator";
+import { studioExpressionDependencies } from "../expressions/serialization";
+import type { StudioExpression } from "../expressions/types";
 import {
   STUDIO_RUNTIME_FIELDS,
   studioBlockDefinition,
@@ -27,6 +30,8 @@ interface CompileContext {
   readonly visited: Set<Uid>;
   readonly visiting: Set<Uid>;
   readonly provenance: ReadonlyMap<Uid, FragmentProvenance>;
+  readonly presenceByAddress: Map<string, StudioExpression>;
+  readonly variantPresence: Map<string, StudioExpression>;
 }
 
 interface FragmentProvenance {
@@ -169,20 +174,6 @@ function unsupportedBehavior(
   runtimePath: DataPath,
   runtimeAddress: NodeAddress,
 ): void {
-  if (node.behavior?.when !== undefined && !(
-    node.behavior.when.kind === "literal" && typeof node.behavior.when.value === "boolean"
-  )) diagnostic(
-    context,
-    "compiler.unsupported-behavior",
-    "Conditional visibility is not supported by the minimal compiler.",
-    { entityUid: node.uid, propertyPath: ["nodes", node.uid, "behavior", "when"], runtimePath, runtimeAddress },
-  );
-  if (node.behavior?.disabled !== undefined && typeof node.behavior.disabled !== "boolean") diagnostic(
-    context,
-    "compiler.unsupported-behavior",
-    "Dynamic disabled state is not supported by the minimal compiler.",
-    { entityUid: node.uid, propertyPath: ["nodes", node.uid, "behavior", "disabled"], runtimePath, runtimeAddress },
-  );
   if (node.kind === "field" && node.computed !== undefined) diagnostic(
     context,
     "compiler.unsupported-computed",
@@ -208,12 +199,43 @@ function renderChildren(node: StudioNode): readonly Uid[] {
   return [];
 }
 
-function staticBehavior(node: StudioNode): { readonly when?: boolean; readonly disabled?: boolean } {
+function expressionInput(context: NodeResolverContext<unknown, unknown> | DynamicConfigContext<unknown, unknown>, row?: unknown) {
   return {
-    ...(node.behavior?.when?.kind === "literal" && typeof node.behavior.when.value === "boolean"
-      ? { when: node.behavior.when.value }
-      : {}),
-    ...(typeof node.behavior?.disabled === "boolean" ? { disabled: node.behavior.disabled } : {}),
+    value: context.value,
+    row: row ?? ("parentValue" in context ? context.parentValue : undefined),
+    context: context.context,
+    extensions: context.meta.extensions,
+    metadata: context.meta,
+  };
+}
+
+function expressionValue(expression: StudioExpression, context: NodeResolverContext<unknown, unknown> | DynamicConfigContext<unknown, unknown>, row?: unknown): unknown {
+  const result = evaluateStudioExpression(expression, expressionInput(context, row));
+  if (!result.ok) throw new Error(`${result.code}: ${result.message}`);
+  return result.value;
+}
+
+function expressionBoolean(expression: StudioExpression, context: NodeResolverContext<unknown, unknown> | DynamicConfigContext<unknown, unknown>): boolean {
+  const value = expressionValue(expression, context);
+  if (typeof value !== "boolean") throw new TypeError("Dynamic condition must evaluate to a boolean.");
+  return value;
+}
+
+function compiledBehavior(node: StudioNode): {
+  readonly when?: boolean | ((context: NodeResolverContext<unknown, unknown>) => boolean);
+  readonly disabled?: boolean | ((context: NodeResolverContext<unknown, unknown>) => boolean);
+} {
+  const when = node.behavior?.when;
+  const disabled = node.behavior?.disabled;
+  return {
+    ...(when === undefined ? {} : when.kind === "literal" && typeof when.value === "boolean"
+      ? { when: when.value }
+      : { when: (context: NodeResolverContext<unknown, unknown>) => expressionBoolean(when, context) }),
+    ...(disabled === undefined ? {} : typeof disabled === "boolean"
+      ? { disabled }
+      : disabled.kind === "literal" && typeof disabled.value === "boolean"
+        ? { disabled: disabled.value }
+        : { disabled: (context: NodeResolverContext<unknown, unknown>) => expressionBoolean(disabled, context) }),
   };
 }
 
@@ -310,6 +332,16 @@ function compileNode(
   const runtimeAddress: NodeAddress = variant ? parentAddress : [...parentAddress, { kind: "node", id: node.runtimeId }];
   if (variant) context.byUid.set(node.uid, Object.freeze({ uid: node.uid, runtimePath, runtimeAddress, ...context.provenance.get(node.uid) }));
   else recordSource(context, node.uid, runtimePath, runtimeAddress);
+  if (node.behavior?.presentWhen !== undefined) {
+    if (studioExpressionDependencies(node.behavior.presentWhen).some(({ scope }) => scope === "row" || scope === "item")) diagnostic(
+      context,
+      "compiler.invalid-factory-expression",
+      "Factory-level structure cannot depend on a current row.",
+      { entityUid: node.uid, propertyPath: ["nodes", node.uid, "behavior", "presentWhen"], runtimePath, runtimeAddress },
+    );
+    else if (variant) context.variantPresence.set(variantPresenceKey(parentAddress, node.runtimeId), node.behavior.presentWhen);
+    else context.presenceByAddress.set(studioRuntimeAddressKey(runtimeAddress), node.behavior.presentWhen);
+  }
   unsupportedBehavior(context, node, runtimePath, runtimeAddress);
 
   if (node.kind === "field") {
@@ -346,7 +378,12 @@ function compileNode(
         id: node.runtimeId,
         type: definition.key,
         props: node.props,
-        ...staticBehavior(node),
+        ...compiledBehavior(node),
+        ...(node.derivedProps === undefined ? {} : {
+          deriveProps: (resolverContext: NodeResolverContext<unknown, unknown>) => Object.fromEntries(
+            Object.entries(node.derivedProps ?? {}).map(([key, expression]) => [key, expressionValue(expression, resolverContext)]),
+          ),
+        }),
       },
       render: {
         uid: node.uid,
@@ -394,7 +431,7 @@ function compileNode(
     stage: {
       id: node.runtimeId,
       nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
-      ...staticBehavior(node),
+      ...compiledBehavior(node),
     },
     render,
   };
@@ -403,7 +440,7 @@ function compileNode(
       kind: "group",
       id: node.runtimeId,
       nodes: children.flatMap((child) => child.schema === undefined ? [] : [child.schema]),
-      ...staticBehavior(node),
+      ...compiledBehavior(node),
     },
     render,
   };
@@ -423,7 +460,7 @@ function compileNode(
       ...(node.min === undefined ? {} : { min: node.min }),
       ...(node.max === undefined ? {} : { max: node.max }),
       ...(itemKey === undefined ? {} : { itemKey }),
-      ...staticBehavior(node),
+      ...compiledBehavior(node),
     };
     const schema: NodeConfig<unknown, StudioFieldRegistry, unknown> = isStudioVariantCollection(node)
       ? {
@@ -451,7 +488,7 @@ function compileNode(
       stages: children.flatMap((child) => child.stage === undefined ? [] : [child.stage]),
       ...(initialStage === undefined ? {} : { initialStage }),
       ...(node.navigation === undefined ? {} : { navigation: node.navigation }),
-      ...staticBehavior(node),
+      ...compiledBehavior(node),
     },
     render,
   };
@@ -488,6 +525,54 @@ function emptyScope(form: StudioFormDocument, uids: readonly Uid[]): JsonObject 
   return value;
 }
 
+function presentAt(
+  address: NodeAddress,
+  context: DynamicConfigContext<unknown, unknown>,
+  presenceByAddress: ReadonlyMap<string, StudioExpression>,
+): boolean {
+  const expression = presenceByAddress.get(studioRuntimeAddressKey(address));
+  return expression === undefined || expressionBoolean(expression, context);
+}
+
+function variantPresenceKey(collectionAddress: NodeAddress, variant: string): string {
+  return `${studioRuntimeAddressKey(collectionAddress)}\u0000${variant}`;
+}
+
+function dynamicNodes(
+  nodes: readonly NodeConfig<unknown, StudioFieldRegistry, unknown>[],
+  parentAddress: NodeAddress,
+  dynamicContext: DynamicConfigContext<unknown, unknown>,
+  presenceByAddress: ReadonlyMap<string, StudioExpression>,
+  variantPresence: ReadonlyMap<string, StudioExpression>,
+): readonly NodeConfig<unknown, StudioFieldRegistry, unknown>[] {
+  const output: NodeConfig<unknown, StudioFieldRegistry, unknown>[] = [];
+  for (const node of nodes) {
+    const address: NodeAddress = [...parentAddress, { kind: "node", id: node.id }];
+    if (!presentAt(address, dynamicContext, presenceByAddress)) continue;
+    if (node.kind === "group") output.push({ ...node, nodes: dynamicNodes(node.nodes, address, dynamicContext, presenceByAddress, variantPresence) });
+    else if (node.kind === "collection" && node.nodes !== undefined) output.push({ ...node, nodes: dynamicNodes(node.nodes, address, dynamicContext, presenceByAddress, variantPresence) });
+    else if (node.kind === "collection" && node.variants !== undefined) output.push({
+      ...node,
+      variants: Object.fromEntries(Object.entries(node.variants).flatMap(([key, variant]) => {
+        const expression = variantPresence.get(variantPresenceKey(address, key));
+        if (expression !== undefined && !expressionBoolean(expression, dynamicContext)) return [];
+        return [[key, { ...variant, nodes: dynamicNodes(variant.nodes, address, dynamicContext, presenceByAddress, variantPresence) }]];
+      })),
+    });
+    else if (node.kind === "wizard") output.push({
+      ...node,
+      stages: node.stages.flatMap((stage) => {
+        const stageAddress: NodeAddress = [...address, { kind: "node", id: stage.id }];
+        return presentAt(stageAddress, dynamicContext, presenceByAddress)
+          ? [{ ...stage, nodes: dynamicNodes(stage.nodes, stageAddress, dynamicContext, presenceByAddress, variantPresence) }]
+          : [];
+      }),
+    });
+    else output.push(node);
+  }
+  return output;
+}
+
 /** Builds explicit owner-controlled scenario data; it is never installed as a schema default. */
 export function createEmptyStudioScenarioValue(form: StudioFormDocument, fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {}): JsonObject {
   const expanded = expandStudioFragments(form, fragments).form;
@@ -505,6 +590,8 @@ export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<
     visited: new Set(),
     visiting: new Set(),
     provenance: expanded.provenance,
+    presenceByAddress: new Map(),
+    variantPresence: new Map(),
   };
   const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);
   for (const uid of Object.keys(expanded.form.nodes) as Uid[]) {
@@ -515,13 +602,21 @@ export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<
       { entityUid: uid, propertyPath: ["nodes", uid] },
     );
   }
+  const schema: StagesSchema<unknown, StudioFieldRegistry, unknown> = {
+    id: form.runtime.schemaId,
+    version: form.runtime.schemaVersion,
+    nodes: nodes.flatMap((node) => node.schema === undefined ? [] : [node.schema]),
+  };
+  const schemaInput = context.presenceByAddress.size === 0 && context.variantPresence.size === 0
+    ? schema
+    : (dynamicContext: DynamicConfigContext<unknown, unknown>): StagesSchema<unknown, StudioFieldRegistry, unknown> => ({
+        ...schema,
+        nodes: dynamicNodes(schema.nodes, [], dynamicContext, context.presenceByAddress, context.variantPresence),
+      });
   return {
     expandedForm: expanded.form,
-    schema: {
-      id: form.runtime.schemaId,
-      version: form.runtime.schemaVersion,
-      nodes: nodes.flatMap((node) => node.schema === undefined ? [] : [node.schema]),
-    },
+    schema,
+    schemaInput,
     fields: STUDIO_RUNTIME_FIELDS,
     renderPlan: {
       formUid: expanded.form.uid,

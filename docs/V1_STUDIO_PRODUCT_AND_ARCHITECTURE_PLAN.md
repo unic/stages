@@ -53,6 +53,12 @@ Execution status:
   provides the bounded safe AST evaluator, canonical serializer, dependency
   analysis, and readable projection; the v1 inspector provides visual logic
   authoring and value, row, context, extension, and metadata reference pickers
+- Session 17 completed: [`../studio/src/compiler/compiler.ts`](../studio/src/compiler/compiler.ts),
+  [`../studio/src/runtime/preview-host.ts`](../studio/src/runtime/preview-host.ts),
+  and [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx)
+  compile dynamic visibility, disabled state, derived props, optional factory
+  structure, and stages; named context/feature scenarios drive a state-aware
+  preview with last-valid recovery
 
 Primary references:
 

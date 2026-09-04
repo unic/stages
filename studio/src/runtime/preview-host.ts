@@ -137,12 +137,12 @@ class PreviewHost implements StudioPreviewHost {
     const dynamic: {
       value?: unknown;
       context?: unknown;
-      schema?: CompiledStudioForm["schema"];
+      schema?: CompiledStudioForm["schemaInput"];
       extensions?: Readonly<Record<string, unknown>>;
     } = {};
     if (!Object.is(input.value, previousValue)) dynamic.value = input.value;
     if (!Object.is(this.contextValue, previousContext)) dynamic.context = this.contextValue;
-    if (input.compiled.schema !== previousCompiled.schema) dynamic.schema = input.compiled.schema;
+    if (input.compiled.schemaInput !== previousCompiled.schemaInput) dynamic.schema = input.compiled.schemaInput;
     if (this.extensionsValue !== previousExtensions) dynamic.extensions = this.extensionsValue;
     if (Object.keys(dynamic).length > 0) this.controllerValue.update(dynamic);
   }
@@ -183,7 +183,7 @@ class PreviewHost implements StudioPreviewHost {
   private createController(): StudioPreviewController {
     const creation = this.creationValue;
     const options = {
-      schema: this.compiledValue.schema,
+      schema: this.compiledValue.schemaInput,
       fields: this.compiledValue.fields,
       value: this.canonicalValueValue,
       context: this.contextValue,

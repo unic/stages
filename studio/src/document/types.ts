@@ -15,6 +15,8 @@ export interface StudioDefinitionRef {
 export interface StudioNodeBehavior {
   readonly when?: StudioExpression;
   readonly disabled?: boolean | StudioExpression;
+  /** Omits the node from factory output rather than retaining dormant identity. */
+  readonly presentWhen?: StudioExpression;
 }
 
 interface StudioNodeBase {
@@ -30,6 +32,7 @@ export interface StudioFieldNode extends StudioNodeBase {
   readonly definition: StudioDefinitionRef;
   readonly props: JsonObject;
   readonly computed?: StudioExpression;
+  readonly derivedProps?: Readonly<Record<string, StudioExpression>>;
   readonly validators?: readonly StudioValidatorSpec[];
 }
 

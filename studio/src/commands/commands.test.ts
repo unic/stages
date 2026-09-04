@@ -36,6 +36,21 @@ function success(project: StudioProjectDocument, command: StudioCommand): Studio
 }
 
 describe("Studio command engine", () => {
+  it("inserts and edits named scenarios through immutable history commands", () => {
+    const initial = project();
+    const scenarioUid = toUid("scenario_permissions");
+    const inserted = success(initial, {
+      type: "scenario.insert", formUid, index: 0,
+      scenario: { uid: scenarioUid, title: "Read only", value: {}, context: { canEdit: false }, extensions: { features: { review: true } } },
+    });
+    expect(inserted.forms[formUid]?.scenarios[0]).toMatchObject({ uid: scenarioUid, context: { canEdit: false } });
+    expect(initial.forms[formUid]?.scenarios).toEqual([]);
+
+    const updated = success(inserted, { type: "scenario.update", formUid, uid: scenarioUid, changes: { context: { canEdit: true } } });
+    expect(updated.forms[formUid]?.scenarios[0]).toMatchObject({ context: { canEdit: true }, extensions: { features: { review: true } } });
+    expect(executeStudioCommand(updated, { type: "scenario.update", formUid, uid: toUid("missing_scenario"), changes: { context: {} } })).toMatchObject({ ok: false, failure: { code: "command.scenario-not-found" } });
+  });
+
   it("creates, edits, inserts, overrides, and detaches reusable fragments immutably", () => {
     const initial = project();
     const fragmentUid = toUid("fragment_event");

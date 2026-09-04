@@ -70,6 +70,44 @@ function emptyProjectSnapshot() {
   };
 }
 
+function dynamicProjectSnapshot() {
+  const snapshot = outlineProjectSnapshot();
+  const form = snapshot.project.forms[toUid("form_outline")];
+  const reference = (scope, path) => ({ kind: "reference", scope, path });
+  return {
+    ...snapshot,
+    project: {
+      ...snapshot.project,
+      forms: {
+        [form.uid]: {
+          ...form,
+          nodes: {
+            ...form.nodes,
+            [toUid("field_first")]: { ...form.nodes[toUid("field_first")], behavior: { when: reference("context", ["showFirst"]) } },
+            [toUid("field_second")]: {
+              ...form.nodes[toUid("field_second")],
+              behavior: { disabled: reference("context", ["readOnly"]) },
+              derivedProps: {
+                label: {
+                  kind: "conditional",
+                  condition: { kind: "binary", operator: "===", left: reference("context", ["locale"]), right: { kind: "literal", value: "de" } },
+                  whenTrue: { kind: "literal", value: "Zweiter" },
+                  whenFalse: { kind: "literal", value: "Second field" },
+                },
+              },
+            },
+            [toUid("group_drop")]: { ...form.nodes[toUid("group_drop")], behavior: { presentWhen: reference("extension", ["features", "drop"]) } },
+          },
+          scenarios: [
+            { uid: toUid("scenario_editing"), title: "Editing", value: {}, context: { showFirst: true, readOnly: false, locale: "en" }, extensions: { features: { drop: true } } },
+            { uid: toUid("scenario_readonly"), title: "Read only", value: {}, context: { showFirst: false, readOnly: true, locale: "de" }, extensions: { features: { drop: false } } },
+          ],
+        },
+      },
+    },
+  };
+}
+
 describe("StudioEditorPage interactions", () => {
   beforeEach(() => {
     useStagesStore.setState({
@@ -373,6 +411,29 @@ describe("StudioEditorPage interactions", () => {
     const field = saved.project.forms[toUid("form_outline")].nodes[toUid("field_first")];
     expect(field.behavior.when).toEqual({ kind: "reference", scope: "value", path: ["second"] });
     expect(field.computed).toEqual({ kind: "reference", scope: "value", path: [] });
+  });
+
+  it("switches dynamic scenarios and distinguishes dormant, absent, and disabled nodes", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([dynamicProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Named scenario" }), "scenario_readonly");
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Zweiter" })).toBeDisabled();
+      expect(screen.getByText("dormant")).toBeVisible();
+      expect(screen.getByText("structurally absent")).toBeVisible();
+      expect(screen.getByText("disabled (possibly inherited)")).toBeVisible();
+    });
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Context JSON" }), {
+      target: { value: JSON.stringify({ showFirst: true, readOnly: false, locale: "en" }) },
+    });
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Second field" })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: "Add scenario" }));
+    await screen.findByText("Scenario 3 added");
+    expect(screen.getByRole("combobox", { name: "Named scenario" })).toHaveValue("scenario_3");
   });
 
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {

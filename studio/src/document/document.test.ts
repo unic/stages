@@ -130,6 +130,18 @@ describe("Studio document validation", () => {
     expectCode(input, "document.invalid-expression");
   });
 
+  it("validates dynamic presence and derived-property expression maps", () => {
+    const invalidPresence = validProject();
+    const presenceNodes = ((invalidPresence["forms"] as Record<string, Record<string, unknown>>)["form_event"]!["nodes"] as Record<string, Record<string, unknown>>);
+    presenceNodes["field_title"]!["behavior"] = { presentWhen: { kind: "call", source: "feature()" } };
+    expectCode(invalidPresence, "document.invalid-expression");
+
+    const invalidDerived = validProject();
+    const derivedNodes = ((invalidDerived["forms"] as Record<string, Record<string, unknown>>)["form_event"]!["nodes"] as Record<string, Record<string, unknown>>);
+    derivedNodes["field_title"]!["derivedProps"] = [];
+    expectCode(invalidDerived, "document.invalid-derived-props");
+  });
+
   it("validates discriminated collection and wizard structural references", () => {
     const input = validProject();
     const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;

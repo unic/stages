@@ -1,4 +1,4 @@
-import type { DataPath, NodeAddress, StagesSchema } from "@stages/core";
+import type { DataPath, NodeAddress, StagesSchema, StagesSchemaInput } from "@stages/core";
 import type { JsonObject, StudioFormDocument, StudioNode, Uid } from "../document";
 import type {
   StudioBlockKey,
@@ -76,6 +76,7 @@ export interface CompiledStudioForm {
   /** Ephemeral ordinary-node graph used by the preview after fragment expansion. */
   readonly expandedForm: StudioFormDocument;
   readonly schema: StagesSchema<unknown, StudioFieldRegistry, unknown>;
+  readonly schemaInput: StagesSchemaInput<unknown, StudioFieldRegistry, unknown>;
   readonly fields: StudioFieldRegistry;
   readonly renderPlan: StudioRenderPlan;
   readonly sourceMap: StudioSourceMap;

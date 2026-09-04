@@ -1,6 +1,6 @@
 # Studio project document v1
 
-Status: implemented through Session 16
+Status: implemented through Session 17
 
 Date: 2026-09-04
 
@@ -33,6 +33,18 @@ return typed failures rather than throwing. The evaluator never calls document
 code, accessors, network APIs, or mutation APIs. Canonical expression JSON,
 stable dependency lists, and a readable text projection are available from
 `studio/src/expressions/`.
+
+Node behavior distinguishes `when`, which retains an ordinary node as dormant,
+from `presentWhen`, which conditionally omits the node from schema-factory
+output. `disabled` accepts a static boolean or expression and inherits through
+the runtime tree. Fields may map individual `derivedProps` keys to expressions;
+the compiler evaluates them through the same bounded expression contract.
+
+Named scenarios own their value, context, and JSON-safe extension/feature state.
+Scenario insertion and editing use document commands and therefore participate
+in undo, redo, dirty tracking, and local persistence. Studio registers only
+local JSON identity codecs for scenario extension namespaces; generated
+applications remain responsible for their trusted production extension codecs.
 
 Every editable entity UID is globally unique in a project. Map keys must equal
 the entity UID. Runtime IDs remain separately editable and reject the unsafe

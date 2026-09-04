@@ -9,7 +9,7 @@ import type {
 
 const UPDATE_KEYS = new Set([
   "runtimeId", "definition", "props", "presentation", "behavior", "legacy",
-  "computed", "validators", "min", "max", "initialRows", "itemKey",
+  "computed", "derivedProps", "validators", "min", "max", "initialRows", "itemKey",
   "discriminator", "initialVariantUid", "initialStageUid", "navigation",
   "fragmentUid", "overrides",
 ]);
@@ -365,6 +365,26 @@ function executeSingle(
   if (!form) return fail("command.form-not-found", `Form ${command.formUid} does not exist.`, commandPath, {
     formUid: command.formUid,
   });
+
+  if (command.type === "scenario.insert") {
+    if (projectHasUid(project, command.scenario.uid)) return fail("command.uid-conflict", `UID ${command.scenario.uid} is already in use.`, commandPath, { formUid: form.uid, entityUid: command.scenario.uid });
+    if (!Number.isSafeInteger(command.index) || command.index < 0 || command.index > form.scenarios.length) return fail("command.index-out-of-bounds", `Scenario index ${command.index} is out of bounds.`, commandPath, { formUid: form.uid });
+    const scenarios = [...form.scenarios];
+    scenarios.splice(command.index, 0, command.scenario);
+    return { ok: true, document: replaceForm(project, { ...form, scenarios }), affectedUids: [command.scenario.uid], changed: true };
+  }
+
+  if (command.type === "scenario.update") {
+    const index = form.scenarios.findIndex(({ uid }) => uid === command.uid);
+    if (index < 0) return fail("command.scenario-not-found", `Scenario ${command.uid} does not exist.`, commandPath, { formUid: form.uid, entityUid: command.uid });
+    const keys = Object.keys(command.changes);
+    if (keys.length === 0) return { ok: true, document: project, affectedUids: [], changed: false };
+    const current = form.scenarios[index]!;
+    const next = { ...current, ...command.changes };
+    const scenarios = [...form.scenarios];
+    scenarios[index] = next;
+    return { ok: true, document: replaceForm(project, { ...form, scenarios }), affectedUids: [command.uid], changed: true };
+  }
 
   if (command.type === "fragment.create") {
     if (projectHasUid(project, command.fragment.uid)) return fail("command.uid-conflict", `Fragment UID ${command.fragment.uid} is already in use.`, commandPath, { entityUid: command.fragment.uid });
