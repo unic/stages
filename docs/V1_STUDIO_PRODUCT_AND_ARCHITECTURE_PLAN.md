@@ -117,6 +117,11 @@ Execution status:
   debounced and lifecycle autosave, three-revision backup rotation, recoverable
   deletion, corruption quarantine and restore controls, explicit legacy-storage
   confirmation, and separate project/preview dirty state
+- Session 27 completed: [`../studio/src/projects/versioning.ts`](../studio/src/projects/versioning.ts)
+  and [`../studio/docs/VERSIONING_AND_PUBLICATION.md`](../studio/docs/VERSIONING_AND_PUBLICATION.md)
+  distinguish mutable drafts, immutable release snapshots, explicit contiguous
+  schema migrations, review records, and published channel records; publication
+  gates compiler/binding/migration and contract-scenario evidence
 
 Primary references:
 

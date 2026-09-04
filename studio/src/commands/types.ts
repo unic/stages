@@ -33,6 +33,15 @@ export type StudioCommand =
     };
   }
   | {
+    readonly type: "form.schema-version.bump";
+    readonly formUid: Uid;
+    readonly expectedSchemaId: string;
+    readonly expectedSchemaVersion: number;
+    readonly nextSchemaVersion: number;
+    readonly migrationId: string;
+    readonly scenarioValues: readonly Readonly<{ uid: Uid; value: StudioScenario["value"] }>[];
+  }
+  | {
     readonly type: "scenario.insert";
     readonly formUid: Uid;
     readonly index: number;

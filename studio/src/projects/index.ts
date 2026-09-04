@@ -4,3 +4,4 @@ export * from "./legacy-local-storage";
 export * from "./memory-project-repository";
 export * from "./types";
 export * from "./workflows";
+export * from "./versioning";

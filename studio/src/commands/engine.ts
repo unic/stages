@@ -1,6 +1,6 @@
 import { isSafeObjectKey, isStudioVariantCollection, isUid } from "../document";
 import type { StudioFormDocument, StudioFragmentDefinition, StudioFragmentNodeOverride, StudioNode, StudioProjectDocument, Uid } from "../document";
-import { validateStudioResourceCatalog } from "../document/validation";
+import { inspectJsonSafety, validateStudioResourceCatalog } from "../document/validation";
 import type {
   StudioCommand,
   StudioCommandFailure,
@@ -402,6 +402,31 @@ function executeSingle(
       else (next as unknown as Record<string, unknown>)[key] = value;
     }
     return commit(project, next, [form.uid], commandPath);
+  }
+
+  if (command.type === "form.schema-version.bump") {
+    if (command.expectedSchemaId !== form.runtime.schemaId
+      || command.expectedSchemaVersion !== form.runtime.schemaVersion) {
+      return fail("command.invalid-update", "The schema changed before this migration could be applied.", commandPath, { formUid: form.uid, entityUid: form.uid });
+    }
+    if (command.nextSchemaVersion !== form.runtime.schemaVersion + 1
+      || command.migrationId.trim().length === 0) {
+      return fail("command.invalid-update", "Schema versions must advance by one explicit named migration.", commandPath, { formUid: form.uid, entityUid: form.uid });
+    }
+    if (command.scenarioValues.length !== form.scenarios.length
+      || new Set(command.scenarioValues.map(({ uid }) => uid)).size !== form.scenarios.length
+      || form.scenarios.some(({ uid }) => !command.scenarioValues.some((entry) => entry.uid === uid))) {
+      return fail("command.invalid-update", "A schema migration must provide one value for every current scenario.", commandPath, { formUid: form.uid, entityUid: form.uid });
+    }
+    const invalid = command.scenarioValues.find(({ value }) => inspectJsonSafety(value, 5 * 1024 * 1024).length > 0);
+    if (invalid !== undefined) return fail("command.invalid-update", `Migrated scenario ${invalid.uid} is not JSON-safe.`, commandPath, { formUid: form.uid, entityUid: invalid.uid });
+    const byUid = new Map(command.scenarioValues.map((entry) => [entry.uid, entry.value]));
+    const next = {
+      ...form,
+      runtime: { ...form.runtime, schemaVersion: command.nextSchemaVersion },
+      scenarios: form.scenarios.map((scenario) => ({ ...scenario, value: byUid.get(scenario.uid)! })),
+    };
+    return commit(project, next, [form.uid, ...form.scenarios.map(({ uid }) => uid)], commandPath);
   }
 
   if (command.type === "scenario.insert") {
