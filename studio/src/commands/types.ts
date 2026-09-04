@@ -29,7 +29,7 @@ export type StudioCommand =
     readonly type: "scenario.update";
     readonly formUid: Uid;
     readonly uid: Uid;
-    readonly changes: Partial<Pick<StudioScenario, "title" | "value" | "context" | "extensions">>;
+    readonly changes: Partial<Pick<StudioScenario, "title" | "value" | "context" | "extensions" | "services">>;
   }
   | {
     readonly type: "node.insert";

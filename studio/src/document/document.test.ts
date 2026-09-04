@@ -142,6 +142,21 @@ describe("Studio document validation", () => {
     expectCode(invalidDerived, "document.invalid-derived-props");
   });
 
+  it("validates async service references and transport-free deterministic scenarios", () => {
+    const input = validProject();
+    const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    const nodes = form["nodes"] as Record<string, Record<string, unknown>>;
+    nodes["field_title"]!["validators"] = [{ kind: "service", id: "title.remote", service: { key: "availability", version: 1 } }];
+    form["scenarios"] = [{ uid: "scenario_remote", title: "Remote", value: {}, services: { availability: { outcome: "failure", code: "taken" } } }];
+    expect(validateStudioProject(input, { supportedDefinitions: definitions }).ok).toBe(true);
+
+    (nodes["field_title"]!["validators"] as Record<string, unknown>[])[0]!["service"] = { key: "availability", version: 0 };
+    expectCode(input, "document.invalid-service-reference");
+    (nodes["field_title"]!["validators"] as Record<string, unknown>[])[0]!["service"] = { key: "availability", version: 1 };
+    ((form["scenarios"] as Record<string, unknown>[])[0]!["services"] as Record<string, Record<string, unknown>>)["availability"]!["endpoint"] = "https://example.invalid";
+    expectCode(input, "document.forbidden-service-transport");
+  });
+
   it("validates discriminated collection and wizard structural references", () => {
     const input = validProject();
     const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;

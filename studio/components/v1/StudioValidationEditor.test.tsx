@@ -29,4 +29,15 @@ describe("StudioValidationEditor", () => {
     expect(onChange).toHaveBeenCalledWith(expect.any(Array), "Edit validator dependencies");
     expect(onChange).toHaveBeenCalledWith(expect.any(Array), "Edit validator condition");
   });
+
+  it("authors a versioned async service reference without transport configuration", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<StudioValidationEditor validators={[]} references={[]} ownerLabel="field" onChange={onChange} />);
+    await user.selectOptions(screen.getByLabelText("Validator catalog"), "service");
+    await user.click(screen.getByRole("button", { name: "Add validator" }));
+    expect(onChange).toHaveBeenCalledWith([
+      expect.objectContaining({ kind: "service", service: { key: "availability", version: 1 } }),
+    ], "Add service validator");
+  });
 });

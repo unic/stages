@@ -6,6 +6,7 @@ import type {
   StudioLayoutSpec,
   StudioThemeTokens,
 } from "../registry";
+import type { StudioAsyncServiceBindings } from "../registry";
 
 export type { StudioFieldRegistry } from "../registry";
 
@@ -81,4 +82,8 @@ export interface CompiledStudioForm {
   readonly renderPlan: StudioRenderPlan;
   readonly sourceMap: StudioSourceMap;
   readonly diagnostics: readonly StudioDiagnostic[];
+}
+
+export interface StudioCompileOptions {
+  readonly serviceBindings?: StudioAsyncServiceBindings;
 }

@@ -132,6 +132,16 @@ export interface StudioLocalizedValidationMessage {
   readonly translations?: Readonly<Record<string, string>>;
 }
 
+export type StudioServiceScenarioOutcome = "pending" | "success" | "failure" | "stale" | "cancelled";
+
+/** Deterministic local-preview behavior. Transport and credential configuration never belongs here. */
+export interface StudioServiceScenario {
+  readonly outcome: StudioServiceScenarioOutcome;
+  readonly code?: string;
+  readonly message?: string;
+  readonly severity?: StudioValidationSeverity;
+}
+
 interface StudioValidatorBase {
   /** Optional only for compatibility with early document-v1 required rules. */
   readonly id?: string;
@@ -163,6 +173,13 @@ export type StudioValidatorSpec = StudioValidatorBase & (
       readonly max?: number;
       readonly uniqueBy?: readonly string[];
     }
+  | {
+      readonly kind: "service";
+      /** Resolves only through a trusted environment registry outside the project document. */
+      readonly service: StudioDefinitionRef;
+      /** Defaults to the validator owner's current field value. */
+      readonly request?: StudioExpression;
+    }
 );
 
 export type StudioNode = StudioBlockNode | StudioCollectionNode | StudioFieldNode
@@ -183,6 +200,8 @@ export interface StudioScenario {
   readonly value: JsonValue;
   readonly context?: JsonObject;
   readonly extensions?: JsonObject;
+  /** JSON-safe deterministic preview responses keyed by async-service name. */
+  readonly services?: Readonly<Record<string, StudioServiceScenario>>;
 }
 
 export interface StudioFormDocument {

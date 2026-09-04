@@ -1,8 +1,14 @@
 import { stages, type ValidationContext } from "@stages/core";
 import { describe, expect, it, vi } from "vitest";
 import { compileStudioForm } from "../compiler";
-import { toUid, validateStudioProject, type StudioFormDocument, type StudioValidatorSpec } from "../document";
+import { toUid, validateStudioProject, type StudioFieldNode, type StudioFormDocument, type StudioValidatorSpec } from "../document";
 import { compileStudioValidators, firstVisibleErrorPath, focusFirstVisibleValidationError } from "./index";
+import {
+  defineStudioAsyncServiceBindings,
+  STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
+  STUDIO_PREVIEW_SERVICE_EXTENSION,
+  studioPreviewServiceExtensions,
+} from "../registry";
 
 const formUid = toUid("form_validation");
 const nameUid = toUid("field_name");
@@ -103,5 +109,119 @@ describe("Studio synchronous validation", () => {
     const focus = vi.spyOn(document.querySelector<HTMLInputElement>("#first")!, "focus");
     expect(focusFirstVisibleValidationError(document)).toBe(true);
     expect(focus).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Studio async service validation", () => {
+  function serviceForm(): StudioFormDocument {
+    const base = form();
+    const { validators: _validators, ...withoutFormValidators } = base;
+    return {
+      ...withoutFormValidators,
+      rootNodeUids: [nameUid],
+      nodes: {
+        [nameUid]: {
+          ...(base.nodes[nameUid]! as StudioFieldNode),
+          validators: [{
+            id: "name.available",
+            kind: "service",
+            service: { key: "availability", version: 1 },
+            request: { kind: "reference", scope: "value", path: ["name"] },
+            dependencies: [["tenant"]],
+            on: "submit",
+            revealOn: "submit",
+          }],
+        },
+      },
+    };
+  }
+
+  it("requires an exact trusted environment binding and passes safe request data", async () => {
+    expect(compileStudioForm(serviceForm()).diagnostics).toContainEqual(expect.objectContaining({ code: "compiler.unresolved-service-binding" }));
+    const invoke = vi.fn(async ({ input }) => input === "free"
+      ? { status: "success" as const }
+      : { status: "failure" as const, code: "taken", message: "Already used." });
+    const bindings = defineStudioAsyncServiceBindings([{ key: "availability", version: 1, invoke }]);
+    const compiled = compileStudioForm(serviceForm(), {}, { serviceBindings: bindings });
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.schema.nodes[0]?.validators?.[0]?.dependencies).toEqual([["tenant"], ["name"]]);
+    const controller = stages({ schema: compiled.schema, fields: compiled.fields, value: { name: "taken", tenant: "one" } });
+    const result = await controller.validate({ event: "submit", reveal: true });
+    expect(invoke).toHaveBeenCalledWith(expect.objectContaining({ input: "taken" }));
+    expect(result.issues).toContainEqual(expect.objectContaining({ code: "taken", message: "Already used." }));
+    controller.destroy();
+  });
+
+  it("cancels on dependency invalidation and teardown, and suppresses cancellation-unaware stale results", async () => {
+    let release: ((result: { readonly status: "failure"; readonly code: string }) => void) | undefined;
+    let cancellations = 0;
+    let honorCancellation = true;
+    const bindings = defineStudioAsyncServiceBindings([{
+      key: "availability", version: 1,
+      invoke: ({ validation }) => new Promise((resolve) => {
+        release = resolve;
+        validation.signal.onCancel(() => {
+          cancellations += 1;
+          if (honorCancellation) resolve({ status: "success" });
+        });
+      }),
+    }]);
+    const compiled = compileStudioForm(serviceForm(), {}, { serviceBindings: bindings });
+    const controller = stages({ schema: compiled.schema, fields: compiled.fields, value: { name: "first", tenant: "one" } });
+    const cancelled = controller.validate({ event: "submit" });
+    expect(controller.getSnapshot().validation.pendingCount).toBe(1);
+    controller.update({ value: { name: "first", tenant: "two" } });
+    await cancelled;
+    expect(cancellations).toBe(1);
+    expect(controller.getSnapshot().validation.status).toBe("unknown");
+
+    honorCancellation = false;
+    const stale = controller.validate({ event: "submit" });
+    controller.update({ value: { name: "second", tenant: "two" } });
+    release?.({ status: "failure", code: "old-result" });
+    await stale;
+    expect(controller.getSnapshot().validation.issues).toEqual([]);
+
+    honorCancellation = true;
+    void controller.validate({ event: "submit" });
+    controller.destroy();
+    expect(cancellations).toBe(3);
+  });
+
+  it("runs deterministic success, failure, pending, stale, and cancelled preview bindings without network access", async () => {
+    const compiled = compileStudioForm(serviceForm(), {}, { serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS });
+    const make = (outcome: "success" | "failure" | "pending" | "stale" | "cancelled") => stages({
+      schema: compiled.schema,
+      fields: compiled.fields,
+      value: { name: "candidate", tenant: "one" },
+      extensions: studioPreviewServiceExtensions({}, { availability: { outcome, code: `${outcome}-code` } }),
+      extensionCodecs: {
+        [STUDIO_PREVIEW_SERVICE_EXTENSION]: {
+          encode: (value) => value as never,
+          decode: (value) => value,
+        },
+      },
+    });
+    const success = make("success");
+    expect((await success.validate({ event: "submit" })).issues).toEqual([]);
+    success.destroy();
+    const failure = make("failure");
+    expect((await failure.validate({ event: "submit" })).issues[0]?.code).toBe("failure-code");
+    failure.destroy();
+
+    for (const outcome of ["pending", "cancelled"] as const) {
+      const controller = make(outcome);
+      const validation = controller.validate({ event: "submit" });
+      expect(controller.getSnapshot().validation.pendingCount).toBe(1);
+      controller.destroy();
+      await validation;
+    }
+
+    const stale = make("stale");
+    const validation = stale.validate({ event: "submit" });
+    stale.update({ value: { name: "new", tenant: "one" } });
+    await validation;
+    expect(stale.getSnapshot().validation.issues).toEqual([]);
+    stale.destroy();
   });
 });

@@ -20,6 +20,7 @@ import type {
   StudioFieldRegistry,
   StudioRenderNode,
   StudioSourceMapEntry,
+  StudioCompileOptions,
 } from "./types";
 
 interface CompileContext {
@@ -33,6 +34,7 @@ interface CompileContext {
   readonly provenance: ReadonlyMap<Uid, FragmentProvenance>;
   readonly presenceByAddress: Map<string, StudioExpression>;
   readonly variantPresence: Map<string, StudioExpression>;
+  readonly serviceBindings: StudioCompileOptions["serviceBindings"];
 }
 
 interface FragmentProvenance {
@@ -194,7 +196,7 @@ function compiledValidators(
   specs: readonly StudioValidatorSpec[] | undefined,
   owner: { readonly entityUid?: Uid; readonly propertyPath: readonly (number | string)[]; readonly runtimePath: DataPath; readonly runtimeAddress: NodeAddress },
 ) {
-  const result = compileStudioValidators(specs);
+  const result = compileStudioValidators(specs, context.serviceBindings === undefined ? {} : { serviceBindings: context.serviceBindings });
   for (const entry of result.diagnostics) diagnostic(context, entry.code, entry.message, {
     ...owner,
     propertyPath: [...owner.propertyPath, entry.index],
@@ -603,7 +605,11 @@ export function createEmptyStudioScenarioValue(form: StudioFormDocument, fragmen
   return emptyScope(expanded, expanded.rootNodeUids);
 }
 
-export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {}): CompiledStudioForm {
+export function compileStudioForm(
+  form: StudioFormDocument,
+  fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {},
+  options: StudioCompileOptions = {},
+): CompiledStudioForm {
   const expanded = expandStudioFragments(form, fragments);
   const context: CompileContext = {
     form: expanded.form,
@@ -616,6 +622,7 @@ export function compileStudioForm(form: StudioFormDocument, fragments: Readonly<
     provenance: expanded.provenance,
     presenceByAddress: new Map(),
     variantPresence: new Map(),
+    serviceBindings: options.serviceBindings,
   };
   recordSource(context, expanded.form.uid, [], []);
   const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);

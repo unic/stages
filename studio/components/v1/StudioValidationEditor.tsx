@@ -71,6 +71,13 @@ export function StudioValidationEditor({ validators = [], references, ownerLabel
           <StudioExpressionEditor expression={validator.other} label="Compare with" references={references} onChange={(other) => set({ other }, "Edit comparison value")} />
         </div>}
         {validator.kind === "collection" && <label className="studio-field"><span>Unique row property path</span><input className="ui-input" value={validator.uniqueBy?.join(".") ?? ""} onChange={(event) => set({ uniqueBy: event.currentTarget.value === "" ? undefined : event.currentTarget.value.split(".").filter(Boolean) }, "Edit collection uniqueness")} /></label>}
+        {validator.kind === "service" && <div>
+          <label className="studio-field"><span>Trusted service name</span><input className="ui-input" value={validator.service.key} onChange={(event) => set({ service: { ...validator.service, key: event.currentTarget.value } }, "Edit service binding")} /></label>
+          <label className="studio-field"><span>Service version</span><input className="ui-input" type="number" min={1} value={validator.service.version} onChange={(event) => set({ service: { ...validator.service, version: Number(event.currentTarget.value) } }, "Edit service binding")} /></label>
+          <label><input type="checkbox" checked={validator.request !== undefined} onChange={(event) => set({ request: event.currentTarget.checked ? { kind: "reference", scope: "value", path: [] } : undefined }, "Edit service request")} /> Build request from an expression</label>
+          {validator.request !== undefined && <StudioExpressionEditor expression={validator.request} label="Service request" references={references} onChange={(request) => set({ request }, "Edit service request")} />}
+          <small>Endpoints, credentials, retries, and caches are supplied by the trusted environment.</small>
+        </div>}
         <label><input type="checkbox" checked={validator.when !== undefined} onChange={(event) => set({ when: event.currentTarget.checked ? { kind: "literal", value: true } : undefined }, "Edit validator condition")} /> Conditional applicability</label>
         {validator.when !== undefined && <StudioExpressionEditor expression={validator.when} label="Applies when" references={references} onChange={(when) => set({ when }, "Edit validator condition")} />}
         <Button type="button" variant="outline" size="sm" onClick={() => onChange(validators.filter((_, current) => current !== index), "Remove validator")}>Remove validator</Button>

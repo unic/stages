@@ -1,6 +1,6 @@
 # Studio project document v1
 
-Status: implemented through Session 17
+Status: implemented through Session 19
 
 Date: 2026-09-04
 
@@ -41,6 +41,10 @@ the runtime tree. Fields may map individual `derivedProps` keys to expressions;
 the compiler evaluates them through the same bounded expression contract.
 
 Named scenarios own their value, context, and JSON-safe extension/feature state.
+They may also own transport-free deterministic async-service outcomes for local
+preview. Async validators store only exact-version named service references and
+safe request expressions. Executable bindings, endpoints, credentials, retry
+policy, and caches remain environment-owned and outside this document.
 Scenario insertion and editing use document commands and therefore participate
 in undo, redo, dirty tracking, and local persistence. Studio registers only
 local JSON identity codecs for scenario extension namespaces; generated

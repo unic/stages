@@ -51,13 +51,13 @@ describe("Studio command engine", () => {
     const scenarioUid = toUid("scenario_permissions");
     const inserted = success(initial, {
       type: "scenario.insert", formUid, index: 0,
-      scenario: { uid: scenarioUid, title: "Read only", value: {}, context: { canEdit: false }, extensions: { features: { review: true } } },
+      scenario: { uid: scenarioUid, title: "Read only", value: {}, context: { canEdit: false }, extensions: { features: { review: true } }, services: { availability: { outcome: "pending" } } },
     });
     expect(inserted.forms[formUid]?.scenarios[0]).toMatchObject({ uid: scenarioUid, context: { canEdit: false } });
     expect(initial.forms[formUid]?.scenarios).toEqual([]);
 
-    const updated = success(inserted, { type: "scenario.update", formUid, uid: scenarioUid, changes: { context: { canEdit: true } } });
-    expect(updated.forms[formUid]?.scenarios[0]).toMatchObject({ context: { canEdit: true }, extensions: { features: { review: true } } });
+    const updated = success(inserted, { type: "scenario.update", formUid, uid: scenarioUid, changes: { context: { canEdit: true }, services: { availability: { outcome: "success" } } } });
+    expect(updated.forms[formUid]?.scenarios[0]).toMatchObject({ context: { canEdit: true }, extensions: { features: { review: true } }, services: { availability: { outcome: "success" } } });
     expect(executeStudioCommand(updated, { type: "scenario.update", formUid, uid: toUid("missing_scenario"), changes: { context: {} } })).toMatchObject({ ok: false, failure: { code: "command.scenario-not-found" } });
   });
 

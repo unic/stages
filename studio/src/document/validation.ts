@@ -67,7 +67,7 @@ function validateValidators(
     const validatorPath = [...path, index];
     if (!isPlainRecord(candidate)) { failures.push(issue("document.invalid-validator", "Validator must be an object.", validatorPath, details)); return; }
     const kind = own(candidate, "kind");
-    if (!["required", "length", "range", "pattern", "comparison", "collection"].includes(String(kind))) failures.push(issue("document.invalid-validator-kind", "Validator kind is not in the synchronous catalog.", [...validatorPath, "kind"], details));
+    if (!["required", "length", "range", "pattern", "comparison", "collection", "service"].includes(String(kind))) failures.push(issue("document.invalid-validator-kind", "Validator kind is not in the catalog.", [...validatorPath, "kind"], details));
     const id = own(candidate, "id");
     if (id !== undefined && (typeof id !== "string" || id.trim().length === 0)) failures.push(issue("document.invalid-validator-id", "Validator id must be a non-empty string.", [...validatorPath, "id"], details));
     else if (typeof id === "string" && ids.has(id)) failures.push(issue("document.duplicate-validator-id", `Validator ID ${id} is duplicated.`, [...validatorPath, "id"], details));
@@ -99,7 +99,41 @@ function validateValidators(
     if (kind === "comparison" && (!["===", "!==", "<", "<=", ">", ">="].includes(String(own(candidate, "operator"))) || !isStudioExpression(own(candidate, "other")))) failures.push(issue("document.invalid-validator-comparison", "Comparison validator requires an operator and safe expression.", validatorPath, details));
     const uniqueBy = own(candidate, "uniqueBy");
     if (kind === "collection" && uniqueBy !== undefined && (!Array.isArray(uniqueBy) || uniqueBy.some((segment) => typeof segment !== "string" || !isSafeObjectKey(segment)))) failures.push(issue("document.invalid-validator-unique-path", "uniqueBy must be a safe relative property path.", [...validatorPath, "uniqueBy"], details));
+    if (kind === "service") {
+      const service = own(candidate, "service");
+      if (!isPlainRecord(service)
+        || typeof own(service, "key") !== "string" || (own(service, "key") as string).length === 0 || !isSafeObjectKey(own(service, "key") as string)
+        || !Number.isSafeInteger(own(service, "version")) || (own(service, "version") as number) < 1) {
+        failures.push(issue("document.invalid-service-reference", "Service validators require a safe key and positive integer version.", [...validatorPath, "service"], details));
+      }
+      if (own(candidate, "request") !== undefined && !isStudioExpression(own(candidate, "request"))) failures.push(issue("document.invalid-expression", "Service request must be a safe expression AST.", [...validatorPath, "request"], details));
+      const forbidden = ["endpoint", "credentials", "retries", "cache"].find((name) => Object.prototype.hasOwnProperty.call(candidate, name));
+      if (forbidden !== undefined) failures.push(issue("document.forbidden-service-transport", `${forbidden} belongs in a trusted environment binding, not a validator.`, [...validatorPath, forbidden], details));
+    }
   });
+}
+
+function validateScenarioServices(
+  value: unknown,
+  path: DiagnosticPath,
+  failures: StudioDocumentDiagnostic[],
+  details: { readonly formUid: Uid; readonly entityUid: Uid },
+): void {
+  if (value === undefined) return;
+  if (!isPlainRecord(value)) { failures.push(issue("document.invalid-scenario-services", "Scenario services must be an object keyed by service name.", path, details)); return; }
+  for (const [key, scenario] of Object.entries(value)) {
+    const servicePath = [...path, key];
+    if (!isSafeObjectKey(key) || key.length === 0 || !isPlainRecord(scenario)) {
+      failures.push(issue("document.invalid-service-scenario", "Service scenario keys and values must be safe objects.", servicePath, details));
+      continue;
+    }
+    if (!["pending", "success", "failure", "stale", "cancelled"].includes(String(own(scenario, "outcome")))) failures.push(issue("document.invalid-service-scenario-outcome", "Service scenario outcome is not supported.", [...servicePath, "outcome"], details));
+    if (own(scenario, "code") !== undefined && typeof own(scenario, "code") !== "string") failures.push(issue("document.invalid-service-scenario", "Service scenario code must be text.", [...servicePath, "code"], details));
+    if (own(scenario, "message") !== undefined && typeof own(scenario, "message") !== "string") failures.push(issue("document.invalid-service-scenario", "Service scenario message must be text.", [...servicePath, "message"], details));
+    if (own(scenario, "severity") !== undefined && own(scenario, "severity") !== "error" && own(scenario, "severity") !== "warning") failures.push(issue("document.invalid-service-scenario", "Service scenario severity must be error or warning.", [...servicePath, "severity"], details));
+    const forbidden = ["endpoint", "credentials", "retries", "cache"].find((name) => Object.prototype.hasOwnProperty.call(scenario, name));
+    if (forbidden !== undefined) failures.push(issue("document.forbidden-service-transport", `${forbidden} belongs in a trusted environment binding, not a preview scenario.`, [...servicePath, forbidden], details));
+  }
 }
 
 export function utf8ByteLength(value: string): number {
@@ -475,11 +509,13 @@ export function validateStudioProject(
         scenarios.forEach((scenario, index) => {
           const scenarioPath = [...formPath, "scenarios", index];
           if (!isPlainRecord(scenario)) { failures.push(issue("document.invalid-scenario", "Scenario must be an object.", scenarioPath, { formUid })); return; }
-          recordUid(failures, uids, own(scenario, "uid"), [...scenarioPath, "uid"]);
+          const scenarioUid = own(scenario, "uid");
+          const validScenarioUid = recordUid(failures, uids, scenarioUid, [...scenarioPath, "uid"]);
           if (typeof own(scenario, "title") !== "string") failures.push(issue("document.invalid-title", "Scenario title must be a string.", [...scenarioPath, "title"], { formUid }));
           if (!Object.prototype.hasOwnProperty.call(scenario, "value")) failures.push(issue("document.missing-scenario-value", "Scenario value is required.", [...scenarioPath, "value"], { formUid }));
           if (Object.prototype.hasOwnProperty.call(scenario, "context") && !isPlainRecord(own(scenario, "context"))) failures.push(issue("document.invalid-context", "Scenario context must be an object.", [...scenarioPath, "context"], { formUid }));
           if (Object.prototype.hasOwnProperty.call(scenario, "extensions") && !isPlainRecord(own(scenario, "extensions"))) failures.push(issue("document.invalid-extensions", "Scenario extensions must be an object.", [...scenarioPath, "extensions"], { formUid }));
+          if (validScenarioUid) validateScenarioServices(own(scenario, "services"), [...scenarioPath, "services"], failures, { formUid, entityUid: scenarioUid });
         });
       }
       if (!Array.isArray(own(formUnknown, "rootNodeUids"))) failures.push(issue("document.invalid-roots", "rootNodeUids must be an array.", [...formPath, "rootNodeUids"], { formUid }));

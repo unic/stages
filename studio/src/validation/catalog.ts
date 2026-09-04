@@ -2,6 +2,7 @@ import { getAtPath, type DataPath, type ValidationContext, type ValidatorConfig 
 import type { StudioValidatorSpec } from "../document/types";
 import { evaluateStudioExpression } from "../expressions/evaluator";
 import { studioExpressionDependencies } from "../expressions/serialization";
+import type { StudioAsyncServiceBindings, StudioAsyncServiceResult } from "../registry/services";
 
 export const STUDIO_VALIDATOR_CATALOG = Object.freeze({
   required: { displayName: "Required", description: "Requires a present, non-empty value." },
@@ -10,6 +11,7 @@ export const STUDIO_VALIDATOR_CATALOG = Object.freeze({
   pattern: { displayName: "Pattern", description: "Matches text against a regular expression." },
   comparison: { displayName: "Comparison", description: "Compares the owner value with an expression." },
   collection: { displayName: "Collection aggregate", description: "Checks row count or uniqueness." },
+  service: { displayName: "Async service", description: "Invokes a versioned trusted host binding." },
 } as const);
 
 export interface StudioValidatorCompilationDiagnostic {
@@ -21,6 +23,10 @@ export interface StudioValidatorCompilationDiagnostic {
 export interface CompiledStudioValidators {
   readonly validators: readonly ValidatorConfig<unknown, unknown>[];
   readonly diagnostics: readonly StudioValidatorCompilationDiagnostic[];
+}
+
+export interface CompileStudioValidatorsOptions {
+  readonly serviceBindings?: StudioAsyncServiceBindings;
 }
 
 function messageFor(spec: StudioValidatorSpec, context: ValidationContext<unknown, unknown>): string | undefined {
@@ -104,6 +110,7 @@ function passes(spec: StudioValidatorSpec, context: ValidationContext<unknown, u
     return pattern.test(value);
   }
   if (spec.kind === "comparison") return compare(spec.operator, value, evaluate(spec.other, context));
+  if (spec.kind === "service") return true;
   if (!Array.isArray(value)) return false;
   return (spec.min === undefined || value.length >= spec.min)
     && (spec.max === undefined || value.length <= spec.max)
@@ -111,7 +118,11 @@ function passes(spec: StudioValidatorSpec, context: ValidationContext<unknown, u
 }
 
 function inferredDependencies(spec: StudioValidatorSpec): readonly DataPath[] {
-  const expressions = [spec.when, spec.kind === "comparison" ? spec.other : undefined].filter((value) => value !== undefined);
+  const expressions = [
+    spec.when,
+    spec.kind === "comparison" ? spec.other : undefined,
+    spec.kind === "service" ? spec.request : undefined,
+  ].filter((value) => value !== undefined);
   const paths = [...(spec.dependencies ?? [])];
   for (const expression of expressions) for (const dependency of studioExpressionDependencies(expression)) {
     if (dependency.scope === "value") paths.push(dependency.path);
@@ -126,10 +137,32 @@ export function defaultStudioValidator(kind: StudioValidatorSpec["kind"], id: st
   if (kind === "range") return { ...common, kind, min: 0, message: "The value is outside the allowed range." };
   if (kind === "pattern") return { ...common, kind, pattern: ".+", message: "The value does not match the required format." };
   if (kind === "comparison") return { ...common, kind, operator: "===", other: { kind: "literal", value: "" }, message: "The values do not match." };
+  if (kind === "service") return { ...common, kind, service: { key: "availability", version: 1 }, message: "The service rejected this value." };
   return { ...common, kind, min: 1, message: "The collection does not meet its requirements." };
 }
 
-export function compileStudioValidators(specs: readonly StudioValidatorSpec[] | undefined): CompiledStudioValidators {
+function serviceIssues(
+  spec: Extract<StudioValidatorSpec, { readonly kind: "service" }>,
+  id: string,
+  context: ValidationContext<unknown, unknown>,
+  result: StudioAsyncServiceResult,
+) {
+  if (result.status === "success") return [];
+  const message = result.message ?? messageFor(spec, context);
+  return [{
+    id,
+    code: result.code?.trim() || spec.code?.trim() || "service-rejected",
+    path: spec.issuePath ?? context.path,
+    severity: result.severity ?? spec.severity ?? "error",
+    ...(message === undefined ? {} : { message }),
+    ...(result.meta === undefined ? {} : { meta: result.meta }),
+  }] as const;
+}
+
+export function compileStudioValidators(
+  specs: readonly StudioValidatorSpec[] | undefined,
+  options: CompileStudioValidatorsOptions = {},
+): CompiledStudioValidators {
   const validators: ValidatorConfig<unknown, unknown>[] = [];
   const diagnostics: StudioValidatorCompilationDiagnostic[] = [];
   const ids = new Set<string>();
@@ -160,7 +193,23 @@ export function compileStudioValidators(specs: readonly StudioValidatorSpec[] | 
       try { pattern = new RegExp(spec.pattern, spec.flags); }
       catch { diagnostics.push({ index, code: "compiler.invalid-validator-pattern", message: `Validator ${id} has an invalid regular expression.` }); continue; }
     }
+    const serviceBinding = spec.kind === "service" ? options.serviceBindings?.resolve(spec.service) : undefined;
+    if (spec.kind === "service" && serviceBinding === undefined) {
+      diagnostics.push({ index, code: "compiler.unresolved-service-binding", message: `Async service ${spec.service.key}@${spec.service.version} is not bound in this environment.` });
+      continue;
+    }
     const dependencies = inferredDependencies(spec);
+    const validate: ValidatorConfig<unknown, unknown>["validate"] = spec.kind === "service"
+      ? async (context) => {
+          const input = spec.request === undefined ? context.fieldValue : evaluate(spec.request, context);
+          const result = await serviceBinding!.invoke({ input, validation: context });
+          return serviceIssues(spec, id, context, result);
+        }
+      : (context) => {
+          if (passes(spec, context, pattern)) return [];
+          const message = messageFor(spec, context);
+          return [{ id, code: spec.code?.trim() || spec.kind, path: spec.issuePath ?? context.path, severity: spec.severity ?? "error", ...(message === undefined ? {} : { message }) }];
+        };
     validators.push({
       id,
       on: spec.on ?? ["input", "submit"],
@@ -168,11 +217,7 @@ export function compileStudioValidators(specs: readonly StudioValidatorSpec[] | 
       ...(spec.includeDisabled === undefined ? {} : { includeDisabled: spec.includeDisabled }),
       ...(dependencies.length === 0 ? {} : { dependencies }),
       ...(spec.when === undefined ? {} : { when: (context) => applies(spec, context) }),
-      validate: (context) => {
-        if (passes(spec, context, pattern)) return [];
-        const message = messageFor(spec, context);
-        return [{ id, code: spec.code?.trim() || spec.kind, path: spec.issuePath ?? context.path, severity: spec.severity ?? "error", ...(message === undefined ? {} : { message }) }];
-      },
+      validate,
     });
   }
   return { validators: Object.freeze(validators), diagnostics: Object.freeze(diagnostics) };

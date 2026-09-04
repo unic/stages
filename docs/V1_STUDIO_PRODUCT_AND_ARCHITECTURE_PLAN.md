@@ -65,6 +65,12 @@ Execution status:
   author and compile field, node, and form synchronous validators with event,
   reveal, severity, conditional, disabled, scope, dependency, localization,
   issue-inspection, and focus-first-error support
+- Session 19 completed: [`../studio/src/registry/services.ts`](../studio/src/registry/services.ts),
+  [`../studio/src/validation/catalog.ts`](../studio/src/validation/catalog.ts),
+  and [`../studio/docs/ASYNC_SERVICES.md`](../studio/docs/ASYNC_SERVICES.md)
+  define exact-version trusted async-service ports, environment bindings, and
+  transport-free deterministic pending/success/failure/stale/cancelled preview
+  scenarios with cancellation and stale-result evidence
 
 Primary references:
 

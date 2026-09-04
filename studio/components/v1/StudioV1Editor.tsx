@@ -32,6 +32,9 @@ import {
   type StudioLayoutSpec,
   type StudioPropControl,
   type StudioWidth,
+  STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
+  STUDIO_PREVIEW_SERVICE_EXTENSION,
+  studioPreviewServiceExtensions,
 } from "../../src/registry";
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
 import { StudioProjectConflictError } from "../../src/projects/types";
@@ -533,9 +536,9 @@ function PresentationInspector({ node, onUpdate }: {
 
 function ScenarioObjectEditor({ scenario, property, label, onUpdate }: {
   readonly scenario: StudioScenario;
-  readonly property: "context" | "extensions";
+  readonly property: "context" | "extensions" | "services";
   readonly label: string;
-  readonly onUpdate: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => void;
+  readonly onUpdate: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => void;
 }) {
   const [draft, setDraft] = useState(() => JSON.stringify(scenario[property] ?? {}, null, 2));
   const [error, setError] = useState("");
@@ -546,7 +549,7 @@ function ScenarioObjectEditor({ scenario, property, label, onUpdate }: {
       const value = JSON.parse(source) as unknown;
       if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("Expected a JSON object.");
       setError("");
-      onUpdate(scenario, { [property]: value as JsonObject });
+      onUpdate(scenario, { [property]: value } as Partial<Pick<StudioScenario, "context" | "extensions" | "services">>);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Invalid JSON object.");
     }
@@ -592,7 +595,7 @@ function DynamicStructurePanel({ form, nodes, snapshots, value, scenario }: { re
 function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: {
   readonly form: StudioFormDocument;
   readonly compiled: CompiledStudioForm;
-  readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => void;
+  readonly onUpdateScenario: (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => void;
   readonly onAddScenario: () => StudioScenario | undefined;
 }) {
   const previewRef = useRef<HTMLElement>(null);
@@ -601,13 +604,13 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
   const scenario = form.scenarios.find(({ uid }) => uid === activeScenarioUid) ?? form.scenarios[0];
   const [value, setValue] = useState<unknown>(() => initialScenario?.value ?? createEmptyStudioScenarioValue(form));
   const extensionCodecs = useMemo(() => Object.fromEntries(
-    [...new Set(form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {})))].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
+    [...new Set([STUDIO_PREVIEW_SERVICE_EXTENSION, ...form.scenarios.flatMap((item) => Object.keys(item.extensions ?? {}))])].map((namespace) => [namespace, STUDIO_JSON_EXTENSION_CODEC]),
   ), [form.scenarios]);
   const [host] = useState(() => createStudioPreviewHost({
     compiled,
     value,
     ...(initialScenario?.context === undefined ? {} : { context: initialScenario.context }),
-    ...(initialScenario?.extensions === undefined ? {} : { extensions: initialScenario.extensions }),
+    extensions: studioPreviewServiceExtensions(initialScenario?.extensions, initialScenario?.services),
     extensionCodecs,
     onProposal: (proposal) => setValue(proposal.value),
   }));
@@ -618,10 +621,10 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
     compiled,
     value,
     ...(scenario?.context === undefined ? {} : { context: scenario.context }),
-    ...(scenario?.extensions === undefined ? {} : { extensions: scenario.extensions }),
+    extensions: studioPreviewServiceExtensions(scenario?.extensions, scenario?.services),
     extensionCodecs,
     onProposal,
-  }), [compiled, extensionCodecs, onProposal, scenario?.context, scenario?.extensions, value]);
+  }), [compiled, extensionCodecs, onProposal, scenario?.context, scenario?.extensions, scenario?.services, value]);
   const preview = useStudioPreviewHost(host, input);
   const [validationScope, setValidationScope] = useState<string>("form");
   const [validationMessage, setValidationMessage] = useState("Validation has not run.");
@@ -665,6 +668,7 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
         {scenario && <div key={scenario.uid} className="studio-v1-scenarios__objects">
           <ScenarioObjectEditor scenario={scenario} property="context" label="Context JSON" onUpdate={onUpdateScenario} />
           <ScenarioObjectEditor scenario={scenario} property="extensions" label="Feature flags JSON" onUpdate={onUpdateScenario} />
+          <ScenarioObjectEditor scenario={scenario} property="services" label="Async service mocks JSON" onUpdate={onUpdateScenario} />
         </div>}
       </section>
       <DynamicStructurePanel form={form} nodes={compiled.renderPlan.nodes} snapshots={preview.snapshot.nodes} value={value} scenario={scenario} />
@@ -675,7 +679,7 @@ function ControlledPreview({ form, compiled, onUpdateScenario, onAddScenario }: 
           {[...compiled.sourceMap.byUid.values()].filter((entry) => entry.uid !== form.uid).map((entry) => <option key={entry.uid} value={entry.uid}>{nodeLabel(form, entry.uid)}</option>)}
         </select></label>
         <Button type="button" size="sm" onClick={() => void validate()}>Validate and reveal</Button>
-        <p role="status" aria-live="polite">{validationMessage} Status: {validationInspection.status}.</p>
+        <p role="status" aria-live="polite">{validationMessage} Status: {validationInspection.status}. Pending: {validationInspection.pendingCount}.</p>
         {validationInspection.issues.length > 0 && <ul>{validationInspection.issues.map(({ issue, targetUid, visible }) => <li key={`${targetUid ?? "form"}:${issue.id}:${JSON.stringify(issue.path)}`}>
           <strong>{issue.severity}</strong> {issue.message ?? issue.code} <small>{visible ? "visible" : "hidden"}{targetUid === undefined ? "" : ` · ${nodeLabel(form, targetUid)}`}</small>
         </li>)}</ul>}
@@ -1042,7 +1046,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     return node === undefined ? [] : [node];
   });
   const formSelected = navigation.workbench.selectedUids.includes(form.uid);
-  const compiled = compileStudioForm(form, history.present.fragments);
+  const compiled = compileStudioForm(form, history.present.fragments, { serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS });
 
   const replaceHistory = (nextHistory: StudioHistoryState) => {
     const nextOutline = createStudioOutlineModel(nextHistory.present);
@@ -1197,6 +1201,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       value: createEmptyStudioScenarioValue(form, history.present.fragments),
       context: {},
       extensions: {},
+      services: {},
     };
     const result = dispatchStudioCommand(history, { type: "scenario.insert", formUid: form.uid, index: form.scenarios.length, scenario }, { label: `Add ${scenario.title}` });
     if (!result.ok) { setStatus(result.failure.message); return undefined; }
@@ -1205,7 +1210,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     return scenario;
   };
 
-  const updateScenario = (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions">>) => {
+  const updateScenario = (scenario: StudioScenario, changes: Partial<Pick<StudioScenario, "context" | "extensions" | "services">>) => {
     const result = dispatchStudioCommand(history, { type: "scenario.update", formUid: form.uid, uid: scenario.uid, changes }, { label: `Edit ${scenario.title}`, coalesceKey: `scenario:${scenario.uid}:${Object.keys(changes)[0] ?? "settings"}` });
     if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
   };
