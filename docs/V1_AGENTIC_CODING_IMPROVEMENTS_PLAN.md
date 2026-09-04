@@ -1,3 +1,5 @@
+# V1 Agentic Coding Improvements Plan
+
 The best setup here is a three-layer system:
 
 1. Small, durable `AGENTS.md` files for invariants.
@@ -383,5 +385,3 @@ The setup is complete when:
 - The complete existing release gate still passes.
 - Successful verification produces concise output, while failures retain actionable diagnostics.
 - No instruction or skill duplicates facts already maintained in source, tests, or documentation.
-
-No repository files were changed during this planning pass.
