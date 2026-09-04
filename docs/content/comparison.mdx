@@ -1,0 +1,167 @@
+---
+title: Stages compared with React form libraries
+description: Compare Stages v1 with React Hook Form, TanStack Form, Formik, and React Final Form by architecture, ownership, and first-party capabilities.
+---
+
+import { Callout } from 'nextra/components'
+
+# Stages compared with React form libraries
+
+Stages overlaps with React form libraries, but its main abstraction is
+different: it is a schema-driven workflow engine whose core runs outside React.
+Use this guide to decide whether that extra structure matches the problem you
+are solving.
+
+**For:** teams evaluating a form architecture for a React application.  
+**Prerequisites:** familiarity with controlled and uncontrolled React inputs.
+
+<Callout emoji="🧪">
+  Stages v1 is currently `1.0.0-alpha.0`. The alternatives on this page are
+  established projects with different compatibility and ecosystem histories.
+  Include maturity and migration risk in the decision, not only features.
+</Callout>
+
+## Short answer
+
+- Choose **React Hook Form** for ergonomic, native-input-oriented React forms,
+  especially when keeping component rerenders narrow is the main concern.
+- Choose **TanStack Form** for deeply typed, headless form state with granular
+  reactivity and first-party adapters across several UI frameworks.
+- Choose **Formik** for a familiar React state-and-props model and a compact,
+  batteries-included form API.
+- Choose **React Final Form** for an established subscription model and an
+  extensible, framework-independent Final Form core behind the React binding.
+- Choose **Stages** when the product needs a runtime-evaluated form schema,
+  externally accepted values, recursive collections and wizards, or portable
+  workflow state across multiple renderers.
+
+These choices can also compose. For example, an application can keep remote
+submission in TanStack Query regardless of its form engine. Compare what each
+library owns first; a check mark does not show how much application policy is
+still required.
+
+## Architecture and ownership
+
+| Concern | Stages v1 | React Hook Form | TanStack Form | Formik | React Final Form |
+| --- | --- | --- | --- | --- | --- |
+| Primary abstraction | Framework-neutral controller evaluates a recursive schema into snapshots and proposals | React hooks register inputs and manage form state | Headless, typed form and field APIs backed by granular store state | React components and hooks manage values, errors, touched state, and submission | React binding around a subscription-based Final Form instance |
+| Canonical value | Application-owned; events propose a value and only `controller.update()` accepts or replaces it | Form control owns values by default; `values` and `Controller` cover externally supplied values and controlled components | Form API owns values changed through field/form methods | Formik owns values in React state, with reinitialization and imperative setters | Final Form instance owns values, with initialization and mutators |
+| UI structure | Schema declares fields, groups, collections, and wizards; a field registry maps field types to views | Application declares React markup and registers fields | Application declares framework markup with field APIs | Application declares React markup with `Formik`, `Field`, or hooks | Application declares React markup with `Form`, `Field`, and render props/hooks |
+| Renderer reach | First-party React, Vue, Angular, and DOM adapters; custom-adapter contract | React web and React Native | First-party React, Preact, Vue, Angular, Solid, Svelte, and Lit adapters | React and React Native | React Final Form is the official React binding; the underlying core is framework-independent and other bindings are companion projects |
+| Update observation | Whole-snapshot subscriptions plus selector subscriptions; immutable snapshots | Scoped hooks, watches, and form-state subscriptions | Store selectors and granular field/form subscriptions | React context/state; `FastField` narrows updates for isolated fields | Explicit form and field subscription masks |
+| Submission and networking | Deliberately application-owned; validate, then call the application service and accept/reject its result | `handleSubmit` orchestrates valid/invalid callbacks; networking remains application code | `handleSubmit` and async `onSubmit`; networking remains application code | `handleSubmit`/`onSubmit` and submitting state; networking remains application code | `handleSubmit`/`onSubmit`, including submission errors; networking remains application code |
+
+The biggest distinction is the value handshake. A Stages field event may
+calculate patches, transforms, and a proposed value, but it cannot silently
+replace the application's canonical value. That makes server authorization,
+normalization, shared stores, and delayed acceptance explicit. The other
+libraries primarily manage a form's current values and expose APIs for the
+application to read, reset, or replace them.
+
+## Capability comparison
+
+In this table, **built in** means the named package exposes a first-party
+primitive for the capability. **Compose** means the documented approach uses
+application code or a companion package. It does not mean the use case is
+unsupported.
+
+| Capability | Stages v1 | React Hook Form | TanStack Form | Formik | React Final Form |
+| --- | --- | --- | --- | --- | --- |
+| Nested values | Typed segment paths and recursive schema nodes | Typed dot-path field names | Deeply typed field names | Dot/bracket field names | Dot/bracket field names |
+| Repeating data | Built-in collection nodes, constraints, variant rows, commands, and stable row identity independent of index | Built-in `useFieldArray` with generated field IDs and array operations | Built-in array field mode and array operations | Built-in `FieldArray` helpers | Compose with the official `final-form-arrays` mutators package |
+| Multi-step flows | Built-in wizard/stage nodes, active-stage metadata, guards, scoped validation, and visibility reconciliation | Compose with application state/router | Compose with application state/router | Compose; the project publishes multi-step examples | Compose; the project publishes a wizard example |
+| Conditional structure | Schema factories plus `when`, `disabled`, and derived props are reevaluated into a render tree | Conditional React rendering and field registration | Conditional framework rendering plus listeners/dynamic validation | Conditional React rendering | Conditional React rendering and registration policy |
+| Synchronous validation | Field reducers/validators plus node-scoped validators, triggers, scopes, and structured issues | Built-in field rules, custom validation, or a resolver | Field/form validators by lifecycle trigger; Standard Schema support | Field/form validation and Yup schema integration | Field/form validation with field-level and record-level errors |
+| Asynchronous validation | Built in with dependency tracking, cancellation signals, stale-result suppression, and explicit failure presentation | Async custom validation/resolvers; request policy is application-owned | Built-in async validators, debouncing, and cancellation | Async field/form validators; request policy is application-owned | Async record/field validation; request policy is application-owned |
+| Persistent workflow state | Versioned envelope for value, baseline, interaction state, validation, collection identity, wizard position, and extension data; codecs and migrations are first party | Compose persistence around values/form state | Compose persistence around values/form state | Compose persistence around values/form state | Compose persistence around values/form state |
+| Operational diagnostics | Structured diagnostic codes, callback observation, safety limits, and documented recovery | Errors and form state; broader operational diagnostics are application-owned | Form/field state and first-party devtools | Errors and form state | Form/field state plus a `debug` callback |
+| Rendering and accessibility | Headless in React; DOM adapter supplies native field definitions. Applications still own layout, labels, focus policy, and error announcements | Headless/native-input-oriented; application owns accessible markup | Headless; application owns accessible markup | Headless helpers; application owns accessible markup | Headless helpers; application owns accessible markup |
+
+## Where Stages is intentionally different
+
+### It models workflows, not only field state
+
+Collections and wizards are nodes in the same recursive schema as fields and
+groups. A collection row keeps a stable identity when it moves. A wizard's
+active stage is metadata that can be serialized and reconciled when a dynamic
+stage disappears. In the other libraries, arrays are first-class form data,
+but step navigation is normally application composition.
+
+### Runtime schemas drive rendering
+
+Stages evaluates schema factories, visibility, disabled state, and derived
+props against the current value and context. Adapters render the resulting
+snapshot. This is useful for form platforms and server-informed workflows, but
+it introduces schema and field-registry concepts that a component-local form
+does not need.
+
+### Persistence includes controller state
+
+Stages can serialize more than values: its envelope can retain interaction
+metadata, validation records, collection keys, wizard positions, and
+registered extension state. Version checks, value codecs, extension codecs,
+and migrations make recreation an explicit contract. If saving current values
+is sufficient, every alternative can do that with less machinery.
+
+### Submission stays outside the engine
+
+Stages does not own an endpoint, mutation hook, router, or storage service.
+This keeps those choices portable across adapters and makes acceptance policy
+visible, but it means a small submit-only React form needs more assembly than
+with a library whose form API directly orchestrates `onSubmit`.
+
+## Decision questions
+
+Start with these questions rather than a feature count:
+
+1. Must a server or external store accept, replace, or reject every proposed
+   value? Stages makes that boundary foundational.
+2. Is the form structure runtime data that must behave consistently outside
+   React? Stages or TanStack Form's framework adapters deserve a closer look;
+   their schema/rendering models are still different.
+3. Are collections and multi-step navigation domain-level workflow concepts?
+   Stages provides both in core. The alternatives compose wizard navigation
+   around their form state.
+4. Must a draft restore interaction, validation, row identity, and wizard
+   position across deployments? Stages has a versioned recreation contract.
+5. Is this a conventional React form whose state can remain local? React Hook
+   Form, TanStack Form, Formik, or React Final Form will usually be the smaller
+   conceptual commitment.
+
+Do not choose from this page alone. Prototype one representative dynamic
+branch, one async validation race, one reordered collection, and one rejected
+server save. Those cases expose ownership and lifecycle differences much more
+reliably than a login-form demo.
+
+## Comparison sources
+
+This comparison was reviewed on **2026-09-04** against the projects' official
+documentation. Capabilities and adapters can change; follow the links before
+making a long-lived platform decision.
+
+- [React Hook Form overview](https://react-hook-form.com/),
+  [`useFieldArray` API](https://react-hook-form.com/docs/usefieldarray), and
+  [resolver integrations](https://github.com/react-hook-form/resolvers)
+- [TanStack Form basic concepts](https://tanstack.com/form/latest/docs/framework/react/guides/basic-concepts),
+  [validation](https://tanstack.com/form/latest/docs/framework/react/guides/validation), and
+  [supported frameworks](https://tanstack.com/form/latest/docs/framework)
+- [Formik overview](https://formik.org/),
+  [validation](https://formik.org/docs/guides/validation), and
+  [`FieldArray`](https://formik.org/docs/api/fieldarray)
+- [React Final Form `Form`](https://final-form.org/docs/react-final-form/api/Form),
+  [Final Form configuration](https://final-form.org/docs/final-form/types/Config),
+  and [Final Form Arrays](https://final-form.org/docs/final-form-arrays/getting-started)
+
+Next: learn the [Stages mental model](/start/mental-model), or build the
+[React quickstart](/start/react-quickstart) before running the prototype cases.
+
+## Evidence
+
+Stages ownership and ordering are enforced by the
+[`controller` tests](https://github.com/unic/stages/blob/master/packages/core/test/controller.test.mjs).
+The public recursive schema, validation, persistence, and controller contracts
+come from
+[`types.ts`](https://github.com/unic/stages/blob/master/packages/core/src/types.ts).
+Adapter behavior is covered by the
+[`React` tests](https://github.com/unic/stages/blob/master/packages/react/test/react.test.mjs)
+and the corresponding Vue, Angular, DOM, and test-kit suites.

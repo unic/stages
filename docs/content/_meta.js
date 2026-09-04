@@ -1,6 +1,7 @@
 export default {
   "index": "Overview",
   "start": "Start here",
+  "comparison": "Compare form libraries",
   "core-concepts": "Core concepts",
   "structures": "Structures",
   "validation": "Validation",
