@@ -1,2 +1,2 @@
 /** Browser and hosted platform ports and their adapters. */
-export {};
+export * from "./indexeddb-project-repository";

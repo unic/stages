@@ -4,7 +4,14 @@ import { importLegacyStudioProject } from "../../src/legacy/importer";
 import type { LegacyImportDiagnostic } from "../../src/legacy/types";
 import shadcnFields from "../shadcnFields";
 
-interface StudioDocumentStartupValue {
+export const STUDIO_SUPPORTED_DEFINITIONS: Readonly<Record<string, readonly number[]>> = Object.freeze(Object.fromEntries([
+  ...Object.keys(shadcnFields),
+  "block:divider",
+  "block:heading",
+  "block:message",
+].map((key) => [key, Object.freeze([1])])));
+
+export interface StudioDocumentStartupValue {
   readonly mode: "document-v1" | "legacy";
   readonly project?: StudioProjectDocument;
   readonly diagnostics: readonly LegacyImportDiagnostic[];
@@ -22,7 +29,7 @@ export interface StudioDocumentStartupProps {
   readonly value: unknown;
 }
 
-function useStudioDocumentStartup(): StudioDocumentStartupValue {
+export function useStudioDocumentStartup(): StudioDocumentStartupValue {
   return useContext(StudioDocumentContext);
 }
 

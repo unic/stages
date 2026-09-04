@@ -228,6 +228,28 @@ button, input, select, textarea { font: inherit; }
 .studio-shell { display: grid; width: 100vw; height: 100vh; grid-template-columns: minmax(0, 1fr) 393px; overflow: hidden; }
 .studio-shell__canvas, .studio-shell__sidebar { min-width: 0; height: 100vh; }
 .studio-shell__sidebar { z-index: 20; }
+.studio-v1-editor { min-height: 100vh; background: #f6f7fb; }
+.studio-v1-toolbar { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.25rem 1rem; border-bottom: 1px solid var(--border); background: color-mix(in srgb, white 94%, transparent); padding: 0.8rem 1rem; backdrop-filter: blur(12px); }
+.studio-v1-toolbar > div { display: flex; align-items: baseline; gap: 0.75rem; }
+.studio-v1-toolbar > div span, .studio-v1-toolbar > p, .studio-v1-section-heading span { color: var(--muted-foreground); font-size: 0.82rem; }
+.studio-v1-toolbar nav { display: flex; gap: 0.45rem; }
+.studio-v1-toolbar > p { grid-column: 1 / -1; margin: 0; }
+.studio-v1-workspace { display: grid; grid-template-columns: 210px minmax(320px, 1fr) 280px; gap: 1px; background: var(--border); }
+.studio-v1-palette, .studio-v1-canvas, .studio-v1-inspector, .studio-v1-preview { background: var(--background); padding: 1rem; }
+.studio-v1-palette h2, .studio-v1-inspector h2, .studio-v1-section-heading h2 { margin: 0; font-size: 1rem; }
+.studio-v1-palette .ui-button { width: 100%; margin-top: 1rem; }
+.studio-v1-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.studio-v1-node-list, .studio-v1-node__children { display: grid; gap: 0.55rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+.studio-v1-node__children { margin: 0.55rem 0 0 1.2rem; }
+.studio-v1-node__select { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: white; padding: 0.7rem 0.8rem; text-align: left; cursor: pointer; }
+.studio-v1-node__select[aria-pressed="true"] { border-color: #2563eb; box-shadow: 0 0 0 2px rgb(37 99 235 / 0.12); }
+.studio-v1-node__select small { color: var(--muted-foreground); }
+.studio-v1-inspector p { color: var(--muted-foreground); }
+.studio-v1-inspector .studio-field { margin-top: 1rem; }
+.studio-v1-preview { margin-top: 1px; }
+.studio-v1-preview__fields { display: grid; max-width: 720px; gap: 1rem; margin: 1rem auto; }
+.studio-v1-preview__group { display: grid; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+.studio-v1-empty { padding: 2rem; }
 .marketing-grid { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 5rem; margin: 4rem; }
 @media (min-width: 576px) { .marketing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 992px) { .marketing-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -237,4 +259,5 @@ button, input, select, textarea { font: inherit; }
   .studio-shell { grid-template-columns: 1fr; overflow: auto; }
   .studio-shell__sidebar { position: fixed; right: 0; bottom: 0; left: 0; height: min(58vh, 560px); }
   .studio-shell__sidebar > div { min-width: 0 !important; height: 100% !important; }
+  .studio-v1-workspace { grid-template-columns: 1fr; }
 }

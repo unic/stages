@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import StudioEditorPage from "./StudioEditorPage";
 import useStagesStore from "./store";
 import editorConfig from "./configTemplates/initialConfig";
+import { createMemoryProjectRepository } from "../src/projects";
 
 describe("StudioEditorPage interactions", () => {
   beforeEach(() => {
@@ -54,11 +55,38 @@ describe("StudioEditorPage interactions", () => {
   });
 
   it("imports live startup state into document v1 behind the feature flag", () => {
-    render(<StudioEditorPage documentV1Enabled />);
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository()} />);
     const startup = document.querySelector('[data-studio-startup="document-v1"]');
     expect(startup).toBeTruthy();
     expect(startup).toHaveAttribute("data-studio-project-format", "stages-studio");
     expect(startup).toHaveAttribute("data-studio-import-errors", "0");
+  });
+
+  it("runs the document-v1 editor slice from palette through local draft reload", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository();
+    const first = render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("New local draft");
+
+    await user.click(screen.getByRole("button", { name: "Add text field" }));
+    const label = screen.getByRole("textbox", { name: "Label" });
+    await user.clear(label);
+    await user.type(label, "Speaker name");
+    expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: "Speaker name" }), "Ada");
+    expect(screen.getByRole("textbox", { name: "Speaker name" })).toHaveValue("Ada");
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("textbox", { name: "Text field" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Local draft saved");
+
+    first.unmount();
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
   });
 
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {
