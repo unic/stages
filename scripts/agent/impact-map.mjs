@@ -60,6 +60,11 @@ const publicCoreFiles = new Set([
   "packages/core/src/serialization.ts",
   "packages/core/src/types.ts",
 ]);
+const studioIntegrationFiles = new Set([
+  "studio/components/App.jsx",
+  "studio/components/StudioEditorPage.jsx",
+  "studio/components/v1/StudioV1Preview.jsx",
+]);
 
 function normalize(relativePath) {
   return relativePath.replaceAll("\\", "/").replace(/^\.\//, "");
@@ -89,6 +94,8 @@ function adapterCommands(adapter) {
 
 export function commandsForPath(inputPath) {
   const file = normalize(inputPath);
+
+  if (file.startsWith("packages/") && file.endsWith("/package.json")) return ["release"];
 
   if (file.startsWith("packages/core/src/")) {
     return publicCoreFiles.has(file) ? ["release"] : coreFocused;
@@ -124,6 +131,7 @@ export function commandsForPath(inputPath) {
     return ["check:docs", "build:docs"];
   }
 
+  if (studioIntegrationFiles.has(file)) return ["test:studio", "build:studio"];
   if (file.startsWith("studio/components/")) return ["test:studio"];
   if (file.startsWith("studio/pages/") || file === "studio/next.config.js") {
     return ["test:studio", "build:studio"];
@@ -131,7 +139,6 @@ export function commandsForPath(inputPath) {
 
   if (file.startsWith("src/")) return ["build:legacy"];
 
-  if (file.startsWith("packages/") && file.endsWith("/package.json")) return ["release"];
   if (isConfigurationFile(file)) return ["check:v1", "test:v1", "verify:packages"];
 
   return fallback;

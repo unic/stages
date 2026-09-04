@@ -27,8 +27,11 @@ const cases = [
   ["docs/content/core.mdx", ["check:docs", "build:docs"]],
   ["docs/components/StagesExample.jsx", ["check:docs", "build:docs"]],
   ["studio/components/store.js", ["test:studio"]],
+  ["studio/components/StudioEditorPage.jsx", ["test:studio", "build:studio"]],
+  ["studio/components/v1/StudioV1Preview.jsx", ["test:studio", "build:studio"]],
   ["studio/pages/index.jsx", ["test:studio", "build:studio"]],
   ["packages/react/package.json", ["release"]],
+  ["packages/test-kit/package.json", ["release"]],
   ["package-lock.json", ["check:v1", "test:v1", "verify:packages"]],
   ["src/lib/index.js", ["build:legacy"]],
   ["new-app/source.ts", ["check:v1", "test:v1"]],
@@ -50,6 +53,12 @@ test("a release-level path supersedes narrower verification", () => {
     mapChangedPaths(["packages/core/src/controller.ts", "packages/core/src/types.ts"]).commandIds,
     ["release"],
   );
+});
+
+test("every public package manifest receives release-level verification", () => {
+  for (const packageName of ["core", "dom", "react", "vue", "angular", "test-kit"]) {
+    assert.deepEqual(commandsForPath(`packages/${packageName}/package.json`), ["release"], packageName);
+  }
 });
 
 test("every command id resolves to an executable command", () => {

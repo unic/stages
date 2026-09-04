@@ -32,8 +32,8 @@ export function commandIdsForMode(paths, mode) {
   return focused.length > 0 ? focused : selected;
 }
 
-function trackedStatus() {
-  return git(["status", "--short", "--untracked-files=no"]);
+function trackedState() {
+  return git(["diff", "--binary", "HEAD"]);
 }
 
 export function runCommand(id, logDirectory, options = {}) {
@@ -61,6 +61,27 @@ export function didTrackedStateChange(before, after) {
   return before !== after;
 }
 
+export function executeVerification(ids, options = {}) {
+  const state = options.trackedState ?? trackedState;
+  const runner = options.runCommand ?? runCommand;
+  const logger = options.logger ?? console;
+  const before = state();
+  const logs = mkdtempSync(path.join(tmpdir(), "stages-verify-"));
+  for (const id of ids) {
+    if (!runner(id, logs)) {
+      if (didTrackedStateChange(before, state())) {
+        logger.warn("Warning: verification changed tracked working-tree state.");
+      }
+      return { success: false, logDirectory: logs };
+    }
+  }
+  if (didTrackedStateChange(before, state())) {
+    logger.warn("Warning: verification changed tracked working-tree state.");
+  }
+  rmSync(logs, { recursive: true, force: true });
+  return { success: true };
+}
+
 function main() {
   const mode = process.argv[2] ?? "change";
   if (!modes.has(mode)) {
@@ -80,17 +101,7 @@ function main() {
   for (const id of ids) console.log(`  ${commands[id]}`);
   if (mode === "plan") return;
 
-  const before = trackedStatus();
-  const logs = mkdtempSync(path.join(tmpdir(), "stages-verify-"));
-  for (const id of ids) {
-    if (!runCommand(id, logs)) {
-      process.exitCode = 1;
-      return;
-    }
-  }
-  const after = trackedStatus();
-  if (didTrackedStateChange(before, after)) console.warn("Warning: verification changed tracked working-tree state.");
-  rmSync(logs, { recursive: true, force: true });
+  if (!executeVerification(ids).success) process.exitCode = 1;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

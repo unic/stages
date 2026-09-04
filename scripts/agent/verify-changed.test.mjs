@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { commandIdsForMode, didTrackedStateChange, runCommand } from "./verify-changed.mjs";
+import { commandIdsForMode, didTrackedStateChange, executeVerification, runCommand } from "./verify-changed.mjs";
 
 test("release mode always delegates to the complete release gate", () => {
   assert.deepEqual(commandIdsForMode(["docs/examples/persistence.ts"], "release"), ["release"]);
@@ -45,4 +45,21 @@ test("failed commands retain their complete log", async () => {
 test("detects tracked-state mutation without flagging stable state", () => {
   assert.equal(didTrackedStateChange(" M package.json\n", " M package.json\n"), false);
   assert.equal(didTrackedStateChange("", " M generated-cache.json\n"), true);
+});
+
+test("warns about tracked mutations even when verification fails", async () => {
+  const warnings = [];
+  const states = ["before", "after"];
+  const result = executeVerification(["controlled"], {
+    trackedState: () => states.shift(),
+    runCommand: () => false,
+    logger: { warn: (message) => warnings.push(message) },
+  });
+  try {
+    assert.equal(result.success, false);
+    assert.deepEqual(warnings, ["Warning: verification changed tracked working-tree state."]);
+    assert.equal(existsSync(result.logDirectory), true);
+  } finally {
+    await rm(result.logDirectory, { recursive: true, force: true });
+  }
 });
