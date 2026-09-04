@@ -94,6 +94,14 @@ describe("Studio document validation", () => {
     if (!noRegistry.ok) expect(noRegistry.diagnostics.map((entry) => entry.code))
       .toContain("document.unsupported-definition-version");
   });
+
+  it("rejects executable-shaped behavior instead of treating it as an expression", () => {
+    const input = validProject();
+    const form = (input["forms"] as Record<string, Record<string, unknown>>)["form_event"]!;
+    const nodes = form["nodes"] as Record<string, Record<string, unknown>>;
+    nodes["field_title"]!["computed"] = { kind: "call", callee: "alert", arguments: [1] };
+    expectCode(input, "document.invalid-expression");
+  });
 });
 
 describe("Studio project migrations and serialization", () => {

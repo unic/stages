@@ -15,10 +15,13 @@ The envelope identifies itself with `format: "stages-studio"` and
 fragment storage, and JSON-safe resources.
 
 Each form has a stable UID, runtime schema identity/version, an ordered root UID
-list, a normalized node map, named scenarios, and settings. The initial node
-union contains groups with ordered child UID references and fields with an
-exact trusted-definition key/version requirement. Scenarios keep preview value,
-context, and extensions separate from the project and controller runtime state.
+list, a normalized node map, named scenarios, and settings. The node union
+contains fields, presentation blocks, groups, collections, wizards, and stages.
+References keep every recursive structure normalized. Fields and blocks carry
+exact trusted-definition key/version requirements. Safe behavior is stored as
+a declarative expression AST; executable functions never enter the document.
+Scenarios keep preview value, context, and extensions separate from the project
+and controller runtime state.
 
 Every editable entity UID is globally unique in a project. Map keys must equal
 the entity UID. Runtime IDs remain separately editable and reject the unsafe
@@ -46,10 +49,10 @@ Arbitrary JSON resources and scenario values also have a defensive nesting
 limit of 100 so valid input can always be cloned and canonically serialized
 without recursive-parser exhaustion.
 
-`supportedDefinitions` is supplied by the trusted registry boundary. A field
-requiring an absent key or version is rejected; omitting the catalog means no
-field definitions are supported. The document never silently upgrades a field
-definition.
+`supportedDefinitions` is supplied by the trusted registry boundary. A field or
+presentation block requiring an absent key or version is rejected; omitting the
+catalog means no definitions are supported. The document never silently
+upgrades a definition.
 
 ## Migration policy
 

@@ -48,7 +48,9 @@ characterization tests intentionally preserve that fact for the later importer.
   bypass `updateCurrentConfig` history.
 - Fieldset definition edits do not participate in `currentConfig` history.
 - Legacy visibility and computed-value strings are executable JavaScript in the
-  converter. They are migration input only and must not enter the new document.
+  converter. The importer converts the supported subset to a safe AST and keeps
+  unsupported source only as inert, error-producing migration metadata; no
+  imported source enters executable document behavior.
 
 ## Reference baseline
 

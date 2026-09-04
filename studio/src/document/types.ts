@@ -5,28 +5,74 @@ export type JsonPrimitive = boolean | null | number | string;
 export type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
 export interface JsonObject { readonly [key: string]: JsonValue; }
 
+import type { StudioExpression } from "../expressions/types";
+
 export interface StudioDefinitionRef {
   readonly key: string;
   readonly version: number;
 }
 
+export interface StudioNodeBehavior {
+  readonly when?: StudioExpression;
+  readonly disabled?: boolean | StudioExpression;
+}
+
 interface StudioNodeBase {
   readonly uid: Uid;
-  readonly runtimeId: string;
+  readonly presentation?: JsonObject;
+  readonly behavior?: StudioNodeBehavior;
+  readonly legacy?: JsonObject;
 }
 
 export interface StudioFieldNode extends StudioNodeBase {
   readonly kind: "field";
+  readonly runtimeId: string;
   readonly definition: StudioDefinitionRef;
   readonly props: JsonObject;
+  readonly computed?: StudioExpression;
+  readonly validators?: readonly StudioValidatorSpec[];
 }
 
 export interface StudioGroupNode extends StudioNodeBase {
   readonly kind: "group";
+  readonly runtimeId: string;
   readonly childUids: readonly Uid[];
 }
 
-export type StudioNode = StudioFieldNode | StudioGroupNode;
+export interface StudioCollectionNode extends StudioNodeBase {
+  readonly kind: "collection";
+  readonly runtimeId: string;
+  readonly childUids: readonly Uid[];
+  readonly min?: number;
+  readonly max?: number;
+  readonly initialRows?: number;
+}
+
+export interface StudioWizardNode extends StudioNodeBase {
+  readonly kind: "wizard";
+  readonly runtimeId: string;
+  readonly stageUids: readonly Uid[];
+}
+
+export interface StudioStageNode extends StudioNodeBase {
+  readonly kind: "stage";
+  readonly runtimeId: string;
+  readonly childUids: readonly Uid[];
+}
+
+export interface StudioBlockNode extends StudioNodeBase {
+  readonly kind: "block";
+  readonly definition: StudioDefinitionRef;
+  readonly props: JsonObject;
+}
+
+export interface StudioValidatorSpec {
+  readonly kind: "required";
+  readonly message: string;
+}
+
+export type StudioNode = StudioBlockNode | StudioCollectionNode | StudioFieldNode
+  | StudioGroupNode | StudioStageNode | StudioWizardNode;
 
 export interface StudioScenario {
   readonly uid: Uid;

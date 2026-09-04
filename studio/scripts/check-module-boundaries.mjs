@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"]);
-const PURE_MODULES = new Set(["document", "commands", "compiler"]);
+const PURE_MODULES = new Set(["document", "commands", "compiler", "expressions", "legacy"]);
 const OUTWARD_MODULES = new Set(["editor", "projects", "runtime", "platform"]);
 const FORBIDDEN_PACKAGES = ["react", "react-dom", "next", "zustand"];
 const FORBIDDEN_STORAGE_PACKAGES = ["idb", "localforage"];

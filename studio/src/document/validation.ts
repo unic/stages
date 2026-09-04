@@ -8,6 +8,7 @@ import type {
   Uid,
 } from "./types";
 import { isSafeObjectKey, isUid } from "./uid";
+import { isStudioExpression } from "../expressions/validation";
 
 export const DEFAULT_STUDIO_DOCUMENT_LIMITS: StudioDocumentLimits = Object.freeze({
   maxBytes: 5 * 1024 * 1024,
@@ -216,9 +217,12 @@ function checkGraph(
       continue;
     }
     const node = nodes[item.uid];
-    if (!isPlainRecord(node) || own(node, "kind") !== "group" || !Array.isArray(own(node, "childUids"))) continue;
-    (own(node, "childUids") as unknown[]).forEach((child, index) => {
-      const path = [...formPath, "nodes", item.uid, "childUids", index];
+    if (!isPlainRecord(node)) continue;
+    const referenceKey = own(node, "kind") === "wizard" ? "stageUids" : "childUids";
+    const references = own(node, referenceKey);
+    if (!Array.isArray(references)) continue;
+    references.forEach((child, index) => {
+      const path = [...formPath, "nodes", item.uid, referenceKey, index];
       if (!isUid(child) || !Object.prototype.hasOwnProperty.call(nodes, child)) {
         failures.push(issue("document.missing-node-reference", `Child reference ${JSON.stringify(child)} does not resolve.`, path, { formUid, entityUid: item.uid as Uid }));
       } else if (state.get(child) === 1) {
@@ -296,22 +300,42 @@ export function validateStudioProject(
           const nodeUidValue = own(node, "uid");
           if (recordUid(failures, uids, nodeUidValue, [...nodePath, "uid"]) && nodeKey !== nodeUidValue) failures.push(issue("document.uid-key-mismatch", `Node key ${nodeKey} does not match uid ${nodeUidValue}.`, nodePath, { formUid, entityUid: nodeUidValue }));
           const details = isUid(nodeUidValue) ? { formUid, entityUid: nodeUidValue } : { formUid };
-          const runtimeId = own(node, "runtimeId");
-          if (typeof runtimeId !== "string" || runtimeId.length === 0 || runtimeId.length > 128 || !isSafeObjectKey(runtimeId)) failures.push(issue("document.invalid-runtime-id", "runtimeId must be a non-empty safe key of at most 128 characters.", [...nodePath, "runtimeId"], details));
           const kind = own(node, "kind");
-          if (kind === "group") {
-            if (!Array.isArray(own(node, "childUids"))) failures.push(issue("document.invalid-children", "Group childUids must be an array.", [...nodePath, "childUids"], details));
-          } else if (kind === "field") {
+          const runtimeId = own(node, "runtimeId");
+          if (kind !== "block" && (typeof runtimeId !== "string" || runtimeId.length === 0 || runtimeId.length > 128 || !isSafeObjectKey(runtimeId))) failures.push(issue("document.invalid-runtime-id", "runtimeId must be a non-empty safe key of at most 128 characters.", [...nodePath, "runtimeId"], details));
+          if (Object.prototype.hasOwnProperty.call(node, "presentation") && !isPlainRecord(own(node, "presentation"))) failures.push(issue("document.invalid-presentation", "presentation must be a JSON object.", [...nodePath, "presentation"], details));
+          const behavior = own(node, "behavior");
+          if (Object.prototype.hasOwnProperty.call(node, "behavior") && !isPlainRecord(behavior)) failures.push(issue("document.invalid-behavior", "behavior must be a JSON object.", [...nodePath, "behavior"], details));
+          else if (isPlainRecord(behavior)) {
+            if (Object.prototype.hasOwnProperty.call(behavior, "when") && !isStudioExpression(own(behavior, "when"))) failures.push(issue("document.invalid-expression", "behavior.when must be a safe expression AST.", [...nodePath, "behavior", "when"], details));
+            if (Object.prototype.hasOwnProperty.call(behavior, "disabled") && typeof own(behavior, "disabled") !== "boolean" && !isStudioExpression(own(behavior, "disabled"))) failures.push(issue("document.invalid-expression", "behavior.disabled must be a boolean or safe expression AST.", [...nodePath, "behavior", "disabled"], details));
+          }
+          if (Object.prototype.hasOwnProperty.call(node, "legacy") && !isPlainRecord(own(node, "legacy"))) failures.push(issue("document.invalid-legacy-metadata", "legacy must be a JSON object.", [...nodePath, "legacy"], details));
+          if (kind === "group" || kind === "collection" || kind === "stage") {
+            if (!Array.isArray(own(node, "childUids"))) failures.push(issue("document.invalid-children", `${kind} childUids must be an array.`, [...nodePath, "childUids"], details));
+            if (kind === "collection") {
+              for (const key of ["min", "max", "initialRows"] as const) {
+                const value = own(node, key);
+                if (value !== undefined && (!Number.isSafeInteger(value) || (value as number) < 0)) failures.push(issue("document.invalid-collection-limit", `${key} must be a non-negative integer.`, [...nodePath, key], details));
+              }
+            }
+          } else if (kind === "wizard") {
+            if (!Array.isArray(own(node, "stageUids"))) failures.push(issue("document.invalid-stages", "Wizard stageUids must be an array.", [...nodePath, "stageUids"], details));
+          } else if (kind === "field" || kind === "block") {
             const definition = own(node, "definition");
             if (!isPlainRecord(definition) || typeof own(definition, "key") !== "string" || !Number.isSafeInteger(own(definition, "version")) || (own(definition, "version") as number) < 1) {
-              failures.push(issue("document.invalid-definition", "Field definition requires a key and positive integer version.", [...nodePath, "definition"], details));
+              failures.push(issue("document.invalid-definition", `${kind} definition requires a key and positive integer version.`, [...nodePath, "definition"], details));
             } else {
               const key = own(definition, "key") as string;
               const version = own(definition, "version") as number;
               if (!options.supportedDefinitions?.[key]?.includes(version)) failures.push(issue("document.unsupported-definition-version", `Required definition ${key}@${version} is not supported.`, [...nodePath, "definition", "version"], details));
             }
-            if (!isPlainRecord(own(node, "props"))) failures.push(issue("document.invalid-props", "Field props must be a JSON object.", [...nodePath, "props"], details));
-          } else failures.push(issue("document.unknown-node-kind", "Node kind must be field or group.", [...nodePath, "kind"], details));
+            if (!isPlainRecord(own(node, "props"))) failures.push(issue("document.invalid-props", `${kind} props must be a JSON object.`, [...nodePath, "props"], details));
+            if (kind === "field") {
+              if (Object.prototype.hasOwnProperty.call(node, "computed") && !isStudioExpression(own(node, "computed"))) failures.push(issue("document.invalid-expression", "computed must be a safe expression AST.", [...nodePath, "computed"], details));
+              if (Object.prototype.hasOwnProperty.call(node, "validators") && !Array.isArray(own(node, "validators"))) failures.push(issue("document.invalid-validators", "validators must be an array.", [...nodePath, "validators"], details));
+            }
+          } else failures.push(issue("document.unknown-node-kind", "Unknown node kind.", [...nodePath, "kind"], details));
         }
       }
       const scenarios = own(formUnknown, "scenarios");

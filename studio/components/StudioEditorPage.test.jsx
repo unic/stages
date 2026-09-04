@@ -53,6 +53,14 @@ describe("StudioEditorPage interactions", () => {
     unsubscribe();
   });
 
+  it("imports live startup state into document v1 behind the feature flag", () => {
+    render(<StudioEditorPage documentV1Enabled />);
+    const startup = document.querySelector('[data-studio-startup="document-v1"]');
+    expect(startup).toBeTruthy();
+    expect(startup).toHaveAttribute("data-studio-project-format", "stages-studio");
+    expect(startup).toHaveAttribute("data-studio-import-errors", "0");
+  });
+
   it("keeps native input shortcuts isolated and handles editor redo once", async () => {
     const firstConfig = structuredClone(editorConfig);
     const secondConfig = structuredClone(editorConfig);
