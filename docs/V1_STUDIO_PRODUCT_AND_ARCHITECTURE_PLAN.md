@@ -17,6 +17,8 @@ Execution status:
   imports frozen POC inputs without executing imported text
 - Session 06 completed: [`../studio/src/commands/index.ts`](../studio/src/commands/index.ts)
   provides the browser-free immutable command engine and checkpoint history
+- Session 07 completed: [`../studio/src/compiler/index.ts`](../studio/src/compiler/index.ts)
+  compiles the minimal text-and-group slice to public Stages v1 artifacts
 
 Primary references:
 
