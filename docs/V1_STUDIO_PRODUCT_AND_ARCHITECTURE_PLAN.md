@@ -103,6 +103,13 @@ Execution status:
   validation actions, fresh reset, accepted-state serialization, controller
   recreation, and exact-version trusted value/extension codec bindings with
   contract evidence for durable runtime metadata and excluded application state
+- Session 25 completed: [`../studio/src/projects/artifacts.ts`](../studio/src/projects/artifacts.ts),
+  [`../studio/components/v1/StudioV1Editor.tsx`](../studio/components/v1/StudioV1Editor.tsx),
+  and [`../studio/docs/IMPORT_AND_EXPORT.md`](../studio/docs/IMPORT_AND_EXPORT.md)
+  import canonical Studio JSON with migration/validation reports and generate
+  deterministic project, schema, registry, initial-value, scenario, migration,
+  and React artifacts through public v1 package entry points, backed by exact
+  golden output and an isolated compile/run consumer
 
 Primary references:
 

@@ -6,6 +6,7 @@ import useStagesStore from "./store";
 import editorConfig from "./configTemplates/initialConfig";
 import { createMemoryProjectRepository } from "../src/projects";
 import { toUid } from "../src/document";
+import projectV0 from "../src/document/fixtures/project-v0.json";
 
 function outlineProjectSnapshot() {
   const project = {
@@ -189,6 +190,27 @@ describe("StudioEditorPage interactions", () => {
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
     expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
+  });
+
+  it("imports with migration reports and exposes deterministic export artifacts", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    await user.click(screen.getByRole("button", { name: "Generate export artifacts" }));
+    expect(screen.getByText(/Generated 8 deterministic artifacts/)).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Generated artifact" })).toHaveValue("project.stages.json");
+    expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain('"format": "stages-studio"');
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Studio project JSON" }), { target: { value: JSON.stringify(projectV0) } });
+    await user.click(screen.getByRole("button", { name: "Import and validate" }));
+    expect(screen.getByText(/Applied: studio-project-0-to-1/)).toBeVisible();
+    expect(screen.getAllByText("Event launch").length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Studio project JSON" }), { target: { value: "{" } });
+    await user.click(screen.getByRole("button", { name: "Import and validate" }));
+    expect(screen.getByText(/document.invalid-json/)).toBeVisible();
   });
 
   it("generates the field palette and keeps invalid inspector drafts out of command history", async () => {

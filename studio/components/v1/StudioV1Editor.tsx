@@ -42,6 +42,8 @@ import {
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
 import { StudioProjectConflictError } from "../../src/projects/types";
 import type { StudioProjectRepository } from "../../src/projects/types";
+import { generateStudioExportBundle, importStudioProject, type StudioGeneratedArtifact } from "../../src/projects/artifacts";
+import { serializeStudioProject } from "../../src/document/serialization";
 import { createStudioPreviewHost } from "../../src/runtime/preview-host";
 import { useStudioPreviewHost } from "../../src/runtime/use-studio-preview-host";
 import { createStudioSupportReport, filterAndGroupStudioProblems, inspectStudioRuntime, type StudioProblem, type StudioProblemGroupBy } from "../../src/runtime/observability";
@@ -1384,6 +1386,10 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
   const [inspectionPropertyPath, setInspectionPropertyPath] = useState<readonly (number | string)[] | undefined>();
+  const [projectImportSource, setProjectImportSource] = useState("");
+  const [projectTransferReport, setProjectTransferReport] = useState("No project import or export has run.");
+  const [exportArtifacts, setExportArtifacts] = useState<readonly StudioGeneratedArtifact[]>([]);
+  const [activeExportPath, setActiveExportPath] = useState("");
 
   useEffect(() => {
     if (startup.project === undefined) {
@@ -1451,6 +1457,43 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         visibleStudioOutlineUids(nextOutline, current.workbench.expandedUids),
       ),
     }));
+  };
+
+  const importProject = () => {
+    const result = importStudioProject(projectImportSource, { supportedDefinitions: STUDIO_SUPPORTED_DEFINITIONS });
+    if (!result.ok) {
+      setProjectTransferReport(result.diagnostics.map(({ code, propertyPath, message }) => `${code} at ${propertyPath.join(".") || "project"}: ${message}`).join("\n"));
+      return;
+    }
+    const importedForm = firstForm(result.value);
+    setHistory(createStudioHistory(result.value));
+    setNavigation({
+      ...(importedForm === undefined ? {} : { activeFormUid: importedForm.uid }),
+      workbench: createStudioWorkbenchState({
+        expandedUids: Object.values(result.value.forms).map(({ uid }) => uid),
+        ...(importedForm === undefined ? {} : { focusedUid: importedForm.uid }),
+      }),
+    });
+    repositoryRevision.current = null;
+    setExportArtifacts([]);
+    setActiveExportPath("");
+    setProjectTransferReport(result.migrations.length === 0
+      ? "Imported and validated canonical Studio JSON; no migrations were required."
+      : `Imported and validated Studio JSON. Applied: ${result.migrations.join(", ")}.`);
+    setStatus("Imported project is an unsaved local draft");
+  };
+
+  const prepareExport = () => {
+    const result = generateStudioExportBundle(history.present);
+    if (!result.ok) {
+      setExportArtifacts([]);
+      setActiveExportPath("");
+      setProjectTransferReport(result.diagnostics.map(({ code, message }) => `${code}: ${message}`).join("\n"));
+      return;
+    }
+    setExportArtifacts(result.value.artifacts);
+    setActiveExportPath(result.value.artifacts[0]?.path ?? "");
+    setProjectTransferReport(`Generated ${result.value.artifacts.length} deterministic artifacts.`);
   };
 
   const selectNode = (uid: Uid, options: StudioSelectionOptions = {}) => {
@@ -1778,6 +1821,18 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             {Object.values(history.present.fragments).map((fragment) => <Button key={fragment.uid} variant="outline" disabled={loading} onClick={() => insertFragment(fragment)}>Insert {fragment.title}</Button>)}
           </section>
           <ResourceCatalogEditor resources={history.present.resources} onUpdate={updateResources} />
+          <section className="studio-v1-palette" aria-labelledby="studio-v1-project-transfer-title">
+            <h2 id="studio-v1-project-transfer-title">Import & export</h2>
+            <label className="studio-field"><span>Studio project JSON</span><textarea className="ui-input" rows={8} value={projectImportSource} onChange={(event) => setProjectImportSource(event.currentTarget.value)} /></label>
+            <Button variant="outline" disabled={loading} onClick={() => setProjectImportSource(serializeStudioProject(history.present))}>Use current canonical JSON</Button>
+            <Button variant="outline" disabled={loading || projectImportSource.trim() === ""} onClick={importProject}>Import and validate</Button>
+            <Button variant="outline" disabled={loading} onClick={prepareExport}>Generate export artifacts</Button>
+            <p role="status" aria-live="polite" style={{ whiteSpace: "pre-wrap" }}>{projectTransferReport}</p>
+            {exportArtifacts.length > 0 && <>
+              <label className="studio-field"><span>Generated artifact</span><select value={activeExportPath} onChange={(event) => setActiveExportPath(event.currentTarget.value)}>{exportArtifacts.map((artifact) => <option key={artifact.path} value={artifact.path}>{artifact.path}</option>)}</select></label>
+              <label className="studio-field"><span>Artifact source</span><textarea className="ui-input" rows={12} readOnly value={exportArtifacts.find(({ path }) => path === activeExportPath)?.source ?? ""} /></label>
+            </>}
+          </section>
         </div>
         <section className="studio-v1-canvas" aria-labelledby="studio-v1-canvas-title">
           <div className="studio-v1-section-heading"><h2 id="studio-v1-canvas-title">Canvas</h2><span>{form.rootNodeUids.length} blocks</span></div>

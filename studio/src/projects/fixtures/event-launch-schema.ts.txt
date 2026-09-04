@@ -1,0 +1,23 @@
+import type { StagesSchema } from "@stages/core";
+import { fields } from "./fields.js";
+
+export const schema = {
+  "id": "event-launch",
+  "nodes": [
+    {
+      "id": "event",
+      "kind": "group",
+      "nodes": [
+        {
+          "id": "title",
+          "kind": "field",
+          "props": {
+            "label": "Event title"
+          },
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "version": 1
+} satisfies StagesSchema<unknown, typeof fields, unknown>;

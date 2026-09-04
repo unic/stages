@@ -1,6 +1,6 @@
 # Studio project document v1
 
-Status: implemented through Session 22
+Status: implemented through Session 25
 
 Date: 2026-09-04
 
@@ -111,6 +111,13 @@ A future format change must:
 `serializeStudioProject()` recursively sorts object keys, preserves array order,
 uses stable indentation, and ends with one newline. Therefore opening a valid
 document and repeatedly serializing it is deterministic.
+
+The Studio Import & export workflow uses this parser and serializer directly.
+Successful imports report every applied migration ID; failed imports retain the
+current project and expose diagnostic codes, paths, and messages. Generated
+application bundles retain canonical project JSON separately from derived v1
+TypeScript artifacts. See `studio/docs/IMPORT_AND_EXPORT.md` for the generated
+artifact contract and isolated consumer evidence.
 
 ## Diagnostic responsibilities
 
