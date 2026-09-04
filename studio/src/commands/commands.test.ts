@@ -36,6 +36,16 @@ function success(project: StudioProjectDocument, command: StudioCommand): Studio
 }
 
 describe("Studio command engine", () => {
+  it("renames a project through a history-compatible document command", () => {
+    const initial = project();
+    const updated = success(initial, { type: "project.update", changes: { title: "Renamed project" } });
+    expect(updated.project.title).toBe("Renamed project");
+    expect(executeStudioCommand(updated, { type: "project.update", changes: { title: "" } })).toMatchObject({
+      ok: false,
+      failure: { code: "command.invalid-update" },
+    });
+  });
+
   it("updates form validators immutably", () => {
     const initial = project();
     const validators = [{ id: "form.required", kind: "required" as const, message: "Required" }];

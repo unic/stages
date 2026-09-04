@@ -110,6 +110,13 @@ Execution status:
   deterministic project, schema, registry, initial-value, scenario, migration,
   and React artifacts through public v1 package entry points, backed by exact
   golden output and an isolated compile/run consumer
+- Session 26 completed: [`../studio/src/platform/indexeddb-project-repository.ts`](../studio/src/platform/indexeddb-project-repository.ts),
+  [`../studio/src/projects/autosave.ts`](../studio/src/projects/autosave.ts), and
+  [`../studio/docs/LOCAL_PROJECTS_AND_RECOVERY.md`](../studio/docs/LOCAL_PROJECTS_AND_RECOVERY.md)
+  provide revision-checked project list/create/duplicate/rename/delete,
+  debounced and lifecycle autosave, three-revision backup rotation, recoverable
+  deletion, corruption quarantine and restore controls, explicit legacy-storage
+  confirmation, and separate project/preview dirty state
 
 Primary references:
 

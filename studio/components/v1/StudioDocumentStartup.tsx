@@ -1,28 +1,8 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { StudioProjectDocument } from "../../src/document/types";
-import { importLegacyStudioProject } from "../../src/legacy/importer";
 import type { LegacyImportDiagnostic } from "../../src/legacy/types";
-import { STUDIO_BLOCK_DEFINITIONS, STUDIO_FIELD_DEFINITIONS, STUDIO_SUPPORTED_DEFINITIONS as SUPPORTED_FIELDS } from "../../src/registry";
-import shadcnFields from "../shadcnFields";
-
-export const STUDIO_SUPPORTED_DEFINITIONS: Readonly<Record<string, readonly number[]>> = Object.freeze(Object.fromEntries([
-  ...Object.keys(shadcnFields).map((key) => [key, Object.freeze([1])]),
-  ...Object.entries(SUPPORTED_FIELDS),
-  ...Object.values(STUDIO_BLOCK_DEFINITIONS).map(({ key, version }) => [key, Object.freeze([version])]),
-].map((entry) => Array.isArray(entry) ? entry : [entry, Object.freeze([1])])));
-
-const STUDIO_LEGACY_FIELD_TYPES = Object.freeze([
-  ...new Set([
-    ...Object.keys(shadcnFields),
-    ...Object.values(STUDIO_FIELD_DEFINITIONS).flatMap(({ legacyTypes }) => legacyTypes),
-  ]),
-]);
-const STUDIO_LEGACY_FIELD_ALIASES = Object.freeze(Object.fromEntries(
-  Object.values(STUDIO_FIELD_DEFINITIONS).flatMap((definition) => definition.legacyTypes.map((legacyType) => [
-    legacyType,
-    Object.freeze({ key: definition.key, version: definition.version }),
-  ])),
-));
+import { toUid } from "../../src/document/uid";
+import { importStudioLegacyInput } from "./StudioLegacyImport";
 
 export interface StudioDocumentStartupValue {
   readonly mode: "document-v1" | "legacy";
@@ -70,9 +50,9 @@ export function StudioDocumentStartup({
 }: StudioDocumentStartupProps) {
   const startup = useMemo<StudioDocumentStartupValue>(() => {
     if (!enabled) return legacyValue;
-    const imported = importLegacyStudioProject(
+    const imported = importStudioLegacyInput(
       { config, fieldsets, generalConfig, value },
-      { fieldTypes: STUDIO_LEGACY_FIELD_TYPES, fieldDefinitionAliases: STUDIO_LEGACY_FIELD_ALIASES },
+      { projectUid: toUid("legacy_project"), formUid: toUid("legacy_form") },
     );
     return imported.ok
       ? { mode: "document-v1", project: imported.value, diagnostics: imported.diagnostics }

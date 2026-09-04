@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import StudioEditorPage from "./StudioEditorPage";
@@ -165,6 +167,29 @@ describe("StudioEditorPage interactions", () => {
     expect(startup).toHaveAttribute("data-studio-import-errors", "0");
   });
 
+  it("hydrates before reading the legacy local-storage migration preview", async () => {
+    const repository = createMemoryProjectRepository();
+    const element = <StudioEditorPage documentV1Enabled projectRepository={repository} />;
+    const storage = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", { configurable: true, value: undefined });
+    const serverHtml = renderToString(element);
+    Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
+    storage.setItem("stages-studio-storage-0.1", JSON.stringify({
+      state: { currentConfig: [{ id: "name", type: "text" }], generalConfig: { title: "Hydrated legacy form" } },
+    }));
+    expect(serverHtml).not.toContain("Legacy project found");
+
+    const container = document.createElement("div");
+    container.innerHTML = serverHtml;
+    document.body.append(container);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const root = hydrateRoot(container, element);
+    await waitFor(() => expect(container).toHaveTextContent("Legacy project found"));
+    expect(consoleError.mock.calls.flat().join(" ")).not.toContain("Hydration failed");
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
   it("runs the document-v1 editor slice from palette through local draft reload", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository();
@@ -190,6 +215,80 @@ describe("StudioEditorPage interactions", () => {
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
     expect(screen.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
+  });
+
+  it("creates, duplicates, renames, deletes, and restores local projects", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+
+    await user.click(screen.getByRole("button", { name: "Duplicate project" }));
+    await screen.findByText("Project duplicated");
+    expect(screen.getByRole("combobox", { name: "Local project" })).toHaveTextContent("Outline project copy");
+
+    const title = screen.getByRole("textbox", { name: "Project title" });
+    await user.clear(title);
+    await user.type(title, "Workshop copy");
+    await user.click(screen.getByRole("button", { name: "Rename project" }));
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Local draft saved");
+
+    await user.click(screen.getByRole("button", { name: "Delete project…" }));
+    await user.click(screen.getByRole("button", { name: "Confirm delete" }));
+    await screen.findByText("Project moved to recovery");
+    const deleted = screen.getByText(/Workshop copy · deleted r2/).closest("li");
+    expect(deleted).toBeTruthy();
+    await user.click(within(deleted).getByRole("button", { name: "Restore…" }));
+    await user.click(within(deleted).getByRole("button", { name: "Confirm restore" }));
+    await screen.findByText(/Recovered Workshop copy from deleted revision 2/);
+    expect(screen.getByRole("textbox", { name: "Project title" })).toHaveValue("Workshop copy");
+
+    await user.click(screen.getByRole("button", { name: "Create project" }));
+    await screen.findByText("Project created");
+    expect(screen.getByRole("textbox", { name: "Project title" })).toHaveValue("Untitled project");
+  });
+
+  it("previews and migrates legacy local storage only after confirmation", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("stages-studio-storage-0.1", JSON.stringify({
+      state: {
+        currentConfig: [{ id: "attendee", type: "text", label: "Attendee" }],
+        generalConfig: { title: "Legacy registration" },
+        data: { attendee: "Ada" },
+        fieldsets: [],
+      },
+      version: 0,
+    }));
+    const repository = createMemoryProjectRepository();
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("New local draft");
+    expect(screen.getByText(/Legacy registration · 1 top-level blocks/)).toBeVisible();
+    expect(localStorage.getItem("stages-studio-storage-0.1")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Confirm legacy migration" }));
+    await screen.findByText(/Legacy project migrated/);
+    expect(localStorage.getItem("stages-studio-storage-0.1")).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Project title" })).toHaveValue("Legacy registration");
+  });
+
+  it("keeps project history dirty and blocks project changes after a storage failure", async () => {
+    const user = userEvent.setup();
+    const memory = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    const repository = {
+      ...memory,
+      save: vi.fn(async () => { throw new DOMException("Local quota exhausted", "QuotaExceededError"); }),
+    };
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    await user.click(screen.getByRole("button", { name: "Add text field" }));
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText(/Local save failed: Local quota exhausted/);
+    expect(screen.getByText("Unsaved project changes")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Create project" }));
+    await screen.findByText("Could not create a project because pending changes are not saved.");
+    expect(screen.getByRole("textbox", { name: "Project title" })).toHaveValue("Outline project");
   });
 
   it("imports with migration reports and exposes deterministic export artifacts", async () => {

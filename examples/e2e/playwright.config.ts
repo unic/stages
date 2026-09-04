@@ -24,7 +24,7 @@ export default defineConfig({
     {
       name: "studio",
       testMatch: "studio-editor.spec.ts",
-      use: { baseURL: "http://127.0.0.1:3010" },
+      use: { baseURL: process.env["STUDIO_BASE_URL"] ?? "http://127.0.0.1:3010" },
     },
   ],
   webServer: [
@@ -36,7 +36,7 @@ export default defineConfig({
     reuseExistingServer: !process.env["CI"],
     timeout: 120_000,
     })),
-    ...(process.env["STAGES_ADAPTER"] === undefined || process.env["STAGES_ADAPTER"] === "studio" ? [{
+    ...(process.env["STUDIO_EXTERNAL_SERVER"] !== "1" && (process.env["STAGES_ADAPTER"] === undefined || process.env["STAGES_ADAPTER"] === "studio") ? [{
       command: "npm --prefix ../../studio run dev -- --hostname 127.0.0.1 --port 3010",
       url: "http://127.0.0.1:3010/demo-v1",
       reuseExistingServer: !process.env["CI"],

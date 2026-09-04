@@ -41,8 +41,11 @@ import {
 } from "../../src/registry";
 import { createIndexedDbProjectRepository } from "../../src/platform/indexeddb-project-repository";
 import { StudioProjectConflictError } from "../../src/projects/types";
-import type { StudioProjectRepository } from "../../src/projects/types";
+import type { StudioProjectRecoverySummary, StudioProjectRepository, StudioProjectSnapshot, StudioProjectSummary } from "../../src/projects/types";
 import { generateStudioExportBundle, importStudioProject, type StudioGeneratedArtifact } from "../../src/projects/artifacts";
+import { createStudioAutosave } from "../../src/projects/autosave";
+import { LEGACY_STUDIO_STORAGE_KEY, previewLegacyStudioStorage, type LegacyStudioStoragePreview } from "../../src/projects/legacy-local-storage";
+import { copyStudioProject, projectUidFromRandomId } from "../../src/projects/workflows";
 import { serializeStudioProject } from "../../src/document/serialization";
 import { createStudioPreviewHost } from "../../src/runtime/preview-host";
 import { useStudioPreviewHost } from "../../src/runtime/use-studio-preview-host";
@@ -60,7 +63,9 @@ import {
   visibleStudioOutlineUids,
 } from "../../src/editor";
 import { Button } from "../ui/button";
-import { STUDIO_SUPPORTED_DEFINITIONS, useStudioDocumentStartup } from "./StudioDocumentStartup";
+import { useStudioDocumentStartup } from "./StudioDocumentStartup";
+import { importStudioLegacyInput, STUDIO_SUPPORTED_DEFINITIONS } from "./StudioLegacyImport";
+import { StudioProjectPanel } from "./StudioProjectPanel";
 import { StudioOutline } from "./StudioOutline";
 import { StudioExpressionEditor, type StudioExpressionReferenceOption } from "./StudioExpressionEditor";
 import { StudioValidationEditor } from "./StudioValidationEditor";
@@ -76,6 +81,12 @@ interface StudioV1EditorProps {
 
 function firstForm(project: StudioHistoryState["present"]): StudioFormDocument | undefined {
   return Object.values(project.forms)[0];
+}
+
+function platformErrorMessage(error: unknown, fallback: string): string {
+  return typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+    ? error.message
+    : fallback;
 }
 
 function nextField(form: StudioFormDocument, definition: AnyStudioAuthoringFieldDefinition): StudioFieldNode {
@@ -1390,6 +1401,65 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const [projectTransferReport, setProjectTransferReport] = useState("No project import or export has run.");
   const [exportArtifacts, setExportArtifacts] = useState<readonly StudioGeneratedArtifact[]>([]);
   const [activeExportPath, setActiveExportPath] = useState("");
+  const [projects, setProjects] = useState<readonly StudioProjectSummary[]>([]);
+  const [recovery, setRecovery] = useState<readonly StudioProjectRecoverySummary[]>([]);
+  const [legacyPreview, setLegacyPreview] = useState<LegacyStudioStoragePreview>({ kind: "absent" });
+  const historyRef = useRef(history);
+  const saveReason = useRef<"autosave" | "lifecycle" | "manual">("autosave");
+  const lastSaveFailed = useRef(false);
+
+  useEffect(() => { historyRef.current = history; }, [history]);
+  useEffect(() => { setLegacyPreview(previewLegacyStudioStorage(localStorage)); }, []);
+
+  const refreshRepositoryState = useCallback(async () => {
+    const [nextProjects, nextRecovery] = await Promise.all([repository.list(), repository.listRecovery()]);
+    setProjects(nextProjects);
+    setRecovery(nextRecovery);
+  }, [repository]);
+
+  const openSnapshot = useCallback((snapshot: StudioProjectSnapshot) => {
+    const loadedForm = firstForm(snapshot.project);
+    const nextHistory = createStudioHistory(snapshot.project);
+    historyRef.current = nextHistory;
+    setHistory(nextHistory);
+    setNavigation({
+      ...(loadedForm === undefined ? {} : { activeFormUid: loadedForm.uid }),
+      workbench: createStudioWorkbenchState({
+        expandedUids: Object.values(snapshot.project.forms).map(({ uid }) => uid),
+        ...(loadedForm === undefined ? {} : { focusedUid: loadedForm.uid }),
+      }),
+    });
+    repositoryRevision.current = snapshot.revision;
+    setExportArtifacts([]);
+    setActiveExportPath("");
+  }, []);
+
+  const persistCurrent = useCallback(async () => {
+    const current = historyRef.current;
+    if (current === undefined || !isStudioHistoryDirty(current)) return;
+    const savedDocumentRevision = current.revision;
+    const reason = saveReason.current;
+    lastSaveFailed.current = false;
+    setStatus(reason === "manual" ? "Saving local draft…" : "Autosaving local draft…");
+    try {
+      const saved = await repository.save(current.present, repositoryRevision.current);
+      repositoryRevision.current = saved.revision;
+      setHistory((latest) => {
+        return latest === undefined || latest.revision !== savedDocumentRevision ? latest : markStudioHistorySaved(latest);
+      });
+      setStatus(reason === "manual" ? "Local draft saved" : reason === "lifecycle" ? "Local draft flushed" : "Local draft autosaved");
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      lastSaveFailed.current = true;
+      setStatus(error instanceof StudioProjectConflictError
+        ? "Draft changed in another editor. Reload or restore a recovery copy before saving."
+        : `Local save failed: ${platformErrorMessage(error, "Could not save the local draft.")}`);
+    } finally {
+      saveReason.current = "autosave";
+    }
+  }, [refreshRepositoryState, repository]);
+
+  const autosave = useMemo(() => createStudioAutosave(persistCurrent), [persistCurrent]);
 
   useEffect(() => {
     if (startup.project === undefined) {
@@ -1400,7 +1470,10 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     const startupProject = startup.project;
     let active = true;
     setLoading(true);
-    void repository.load(startupProject.project.uid).then((saved) => {
+    void repository.list().then(async (available) => {
+      const preferred = available.find(({ uid }) => uid === startupProject.project.uid) ?? available[0];
+      return preferred === undefined ? undefined : repository.load(preferred.uid);
+    }).then(async (saved) => {
       if (!active) return;
       const project = saved?.project ?? startupProject;
       const loadedForm = firstForm(project);
@@ -1415,13 +1488,34 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       repositoryRevision.current = saved?.revision ?? null;
       setStatus(saved === undefined ? "New local draft" : "Local draft loaded");
       setLoading(false);
+      await refreshRepositoryState();
     }).catch((error: unknown) => {
       if (!active) return;
-      setStatus(error instanceof Error ? error.message : "Could not load the local draft.");
+      setStatus(error instanceof Error ? `${error.message} Recovery copies are available below.` : "Could not load the local draft.");
       setLoading(false);
+      void refreshRepositoryState();
     });
     return () => { active = false; };
-  }, [repository, startup.project]);
+  }, [refreshRepositoryState, repository, startup.project]);
+
+  useEffect(() => {
+    if (!loading && history !== undefined && isStudioHistoryDirty(history)) autosave.schedule();
+    else autosave.cancel();
+  }, [autosave, history, loading]);
+
+  useEffect(() => {
+    const flush = () => { saveReason.current = "lifecycle"; void autosave.flush(); };
+    const visibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
+      document.removeEventListener("visibilitychange", visibility);
+      autosave.cancel();
+    };
+  }, [autosave]);
 
   if (history === undefined) {
     return <main className="studio-v1-empty"><h2>Document v1 could not start</h2><p>{status}</p></main>;
@@ -1466,7 +1560,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       return;
     }
     const importedForm = firstForm(result.value);
-    setHistory(createStudioHistory(result.value));
+    setHistory(createStudioHistory(result.value, { saved: false }));
     setNavigation({
       ...(importedForm === undefined ? {} : { activeFormUid: importedForm.uid }),
       workbench: createStudioWorkbenchState({
@@ -1748,26 +1842,136 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   const save = async () => {
-    const savedDocumentRevision = history.revision;
-    setStatus("Saving local draft…");
+    saveReason.current = "manual";
+    autosave.schedule();
+    await autosave.flush();
+  };
+
+  const openProject = async (uid: Uid) => {
+    saveReason.current = "lifecycle";
+    await autosave.flush();
+    if (lastSaveFailed.current) { setStatus("Could not switch projects because pending changes are not saved."); return; }
+    setLoading(true);
     try {
-      const saved = await repository.save(history.present, repositoryRevision.current);
-      repositoryRevision.current = saved.revision;
-      setHistory((current) => current === undefined || current.revision !== savedDocumentRevision
-        ? current
-        : markStudioHistorySaved(current));
-      setStatus("Local draft saved");
+      const snapshot = await repository.load(uid);
+      if (snapshot === undefined) throw new Error("The selected project no longer exists.");
+      openSnapshot(snapshot);
+      setStatus("Local draft loaded");
     } catch (error: unknown) {
-      setStatus(error instanceof StudioProjectConflictError
-        ? "Draft changed in another editor. Reload before saving."
-        : error instanceof Error ? error.message : "Could not save the local draft.");
+      setStatus(error instanceof Error ? error.message : "Could not open the selected project.");
+    } finally { setLoading(false); await refreshRepositoryState(); }
+  };
+
+  const createProject = async (duplicate = false) => {
+    saveReason.current = "lifecycle";
+    await autosave.flush();
+    if (lastSaveFailed.current) { setStatus("Could not create a project because pending changes are not saved."); return; }
+    const title = duplicate ? `${history.present.project.title} copy` : "Untitled project";
+    const project = copyStudioProject(history.present, projectUidFromRandomId(), title);
+    setLoading(true);
+    try {
+      const snapshot = await repository.save(project, null);
+      openSnapshot(snapshot);
+      setStatus(duplicate ? "Project duplicated" : "Project created");
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "Could not create the project.");
+    } finally { setLoading(false); }
+  };
+
+  const renameProject = (title: string) => {
+    const result = dispatchStudioCommand(history, { type: "project.update", changes: { title } }, { label: "Rename project", coalesceKey: "project.title" });
+    if (result.ok) { setHistory(result.history); setStatus("Project renamed; autosave pending"); }
+    else setStatus(result.failure.message);
+  };
+
+  const deleteProject = async () => {
+    saveReason.current = "lifecycle";
+    await autosave.flush();
+    if (lastSaveFailed.current) { setStatus("Could not delete the project because pending changes are not saved."); return; }
+    const expectedRevision = repositoryRevision.current;
+    if (expectedRevision === null) { setStatus("Save the project before deleting it."); return; }
+    autosave.cancel();
+    setLoading(true);
+    try {
+      await repository.delete(history.present.project.uid, expectedRevision);
+      const remaining = await repository.list();
+      const next = remaining[0] === undefined ? undefined : await repository.load(remaining[0].uid);
+      if (next) openSnapshot(next);
+      else {
+        const project = copyStudioProject(history.present, projectUidFromRandomId(), "Untitled project");
+        const created = createStudioHistory(project, { saved: false });
+        historyRef.current = created;
+        setHistory(created);
+        repositoryRevision.current = null;
+      }
+      setStatus("Project moved to recovery");
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "Could not delete the project.");
+    } finally { setLoading(false); }
+  };
+
+  const restoreProject = async (entry: StudioProjectRecoverySummary) => {
+    const expected = entry.projectUid === history.present.project.uid ? repositoryRevision.current : null;
+    setLoading(true);
+    try {
+      const restored = await repository.restore(entry.id, expected);
+      openSnapshot(restored);
+      setStatus(`Recovered ${entry.title} from ${entry.kind} revision ${entry.revision}`);
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "Could not restore the recovery copy.");
+    } finally { setLoading(false); }
+  };
+
+  const reloadProject = async () => {
+    setLoading(true);
+    try {
+      const snapshot = await repository.load(history.present.project.uid);
+      if (snapshot === undefined) throw new Error("The confirmed project no longer exists.");
+      openSnapshot(snapshot);
+      lastSaveFailed.current = false;
+      setStatus("Confirmed project reloaded; unsaved in-memory changes were discarded");
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "Could not reload the confirmed project.");
+    } finally { setLoading(false); }
+  };
+
+  const discardRecovery = async (id: string) => {
+    await repository.discardRecovery(id);
+    setStatus("Recovery copy permanently discarded");
+    await refreshRepositoryState();
+  };
+
+  const migrateLegacy = async () => {
+    if (legacyPreview.kind !== "ready") return;
+    const imported = importStudioLegacyInput(legacyPreview.input, {
+      projectUid: projectUidFromRandomId(),
+      formUid: toUid(`form_${crypto.randomUUID().replaceAll("-", "_")}`),
+    });
+    if (!imported.ok) {
+      setStatus(`Legacy migration failed: ${imported.diagnostics[0]?.message ?? "unknown input"}`);
+      return;
     }
+    setLoading(true);
+    try {
+      const saved = await repository.save(imported.value, null);
+      localStorage.removeItem(LEGACY_STUDIO_STORAGE_KEY);
+      setLegacyPreview({ kind: "absent" });
+      openSnapshot(saved);
+      setStatus(`Legacy project migrated with ${imported.diagnostics.length} diagnostic(s)`);
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "Could not migrate the legacy project.");
+    } finally { setLoading(false); }
   };
 
   return (
     <main className="studio-v1-editor" data-testid="studio-v1-editor" aria-busy={loading}>
       <header className="studio-v1-toolbar">
-        <div><strong>{history.present.project.title}</strong><span>{dirty ? "Unsaved changes" : "Saved"}</span></div>
+        <div><strong>{history.present.project.title}</strong><span data-project-dirty={dirty}>{dirty ? "Unsaved project changes" : "Project saved"}</span><span data-preview-state="session-local">Preview session is separate</span></div>
         <nav aria-label="Document history">
           <Button variant="outline" size="sm" disabled={loading || history.past.length === 0} onClick={() => replaceHistory(undoStudioHistory(history))}>Undo</Button>
           <Button variant="outline" size="sm" disabled={loading || history.future.length === 0} onClick={() => replaceHistory(redoStudioHistory(history))}>Redo</Button>
@@ -1777,6 +1981,23 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       </header>
       <div className="studio-v1-workspace">
         <div className="studio-v1-left-panel">
+          <StudioProjectPanel
+            projects={projects}
+            recovery={recovery}
+            activeUid={history.present.project.uid}
+            title={history.present.project.title}
+            legacy={legacyPreview}
+            disabled={loading}
+            onOpen={(uid) => void openProject(uid)}
+            onReload={() => void reloadProject()}
+            onCreate={() => void createProject(false)}
+            onDuplicate={() => void createProject(true)}
+            onRename={renameProject}
+            onDelete={() => void deleteProject()}
+            onRestore={(entry) => void restoreProject(entry)}
+            onDiscardRecovery={(id) => void discardRecovery(id)}
+            onMigrateLegacy={() => void migrateLegacy()}
+          />
           <StudioOutline
             project={history.present}
             state={navigation.workbench}

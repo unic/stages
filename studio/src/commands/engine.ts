@@ -362,6 +362,19 @@ function executeSingle(
     node: command.instance,
   }, commandPath);
 
+  if (command.type === "project.update") {
+    const keys = Object.keys(command.changes);
+    if (keys.some((key) => key !== "title")) return fail("command.invalid-update", "Project updates may change the title only.", commandPath, { entityUid: project.project.uid });
+    if (keys.length === 0 || keys.every((key) => Object.is(project.project[key as keyof typeof command.changes], command.changes[key as keyof typeof command.changes]))) {
+      return { ok: true, document: project, affectedUids: [], changed: false };
+    }
+    const title = command.changes.title;
+    if (typeof title !== "string" || title.trim().length === 0 || title.length > 256) {
+      return fail("command.invalid-update", "Project title must contain 1 to 256 characters.", commandPath, { entityUid: project.project.uid });
+    }
+    return { ok: true, document: { ...project, project: { ...project.project, title } }, affectedUids: [project.project.uid], changed: true };
+  }
+
   if (command.type === "project.resources.update") {
     if (Object.is(project.resources, command.resources)) return { ok: true, document: project, affectedUids: [], changed: false };
     const diagnostics = validateStudioResourceCatalog(command.resources, project.project.defaultLocale);

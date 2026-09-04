@@ -16,6 +16,10 @@ export type StudioNodeChanges = Readonly<Record<string, unknown>>;
 
 export type StudioCommand =
   | {
+    readonly type: "project.update";
+    readonly changes: Partial<Pick<StudioProjectDocument["project"], "title">>;
+  }
+  | {
     readonly type: "project.resources.update";
     readonly resources: StudioResourceCatalog;
   }

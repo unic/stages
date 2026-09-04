@@ -17,8 +17,8 @@ export default function StudioEditorPage({
   const value = useStagesStore((state) => state.data);
 
   useEffect(() => {
-    useStagesStore.persist.rehydrate();
-  }, []);
+    if (!documentV1Enabled) useStagesStore.persist.rehydrate();
+  }, [documentV1Enabled]);
 
   const legacyContent = !isEditMode ? <Workspace /> : (
     <EditorShell>
