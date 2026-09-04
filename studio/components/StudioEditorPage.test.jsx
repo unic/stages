@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
@@ -512,18 +512,29 @@ describe("StudioEditorPage interactions", () => {
     expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
   });
 
-  it("selects and reorders nodes directly on the functional form canvas", async () => {
+  it("selects, clears selection, shows drop placement, and opens structure actions on the canvas", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
     await screen.findByText("Local draft loaded");
 
     const first = document.querySelector('[data-canvas-uid="field_first"]');
-    const dropGroup = document.querySelector('[data-canvas-uid="group_drop"]');
+    let dropGroup = document.querySelector('[data-canvas-uid="group_drop"]');
     expect(first && dropGroup).toBeTruthy();
     await user.click(first);
     expect(first).toHaveAttribute("data-authoring-selected", "true");
     expect(screen.getByRole("textbox", { name: "Label" })).toHaveValue("First field");
+    await user.click(document.querySelector(".studio-v1-authoring-canvas .studio-v1-preview__fields"));
+    expect(first).not.toHaveAttribute("data-authoring-selected");
+    expect(screen.getByText("Select an item in the outline or canvas.")).toBeVisible();
+
+    fireEvent.contextMenu(first, { clientX: 24, clientY: 32 });
+    expect(first).toHaveAttribute("data-authoring-selected", "true");
+    expect(screen.getByRole("menuitem", { name: /Move to top/ })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Structure" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: /Copy/ }));
+    await screen.findByText("Node copied.");
+    dropGroup = document.querySelector('[data-canvas-uid="group_drop"]');
 
     const data = new Map();
     const dataTransfer = {
@@ -533,9 +544,15 @@ describe("StudioEditorPage interactions", () => {
       getData: (type) => data.get(type) ?? "",
     };
     fireEvent.dragStart(screen.getByRole("button", { name: "Move field_second" }), { dataTransfer });
-    fireEvent.dragOver(dropGroup, { dataTransfer });
-    fireEvent.drop(dropGroup, { dataTransfer });
-    await screen.findByText("Second field moved to Drop group.");
+    vi.spyOn(dropGroup, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, top: 0, left: 0, right: 200, bottom: 100, width: 200, height: 100, toJSON: () => ({}) });
+    const dragOver = createEvent.dragOver(dropGroup, { dataTransfer });
+    Object.defineProperty(dragOver, "clientY", { value: 50 });
+    fireEvent(dropGroup, dragOver);
+    expect(dropGroup).toHaveAttribute("data-drop-position", "inside");
+    const drop = createEvent.drop(dropGroup, { dataTransfer });
+    Object.defineProperty(drop, "clientY", { value: 50 });
+    fireEvent(dropGroup, drop);
+    await screen.findByText("Second field moved inside Drop group.");
   });
 
   it("creates, reuses, overrides, edits, and detaches linked fragments", async () => {

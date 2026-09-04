@@ -15,6 +15,11 @@ export interface StudioSelectionOptions {
   readonly toggle?: boolean;
 }
 
+export function clearStudioSelection(state: StudioWorkbenchState): StudioWorkbenchState {
+  const { selectionAnchorUid: _selectionAnchorUid, ...rest } = state;
+  return { ...rest, selectedUids: [] };
+}
+
 export function createStudioWorkbenchState(initial?: {
   readonly expandedUids?: readonly Uid[];
   readonly focusedUid?: Uid;

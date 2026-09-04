@@ -54,12 +54,13 @@ import { focusFirstVisibleValidationError, inspectStudioValidation } from "../..
 import { formatStudioFieldValue, resolveStudioMessage, studioScenarioLocale } from "../../src/localization";
 import {
   createStudioWorkbenchState,
+  clearStudioSelection,
   createStudioOutlineModel,
   reconcileStudioWorkbench,
   revealStudioUid,
   selectStudioUid,
   type StudioSelectionOptions,
-  type StudioMoveDirection,
+  type StudioDropPosition,
   visibleStudioOutlineUids,
 } from "../../src/editor";
 import { Button } from "../ui/button";
@@ -67,6 +68,7 @@ import { useStudioDocumentStartup } from "./StudioDocumentStartup";
 import { importStudioLegacyInput, STUDIO_SUPPORTED_DEFINITIONS } from "./StudioLegacyImport";
 import { StudioProjectPanel } from "./StudioProjectPanel";
 import { StudioOutline } from "./StudioOutline";
+import { StudioNodeContextMenu, type StudioContextMenuPosition } from "./StudioNodeContextMenu";
 import { StudioExpressionEditor, type StudioExpressionReferenceOption } from "./StudioExpressionEditor";
 import { StudioValidationEditor } from "./StudioValidationEditor";
 import { StudioEventEditor, StudioLogicEditor } from "./StudioLogicEditor";
@@ -202,7 +204,8 @@ interface AuthoringCanvasBindings {
   readonly selectedUids: readonly Uid[];
   readonly selectableUids: ReadonlySet<Uid>;
   readonly onSelect: (uid: Uid, options?: StudioSelectionOptions) => void;
-  readonly onDrop: (uid: Uid, targetUid: Uid) => void;
+  readonly onDrop: (uid: Uid, targetUid: Uid, position: StudioDropPosition) => void;
+  readonly onContextMenu: (uid: Uid, position: StudioContextMenuPosition) => void;
 }
 
 function writeCanvasDragData(event: DragEvent<HTMLButtonElement>, uid: Uid): void {
@@ -218,10 +221,19 @@ function PreviewLayout({ node, children, authoring }: {
 }) {
   const selectable = authoring?.selectableUids.has(node.uid) === true;
   const selected = selectable && authoring.selectedUids.includes(node.uid);
+  const [dropPosition, setDropPosition] = useState<StudioDropPosition | undefined>();
+  const resolveDropPosition = (event: DragEvent<HTMLDivElement>): StudioDropPosition => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const offset = rect.height === 0 ? 0.5 : (event.clientY - rect.top) / rect.height;
+    const acceptsChildren = node.kind === "collection" || node.kind === "group" || node.kind === "stage" || node.kind === "variant" || node.kind === "wizard";
+    if (acceptsChildren && offset >= 0.25 && offset <= 0.75) return "inside";
+    return offset < 0.5 ? "before" : "after";
+  };
   return (
     <div
       className={`studio-v1-preview__layout${selectable ? " studio-v1-authoring-node" : ""}`}
       data-authoring-selected={selected || undefined}
+      data-drop-position={dropPosition}
       data-canvas-uid={selectable ? node.uid : undefined}
       data-width-mobile={node.layout.width.mobile}
       data-width-tablet={node.layout.width.tablet}
@@ -241,12 +253,28 @@ function PreviewLayout({ node, children, authoring }: {
         event.stopPropagation();
         authoring.onSelect(node.uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
       } : undefined}
-      onDragOver={selectable ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; } : undefined}
+      onContextMenu={selectable ? (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!selected) authoring.onSelect(node.uid);
+        authoring.onContextMenu(node.uid, { x: event.clientX, y: event.clientY });
+      } : undefined}
+      onDragOver={selectable ? (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+        setDropPosition(resolveDropPosition(event));
+      } : undefined}
+      onDragLeave={selectable ? (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropPosition(undefined);
+      } : undefined}
       onDrop={selectable ? (event) => {
         event.preventDefault();
         event.stopPropagation();
         const uid = event.dataTransfer.getData("application/x-stages-studio-uid");
-        if (uid && uid !== node.uid) authoring.onDrop(uid as Uid, node.uid);
+        const position = dropPosition ?? resolveDropPosition(event);
+        setDropPosition(undefined);
+        if (uid && uid !== node.uid) authoring.onDrop(uid as Uid, node.uid, position);
       } : undefined}
     >
       {selectable && <button
@@ -1329,46 +1357,6 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
   );
 }
 
-function StructureControls({ nodes, canPaste, onMove, onGroup, onUngroup, onConvert, onCopy, onCut, onPaste }: {
-  readonly nodes: readonly StudioNode[];
-  readonly canPaste: boolean;
-  readonly onMove: (direction: StudioMoveDirection) => void;
-  readonly onGroup: () => void;
-  readonly onUngroup: () => void;
-  readonly onConvert: (kind: "collection" | "group" | "wizard") => void;
-  readonly onCopy: () => void;
-  readonly onCut: () => void;
-  readonly onPaste: () => void;
-}) {
-  const selected = nodes[0];
-  const convertible = nodes.length === 1 && (selected?.kind === "group" || selected?.kind === "collection" || selected?.kind === "wizard");
-  const unwrappable = nodes.length === 1 && (selected?.kind === "group" || selected?.kind === "collection");
-  return (
-    <section className="studio-v1-structure" aria-labelledby="studio-v1-structure-title">
-      <h3 id="studio-v1-structure-title">Structure</h3>
-      <div>
-        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("up")}>Move up</Button>
-        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("down")}>Move down</Button>
-        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("in")}>Move in</Button>
-        <Button variant="outline" size="sm" disabled={nodes.length !== 1} onClick={() => onMove("out")}>Move out</Button>
-        <Button variant="outline" size="sm" disabled={nodes.length === 0} onClick={onGroup}>Group</Button>
-        <Button variant="outline" size="sm" disabled={!unwrappable} onClick={onUngroup}>Ungroup</Button>
-        <Button variant="outline" size="sm" disabled={nodes.length === 0} onClick={onCopy}>Copy</Button>
-        <Button variant="outline" size="sm" disabled={nodes.length === 0} onClick={onCut}>Cut</Button>
-        <Button variant="outline" size="sm" disabled={!canPaste || nodes.length !== 1} onClick={onPaste}>Paste</Button>
-      </div>
-      {convertible && (
-        <div>
-          <Button variant="outline" size="sm" disabled={selected.kind === "group"} onClick={() => onConvert("group")}>Convert to group</Button>
-          <Button variant="outline" size="sm" disabled={selected.kind === "collection"} onClick={() => onConvert("collection")}>Convert to collection</Button>
-          <Button variant="outline" size="sm" disabled={selected.kind === "wizard"} onClick={() => onConvert("wizard")}>Convert to wizard</Button>
-        </div>
-      )}
-      <p><small>Move: Alt+Arrow · Copy/Cut/Paste: Ctrl/⌘+C/X/V</small></p>
-    </section>
-  );
-}
-
 function ProblemsPanel({ diagnostics, onNavigate }: {
   readonly diagnostics: readonly StudioProblem[];
   readonly onNavigate: (diagnostic: StudioProblem) => void;
@@ -1424,6 +1412,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       ...(activeFormUid === undefined ? {} : { activeFormUid }),
     };
   });
+  const [canvasContextMenu, setCanvasContextMenu] = useState<(StudioContextMenuPosition & { readonly uid: Uid }) | undefined>();
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
   const [surface, setSurface] = useState<"design" | "preview">("design");
@@ -1441,6 +1430,16 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const lastSaveFailed = useRef(false);
 
   useEffect(() => { historyRef.current = history; }, [history]);
+  useEffect(() => {
+    const clearCanvasSelection = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(".studio-v1-canvas") || target.closest("[data-canvas-uid]")) return;
+      setCanvasContextMenu(undefined);
+      setNavigation((current) => ({ ...current, workbench: clearStudioSelection(current.workbench) }));
+    };
+    document.addEventListener("pointerdown", clearCanvasSelection);
+    return () => document.removeEventListener("pointerdown", clearCanvasSelection);
+  }, []);
   useEffect(() => {
     const preview = previewLegacyStudioStorage(localStorage);
     setLegacyPreview(preview);
@@ -1631,7 +1630,6 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
       workbench: selectStudioUid(current.workbench, uid, visibleOutlineUids, options),
     }));
   };
-
   const insertField = (definition: AnyStudioAuthoringFieldDefinition) => {
     const node = nextField(form, definition);
     const result = dispatchStudioCommand(history, {
@@ -2057,7 +2055,8 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onChange={(workbench) => setNavigation((current) => ({ ...current, workbench }))}
             onActivateForm={(activeFormUid) => setNavigation((current) => ({ ...current, activeFormUid }))}
             onMove={moveNode} onDrop={dropNode} onCopy={copyNodes} onCut={cutNodes} onPaste={pasteNodes}
-            onGroup={groupNodes} onUngroup={ungroupNode}
+            onGroup={groupNodes} onUngroup={ungroupNode} onConvert={convertNode}
+            canPaste={navigation.clipboard !== undefined}
           />}
           {drawer === "insert" && <>
             <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
@@ -2091,7 +2090,13 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources}
               defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem}
               onUpdateScenario={updateScenario} onAddScenario={addScenario} variant="canvas"
-              authoring={{ selectedUids: navigation.workbench.selectedUids, selectableUids: new Set(Object.keys(form.nodes) as Uid[]), onSelect: selectNode, onDrop: dropNode }}
+              authoring={{
+                selectedUids: navigation.workbench.selectedUids,
+                selectableUids: new Set(Object.keys(form.nodes) as Uid[]),
+                onSelect: selectNode,
+                onDrop: dropNode,
+                onContextMenu: (uid, position) => setCanvasContextMenu({ uid, ...position }),
+              }}
             />
           </section>
           <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title" tabIndex={-1} data-inspector-property={inspectionPropertyPath?.join(".")}>
@@ -2117,18 +2122,20 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onDetach={detachFragment}
             onBulkLabel={updateBulkLabel}
           />}
-          <StructureControls
-            nodes={selectedNodes}
-            canPaste={navigation.clipboard !== undefined}
-            onMove={(direction) => { const uid = selectedNodes[0]?.uid; if (uid) moveNode(uid, direction); }}
-            onGroup={() => groupNodes(selectedNodes.map(({ uid }) => uid))}
-            onUngroup={() => { const uid = selectedNodes[0]?.uid; if (uid) ungroupNode(uid); }}
-            onConvert={(kind) => { const uid = selectedNodes[0]?.uid; if (uid) convertNode(uid, kind); }}
-            onCopy={() => { copyNodes(selectedNodes.map(({ uid }) => uid)); }}
-            onCut={() => cutNodes(selectedNodes.map(({ uid }) => uid))}
-            onPaste={() => { const uid = selectedNodes[0]?.uid; if (uid) pasteNodes(uid); }}
-          />
           </aside>
+          {canvasContextMenu !== undefined && form.nodes[canvasContextMenu.uid] !== undefined && (() => {
+            const node = form.nodes[canvasContextMenu.uid]!;
+            const actionUids = navigation.workbench.selectedUids.includes(node.uid)
+              ? navigation.workbench.selectedUids
+              : [node.uid];
+            return <StudioNodeContextMenu
+              node={node} actionUids={actionUids} position={canvasContextMenu}
+              canPaste={navigation.clipboard !== undefined} onClose={() => setCanvasContextMenu(undefined)}
+              onMove={(direction) => moveNode(node.uid, direction)} onGroup={() => groupNodes(actionUids)}
+              onUngroup={() => ungroupNode(node.uid)} onConvert={(kind) => convertNode(node.uid, kind)}
+              onCopy={() => { copyNodes(actionUids); }} onCut={() => cutNodes(actionUids)} onPaste={() => pasteNodes(node.uid)}
+            />;
+          })()}
         </> : <div className="studio-v1-preview-workspace">
           <ControlledPreview form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
         </div>}

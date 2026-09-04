@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { toUid } from "../document";
 import {
   createStudioWorkbenchState,
+  clearStudioSelection,
   reconcileStudioWorkbench,
   revealStudioUid,
   selectStudioUid,
@@ -26,6 +27,10 @@ describe("Studio workbench state", () => {
     state = selectStudioUid(state, first, visible, { toggle: true });
     expect(state.selectedUids).toEqual([group, second]);
     expect(state.focusedUid).toBe(first);
+
+    state = clearStudioSelection(state);
+    expect(state.selectedUids).toEqual([]);
+    expect(state.selectionAnchorUid).toBeUndefined();
   });
 
   it("reveals every ancestor before focusing a diagnostic target", () => {
@@ -76,6 +81,12 @@ describe("Studio structural move planning", () => {
     });
     expect(createStudioDropCommand(formDocument, second, group)).toEqual({
       type: "node.move", formUid: form, uid: second, parentUid: group, index: 1,
+    });
+    expect(createStudioDropCommand(formDocument, second, group, "before")).toEqual({
+      type: "node.move", formUid: form, uid: second, parentUid: null, index: 0,
+    });
+    expect(createStudioDropCommand(formDocument, group, second, "after")).toEqual({
+      type: "node.move", formUid: form, uid: group, parentUid: null, index: 1,
     });
     expect(createStudioRelativeMoveCommand(formDocument, second, "in")).toEqual({
       type: "node.move", formUid: form, uid: second, parentUid: group, index: 1,

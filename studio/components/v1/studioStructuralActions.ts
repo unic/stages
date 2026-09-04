@@ -10,6 +10,7 @@ import {
   createStudioRelativeMoveCommand,
   locateStudioNode,
   type StudioMoveDirection,
+  type StudioDropPosition,
   type StudioWorkbenchState,
 } from "../../src/editor";
 
@@ -107,8 +108,13 @@ export function createStudioStructuralActions({
   const moveNode = (uid: Uid, direction: StudioMoveDirection) => {
     dispatch(createStudioRelativeMoveCommand(form, uid, direction), `Move ${direction}`, `${nodeLabel(form, uid)} moved ${direction}.`);
   };
-  const dropNode = (uid: Uid, targetUid: Uid) => {
-    dispatch(createStudioDropCommand(form, uid, targetUid), "Move node", `${nodeLabel(form, uid)} moved to ${nodeLabel(form, targetUid)}.`);
+  const dropNode = (uid: Uid, targetUid: Uid, position?: StudioDropPosition) => {
+    const relation = position === "inside" ? "inside" : position;
+    dispatch(
+      createStudioDropCommand(form, uid, targetUid, position),
+      "Move node",
+      `${nodeLabel(form, uid)} moved${relation === undefined ? " to" : ` ${relation}`} ${nodeLabel(form, targetUid)}.`,
+    );
   };
   const copyNodes = (uids: readonly Uid[]): StudioNodeClipboard | undefined => {
     const copied = copyStudioNodes(history.present, form.uid, uids);

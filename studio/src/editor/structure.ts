@@ -3,6 +3,7 @@ import type { StudioCommand } from "../commands/types";
 import { isStudioVariantCollection, type StudioFormDocument, type StudioNode, type Uid } from "../document/types";
 
 export type StudioMoveDirection = "bottom" | "down" | "in" | "out" | "top" | "up";
+export type StudioDropPosition = "after" | "before" | "inside";
 
 export interface StudioNodePlacement {
   readonly parentUid: Uid | null;
@@ -72,18 +73,32 @@ export function createStudioDropCommand(
   form: StudioFormDocument,
   uid: Uid,
   targetUid: Uid,
+  position?: StudioDropPosition,
 ): StudioCommand | undefined {
   if (uid === targetUid) return undefined;
   const source = form.nodes[uid];
   const target = form.nodes[targetUid];
   if (!source || !target) return undefined;
   const targetChildren = children(target);
-  if (targetChildren.length > 0 || target.kind === "group" || target.kind === "collection" || target.kind === "wizard" || target.kind === "stage") {
+  if (position === "inside" || position === undefined) {
     if (canPlaceStudioNode(target.kind, source.kind)) {
-      return { type: "node.move", formUid: form.uid, uid, parentUid: target.uid, index: targetChildren.length };
+      const sourcePlacement = locateStudioNode(form, uid);
+      const index = sourcePlacement?.parentUid === target.uid ? targetChildren.length - 1 : targetChildren.length;
+      return { type: "node.move", formUid: form.uid, uid, parentUid: target.uid, index };
     }
+    if (position === "inside") return undefined;
   }
   const placement = locateStudioNode(form, targetUid);
   if (!placement) return undefined;
-  return { type: "node.move", formUid: form.uid, uid, parentUid: placement.parentUid, index: placement.index };
+  const sourcePlacement = locateStudioNode(form, uid);
+  const sourcePrecedesTarget = sourcePlacement?.parentUid === placement.parentUid && sourcePlacement.index < placement.index;
+  const targetIndexAfterRemoval = placement.index - (sourcePrecedesTarget ? 1 : 0);
+  const resolvedPosition = position ?? "before";
+  return {
+    type: "node.move",
+    formUid: form.uid,
+    uid,
+    parentUid: placement.parentUid,
+    index: targetIndexAfterRemoval + (resolvedPosition === "after" ? 1 : 0),
+  };
 }

@@ -8,6 +8,7 @@ import {
   type StudioMoveDirection,
   visibleStudioOutlineUids,
 } from "../../src/editor";
+import { StudioNodeContextMenu, type StudioContextMenuPosition } from "./StudioNodeContextMenu";
 
 function writeStudioDragData(event: DragEvent<HTMLElement>, uid: Uid): void {
   event.dataTransfer.effectAllowed = "move";
@@ -32,15 +33,17 @@ interface StudioOutlineProps {
   readonly onPaste: (targetUid: Uid) => void;
   readonly onGroup: (uids: readonly Uid[]) => void;
   readonly onUngroup: (uid: Uid) => void;
+  readonly onConvert: (uid: Uid, kind: "collection" | "group" | "wizard") => void;
+  readonly canPaste: boolean;
 }
 
 export function StudioOutline({
-  project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup,
+  project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup, onConvert, canPaste,
 }: StudioOutlineProps) {
   const model = useMemo(() => createStudioOutlineModel(project), [project]);
   const visibleUids = visibleStudioOutlineUids(model, state.expandedUids);
   const itemRefs = useRef(new Map<Uid, HTMLLIElement>());
-  const [contextUid, setContextUid] = useState<Uid | undefined>();
+  const [contextMenu, setContextMenu] = useState<(StudioContextMenuPosition & { readonly uid: Uid }) | undefined>();
 
   useEffect(() => {
     if (state.focusedUid !== undefined && document.activeElement?.closest("[role=tree]") !== null) {
@@ -117,11 +120,6 @@ export function StudioOutline({
     if (uid) onDrop(uid as Uid, targetUid);
     event.stopPropagation();
   };
-  const runContextAction = (action: () => void) => {
-    action();
-    setContextUid(undefined);
-  };
-
   const renderItem = (uid: Uid, level: number) => {
     const item = model.items.get(uid);
     if (!item) return null;
@@ -149,7 +147,7 @@ export function StudioOutline({
           if ((event.target as HTMLElement).closest("[role=treeitem]") !== event.currentTarget) return;
           event.preventDefault();
           if (!state.selectedUids.includes(uid)) select(uid);
-          setContextUid(uid);
+          setContextMenu({ uid, x: event.clientX, y: event.clientY });
         }}
         onDragStart={(event) => startStudioDrag(event, uid)}
         onDragOver={(event) => { if (item.kind !== "form") event.preventDefault(); }}
@@ -181,20 +179,20 @@ export function StudioOutline({
       <ul role="tree" aria-label="Project structure" aria-multiselectable="true">
         {model.roots.map((uid) => renderItem(uid, 1))}
       </ul>
-      {contextUid !== undefined && model.items.get(contextUid)?.kind !== "form" && (
-        <div className="studio-v1-outline__menu" role="menu" aria-label={`Actions for ${model.items.get(contextUid)?.label ?? contextUid}`}>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "up"))}>Move up</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "down"))}>Move down</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "in"))}>Move into previous</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onMove(contextUid, "out"))}>Move out</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onGroup(selectedNodeUids(contextUid)))}>Group</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onUngroup(contextUid))}>Ungroup</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onCopy(selectedNodeUids(contextUid)))}>Copy</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onCut(selectedNodeUids(contextUid)))}>Cut</button>
-          <button role="menuitem" type="button" onClick={() => runContextAction(() => onPaste(contextUid))}>Paste</button>
-          <button role="menuitem" type="button" onClick={() => setContextUid(undefined)}>Close menu</button>
-        </div>
-      )}
+      {contextMenu !== undefined && (() => {
+        const item = model.items.get(contextMenu.uid);
+        const node = item === undefined ? undefined : project.forms[item.formUid]?.nodes[contextMenu.uid];
+        if (node === undefined) return null;
+        const actionUids = selectedNodeUids(contextMenu.uid);
+        return <StudioNodeContextMenu
+          node={node} actionUids={actionUids} position={contextMenu} canPaste={canPaste}
+          onClose={() => setContextMenu(undefined)}
+          onMove={(direction) => onMove(contextMenu.uid, direction)}
+          onGroup={() => onGroup(actionUids)} onUngroup={() => onUngroup(contextMenu.uid)}
+          onConvert={(kind) => onConvert(contextMenu.uid, kind)}
+          onCopy={() => onCopy(actionUids)} onCut={() => onCut(actionUids)} onPaste={() => onPaste(contextMenu.uid)}
+        />;
+      })()}
       <div className="studio-v1-outline__resources">
         <h3>Fragments</h3>
         <p>{Object.keys(project.fragments).length === 0 ? "No fragments" : `${Object.keys(project.fragments).length} fragments`}</p>
