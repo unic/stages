@@ -1,0 +1,243 @@
+{
+  "behaviors": [
+    {
+      "config": {
+        "maximum": 10000
+      },
+      "key": "example/policy",
+      "version": 1
+    }
+  ],
+  "defaultLocale": "en",
+  "fieldDescriptors": [
+    {
+      "accessibility": {
+        "description": "helpText",
+        "keyboard": [
+          "Tab",
+          "text entry"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "helpText": "",
+        "label": "Money"
+      },
+      "displayName": "Money",
+      "emptyValue": {
+        "currency": "CHF",
+        "minorUnits": 0
+      },
+      "input": {
+        "draft": "string",
+        "formatting": "Format accepted values without changing them.",
+        "parsing": "Emit accepted JSON only after parsing a valid draft. Preserve invalid drafts in the view."
+      },
+      "key": "example/money",
+      "props": {
+        "helpText": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        }
+      },
+      "value": {
+        "kind": "object",
+        "properties": {
+          "currency": {
+            "kind": "enum",
+            "values": [
+              "CHF",
+              "EUR"
+            ]
+          },
+          "minorUnits": {
+            "kind": "number"
+          }
+        }
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "helpText",
+        "keyboard": [
+          "Tab",
+          "text entry"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "helpText": "",
+        "label": "Optional number"
+      },
+      "displayName": "Optional number",
+      "emptyValue": null,
+      "input": {
+        "draft": "string",
+        "formatting": "Format accepted values without changing them.",
+        "parsing": "Emit accepted JSON only after parsing a valid draft. Preserve invalid drafts in the view."
+      },
+      "key": "example/optional-number",
+      "props": {
+        "helpText": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        }
+      },
+      "value": {
+        "kind": "nullable",
+        "value": {
+          "kind": "number"
+        }
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "helpText",
+        "keyboard": [
+          "Tab",
+          "text entry"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "helpText": "",
+        "label": "Person"
+      },
+      "displayName": "Person",
+      "emptyValue": {
+        "family": "",
+        "given": ""
+      },
+      "input": {
+        "draft": "string",
+        "formatting": "Format accepted values without changing them.",
+        "parsing": "Emit accepted JSON only after parsing a valid draft. Preserve invalid drafts in the view."
+      },
+      "key": "example/person",
+      "props": {
+        "helpText": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        }
+      },
+      "value": {
+        "kind": "object",
+        "properties": {
+          "family": {
+            "kind": "string"
+          },
+          "given": {
+            "kind": "string"
+          }
+        }
+      },
+      "version": 1
+    }
+  ],
+  "form": {
+    "nodes": {
+      "money": {
+        "definition": {
+          "key": "example/money",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "helpText": "",
+          "label": "Money"
+        },
+        "runtimeId": "money",
+        "uid": "money"
+      },
+      "optional": {
+        "definition": {
+          "key": "example/optional-number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "helpText": "",
+          "label": "Optional number"
+        },
+        "runtimeId": "optional",
+        "uid": "optional"
+      },
+      "person": {
+        "definition": {
+          "key": "example/person",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "helpText": "",
+          "label": "Person"
+        },
+        "runtimeId": "person",
+        "uid": "person"
+      }
+    },
+    "rootNodeUids": [
+      "money",
+      "person",
+      "optional"
+    ],
+    "runtime": {
+      "schemaId": "custom",
+      "schemaVersion": 1
+    },
+    "settings": {},
+    "title": "Custom fields",
+    "uid": "custom"
+  },
+  "format": "stages-portable-form",
+  "formatVersion": 1,
+  "initialValue": {
+    "money": {
+      "currency": "CHF",
+      "minorUnits": 0
+    },
+    "optional": null,
+    "person": {
+      "family": "",
+      "given": ""
+    }
+  },
+  "requirements": {
+    "behaviors": [
+      {
+        "key": "example/policy",
+        "version": 1
+      }
+    ],
+    "capabilities": [
+      "stages.standard@1"
+    ],
+    "fields": [
+      {
+        "key": "example/money",
+        "version": 1
+      },
+      {
+        "key": "example/optional-number",
+        "version": 1
+      },
+      {
+        "key": "example/person",
+        "version": 1
+      }
+    ],
+    "services": []
+  },
+  "resources": {}
+}

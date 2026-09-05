@@ -1,6 +1,6 @@
 # Stages v1: portable forms from Studio to production
 
-Status: implementation in progress (S0 and S1 complete), based on a source and runtime review on
+Status: implementation in progress (S0, S1 and S2 complete), based on a source and runtime review on
 2026-09-05 at commit `5e2158e`. Package version: `1.0.0-alpha.0`.
 
 Audience: Stages core, adapter, tooling, and Studio maintainers.
@@ -23,7 +23,7 @@ public example, strict type contracts and a packed consumer cover this behavior.
 Release verification also corrected stale Studio browser-test selectors and a
 zero-width Recovery toggle caused by the palette help-button width rule.
 S0 did not claim a production loader or authoritative server validator.
-S1 is now complete as described below; S2–S5 and the portable beta release gate
+S1 and S2 are now complete as described below; S3–S5 and the portable beta release gate
 remain open.
 
 2026-09-05: S1 implementation is complete. The optional
@@ -59,9 +59,57 @@ and the browser suite used the already-running Studio server through the existin
 external-server configuration. These were execution-environment retries, with no
 weakened checks. Generated changes to tracked Angular caches were restored.
 
-S2 values/custom components and hybrid composition are next. Authoritative
+S2 values/custom components and hybrid composition are implemented below; S3 is next. Authoritative
 submission decoding, full Event Launch portability and the portable beta gate
 remain unimplemented; S1 establishes the runtime loader, not server acceptance.
+
+2026-09-05: S2 implementation is complete. The additive authoring API separates
+JSON field descriptors, exact-version trusted semantics, and opaque framework
+view bindings. Descriptors support structured values and props, enum/array/object
+contracts, nullable numbers, explicit empties, and draft/accessibility expectations.
+Custom reducers check accepted value shape; money fixtures enforce safe integer
+minor units. Blank optional-number drafts remain distinct from zero. Direct core
+consumers retain their existing rich-value, codec and callback contracts.
+
+Portable artifacts can reference custom JS behavior factories with JSON config.
+The loader resolves exact bindings before configuring their root validators and
+transforms; missing bindings and duplicate validator IDs fail explicitly. Public
+hybrid composition appends trusted rules, preserves dynamic factories, and requires
+a distinct deployment schema identity. Binding order, dependencies, cancellation,
+controlled acceptance and view independence are documented and tested.
+
+Studio hosts inject resolved fields and a separate component map. The palette,
+structured props inspector, production projection, preview and compilation cache
+support custom fields. Preview controls have occurrence-specific accessible IDs;
+view replacement and presentation-only updates retain semantic identity. Generated
+`App.tsx` output is explicitly described as integration scaffolding. Custom JSON
+and host bindings can use public adapters or independent layout renderers.
+
+The shared money/person/optional-number artifact loads and validates headlessly.
+Contact and custom fields render through DOM, React, Vue and Angular; native and
+existing application component systems are exercised without changing values or
+rules. The same rendering tests run against installed Stages tarballs (external
+framework/test peers reuse the repository installation); the separate Node
+consumer installs only core and authoring with no framework peers or workspace
+symlinks. S1's contact JSON is preserved byte for byte. Runtime/type contracts,
+checked examples, the generated JSON Schema, API reports and coverage records
+cover the new additive surface. See the [extension guide](content/start/portable-forms.mdx)
+and [capability ledger](../studio/docs/PORTABLE_CAPABILITIES.md).
+
+Verification used Node 24.15.0. `npm run verify:changed -- change` selected
+`npm run release:check:v1` and passed: static quality, documentation/API/JSON-Schema
+checks, 133 package tests, 323 Studio/Vitest tests plus 10 Studio Node tests,
+packed semantic/type and four-adapter rendering consumers, performance checks,
+Studio/docs/all-example builds, the React lifecycle test, and all 42 browser
+journeys. The final run used the outside-sandbox environment required by Angular's
+native build and browser listeners, and the existing Studio server through the
+external-server configuration. The existing 1,000-row regression timed out once
+under full-suite load; it passed focused and full retries without changing its
+5-second limit. Generated Angular cache changes were restored.
+
+S2 does not claim authoritative submission decoding, full Event Launch parity,
+custom bulk-property editing, or automatic deployment fingerprints. S3–S5 and
+the portable beta release gate remain open.
 
 ## 1. Assessment and success criterion
 

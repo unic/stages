@@ -43,8 +43,10 @@ localization implementation live here; preview service mocks remain in Studio.
 
 This is UI/runtime validation, not authoritative submission decoding. Computed
 values, row-dependent presence, parameterized fragments and portable extension
-codecs remain unsupported. Custom field registries and hybrid composition are
-subsequent work. Direct core callbacks, fields, codecs and adapters remain usable.
+codecs remain unsupported. Custom JSON field descriptors, exact semantic bindings and view replacement are
+supported through `definePortableFieldBindings` and `bindPortableViews`.
+`definePortableBehaviorBindings` resolves portable JS rule references and config;
+`composePortableForm` appends host rules under a distinct deployment schema identity. Direct core callbacks, fields, codecs and adapters remain usable.
 
 See the [loader guide](https://github.com/unic/stages/blob/master/docs/content/start/portable-forms.mdx)
 and [reference](https://github.com/unic/stages/blob/master/docs/content/reference/authoring.mdx).

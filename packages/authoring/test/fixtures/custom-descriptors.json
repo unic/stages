@@ -1,0 +1,136 @@
+[
+  {
+    "version": 1,
+    "props": {
+      "label": {
+        "kind": "string"
+      },
+      "helpText": {
+        "kind": "string"
+      }
+    },
+    "defaultProps": {
+      "label": "Money",
+      "helpText": ""
+    },
+    "input": {
+      "draft": "string",
+      "parsing": "Emit accepted JSON only after parsing a valid draft. Preserve invalid drafts in the view.",
+      "formatting": "Format accepted values without changing them."
+    },
+    "accessibility": {
+      "role": "textbox",
+      "keyboard": [
+        "Tab",
+        "text entry"
+      ],
+      "label": "label",
+      "description": "helpText"
+    },
+    "key": "example/money",
+    "displayName": "Money",
+    "value": {
+      "kind": "object",
+      "properties": {
+        "minorUnits": {
+          "kind": "number"
+        },
+        "currency": {
+          "kind": "enum",
+          "values": [
+            "CHF",
+            "EUR"
+          ]
+        }
+      }
+    },
+    "emptyValue": {
+      "minorUnits": 0,
+      "currency": "CHF"
+    }
+  },
+  {
+    "version": 1,
+    "props": {
+      "label": {
+        "kind": "string"
+      },
+      "helpText": {
+        "kind": "string"
+      }
+    },
+    "defaultProps": {
+      "label": "Person",
+      "helpText": ""
+    },
+    "input": {
+      "draft": "string",
+      "parsing": "Emit accepted JSON only after parsing a valid draft. Preserve invalid drafts in the view.",
+      "formatting": "Format accepted values without changing them."
+    },
+    "accessibility": {
+      "role": "textbox",
+      "keyboard": [
+        "Tab",
+        "text entry"
+      ],
+      "label": "label",
+      "description": "helpText"
+    },
+    "key": "example/person",
+    "displayName": "Person",
+    "value": {
+      "kind": "object",
+      "properties": {
+        "given": {
+          "kind": "string"
+        },
+        "family": {
+          "kind": "string"
+        }
+      }
+    },
+    "emptyValue": {
+      "given": "",
+      "family": ""
+    }
+  },
+  {
+    "version": 1,
+    "props": {
+      "label": {
+        "kind": "string"
+      },
+      "helpText": {
+        "kind": "string"
+      }
+    },
+    "defaultProps": {
+      "label": "Optional number",
+      "helpText": ""
+    },
+    "input": {
+      "draft": "string",
+      "parsing": "Emit accepted JSON only after parsing a valid draft. Preserve invalid drafts in the view.",
+      "formatting": "Format accepted values without changing them."
+    },
+    "accessibility": {
+      "role": "textbox",
+      "keyboard": [
+        "Tab",
+        "text entry"
+      ],
+      "label": "label",
+      "description": "helpText"
+    },
+    "key": "example/optional-number",
+    "displayName": "Optional number",
+    "value": {
+      "kind": "nullable",
+      "value": {
+        "kind": "number"
+      }
+    },
+    "emptyValue": null
+  }
+]

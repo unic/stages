@@ -18,15 +18,53 @@ lastReviewed: 2026-09-03
 | `PortableRequirements` | `capabilities` is exactly `['stages.standard@1']`. `services` contains unique key/version references sorted by key then numeric version; it must exactly match all service rules. Extra, missing, or reordered references fail validation. |
 | `PortableDiagnostic` | Document/compiler diagnostic with `code`, `severity`, `source`, `message`, optional form/entity identity and property/runtime location. Existing `document.*` and `compiler.*` codes remain meaningful. |
 | `PortableResult<T>` | Discriminated result: `{ ok: true, value: T }` or `{ ok: false, diagnostics }`. Failure has no executable value. |
-| `PortableLoadOptions` | Optional trusted `serviceBindings` registry. No source evaluator, module resolver, browser host or implicit preview mocks. |
+| `PortableLoadOptions` | Optional trusted `serviceBindings`, `fieldBindings`, and `behaviorBindings` registries. No source evaluator, module resolver, browser host or implicit preview mocks. |
 | `LoadedPortableForm` | Shared compiler outputs `schema`, `schemaInput`, `fields`, `expandedForm`, `renderPlan`, `sourceMap`, and `diagnostics`, plus immutable `definition` and `initialValue`. Use `schemaInput` for execution; `schema` alone omits dynamic structure. |
-| `validatePortableForm(input: unknown)` | Checks JSON safety, envelope version/shape, graph references, field versions, resource format and exact requirements. Returns a deep frozen copy. Does not resolve services or establish that every accepted authoring feature can execute. |
-| `loadPortableForm(input: unknown, options?)` | Accepts parsed JSON or JSON text. Runs validation, resolves each service exactly once, then compiles with the shared compiler. Rejects unsupported computed values, row-dependent structural presence, invalid scopes and other compiler errors. Returns `PortableResult<LoadedPortableForm>`. Never invokes a service during load. |
-| `projectPortableForm(project, formUid, initialValue?)` | Validates the selected project form, expands its linked fragments, strips scenario answers, legacy metadata and non-theme settings, and copies only referenced localization messages. The graph is bounded before expansion to 1,000 nodes. Missing/cyclic/parameterized fragments fail. Omitted `initialValue` uses empty built-in field values; explicit JSON values, including null, are preserved. Projection checks compiler support with inert service placeholders; real bindings are required to load the artifact. |
+| `validatePortableForm(input: unknown)` | Checks JSON safety, envelope version/shape, graph references, field versions, resource format and exact requirements. Returns a deep frozen copy. Does not resolve services or establish that every accepted authoring feature can execute. Custom descriptor shape and exact field/behavior requirements are checked before binding resolution. |
+| `loadPortableForm(input: unknown, options?)` | Accepts parsed JSON or JSON text. Runs validation, resolves each service exactly once, then compiles with the shared compiler. Rejects unsupported computed values, row-dependent structural presence, invalid scopes and other compiler errors. Returns `PortableResult<LoadedPortableForm>`. Never invokes a service during load; trusted behavior configuration factories do run during load. |
+| `projectPortableForm(project, formUid, initialValue?, options?)` | Validates the selected project form, expands its linked fragments, strips scenario answers, legacy metadata and non-theme settings, and copies only referenced localization messages. The graph is bounded before expansion to 1,000 nodes. Missing/cyclic/parameterized fragments fail. Omitted `initialValue` uses empty built-in and custom field values; explicit JSON values, including null, are preserved. Projection checks compiler support with inert service placeholders; real bindings are required to load the artifact. |
 | `serializePortableForm(definition)` | Serializes a typed definition with recursively sorted keys, two-space indentation and a final newline. Does not validate; validate untrusted data first. |
 | `PortableServiceBinding` | Exact `key` and positive integer `version` matching the definition reference, with trusted `invoke({ input, validation })` returning a promise of success or structured failure. Cancellation and issue semantics follow core validation. |
 | `PortableServiceBindings` | Registry with `resolve(reference)` returning an exact binding or undefined. A mismatched result fails loading. Host resolver exceptions propagate as application errors. |
 | `definePortableServiceBindings(bindings)` | Creates an immutable exact-version registry and freezes bindings; duplicate key/version pairs throw `TypeError`. Implementations remain application-owned closures. |
+
+## Values and extension contracts
+
+| Export | Contract |
+| --- | --- |
+| `PortableValueContract` | Tagged JSON contract: string, finite number, boolean, null, enum, array, object or nullable. Objects have exactly their declared properties, all required. Nested descriptor contracts are limited to 32 levels; descriptor arrays have a 1,000,000-byte JSON-safety limit. Enum equality compares JSON structurally, ignoring object key order. This does not narrow core's rich-value model. |
+| `PortableFieldDescriptor` | Namespaced key and positive safe-integer version, display name, value contract, explicit `emptyValue`, props contracts and `defaultProps`, draft/parsing/formatting expectations and accessibility metadata. Descriptors contain no executable code or framework exports. Defaults must satisfy their contracts. Every descriptor must be referenced by a field. Multiple exact versions may coexist. |
+| `PortableFieldBinding`, `PortableFieldBindings`, `definePortableFieldBindings` | Trusted reducer and field validators with exact key/version; no view or initial-value override. The helper rejects duplicate references. A semantic reducer's returned accepted value must match the descriptor or core reports the thrown reducer failure. Explicit owner updates are not decoded. No implicit reducer accepts arbitrary drafts. |
+| `portableFieldToken(reference)` | Returns `key@version`, used as the custom runtime field type and view token. Field-local declarative reducers may specialize the type while retaining this view token. |
+| `matchesPortableValue(contract, value)` | Boolean shape check against a trusted descriptor contract; does not transform, execute business rules, enforce money precision, or establish server acceptance. |
+| `PortableViewFields<TView>`, `PortableViewForm<TView>`, `bindPortableViews(loaded, views)` | Returns a loaded form whose schema and field types agree on the new view type. The frozen field registry contains host views and the same semantic callback references. Requires an own map entry for every field's view token; missing entries throw. Does not mutate schema, render plan, definitions, values or the original field registry. Components own accessible labels, descriptions, errors, focus/blur and draft parsing. |
+| `PortableBehaviorReference` | Namespaced exact key/version with JSON-object config. References are unique and ordered; the requirements list must match that order exactly. |
+| `PortableBehaviorBinding`, `PortableBehaviorBindings`, `definePortableBehaviorBindings` | Trusted `configure(config)` factory returns root core validators/transforms. Duplicate registrations throw. Loader checks exact versions; missing bindings, invalid configuration and duplicate validator IDs fail with diagnostics. Configuration factories must not perform request validation or start background work. Returned rules use core scheduling, dependencies, cancellation and validation issues. |
+| `PortableProjectOptions` | Optional `fieldDescriptors` and ordered `behaviors` for projection. Only referenced descriptors are exported. Projection uses inert semantic bindings to check compiler support; production load still requires real bindings. Behavior factories are not executed during projection. |
+| `PortableComposition`, `composePortableForm(loaded, composition)` | Adds trusted root validators/transforms after portable and referenced behavior rules. Requires a nonblank schema ID different from the source and a positive safe-integer version. Returns a new loaded output with the new runtime identity; retains the immutable source definition, render plan, fields and initial value. Duplicate validator IDs throw; transforms append in order. Dynamic structural factories remain dynamic. Compose once per deployment, not per render. |
+
+`PortableFormDefinition` optionally includes `fieldDescriptors` and `behaviors`.
+Requirements include `fields` only for custom descriptors, sorted by key and
+numeric version, and `behaviors` only for referenced behavior. Absent optional
+members preserve the S1 envelope and deterministic contact fixture byte for byte.
+`validatePortableForm` does not resolve or execute any bindings. The loader
+resolves semantics, checks compiler diagnostics and configures behavior before
+returning a usable value. View bindings are never server requirements.
+
+Failures added in this slice are `portable.invalid-field-descriptor`,
+`portable.unused-field-descriptor`, `portable.missing-field-binding`,
+`portable.invalid-behavior-reference`, `portable.missing-behavior-binding`, and
+`portable.behavior-composition`. Existing requirements mismatch and compiler prop
+diagnostics cover forged requirements and mismatched custom props. Custom fields
+use exact versions in their runtime type; changing semantic bindings invalidates
+Studio's compilation cache. Replacing a view map does not invalidate compilation.
+The `/studio` compiler accepts `customFields` from `resolvePortableFields`;
+`createEmptyStudioScenarioValue` accepts them as its third argument.
+
+Callbacks in host composition are intentionally not serialized. Deployments must
+record their implementation/configuration and compatibility decision separately;
+content identity and full persistence migration remain S5 work. JSON value
+contracts here are distinct from S3's authoritative submission decoder.
 
 ## Format and failure behavior
 
@@ -84,5 +122,7 @@ Next: [choose a renderer](/start/installation).
 
 - [Root exports](https://github.com/unic/stages/blob/master/packages/authoring/src/index.ts)
 - [Strict contract fixture](https://github.com/unic/stages/blob/master/packages/authoring/test-d/contract.ts)
+- [Custom field and hybrid tests](https://github.com/unic/stages/blob/master/packages/authoring/test/extensions.test.mjs)
+- [Four-adapter rendering tests](https://github.com/unic/stages/blob/master/packages/authoring/test/adapters.test.mjs)
 - [Runtime tests](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
 - [Shared API report](https://github.com/unic/stages/blob/master/contracts/public-api/authoring.api.json)

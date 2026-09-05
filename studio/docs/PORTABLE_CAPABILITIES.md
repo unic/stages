@@ -12,6 +12,9 @@ supported independently of this document layer.
 | Capability | Stored document | Studio editing | Preview | Executable export | Authoritative server |
 | --- | --- | --- | --- | --- | --- |
 | Built-in fields and static structure | Accepted | Supported | Supported | Shared loader + existing static subset | Not implemented |
+| Custom money, composite and nullable-number fields | Exact host references; portable descriptors | Host palette and structured props inspector | Host component map | JSON + trusted field bindings | Decoder not implemented |
+| Custom JS validators/transforms | Portable exact references and JSON config | Host integration | Public compiler/loader bindings | Trusted behavior bindings; hybrid composition | Same bindings required; decoder not implemented |
+| Component and layout replacement | Optional neutral render plan | Host-supplied preview views | Independent of semantics | DOM, React, Vue, Angular bindings; generated App remains a scaffold | Views not required |
 | Required, comparison, range, conditional validation | Accepted | Supported | Supported | Shared loader | Not implemented |
 | Row/item validator dependencies | Accepted | Supported | Conservative outer-collection invalidation | Shared loader | Not implemented |
 | Context/interface and extension validation dependencies | Accepted | Supported | Host updates invalidate results | Shared loader | Not implemented |
@@ -98,3 +101,29 @@ shared loader and installed contact-form consumer described in the plan.
 - [Runtime regressions and checked fixtures](../src/validation/relative-dependencies.test.ts)
 - [Computed design indicator test](../components/v1/StudioDesignFeatures.test.tsx)
 - [Existing executable export safeguards](../src/projects/artifacts.test.ts)
+
+## S2 custom fields and composition
+
+`@stages/authoring` now separates serializable descriptors, trusted field and
+behavior bindings, and opaque framework view tokens. Studio hosts resolve fields
+with `resolvePortableFields` and inject them with `StudioV1Editor.customFields`.
+Custom props use a validated JSON inspector that commits on blur. Missing preview
+components are visible errors; missing production bindings prevent loading.
+The export bundle retains portable JSON even when executable integration still
+needs host bindings. Built-in workflows and the S1 contact artifact are unchanged.
+
+The [custom field fixtures](../../packages/authoring/test/fixtures/custom-form-v1.json)
+cover structured money/person values, nullable numbers, async JS validation and
+transforms. [Adapter tests](../../packages/authoring/test/adapters.test.mjs) render
+contact and custom fields with all four adapters, native and React Bootstrap
+components, and custom layouts. These also run against installed Stages tarballs;
+framework/test peers in that frontend check reuse the repository installation.
+The Node semantic consumer installs only core and authoring without those peers.
+[Studio tests](../components/v1/StudioCustomFields.test.tsx) cover insertion,
+export, props, native/application previews and compilation identity.
+
+This does not implement authoritative server decoding, custom bulk-property
+editing, full Event Launch parity, or automatic deployment fingerprints. Host-only
+composition requires a distinct schema ID/version and a recorded deployment
+contract; referenced behavior changes also require an explicit compatibility
+choice. See the [public reference](../../docs/content/reference/authoring.mdx).

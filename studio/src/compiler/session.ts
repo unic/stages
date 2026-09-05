@@ -41,7 +41,7 @@ export function createStudioCompilerSession() {
       options: StudioCompileOptions = {},
     ): CompiledStudioForm {
       const cached = previous;
-      const sameBindings = cached !== undefined && cached.options.serviceBindings === options.serviceBindings;
+      const sameBindings = cached !== undefined && cached.options.serviceBindings === options.serviceBindings && cached.options.customFields === options.customFields;
       if (sameBindings && cached.form === form && cached.fragments === fragments
         && cached.options.localization?.defaultLocale === options.localization?.defaultLocale
         && cached.options.localization?.resources === options.localization?.resources) return cached.compiled;

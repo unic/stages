@@ -1,4 +1,4 @@
-import { loadPortableForm, projectPortableForm, serializePortableForm } from "@stages/authoring";
+import { loadPortableForm, projectPortableForm, serializePortableForm, type PortableFieldDescriptor } from "@stages/authoring";
 import { openStudioProject, serializeStudioProject, type StudioDocumentDiagnostic, type StudioDocumentValidationOptions, type StudioFormDocument, type StudioProjectDocument } from "../document";
 import { STUDIO_FIELD_DEFINITIONS, STUDIO_RUNTIME_FIELDS, type StudioFieldKey } from "../registry";
 
@@ -85,14 +85,14 @@ function reactSource(): string {
 }
 
 function readmeSource(form: StudioFormDocument): string {
-  return `# ${form.title}\n\nGenerated from a Stages Studio project. The generated files use public package entry points only.\n\n- \`form.stages.json\`: versioned portable definition (load with @stages/authoring)\n- \`schema.ts\`: v1 schema\n- \`fields.ts\`: field registry bindings\n- \`initial-value.ts\`: initial controlled value\n- \`scenarios.ts\`: named test fixtures\n- \`migrations.ts\`: schema-state migration skeleton\n- \`App.tsx\`: minimal controlled React integration\n`;
+  return `# ${form.title}\n\nGenerated from a Stages Studio project. The generated files use public package entry points only. App.tsx is an integration scaffold, not a renderer for the authored form. Use the portable loader output with your framework adapter and component system.\n\n- \`form.stages.json\`: versioned portable definition (load with @stages/authoring)\n- \`schema.ts\`: v1 schema\n- \`fields.ts\`: field registry bindings\n- \`initial-value.ts\`: initial controlled value\n- \`scenarios.ts\`: named test fixtures\n- \`migrations.ts\`: schema-state migration skeleton\n- \`App.tsx\`: controlled React integration scaffold; bind views and replace the value dump with your layout\n`;
 }
 
-export function generateStudioExportBundle(project: StudioProjectDocument): StudioExportResult {
+export function generateStudioExportBundle(project: StudioProjectDocument, fieldDescriptors: readonly PortableFieldDescriptor[] = []): StudioExportResult {
   const artifacts: StudioGeneratedArtifact[] = [{ path: "project.stages.json", mediaType: "application/json", source: serializeStudioProject(project) }];
   const diagnostics: StudioDocumentDiagnostic[] = [];
   for (const form of Object.values(project.forms).sort((left, right) => left.uid.localeCompare(right.uid))) {
-    const portable = projectPortableForm(project, form.uid);
+    const portable = projectPortableForm(project, form.uid, undefined, { fieldDescriptors });
     if (!portable.ok) {
       for (const failure of portable.diagnostics) diagnostics.push({ code: failure.code, severity: "error", source: "document", message: failure.message, propertyPath: failure.propertyPath ?? [], formUid: form.uid, ...(failure.entityUid === undefined ? {} : { entityUid: failure.entityUid }) });
       continue;

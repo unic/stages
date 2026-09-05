@@ -1,0 +1,69 @@
+{
+  "format": "stages-studio",
+  "formatVersion": 1,
+  "project": {
+    "uid": "project",
+    "title": "Custom fields",
+    "defaultLocale": "en"
+  },
+  "fragments": {},
+  "resources": {},
+  "forms": {
+    "custom": {
+      "uid": "custom",
+      "title": "Custom fields",
+      "runtime": {
+        "schemaId": "custom",
+        "schemaVersion": 1
+      },
+      "rootNodeUids": [
+        "money",
+        "person",
+        "optional"
+      ],
+      "nodes": {
+        "money": {
+          "uid": "money",
+          "kind": "field",
+          "runtimeId": "money",
+          "definition": {
+            "key": "example/money",
+            "version": 1
+          },
+          "props": {
+            "label": "Money",
+            "helpText": ""
+          }
+        },
+        "person": {
+          "uid": "person",
+          "kind": "field",
+          "runtimeId": "person",
+          "definition": {
+            "key": "example/person",
+            "version": 1
+          },
+          "props": {
+            "label": "Person",
+            "helpText": ""
+          }
+        },
+        "optional": {
+          "uid": "optional",
+          "kind": "field",
+          "runtimeId": "optional",
+          "definition": {
+            "key": "example/optional-number",
+            "version": 1
+          },
+          "props": {
+            "label": "Optional number",
+            "helpText": ""
+          }
+        }
+      },
+      "scenarios": [],
+      "settings": {}
+    }
+  }
+}

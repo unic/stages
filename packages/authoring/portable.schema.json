@@ -60,6 +60,18 @@
         },
         "requirements": {
           "$ref": "#/$defs/PortableRequirements"
+        },
+        "fieldDescriptors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableFieldDescriptor"
+          }
+        },
+        "behaviors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PortableBehaviorReference"
+          }
         }
       },
       "additionalProperties": false
@@ -5021,6 +5033,298 @@
           "items": {
             "$ref": "#/$defs/StudioDefinitionRef"
           }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioDefinitionRef"
+          }
+        },
+        "behaviors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioDefinitionRef"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PortableFieldDescriptor": {
+      "type": "object",
+      "required": [
+        "displayName",
+        "value",
+        "emptyValue",
+        "props",
+        "defaultProps",
+        "input",
+        "accessibility",
+        "key",
+        "version"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_52"
+            },
+            {
+              "$ref": "#/$defs/Object_53"
+            },
+            {
+              "$ref": "#/$defs/Object_54"
+            },
+            {
+              "$ref": "#/$defs/Object_55"
+            },
+            {
+              "$ref": "#/$defs/Object_56"
+            }
+          ]
+        },
+        "emptyValue": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "props": {
+          "$ref": "#/$defs/Readonly_4"
+        },
+        "defaultProps": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "input": {
+          "$ref": "#/$defs/Object_57"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/Object_58"
+        },
+        "key": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_52": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "const": "string"
+            },
+            {
+              "const": "number"
+            },
+            {
+              "const": "boolean"
+            },
+            {
+              "const": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_53": {
+      "type": "object",
+      "required": [
+        "kind",
+        "values"
+      ],
+      "properties": {
+        "kind": {
+          "const": "enum"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_54": {
+      "type": "object",
+      "required": [
+        "kind",
+        "items"
+      ],
+      "properties": {
+        "kind": {
+          "const": "array"
+        },
+        "items": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_52"
+            },
+            {
+              "$ref": "#/$defs/Object_53"
+            },
+            {
+              "$ref": "#/$defs/Object_54"
+            },
+            {
+              "$ref": "#/$defs/Object_55"
+            },
+            {
+              "$ref": "#/$defs/Object_56"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_55": {
+      "type": "object",
+      "required": [
+        "kind",
+        "properties"
+      ],
+      "properties": {
+        "kind": {
+          "const": "object"
+        },
+        "properties": {
+          "$ref": "#/$defs/Readonly_4"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Readonly_4": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Object_52"
+          },
+          {
+            "$ref": "#/$defs/Object_53"
+          },
+          {
+            "$ref": "#/$defs/Object_54"
+          },
+          {
+            "$ref": "#/$defs/Object_55"
+          },
+          {
+            "$ref": "#/$defs/Object_56"
+          }
+        ]
+      }
+    },
+    "Object_56": {
+      "type": "object",
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "nullable"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_52"
+            },
+            {
+              "$ref": "#/$defs/Object_53"
+            },
+            {
+              "$ref": "#/$defs/Object_54"
+            },
+            {
+              "$ref": "#/$defs/Object_55"
+            },
+            {
+              "$ref": "#/$defs/Object_56"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_57": {
+      "type": "object",
+      "required": [
+        "draft",
+        "parsing",
+        "formatting"
+      ],
+      "properties": {
+        "draft": {
+          "anyOf": [
+            {
+              "const": "string"
+            },
+            {
+              "const": "json"
+            }
+          ]
+        },
+        "parsing": {
+          "type": "string"
+        },
+        "formatting": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_58": {
+      "type": "object",
+      "required": [
+        "role",
+        "keyboard",
+        "label",
+        "description"
+      ],
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "keyboard": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PortableBehaviorReference": {
+      "type": "object",
+      "required": [
+        "config",
+        "key",
+        "version"
+      ],
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "key": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
         }
       },
       "additionalProperties": false

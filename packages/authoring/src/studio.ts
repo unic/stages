@@ -17,3 +17,6 @@ export * from "./registry/services.js";
 export * from "./localization/index.js";
 export * from "./validation/catalog.js";
 export * from "./logic/index.js";
+
+export { resolvePortableFields } from "./fields.js";
+export type { ResolvedPortableField } from "./fields.js";

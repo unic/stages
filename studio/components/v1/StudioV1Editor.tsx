@@ -1,3 +1,4 @@
+import { StudioCustomFieldsContext, StudioCustomFieldControl, StudioCustomPropsInspector, useStudioCustomFields, type StudioCustomFields } from "./StudioCustomFields";
 import { StudioBulkInspector } from "./StudioBulkInspector";
 import { StudioDesignFeatures, StudioDesignLegend } from "./StudioDesignFeatures";
 import { StudioHelp } from "./StudioHelp";
@@ -92,6 +93,7 @@ const DesignNodesContext = createContext<StudioFormDocument["nodes"] | undefined
 
 interface StudioV1EditorProps {
   readonly repository?: StudioProjectRepository;
+  readonly customFields?: StudioCustomFields;
 }
 
 function firstForm(project: StudioHistoryState["present"]): StudioFormDocument | undefined {
@@ -385,7 +387,7 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
   readonly descriptionId?: string;
   readonly disabled: boolean;
   readonly invalid: boolean;
-  readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+  readonly onInput: (node: StudioRuntimeRenderNode, value: JsonValue) => void;
   readonly onBlur: () => void;
   readonly onFocus: () => void;
 }) {
@@ -423,14 +425,26 @@ function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, on
   readonly snapshot: Extract<RenderNodeSnapshot, { readonly kind: "field" }>;
   readonly value: unknown;
   readonly locale: string;
-  readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+  readonly onInput: (node: StudioRuntimeRenderNode, value: JsonValue) => void;
   readonly onBlur: () => void;
   readonly onFocus: () => void;
   readonly authoring?: AuthoringCanvasBindings;
 }) {
+  const custom = useStudioCustomFields();
   const field = form.nodes[node.uid];
   if (field?.kind !== "field") return null;
   const definition = studioFieldDefinition(field.definition);
+  const customField = custom.fields.find(({ descriptor }) => descriptor.key === field.definition.key && descriptor.version === field.definition.version);
+  if (customField) {
+    const controlId = `custom-${encodeURIComponent(JSON.stringify(snapshot.address))}`;
+    const issue = snapshot.state.visibleIssues[0];
+    return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}>
+      <StudioCustomFieldControl descriptor={customField.descriptor} id={controlId} value={snapshot.value} props={snapshot.props as JsonObject}
+        disabled={snapshot.state.disabled} invalid={issue?.severity === "error"} descriptionId={`${controlId}-description`}
+        onInput={value => onInput(node, value)} onBlur={onBlur} onFocus={onFocus} />
+      <small id={`${controlId}-description`}>{issue?.message ?? String(snapshot.props["helpText"] ?? "")}</small>
+    </PreviewLayout>;
+  }
   if (!definition) return null;
   const description = typeof snapshot.props["helpText"] === "string" ? snapshot.props["helpText"] : "";
   const issue = snapshot.state.visibleIssues[0];
@@ -486,7 +500,7 @@ interface PreviewNodeProps {
   readonly snapshotNodes: readonly RenderNodeSnapshot[];
   readonly runtimePath: DataPath | undefined;
   readonly expressionContext: StudioExpressionContext;
-  readonly onInput: (node: StudioRuntimeRenderNode, value: boolean | number | string) => void;
+  readonly onInput: (node: StudioRuntimeRenderNode, value: JsonValue) => void;
   readonly onStructureEvent: (event: StagesEvent) => void;
   readonly onWizardNavigate: (wizard: ContainerSnapshot, event: StagesEvent, validateCurrent: boolean) => Promise<void>;
   readonly authoring?: AuthoringCanvasBindings;
@@ -529,6 +543,7 @@ function CollectionRowTestControls({ row, index, size, snapshot, canAdd, canRemo
 }
 
 function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRuntimeRenderNode<"collection">; readonly path: DataPath }) {
+  const custom = useStudioCustomFields();
   const { form, node, value, snapshotNodes, path, onInput, onStructureEvent, onWizardNavigate } = props;
   const showTestDetails = useContext(PreviewTestDetailsContext);
   const collection = form.nodes[node.uid];
@@ -547,7 +562,7 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
       ? variant?.kind === "variant" ? variant.childUids : []
       : collection.childUids;
     const value = {
-      ...createEmptyStudioScenarioValue({ ...form, rootNodeUids: childUids }),
+      ...createEmptyStudioScenarioValue({ ...form, rootNodeUids: childUids }, {}, custom.fields),
       ...(isStudioVariantCollection(collection) ? { [collection.discriminator]: variantId } : {}),
       [collection.itemKey.property]: crypto.randomUUID(),
     };
@@ -652,7 +667,13 @@ function parseControlDraft(control: StudioPropControl, draft: string | boolean):
   return { ok: true, value };
 }
 
-function FieldInspector({ node, onUpdate }: {
+function FieldInspector(props: { readonly node: StudioFieldNode; readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void }) {
+  const custom = useStudioCustomFields();
+  const field = custom.fields.find(({ descriptor }) => descriptor.key === props.node.definition.key && descriptor.version === props.node.definition.version);
+  return field ? <StudioCustomPropsInspector key={JSON.stringify(props.node.props)} descriptor={field.descriptor} value={props.node.props} onChange={value => props.onUpdate(props.node, { props: value }, "Edit custom field properties")} /> : <StandardFieldInspector {...props} />;
+}
+
+function StandardFieldInspector({ node, onUpdate }: {
   readonly node: StudioFieldNode;
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
 }) {
@@ -882,7 +903,8 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   const initialScenario = form.scenarios[0];
   const [activeScenarioUid, setActiveScenarioUid] = useState<Uid | undefined>(initialScenario?.uid);
   const scenario = form.scenarios.find(({ uid }) => uid === activeScenarioUid) ?? form.scenarios[0];
-  const [value, setValue] = useState<unknown>(() => initialScenario?.value ?? createEmptyStudioScenarioValue(form));
+  const custom = useStudioCustomFields();
+  const [value, setValue] = useState<unknown>(() => initialScenario?.value ?? createEmptyStudioScenarioValue(form, {}, custom.fields));
   const [proposalPolicy, setProposalPolicy] = useState<"accept" | "reject">("accept");
   const [lastProposal, setLastProposal] = useState<StagesChange<unknown> | undefined>();
   const [eventMessage, setEventMessage] = useState("No named event dispatched.");
@@ -1054,7 +1076,7 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   };
   const resetPreview = () => {
     setSubmitMessage("");
-    const resetValue = scenario?.value ?? createEmptyStudioScenarioValue(form);
+    const resetValue = scenario?.value ?? createEmptyStudioScenarioValue(form, {}, custom.fields);
     try {
       preview.host.reset({
         value: resetValue,
@@ -1531,12 +1553,22 @@ function ProblemsPanel({ diagnostics, onNavigate }: {
   );
 }
 
-export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorProps) {
+export function StudioV1Editor(props: StudioV1EditorProps) {
+  const inherited = useStudioCustomFields();
+  return <StudioCustomFieldsContext.Provider value={props.customFields ?? inherited}><StudioV1EditorContent {...props} /></StudioCustomFieldsContext.Provider>;
+}
+function StudioV1EditorContent({ repository: repositoryProp }: StudioV1EditorProps) {
+  const custom = useStudioCustomFields();
+  const supportedDefinitions = useMemo(() => {
+    const result = { ...STUDIO_SUPPORTED_DEFINITIONS };
+    for (const { descriptor } of custom.fields) result[descriptor.key] = [...(result[descriptor.key] ?? []), descriptor.version];
+    return result;
+  }, [custom.fields]);
   const startup = useStudioDocumentStartup();
   const [compilerSession] = useState(createStudioCompilerSession);
   const repository = useMemo(() => repositoryProp ?? createIndexedDbProjectRepository({
-    supportedDefinitions: STUDIO_SUPPORTED_DEFINITIONS,
-  }), [repositoryProp]);
+    supportedDefinitions,
+  }), [repositoryProp, supportedDefinitions]);
   const [history, setHistory] = useState<StudioHistoryState | undefined>(() => (
     startup.project === undefined ? undefined : createStudioHistory(startup.project)
   ));
@@ -1712,6 +1744,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const formSelected = navigation.workbench.selectedUids.includes(form.uid);
   const compiled = compilerSession.compile(form, history.present.fragments, {
     serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
+    customFields: custom.fields,
     localization: { defaultLocale: history.present.project.defaultLocale, resources: history.present.resources },
   });
   const canvasSourceNodes = new Map<Uid, StudioNode>(Object.entries(form.nodes) as [Uid, StudioNode][]);
@@ -1744,7 +1777,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   const importProject = () => {
-    const result = importStudioProject(projectImportSource, { supportedDefinitions: STUDIO_SUPPORTED_DEFINITIONS });
+    const result = importStudioProject(projectImportSource, { supportedDefinitions });
     if (!result.ok) {
       setProjectTransferReport(result.diagnostics.map(({ code, propertyPath, message }) => `${code} at ${propertyPath.join(".") || "project"}: ${message}`).join("\n"));
       return;
@@ -1768,7 +1801,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   const prepareExport = () => {
-    const result = generateStudioExportBundle(history.present);
+    const result = generateStudioExportBundle(history.present, custom.fields.map(item => item.descriptor));
     if (!result.ok) {
       setExportArtifacts(result.artifacts);
       setActiveExportPath("project.stages.json");
@@ -1933,7 +1966,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   const updateResources = (resources: StudioResourceCatalog) => {
-    const validated = validateStudioProject({ ...history.present, resources }, { supportedDefinitions: STUDIO_SUPPORTED_DEFINITIONS });
+    const validated = validateStudioProject({ ...history.present, resources }, { supportedDefinitions });
     if (!validated.ok) {
       setStatus(validated.diagnostics.find(({ propertyPath }) => propertyPath[0] === "resources")?.message ?? "Resource catalog is invalid.");
       return;
@@ -1970,7 +2003,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     const scenario: StudioScenario = {
       uid: nextProjectUid(history.present, `scenario_${number}`),
       title: `Scenario ${number}`,
-      value: createEmptyStudioScenarioValue(form, history.present.fragments),
+      value: createEmptyStudioScenarioValue(form, history.present.fragments, custom.fields),
       context: {},
       extensions: {},
       services: {},
@@ -2394,6 +2427,14 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           {drawer === "insert" && <>
             <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
               <h2 id="studio-v1-palette-title">Fields</h2>
+              {custom.fields.map(({ descriptor }) => <Button key={`${descriptor.key}@${descriptor.version}`} variant="outline" disabled={loading} onClick={() => {
+                const stem = descriptor.key.replace(/[^A-Za-z0-9_-]/g, "_");
+                let index = 1;
+                while (form.nodes[toUid(`custom_${stem}_${index}`)] || Object.values(form.nodes).some(node => "runtimeId" in node && node.runtimeId === `${stem}_${index}`)) index++;
+                const node: StudioFieldNode = { kind: "field", uid: toUid(`custom_${stem}_${index}`), runtimeId: `${stem}_${index}`, definition: { key: descriptor.key, version: descriptor.version }, props: descriptor.defaultProps };
+                const result = dispatchStudioCommand(history, { type: "node.insert", formUid: form.uid, parentUid: null, index: form.rootNodeUids.length, node }, { label: `Add ${descriptor.displayName}` });
+                if (result.ok) { setHistory(result.history); setStatus(`${descriptor.displayName} added`); } else setStatus(result.failure.message);
+              }}><StudioItemIcon kind={descriptor.key} /><span>Add {descriptor.displayName.toLowerCase()}</span></Button>)}
               {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}><StudioItemIcon kind={definition.key} /><span>Add {definition.displayName.toLowerCase()}</span><Plus className="studio-palette-add" size={13} aria-hidden="true" /></Button>)}
             </section>
             <section className="studio-v1-palette" aria-labelledby="studio-v1-content-palette-title">

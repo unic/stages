@@ -8,7 +8,9 @@
       "entrypoint": "packages/authoring/src/index.ts",
       "tests": [
         "packages/authoring/test-d/contract.ts",
-        "packages/authoring/test/portable.test.mjs"
+        "packages/authoring/test/portable.test.mjs",
+        "packages/authoring/test/extensions.test.mjs",
+        "packages/authoring/test/adapters.test.mjs"
       ],
       "defaultReference": "/reference/authoring",
       "exports": [
@@ -126,6 +128,159 @@
           "guide": "/start/portable-forms",
           "examples": [
             "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableProjectOptions",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "definePortableFieldBindings",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "portableFieldToken",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "matchesPortableValue",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableFieldDescriptor",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableFieldBinding",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableFieldBindings",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableValueContract",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "composePortableForm",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableComposition",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "definePortableBehaviorBindings",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableBehaviorBinding",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableBehaviorBindings",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableBehaviorReference",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "bindPortableViews",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableViewFields",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableViewForm",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-custom"
           ],
           "status": "complete"
         }

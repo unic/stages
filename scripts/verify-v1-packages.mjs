@@ -115,14 +115,15 @@ try {
   mkdirSync(portableConsumer);
   writeFileSync(join(portableConsumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
   run("npm", ["install", "--offline", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false", artifacts.get("@stages/core"), artifacts.get("@stages/authoring")], portableConsumer);
-  for (const [source, target] of [["packed-contact.mjs", "packed-contact.mjs"], ["contact-form-v1.json", "contact-form-v1.json"]]) {
+  for (const [source, target] of [["packed-extensions.mjs", "packed-extensions.mjs"], ["custom-bindings.mjs", "custom-bindings.mjs"], ["custom-form-v1.json", "custom-form-v1.json"], ["packed-contact.mjs", "packed-contact.mjs"], ["contact-form-v1.json", "contact-form-v1.json"]]) {
     writeFileSync(join(portableConsumer, target), readFileSync(join(repository, "packages/authoring/test/fixtures", source)));
   }
   const installedAuthoring = JSON.parse(readFileSync(join(portableConsumer, "node_modules/@stages/authoring/package.json"), "utf8"));
   assert.deepEqual(installedAuthoring.dependencies, { "@stages/core": expectedVersion });
   assert.equal(installedAuthoring.peerDependencies, undefined);
   run("node", ["packed-contact.mjs"], portableConsumer);
-  writeFileSync(join(portableConsumer, "contract.ts"), readFileSync(join(repository, "packages/authoring/test-d/contract.ts"), "utf8").replace("../src/index.js", "@stages/authoring"));
+  run("node", ["packed-extensions.mjs"], portableConsumer);
+  writeFileSync(join(portableConsumer, "contract.ts"), readFileSync(join(repository, "packages/authoring/test-d/contract.ts"), "utf8").replaceAll("../src/index.js", "@stages/authoring"));
   run(process.execPath, [join(repository, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--exactOptionalPropertyTypes", "--skipLibCheck", "--target", "ES2022", "--module", "NodeNext", "--moduleResolution", "NodeNext", "contract.ts"], portableConsumer);
 
   const domManifest = JSON.parse(readFileSync(join(repository, "packages/dom/package.json"), "utf8"));
@@ -170,6 +171,16 @@ try {
     join(consumerDirectory, "node_modules/@types/react"),
     "dir",
   );
+
+  // Stages itself is installed from tarballs; framework/test peers use the existing installation.
+  for (const peer of ["react-dom", "jsdom", "react-bootstrap", "@angular/platform-browser", "@angular/common"]) symlinkSync(join(repository, "node_modules", peer), join(consumerDirectory, "node_modules", peer), "dir");
+  mkdirSync(join(consumerDirectory, "fixtures"));
+  for (const file of ["custom-bindings.mjs", "custom-form-v1.json", "contact-form-v1.json"]) writeFileSync(join(consumerDirectory, "fixtures", file), readFileSync(join(repository, "packages/authoring/test/fixtures", file)));
+  const adapterTests = readFileSync(join(repository, "packages/authoring/test/adapters.test.mjs"), "utf8")
+    .replaceAll("../dist/index.js", "@stages/authoring")
+    .replace(/\.\.\/\.\.\/(core|dom|react|vue|angular)\/dist\/index\.js/g, "@stages/$1");
+  writeFileSync(join(consumerDirectory, "adapters.test.mjs"), adapterTests);
+  run("node", ["--test", "adapters.test.mjs"], consumerDirectory);
 
   writeFileSync(join(consumerDirectory, "smoke.mjs"), `
 import "@angular/compiler";

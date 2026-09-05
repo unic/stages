@@ -1,3 +1,4 @@
+import { matchesPortableValue, portableFieldToken, type ResolvedPortableField } from "../fields.js";
 import type { CollectionVariantConfig, DataPath, DynamicConfigContext, FieldDefinition, NodeAddress, NodeConfig, NodeResolverContext, StageNodeConfig, StagesSchema } from "@stages/core";
 import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioLogicRule, StudioNode, StudioValidatorSpec, Uid } from "../document/index.js";
 import { isSafeObjectKey, isStudioVariantCollection, toUid } from "../document/index.js";
@@ -28,6 +29,7 @@ import type {
 } from "./types.js";
 
 interface CompileContext {
+  readonly customFields: readonly ResolvedPortableField[];
   readonly form: StudioFormDocument;
   readonly diagnostics: StudioDiagnostic[];
   readonly byUid: Map<Uid, StudioSourceMapEntry>;
@@ -451,7 +453,8 @@ function compileNode(
 
   if (node.kind === "field") {
     context.visiting.delete(node.uid);
-    const definition = studioFieldDefinition(node.definition);
+    const custom = context.customFields.find(({ descriptor }) => descriptor.key === node.definition.key && descriptor.version === node.definition.version);
+    const definition = custom ? { key: portableFieldToken(custom.descriptor), value: custom.descriptor.value, runtime: custom.runtime } : studioFieldDefinition(node.definition);
     if (!definition) {
       diagnostic(
         context,
@@ -466,7 +469,10 @@ function compileNode(
       );
       return undefined;
     }
-    for (const issue of validateStudioFieldProps(definition, node.props)) diagnostic(
+    const propIssues = custom
+      ? matchesPortableValue({ kind: "object", properties: custom.descriptor.props }, node.props) ? [] : [{ key: "", message: "Custom field props do not match the descriptor contract." }]
+      : validateStudioFieldProps(studioFieldDefinition(node.definition)!, node.props);
+    for (const issue of propIssues) diagnostic(
       context,
       "compiler.invalid-field-prop",
       issue.message,
@@ -484,6 +490,7 @@ function compileNode(
       { entityUid: node.uid, propertyPath: ["nodes", node.uid, "format"], runtimePath, runtimeAddress },
     );
     let type = definition.key as string;
+    if (custom) context.fields[type] = custom.runtime;
     if (node.reducers !== undefined && node.reducers.length > 0) {
       type = `${definition.key}__studio__${node.uid}`;
       context.fields[type] = {
@@ -661,18 +668,20 @@ function compileNode(
   };
 }
 
-function emptyScope(form: StudioFormDocument, uids: readonly Uid[]): JsonObject {
+function emptyScope(form: StudioFormDocument, uids: readonly Uid[], customFields: readonly ResolvedPortableField[] = []): JsonObject {
   const value: Record<string, JsonValue> = {};
   for (const uid of uids) {
     const node = form.nodes[uid];
     if (!node || node.kind === "block" || node.kind === "variant") continue;
     if (node.kind === "field") {
       const definition = studioFieldDefinition(node.definition);
-      if (definition) value[node.runtimeId] = definition.value.emptyValue as JsonValue;
+      const custom = customFields.find(({ descriptor }) => descriptor.key === node.definition.key && descriptor.version === node.definition.version);
+      if (custom) value[node.runtimeId] = JSON.parse(JSON.stringify(custom.descriptor.emptyValue)) as JsonValue;
+      else if (definition) value[node.runtimeId] = definition.value.emptyValue as JsonValue;
     } else if (node.kind === "group" || node.kind === "stage") {
-      value[node.runtimeId] = emptyScope(form, node.childUids);
+      value[node.runtimeId] = emptyScope(form, node.childUids, customFields);
     } else if (node.kind === "wizard") {
-      value[node.runtimeId] = emptyScope(form, node.stageUids);
+      value[node.runtimeId] = emptyScope(form, node.stageUids, customFields);
     } else if (node.kind === "collection") {
       const rows: JsonObject[] = [];
       for (let index = 0; index < (node.initialRows ?? 0); index += 1) {
@@ -680,9 +689,9 @@ function emptyScope(form: StudioFormDocument, uids: readonly Uid[]): JsonObject 
         if (isStudioVariantCollection(node)) {
           const variantNode = node.initialVariantUid === undefined ? undefined : form.nodes[node.initialVariantUid];
           row = variantNode?.kind === "variant"
-            ? { ...emptyScope(form, variantNode.childUids), [node.discriminator]: variantNode.runtimeId }
+            ? { ...emptyScope(form, variantNode.childUids, customFields), [node.discriminator]: variantNode.runtimeId }
             : {};
-        } else row = emptyScope(form, node.childUids);
+        } else row = emptyScope(form, node.childUids, customFields);
         if (node.itemKey?.kind === "property") row = { ...row, [node.itemKey.property]: `row-${index + 1}` };
         rows.push(row);
       }
@@ -741,9 +750,9 @@ function dynamicNodes(
 }
 
 /** Builds explicit owner-controlled scenario data; it is never installed as a schema default. */
-export function createEmptyStudioScenarioValue(form: StudioFormDocument, fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {}): JsonObject {
+export function createEmptyStudioScenarioValue(form: StudioFormDocument, fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {}, customFields: readonly ResolvedPortableField[] = []): JsonObject {
   const expanded = expandStudioFragments(form, fragments).form;
-  return emptyScope(expanded, expanded.rootNodeUids);
+  return emptyScope(expanded, expanded.rootNodeUids, customFields);
 }
 
 /** Previous output is an owner-local reuse hint from the same trusted binding environment. */
@@ -756,6 +765,7 @@ export function compileStudioForm(
   const expanded = expandStudioFragments(form, fragments);
   const targetPaths = indexRuntimePaths(expanded.form);
   const context: CompileContext = {
+    customFields: options.customFields ?? [],
     form: expanded.form,
     diagnostics: [...expanded.diagnostics],
     byUid: new Map(),
@@ -787,7 +797,8 @@ export function compileStudioForm(
     for (const node of Object.values(expanded.form.nodes)) {
       if (node.kind !== "field" || !node.reducers?.length) continue;
       const priorNode = previous.expandedForm.nodes[node.uid];
-      const type = `${node.definition.key}__studio__${node.uid}`;
+      const key = studioFieldDefinition(node.definition) ? node.definition.key : portableFieldToken(node.definition);
+      const type = `${key}__studio__${node.uid}`;
       const priorDefinition = previous.fields[type];
       if (priorDefinition !== undefined && context.fields[type] !== undefined
         && priorNode?.kind === "field"

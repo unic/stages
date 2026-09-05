@@ -7,15 +7,11 @@
       "entry": ["scripts/**/*.mjs"],
       "project": ["scripts/**/*.mjs"],
       "ignoreDependencies": [
-        "@angular/core",
-        "@angular/platform-browser",
         "@e18e/cli",
         "axios",
         "fast-json-stable-stringify",
         "json-beautify",
-        "prop-types",
-        "react-bootstrap",
-        "vue"
+        "prop-types"
       ],
       "vue": false
     },
