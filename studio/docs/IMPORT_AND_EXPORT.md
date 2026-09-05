@@ -8,8 +8,14 @@ returns either a detached frozen project plus migration IDs or path-addressed
 diagnostics. Imported data replaces document history only after the complete
 pipeline succeeds.
 
-A successful `generateStudioExportBundle()` includes `project.stages.json`
-through the canonical serializer. A failed bundle returns diagnostics only. For every form it emits deterministic files for the v1
+`generateStudioExportBundle()` always includes the complete `project.stages.json`
+through the canonical serializer. When runtime generation fails, the result has
+`ok: false`, diagnostics, and the available `artifacts`, including an
+`export-report.json`. Supported forms still receive their code artifacts; blocked
+forms never receive incomplete runtime code. The panel lists the affected forms
+and nodes and offers a Download artifact link for the selected file.
+
+For each supported form, the exporter emits deterministic files for the v1
 schema, field-registry bindings, initial controlled value, named scenarios,
 state-migration skeleton, a minimal controlled React integration, and a short
 README. Generated TypeScript imports only public `@stages/core` and
@@ -18,10 +24,10 @@ dependencies of the generated application.
 
 The code emitter serializes closure-free compiled schemas. If dynamic
 expressions, reducers, validators, transforms, item-key callbacks, or other
-executable behavior remains in the compiled artifact, export stops with
+executable behavior remains in the compiled artifact, that form reports
 `export.executable-binding-required` instead of stringifying a closure or
-silently weakening behavior. The canonical project JSON is still independently
-available for round trips. A future named-binding exporter can resolve those
+silently weakening behavior. The canonical project JSON remains in the artifact picker
+for download and round trips, including all unsupported fields and behavior. A future named-binding exporter can resolve those
 diagnostics without changing the project format.
 
 The rejection gate checks `schemaInput` for factories, including structural
@@ -35,7 +41,7 @@ Artifact order, object-key order, indentation, filenames, and trailing newlines
 are stable. The golden fixture guards exact schema output, while the isolated
 consumer test writes a bundle to a temporary package, compiles every generated
 TypeScript/TSX file, and dispatches events through the generated schema for all
-six built-in definitions. It checks invalid payloads, ignored events, and the
+built-in definitions. It checks invalid payloads, ignored events, and the
 controlled proposal/acceptance boundary. This test currently links Studio's
 installed dependencies; it is not a packed-package distribution gate.
 

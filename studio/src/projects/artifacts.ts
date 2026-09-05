@@ -14,7 +14,7 @@ export interface StudioExportBundle {
 
 export type StudioExportResult =
   | Readonly<{ ok: true; value: StudioExportBundle }>
-  | Readonly<{ ok: false; diagnostics: readonly StudioDocumentDiagnostic[] }>;
+  | Readonly<{ ok: false; diagnostics: readonly StudioDocumentDiagnostic[]; artifacts: readonly StudioGeneratedArtifact[] }>;
 
 export function importStudioProject(
   source: string,
@@ -104,9 +104,9 @@ export function generateStudioExportBundle(project: StudioProjectDocument): Stud
   const diagnostics: StudioDocumentDiagnostic[] = [];
   for (const form of Object.values(project.forms).sort((left, right) => left.uid.localeCompare(right.uid))) {
     const compiled = compileStudioForm(form, project.fragments, { localization: { defaultLocale: project.project.defaultLocale, resources: project.resources } });
-    const compileFailure = compiled.diagnostics.find(({ severity }) => severity === "error");
-    if (compileFailure !== undefined) {
-      diagnostics.push({ code: compileFailure.code, severity: "error", source: "document", message: compileFailure.message, propertyPath: compileFailure.propertyPath ?? [], formUid: form.uid, ...(compileFailure.entityUid === undefined ? {} : { entityUid: compileFailure.entityUid }) });
+    const compileFailures = compiled.diagnostics.filter(({ severity }) => severity === "error");
+    if (compileFailures.length > 0) {
+      for (const failure of compileFailures) diagnostics.push({ code: failure.code, severity: "error", source: "document", message: failure.message, propertyPath: failure.propertyPath ?? [], formUid: form.uid, ...(failure.entityUid === undefined ? {} : { entityUid: failure.entityUid }) });
       continue;
     }
     // Factories carry structural conditions that are absent from the static schema.
@@ -133,5 +133,12 @@ export function generateStudioExportBundle(project: StudioProjectDocument): Stud
       { path: `${directory}/README.md`, mediaType: "text/markdown", source: readmeSource(form) },
     );
   }
-  return diagnostics.length > 0 ? { ok: false, diagnostics } : { ok: true, value: { artifacts } };
+  if (diagnostics.length > 0) {
+    artifacts.push({ path: "export-report.json", mediaType: "application/json", source: `${JSON.stringify({
+      message: "The complete project is preserved in project.stages.json. Runtime code was not generated for the forms listed below. Resolve these issues before exporting their runtime code.",
+      diagnostics,
+    }, null, 2)}\n` });
+    return { ok: false, diagnostics, artifacts };
+  }
+  return { ok: true, value: { artifacts } };
 }

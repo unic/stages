@@ -1710,9 +1710,9 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const prepareExport = () => {
     const result = generateStudioExportBundle(history.present);
     if (!result.ok) {
-      setExportArtifacts([]);
-      setActiveExportPath("");
-      setProjectTransferReport(result.diagnostics.map(({ code, message }) => `${code}: ${message}`).join("\n"));
+      setExportArtifacts(result.artifacts);
+      setActiveExportPath("project.stages.json");
+      setProjectTransferReport(`Project JSON is ready to download. Runtime code could not be generated for ${new Set(result.diagnostics.map(({ formUid }) => formUid)).size} form(s). Other supported forms are included.\n\n${result.diagnostics.map(({ code, message, formUid, entityUid }) => `${history.present.forms[formUid!]?.title ?? formUid ?? "Project"}${entityUid === undefined ? "" : ` · ${entityUid}`}: ${message} (${code})`).join("\n")}`);
       return;
     }
     setExportArtifacts(result.value.artifacts);
@@ -2200,6 +2200,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               <p role="status" aria-live="polite" style={{ whiteSpace: "pre-wrap" }}>{projectTransferReport}</p>
               {exportArtifacts.length > 0 && <>
                 <label className="studio-field"><span>Generated artifact</span><select value={activeExportPath} onChange={(event) => setActiveExportPath(event.currentTarget.value)}>{exportArtifacts.map((artifact) => <option key={artifact.path} value={artifact.path}>{artifact.path}</option>)}</select></label>
+                <a className="ui-button ui-button--outline ui-button--default-size" download={activeExportPath.replaceAll("/", "-")} href={`data:${exportArtifacts.find(({ path }) => path === activeExportPath)?.mediaType ?? "text/plain"};charset=utf-8,${encodeURIComponent(exportArtifacts.find(({ path }) => path === activeExportPath)?.source ?? "")}`}>Download artifact</a>
                 <label className="studio-field"><span>Artifact source</span><textarea className="ui-input" rows={12} readOnly value={exportArtifacts.find(({ path }) => path === activeExportPath)?.source ?? ""} /></label>
               </>}
             </section>

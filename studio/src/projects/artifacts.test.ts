@@ -145,13 +145,33 @@ try {
       controller.destroy();
     }
     const result = generateStudioExportBundle(changed);
-    expect(result).toEqual({ ok: false, diagnostics: [expect.objectContaining({
+    expect(result).toMatchObject({ ok: false, diagnostics: [expect.objectContaining({
       code: "export.executable-binding-required", formUid: form.uid,
       propertyPath: capability === "presence" ? ["schemaInput"] : ["fields", "text__studio__field_title"],
     })] });
     const imported = importStudioProject(serializeStudioProject(changed), { supportedDefinitions: definitions });
     expect(imported.ok).toBe(true);
     if (imported.ok) expect(imported.value).toEqual(changed);
+  });
+
+  it("preserves all project data and exports supported forms when another form has unsupported fields", () => {
+    const project = structuredClone(projectV1) as unknown as StudioProjectDocument;
+    const original = project.forms[toUid("form_event")]!;
+    const uid = toUid("form_legacy");
+    const ratingUid = toUid("field_rating");
+    const legacy = { ...original, uid, title: "Legacy ratings", rootNodeUids: [ratingUid], nodes: {
+      [ratingUid]: { uid: ratingUid, kind: "field" as const, runtimeId: "rating", definition: { key: "rating", version: 1 }, props: { label: "Rating" } },
+    } };
+    const mixed = { ...project, forms: { ...project.forms, [uid]: legacy } };
+    const result = generateStudioExportBundle(mixed);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: "compiler.unsupported-field-definition", formUid: uid, entityUid: ratingUid }));
+    expect(JSON.parse(result.artifacts[0]!.source)).toEqual(mixed);
+    expect(result.artifacts.some(({ path }) => path === "form_event/schema.ts")).toBe(true);
+    expect(result.artifacts.some(({ path }) => path === "form_legacy/schema.ts")).toBe(false);
+    expect(JSON.parse(result.artifacts.at(-1)!.source).diagnostics).toEqual(result.diagnostics);
+    expect(generateStudioExportBundle(mixed)).toEqual(result);
   });
 
   it("reports executable behavior instead of emitting closure-dependent source", () => {

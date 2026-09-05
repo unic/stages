@@ -368,6 +368,9 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getByText(/Generated 8 deterministic artifacts/)).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Generated artifact" })).toHaveValue("project.stages.json");
     expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain('"format": "stages-studio"');
+    const download = screen.getByRole("link", { name: "Download artifact" });
+    expect(download).toHaveAttribute("download", "project.stages.json");
+    expect(decodeURIComponent(download.getAttribute("href").split(",")[1])).toBe(screen.getByRole("textbox", { name: "Artifact source" }).value);
 
     fireEvent.change(screen.getByRole("textbox", { name: "Studio project JSON" }), { target: { value: JSON.stringify(projectV0) } });
     await user.click(screen.getByRole("button", { name: "Import and validate" }));
@@ -377,6 +380,23 @@ describe("StudioEditorPage interactions", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Studio project JSON" }), { target: { value: "{" } });
     await user.click(screen.getByRole("button", { name: "Import and validate" }));
     expect(screen.getByText(/document.invalid-json/)).toBeVisible();
+  });
+
+  it("keeps export artifacts downloadable when a legacy field blocks runtime generation", async () => {
+    const user = userEvent.setup();
+    const snapshot = outlineProjectSnapshot();
+    snapshot.project.forms.form_outline.nodes.field_first.definition = { key: "rating", version: 1 };
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([snapshot])} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Project");
+    await user.click(screen.getByRole("button", { name: "Import & export" }));
+    await user.click(screen.getByRole("button", { name: "Generate export artifacts" }));
+    expect(screen.getByText(/Project JSON is ready to download/)).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain('"rating"');
+    expect(screen.getByRole("link", { name: "Download artifact" })).toHaveAttribute("download", "project.stages.json");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Generated artifact" }), "export-report.json");
+    expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain("compiler.unsupported-field-definition");
+    expect(screen.getByRole("link", { name: "Download artifact" })).toHaveAttribute("download", "export-report.json");
   });
 
   it("generates the field palette and keeps invalid inspector drafts out of command history", async () => {
