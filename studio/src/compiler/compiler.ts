@@ -43,6 +43,7 @@ interface CompileContext {
   readonly serviceBindings: StudioCompileOptions["serviceBindings"];
   readonly localization: StudioCompileOptions["localization"];
   readonly targetPaths: ReadonlyMap<Uid, DataPath>;
+  readonly collectionPaths: readonly DataPath[];
   readonly fields: Record<string, StudioRuntimeFieldDefinition>;
 }
 
@@ -210,7 +211,7 @@ function unsupportedBehavior(
   if (node.kind === "field" && node.computed !== undefined) diagnostic(
     context,
     "compiler.unsupported-computed",
-    "Computed fields are not supported by the minimal compiler.",
+    "Computed values are reserved and cannot execute in preview or production. Remove computed and use explicit event transforms for persisted changes, or derived props for presentation.",
     { entityUid: node.uid, propertyPath: ["nodes", node.uid, "computed"], runtimePath, runtimeAddress },
   );
 }
@@ -258,7 +259,16 @@ function compiledValidators(
   specs: readonly StudioValidatorSpec[] | undefined,
   owner: { readonly entityUid?: Uid; readonly propertyPath: readonly (number | string)[]; readonly runtimePath: DataPath; readonly runtimeAddress: NodeAddress },
 ) {
+  // Core dependencies are absolute value paths. A template path has no row
+  // indexes, so a static path to a sibling cannot identify runtime occurrences.
+  // Depend on the outermost containing collection until relative dependencies
+  // are a core contract. This also covers nested rows, variants and fragments.
+  if (!specs?.length) return {};
+  const rowDependencyPath = context.collectionPaths.find((path) => path.length < owner.runtimePath.length
+    && path.every((segment, index) => segment === owner.runtimePath[index]))
+    ?? owner.runtimePath.slice(0, -1);
   const result = compileStudioValidators(specs, {
+    rowDependencyPath,
     ...(context.serviceBindings === undefined ? {} : { serviceBindings: context.serviceBindings }),
     ...(context.localization === undefined ? {} : { localization: context.localization }),
   });
@@ -744,6 +754,7 @@ export function compileStudioForm(
   previous?: CompiledStudioForm,
 ): CompiledStudioForm {
   const expanded = expandStudioFragments(form, fragments);
+  const targetPaths = indexRuntimePaths(expanded.form);
   const context: CompileContext = {
     form: expanded.form,
     diagnostics: [...expanded.diagnostics],
@@ -759,7 +770,9 @@ export function compileStudioForm(
     variantPresence: new Map(),
     serviceBindings: options.serviceBindings,
     localization: options.localization,
-    targetPaths: indexRuntimePaths(expanded.form),
+    targetPaths,
+    collectionPaths: [...targetPaths].flatMap(([uid, path]) => expanded.form.nodes[uid]?.kind === "collection" ? [path] : [])
+      .sort((left, right) => left.length - right.length),
     fields: { ...STUDIO_RUNTIME_FIELDS },
   };
   recordSource(context, expanded.form.uid, [], []);

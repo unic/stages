@@ -65,3 +65,8 @@ describe("Design feature indicators", () => {
     await waitFor(() => expect(screen.getByRole("spinbutton", { name: /Amount/ })).toHaveValue(12));
   });
 });
+
+it("marks persisted computed expressions as unsupported", () => {
+  render(<StudioDesignFeatures node={{ ...plain, computed: { kind: "literal", value: 5 } }} />);
+  expect(screen.getByRole("img", { name: "Logic: Unsupported computed value" })).toBeVisible();
+});

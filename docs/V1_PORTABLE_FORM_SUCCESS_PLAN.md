@@ -5,6 +5,23 @@ Status: proposed implementation plan, based on a source and runtime review on
 
 Audience: Stages core, adapter, tooling, and Studio maintainers.
 
+## Implementation progress
+
+2026-09-05: S0 is in progress. The G5 sibling-change regression now has a
+compiler fix with conservative outer-collection dependencies and fixtures for
+nested rows, variants, reordering/removal, fragments, context/extension updates,
+and async cancellation. A 1,000-row fixture measures conservative invalidation
+fan-out. Computed values are marked unsupported in the inspector and compiler;
+untracked/unavailable validator scopes now produce actionable diagnostics.
+See [the capability contract](../studio/docs/PORTABLE_CAPABILITIES.md).
+
+S0 is not complete: core dispatch can clear accepted validation caches while
+considering unaccepted proposals. Explicit validation still uses accepted values;
+full cache retention across delayed/rejected proposals needs a separate core
+ownership fix with compatibility evidence. S1–S5 and the portable beta release
+gate remain open. No production loader or authoritative server validator is
+claimed by this first change.
+
 ## 1. Assessment and success criterion
 
 Stages has a strong framework-neutral runtime, but the alpha does not yet offer

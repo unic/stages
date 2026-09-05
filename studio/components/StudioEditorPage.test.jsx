@@ -1076,7 +1076,7 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getAllByRole("textbox", { name: "First field", exact: true })).toHaveLength(3);
   });
 
-  it("authors safe visibility and computed expressions with reference pickers and readable text", async () => {
+  it("authors safe visibility expressions without offering unsupported computed values", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
     render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
@@ -1091,17 +1091,34 @@ describe("StudioEditorPage interactions", () => {
     await user.type(visibilityPath, "second");
     expect(screen.getByLabelText("Visibility expression text")).toHaveTextContent("value.second");
 
-    await user.click(screen.getByRole("switch", { name: "Computed value" }));
-    const computed = screen.getByLabelText("Computed value expression");
-    expect(within(computed).getByRole("combobox", { name: "Reference source" })).toHaveValue("value");
-    expect(screen.getByLabelText("Computed value expression text")).toHaveTextContent("value");
+    expect(screen.queryByRole("switch", { name: "Computed value" })).toBeNull();
+    expect(screen.getByText(/Computed values are reserved and cannot execute/)).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Local draft saved");
     const saved = await repository.load(toUid("legacy_project"));
     const field = saved.project.forms[toUid("form_outline")].nodes[toUid("field_first")];
     expect(field.behavior.when).toEqual({ kind: "reference", scope: "value", path: ["second"] });
-    expect(field.computed).toEqual({ kind: "reference", scope: "value", path: [] });
+    expect(field.computed).toBeUndefined();
+  });
+
+  it("preserves imported computed data until the author explicitly removes it", async () => {
+    const user = userEvent.setup();
+    const snapshot = outlineProjectSnapshot();
+    const computed = { kind: "literal", value: 5 };
+    snapshot.project.forms.form_outline.nodes.field_first.computed = computed;
+    const repository = createMemoryProjectRepository([snapshot]);
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
+    fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
+    expect(screen.getByText(/This imported field contains an unsupported computed value/)).toBeVisible();
+    expect((await repository.load(snapshot.uid)).project.forms.form_outline.nodes.field_first.computed).toEqual(computed);
+    await user.click(screen.getByRole("button", { name: "Remove unsupported computed value" }));
+    expect(screen.queryByRole("button", { name: "Remove unsupported computed value" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Local draft saved");
+    expect((await repository.load(snapshot.uid)).project.forms.form_outline.nodes.field_first.computed).toBeUndefined();
   });
 
   it("switches dynamic scenarios and distinguishes dormant, absent, and disabled nodes", async () => {

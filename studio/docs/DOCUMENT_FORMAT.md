@@ -28,7 +28,9 @@ locale labels and message catalogs. Executable codecs never enter project JSON.
 
 Expressions use a closed set of literal, reference, unary, binary, and
 conditional nodes. References can read form value, current-row value, context,
-extensions, and runtime metadata through safe own-property paths. Evaluation is
+extensions, and runtime metadata through safe own-property paths. Available
+scopes depend on the execution site: validators reject interaction metadata and
+event references; see the [capability contract](PORTABLE_CAPABILITIES.md). Evaluation is
 synchronous and bounded by node, depth, path, string, and step budgets. Missing
 references, operand type mismatches, non-finite arithmetic, and limit failures
 return typed failures rather than throwing. The evaluator never calls document
@@ -129,7 +131,7 @@ not message text.
 ## Reusable fragments
 
 `fragments` is a UID-keyed map of explicit resources. A definition owns a
-title, positive version, declared parameter names, ordered root UIDs, and a
+title, positive version, reserved parameter names (no instance argument semantics), ordered root UIDs, and a
 normalized node graph. Definition and node UIDs remain globally unique across
 the project. A node with `kind: "fragment"` stores its local runtime ID, the
 definition UID, and optional overrides keyed by definition-node UID.
@@ -152,6 +154,11 @@ with a local group and newly allocated local copies while preserving its
 runtime shape and overrides; the resource itself remains unchanged. Nested
 fragment instances, when present in a detached definition, keep their own
 independent links.
+
+The stored `computed` field property is reserved and produces a compiler error.
+Studio offers removal of imported computed expressions, not computed authoring.
+See [portable capabilities](PORTABLE_CAPABILITIES.md) for execution support and
+relative validation dependency semantics.
 
 ## Evidence
 

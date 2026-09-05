@@ -25,7 +25,7 @@ function configuredFeatures(node: StudioNode): Readonly<Record<typeof features[n
     node.behavior?.when !== undefined ? "Conditional visibility" : "",
     node.behavior?.presentWhen !== undefined ? "Conditional structure" : "",
     node.behavior?.disabled !== undefined && node.behavior.disabled !== false ? "Disabled state" : "",
-    node.kind === "field" && node.computed !== undefined ? "Computed value" : "",
+    node.kind === "field" && node.computed !== undefined ? "Unsupported computed value" : "",
     node.kind === "field" && Object.keys(node.derivedProps ?? {}).length > 0 ? "Derived properties" : "",
     node.kind === "wizard" && node.navigation?.guard !== undefined ? "Navigation condition" : "",
   ].filter(Boolean);

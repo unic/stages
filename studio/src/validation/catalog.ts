@@ -29,6 +29,8 @@ export interface CompiledStudioValidators {
 export interface CompileStudioValidatorsOptions {
   readonly serviceBindings?: StudioAsyncServiceBindings;
   readonly localization?: StudioLocalizationOptions;
+  /** Absolute containing scope; collection occurrences conservatively use the outer collection. */
+  readonly rowDependencyPath?: DataPath;
 }
 
 function messageFor(spec: StudioValidatorSpec, context: ValidationContext<unknown, unknown>, localization?: StudioLocalizationOptions): string | undefined {
@@ -124,15 +126,19 @@ function passes(spec: StudioValidatorSpec, context: ValidationContext<unknown, u
     && (spec.uniqueBy === undefined || uniqueCollection(value, spec.uniqueBy));
 }
 
-function inferredDependencies(spec: StudioValidatorSpec): readonly DataPath[] {
-  const expressions = [
+function validatorExpressions(spec: StudioValidatorSpec) {
+  return [
     spec.when,
     spec.kind === "comparison" ? spec.other : undefined,
     spec.kind === "service" ? spec.request : undefined,
   ].filter((value) => value !== undefined);
+}
+
+function inferredDependencies(spec: StudioValidatorSpec, rowDependencyPath: DataPath): readonly DataPath[] {
   const paths = [...(spec.dependencies ?? [])];
-  for (const expression of expressions) for (const dependency of studioExpressionDependencies(expression)) {
+  for (const expression of validatorExpressions(spec)) for (const dependency of studioExpressionDependencies(expression)) {
     if (dependency.scope === "value") paths.push(dependency.path);
+    if (dependency.scope === "row" || dependency.scope === "item") paths.push(rowDependencyPath);
   }
   return Object.freeze([...new Map(paths.map((path) => [JSON.stringify(path), Object.freeze([...path]) as DataPath])).values()]);
 }
@@ -185,6 +191,12 @@ export function compileStudioValidators(
       continue;
     }
     ids.add(id);
+    const unsupportedScopes = validatorExpressions(spec).flatMap(studioExpressionDependencies)
+      .filter(({ scope }) => scope === "metadata" || scope === "event");
+    if (unsupportedScopes.length > 0) {
+      diagnostics.push({ index, code: "compiler.unsupported-validator-scope", message: `Validator ${id} cannot depend on event or interaction metadata. Use value, row, trusted context, or extensions; context and extension updates invalidate validation.` });
+      continue;
+    }
     const policies = [spec.on ?? ["input", "submit"], spec.revealOn].filter((policy) => policy !== undefined);
     if (policies.some((policy) => typeof policy === "string" ? policy.length === 0 : policy.length === 0 || policy.some((event) => event.length === 0))) {
       diagnostics.push({ index, code: "compiler.invalid-validator-events", message: `Validator ${id} has an empty event policy.` });
@@ -206,7 +218,7 @@ export function compileStudioValidators(
       diagnostics.push({ index, code: "compiler.unresolved-service-binding", message: `Async service ${spec.service.key}@${spec.service.version} is not bound in this environment.` });
       continue;
     }
-    const dependencies = inferredDependencies(spec);
+    const dependencies = inferredDependencies(spec, options.rowDependencyPath ?? []);
     const validate: ValidatorConfig<unknown, unknown>["validate"] = spec.kind === "service"
       ? async (context) => {
           const input = spec.request === undefined ? context.fieldValue : evaluate(spec.request, context);
