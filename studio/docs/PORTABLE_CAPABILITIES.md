@@ -67,10 +67,13 @@ Core's direct callback contracts are unchanged.
 Accepted sibling changes cancel pending dependent services. Services that ignore
 cancellation cannot publish late issues. Reordering, removal, variants, nested
 collections, and linked fragment instances are covered by the runtime fixtures.
-Explicit validation always uses accepted data. Existing core dispatch may clear
-cached results while evaluating an unaccepted proposal, even for submit-only
-validators; retaining that cache across all proposal policies remains an open
-S0 requirement. No proposal is silently accepted by this compiler change.
+Snapshots and explicit validation use accepted data. Core now isolates event
+validation for proposals, retaining accepted results and async requests during
+delayed/rejected proposals. Exact acceptance transfers matching event results;
+replacement/context/schema/extension updates and supersession discard proposal
+work. No proposal is silently accepted. See the
+[ownership regressions](../../packages/core/test/validation-ownership.test.mjs)
+and [public contract](../../docs/content/validation/dependencies.mdx).
 
 ## Unsupported behavior
 
@@ -85,7 +88,7 @@ Fragment parameter names remain inert reserved data with no instance argument
 contract. Use ordinary linked fragments without parameters. Do not claim
 parameter substitution or production parity based on successful preview.
 
-Next: complete the remaining S0 ownership requirement, then implement the S1
+Next: implement the S1
 shared loader and installed contact-form consumer described in the plan.
 
 ## Evidence

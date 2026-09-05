@@ -8,6 +8,7 @@ import {
   type StagesSchema,
   type StagesSchemaFactory,
   type TransformConfig,
+  type ValidationSnapshot,
 } from "../src/index.js";
 
 interface Value {
@@ -250,3 +251,11 @@ const status: string = controller.getSnapshot().validation.status;
 recreated.destroy();
 void serialized;
 void status;
+
+// Controlled validation retains the public snapshot and update contracts.
+const acceptedValidation: ValidationSnapshot = controller.getSnapshot().validation;
+const explicitValidation: Promise<ValidationSnapshot> = controller.validate();
+const acceptLater: (value: Value) => void = (value) => controller.update({ value });
+void acceptedValidation;
+void explicitValidation;
+void acceptLater;

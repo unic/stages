@@ -1321,6 +1321,7 @@ button, input, select, textarea { font: inherit; }
 /* Help stays out of the canvas until explicitly opened. */
 .studio-inspector-section__heading { display: flex; align-items: center; gap: 0.25rem; }
 .studio-inspector-section__heading > .studio-inspector-section__trigger { flex: 1; min-width: 0; }
+.studio-inspector-section__heading > .studio-help-trigger { flex: 0 0 28px; width: 28px; }
 .studio-help-trigger { flex-shrink: 0; width: 28px; height: 28px; color: #666; vertical-align: middle; }
 .studio-help-overlay { position: fixed; inset: 0; z-index: 200; background: #14203066; }
 .studio-help-dialog { position: fixed; z-index: 201; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(900px, calc(100vw - 32px)); height: min(740px, calc(100dvh - 32px)); display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #303030; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 16px 64px #0003; font-size: 14px; line-height: 1.6; }

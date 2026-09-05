@@ -19,7 +19,7 @@ test("document-v1 editor completes the first vertical authoring slice", async ({
   await page.getByRole("button", { name: "Redo" }).click();
   await expect(page.getByRole("textbox", { name: "Speaker name" })).toBeVisible();
   await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.locator(".studio-v1-toolbar").getByRole("status")).toContainText("Local draft saved");
+  await expect(page.locator(".studio-editor-status").getByRole("status")).toContainText("Local draft saved");
 
   await page.reload();
   await expect(editor).toHaveAttribute("aria-busy", "false");
@@ -30,7 +30,7 @@ test("document-v1 editor completes the first vertical authoring slice", async ({
 test("local projects autosave across reload and recover confirmed deletion", async ({ page }) => {
   await page.goto("/demo-v1");
   const editor = page.getByTestId("studio-v1-editor");
-  const saveStatus = page.locator(".studio-v1-toolbar").getByRole("status");
+  const saveStatus = page.locator(".studio-editor-status").getByRole("status");
   await expect(editor).toHaveAttribute("aria-busy", "false");
 
   await page.getByRole("button", { name: "Insert", exact: true }).click();
@@ -42,9 +42,11 @@ test("local projects autosave across reload and recover confirmed deletion", asy
   await expect(page.getByRole("textbox", { name: "Recovered field" })).toBeVisible();
 
   await page.getByRole("button", { name: "Project", exact: true }).click();
-  await page.getByRole("button", { name: "Delete project…" }).click();
+  await page.getByRole("button", { name: "Project actions" }).click();
+  await page.getByRole("menuitem", { name: "Delete project…" }).click();
   await page.getByRole("button", { name: "Confirm delete" }).click();
   await expect(saveStatus).toContainText("Project moved to recovery");
+  await page.getByRole("button", { name: /^Recovery \(/ }).click();
   const deleted = page.locator(".studio-v1-recovery-list li").filter({ hasText: "deleted" });
   await deleted.getByRole("button", { name: "Restore…" }).click();
   await deleted.getByRole("button", { name: "Confirm restore" }).click();
@@ -73,6 +75,7 @@ test("local projects autosave across reload and recover confirmed deletion", asy
   await page.reload();
   await expect(saveStatus).toContainText("quarantined");
   await page.getByRole("button", { name: "Project", exact: true }).click();
+  await page.getByRole("button", { name: /^Recovery \(/ }).click();
   const corrupt = page.locator(".studio-v1-recovery-list li").filter({ hasText: "corrupt" });
   await expect(corrupt).toBeVisible();
   await expect(corrupt.getByRole("button", { name: "Restore…" })).toHaveCount(0);

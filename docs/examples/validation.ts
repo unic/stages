@@ -1,5 +1,6 @@
 import {
   fieldEvent,
+  stages,
   type DeepReadonly,
   type FieldDefinition,
   type FieldValidationIssue,
@@ -296,3 +297,35 @@ export function connectCancellation(
   return signal.onCancel(cancel);
 }
 // source:end validation-type-usage
+
+// source:start controlled-validation
+export async function controlledValidation() {
+  let proposal: { name: string } | undefined;
+  const controller = stages({
+    schema: {
+      id: "controlled-validation", version: 1,
+      nodes: [{ kind: "field", id: "name", type: "text", validators: [{
+        id: "name.required", on: "input",
+        validate: ({ fieldValue, path }) => fieldValue === ""
+          ? [{ id: "required", code: "required", path, severity: "error" }]
+          : [],
+      }] }],
+    },
+    fields: { text: {
+      view: "text", initialValue: "",
+      reduce: ({ event }) => event.name === "input" && typeof event.payload === "string"
+        ? { value: event.payload } : undefined,
+    } satisfies FieldDefinition<string> },
+    value: { name: "Ada" },
+    onChange: ({ value }) => { proposal = value; },
+  });
+  await controller.validate();
+  controller.dispatch(fieldEvent("input", ["name"], { payload: "" }));
+  await Promise.resolve();
+  const pendingAcceptance = controller.getSnapshot().validation.status; // valid
+  if (proposal !== undefined) controller.update({ value: proposal });
+  const accepted = controller.getSnapshot().validation.status; // invalid
+  controller.destroy();
+  return { pendingAcceptance, accepted };
+}
+// source:end controlled-validation

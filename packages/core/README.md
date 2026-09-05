@@ -39,6 +39,11 @@ Validator execution failures can be localized through
 `validationFailureIssue` without changing their engine-owned error severity,
 identity, or path.
 
+Event validation runs before `onChange`, but its proposal results do not replace
+validation for accepted values. Exact acceptance transfers matching results and
+pending requests; rejection preserves accepted validation. See the
+[controlled validation guide](https://github.com/unic/stages/blob/master/docs/content/validation/dependencies.mdx).
+
 This is an alpha API and is not compatible with `react-stages` 0.x. See the
 [v1 API guide](https://github.com/unic/stages/blob/master/docs/V1_API.md) and
 [0.x migration guide](https://github.com/unic/stages/blob/master/docs/MIGRATING_TO_V1.md).

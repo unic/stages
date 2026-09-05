@@ -261,6 +261,23 @@ const migrated = stages({
 assert.deepEqual(migrated.getSnapshot().value, { name: "Ada" });
 assert.deepEqual(migrated.serialize().baseline, { name: "Initial" });
 migrated.destroy();
+
+let proposal;
+const ownership = stages({
+  schema: { id: "packed-ownership", version: 1, nodes: [{ kind: "field", id: "name", type: "text", validators: [{
+    id: "required", on: "input", validate: ({ fieldValue, path }) => fieldValue === ""
+      ? [{ id: "required", code: "required", path, severity: "error" }] : [],
+  }] }] },
+  fields, value: { name: "Ada" }, onChange: ({ value }) => { proposal = value; },
+});
+await ownership.validate();
+ownership.dispatch(fieldEvent("input", ["name"], { payload: "" }));
+await Promise.resolve();
+assert.equal(ownership.getSnapshot().validation.status, "valid");
+assert.equal(ownership.serialize().value.name, "Ada");
+ownership.update({ value: proposal });
+assert.equal(ownership.getSnapshot().validation.status, "invalid");
+ownership.destroy();
 `);
   run(process.execPath, [join(consumerDirectory, "smoke.mjs")], consumerDirectory);
 

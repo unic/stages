@@ -83,7 +83,7 @@ After a successful event, a configured rule runs only if its `on` matches and
 it is relevant through at least one of these routes:
 
 - the validator is on the target or one of its schema ancestors;
-- an accepted patch path intersects its owner/dependency path; or
+- a proposed patch path intersects its owner/dependency path; or
 - the event is form-targeted, making every validator relevant.
 
 Path intersection is prefix-based in either direction: replacing a group can
@@ -94,13 +94,59 @@ Intrinsic field validators have only their implicit field path. Explicit
 `controller.validate()` uses force semantics, so it reruns every applicable
 validator in scope regardless of event relevance or `on`.
 
+## Controlled proposals and validation
+
+Event validators still run on proposed values before `onChange`. Their results
+are kept separately: snapshots and explicit `validate()` continue to describe
+accepted values while the proposal is pending or rejected. Accepting the exact
+proposed value through `update({ value })` transfers matching event results,
+including pending async work. A replacement value invalidates changed inputs;
+core does not rerun validators automatically for that replacement.
+
+```ts
+export async function controlledValidation() {
+  let proposal: { name: string } | undefined;
+  const controller = stages({
+    schema: {
+      id: "controlled-validation", version: 1,
+      nodes: [{ kind: "field", id: "name", type: "text", validators: [{
+        id: "name.required", on: "input",
+        validate: ({ fieldValue, path }) => fieldValue === ""
+          ? [{ id: "required", code: "required", path, severity: "error" }]
+          : [],
+      }] }],
+    },
+    fields: { text: {
+      view: "text", initialValue: "",
+      reduce: ({ event }) => event.name === "input" && typeof event.payload === "string"
+        ? { value: event.payload } : undefined,
+    } satisfies FieldDefinition<string> },
+    value: { name: "Ada" },
+    onChange: ({ value }) => { proposal = value; },
+  });
+  await controller.validate();
+  controller.dispatch(fieldEvent("input", ["name"], { payload: "" }));
+  await Promise.resolve();
+  const pendingAcceptance = controller.getSnapshot().validation.status; // valid
+  if (proposal !== undefined) controller.update({ value: proposal });
+  const accepted = controller.getSnapshot().validation.status; // invalid
+  controller.destroy();
+  return { pendingAcceptance, accepted };
+}
+```
+
+A new event transaction supersedes cached proposal work. Context, schema, and
+extension updates discard it as well. Reveal policies remain interaction
+policies; they do not accept values. This corrects alpha cache loss on rejected
+proposals without changing callback order or serialized state.
+
 ## Owner updates and cache currency
 
 `controller.update({ value })` compares the current value at every recorded
 owner/dependency path using deep equality:
 
 - unchanged dependency values retain the result;
-- any changed dependency cancels/deletes the record, leaving it unknown; and
+- changed dependencies cancel/delete accepted records unless replaced by a matching accepted proposal result; and
 - owner update does not automatically rerun the rule.
 
 Context, schema, and extension updates invalidate all validation because those
@@ -164,4 +210,6 @@ path configuration checks come from
 [`schema.ts`](https://github.com/unic/stages/blob/master/packages/core/src/schema.ts).
 The checked patterns are in `docs/examples/validation.ts`. Validation tests
 cover selective owner updates, target/dependency event runs, structural
-invalidation, and stale async results.
+invalidation, and stale async results. The
+[ownership regressions](https://github.com/unic/stages/blob/master/packages/core/test/validation-ownership.test.mjs)
+cover delayed acceptance, rejection, replacement, cancellation and callback order.

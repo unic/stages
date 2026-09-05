@@ -133,7 +133,11 @@ update(input: StagesUpdate<TValue, TFields, TContext>): void;
 Supplies owner-controlled inputs and schedules reevaluation/publication. It
 does not call `onChange`. Unknown, unsafe, or unregistered extension namespaces
 throw `TypeError`. Context/schema/extension changes invalidate all validation;
-value changes invalidate records whose dependency values changed.
+value changes invalidate records whose dependency values changed. If the owner
+accepts the exact current proposal without changing context/schema/extensions,
+matching event-validation records transfer instead, including pending requests.
+Pending or rejected proposals do not replace accepted validation. See
+[controlled validation](/validation/dependencies#controlled-proposals-and-validation).
 
 ### `dispatch()`
 

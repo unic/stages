@@ -314,6 +314,18 @@ export function stages<TValue, TFields, TContext = unknown>(
   let validationRun = 0;
   let validationToken = 0;
   const validationRecords = new Map<string, ValidationRecord>();
+  let speculativeRecords = new Map<string, ValidationRecord>();
+  let speculativeValue: TValue | undefined;
+
+  function cancelOwnedRecord(records: Map<string, ValidationRecord>, key: string, record: ValidationRecord | undefined): void {
+    if (record !== undefined && (records === validationRecords || record.token !== validationRecords.get(key)?.token)) record.cancel();
+  }
+
+  function discardSpeculativeValidation(): void {
+    for (const [key, record] of speculativeRecords) cancelOwnedRecord(speculativeRecords, key, record);
+    speculativeRecords = new Map();
+    speculativeValue = undefined;
+  }
   let publishedEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
   let transactionEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
   let lastValidEvaluation: EvaluatedSchema<TValue, TFields, TContext> | undefined;
@@ -685,6 +697,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     result: EvaluatedSchema<TValue, TFields, TContext>,
     currentValue: TValue,
     scope: ValidateOptions["scope"] = "form",
+    records: Map<string, ValidationRecord> = validationRecords,
   ): ValidationSnapshot {
     const issues: ValidationIssue[] = [];
     const visibleIssues: ValidationIssue[] = [];
@@ -694,7 +707,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     for (const { node, validator, identity, keyId } of validatorsFor(result.nodes, options.fields, result.schema.validators)) {
       if (!node.visible || (node.disabled && validator.includeDisabled !== true) || !inValidationScope(node, scope)) continue;
       const key = validationRecordKey(node.address, keyId);
-      const record = validationRecords.get(key);
+      const record = records.get(key) ?? validationRecords.get(key);
       let applicable = true;
       try {
         applicable = validator.when?.(validationContext(node, currentValue, "status")) !== false;
@@ -702,8 +715,8 @@ export function stages<TValue, TFields, TContext = unknown>(
         applicable = true;
       }
       if (!applicable) {
-        record?.cancel();
-        validationRecords.delete(key);
+        cancelOwnedRecord(records, key, record);
+        records.delete(key);
         continue;
       }
       if (record === undefined) {
@@ -711,8 +724,8 @@ export function stages<TValue, TFields, TContext = unknown>(
         continue;
       }
       if (!recordIsCurrent(record, node, identity, currentValue)) {
-        record.cancel();
-        validationRecords.delete(key);
+        cancelOwnedRecord(records, key, record);
+        records.delete(key);
         unknownCount += 1;
         continue;
       }
@@ -772,12 +785,13 @@ export function stages<TValue, TFields, TContext = unknown>(
     scope: ValidateOptions["scope"] = "form",
     targetAddress?: NodeAddress,
     affectedPaths: readonly DataPath[] = [],
+    records: Map<string, ValidationRecord> = validationRecords,
   ): Promise<void> {
     const pending: Promise<void>[] = [];
     for (const { node, validator, identity, keyId, intrinsic } of validatorsFor(result.nodes, options.fields, result.schema.validators)) {
       if (!node.visible || (node.disabled && validator.includeDisabled !== true) || !inValidationScope(node, scope)) continue;
       const key = validationRecordKey(node.address, keyId);
-      const previous = validationRecords.get(key);
+      const previous = records.get(key) ?? validationRecords.get(key);
       const paths = validatorPaths(node, validator);
       const relevant = force
         || targetAddress === undefined
@@ -793,8 +807,8 @@ export function stages<TValue, TFields, TContext = unknown>(
         applicable = validator.when?.(contextValue) !== false;
       } catch (error) {
         if (revealRequested) revealedValidation.set(addressKey(node.address), node.address);
-        previous?.cancel();
-        validationRecords.set(key, {
+        cancelOwnedRecord(records, key, previous);
+        records.set(key, {
           address: node.address,
           validator: identity,
           dependencyPaths: paths,
@@ -809,27 +823,32 @@ export function stages<TValue, TFields, TContext = unknown>(
         continue;
       }
       if (!applicable) {
-        previous?.cancel();
-        validationRecords.delete(key);
+        cancelOwnedRecord(records, key, previous);
+        records.delete(key);
         continue;
       }
       if (revealRequested) revealedValidation.set(addressKey(node.address), node.address);
       const shouldReveal = revealRequested || wasRevealed;
       if (!shouldRun) {
-        if (shouldReveal && previous !== undefined) validationRecords.set(key, { ...previous, revealed: true });
+        if (shouldReveal && previous !== undefined) {
+          // Reveal is interaction state, independent of value acceptance. Do
+          // not copy an accepted async record into the proposal's ownership.
+          const owner = records.has(key) ? records : validationRecords;
+          owner.set(key, { ...previous, revealed: true });
+        }
         continue;
       }
 
       const values = dependencyValues(paths, currentValue);
       const token = ++validationToken;
       const revealed = shouldReveal || previous?.revealed === true;
-      previous?.cancel();
+      cancelOwnedRecord(records, key, previous);
       const cancellation = createValidationCancellation();
       const runContext = validationContext(node, currentValue, event, cancellation.signal);
       try {
         const output = validator.validate(runContext);
         if (output !== null && typeof output === "object" && "then" in output) {
-          validationRecords.set(key, {
+          records.set(key, {
             address: node.address,
             validator: identity,
             dependencyPaths: paths,
@@ -848,17 +867,22 @@ export function stages<TValue, TFields, TContext = unknown>(
             ])
             .then((issues) => {
               if (destroyed) return;
-              const record = validationRecords.get(key);
-              const latestValue = proposal ?? value;
+              // A request belongs to accepted data or to the current proposal.
+              // Promotion keeps its token, so late completion follows ownership.
+              const accepted = validationRecords.get(key)?.token === token;
+              const owner = accepted ? validationRecords : records;
+              if (!accepted && (records !== speculativeRecords || speculativeValue === undefined)) return;
+              const record = owner.get(key);
+              const latestValue = accepted ? value : speculativeValue!;
               if (record?.token !== token || !recordIsCurrent(record, node, identity, latestValue)) return;
-              validationRecords.set(key, { ...record, status: "complete", issues });
+              owner.set(key, { ...record, status: "complete", issues });
               revision += 1;
               dirtySnapshot = true;
               schedule();
             });
           pending.push(completion);
         } else {
-          validationRecords.set(key, {
+          records.set(key, {
             address: node.address,
             validator: identity,
             dependencyPaths: paths,
@@ -872,7 +896,7 @@ export function stages<TValue, TFields, TContext = unknown>(
           });
         }
       } catch (error) {
-        validationRecords.set(key, {
+        records.set(key, {
           address: node.address,
           validator: identity,
           dependencyPaths: paths,
@@ -999,6 +1023,15 @@ export function stages<TValue, TFields, TContext = unknown>(
       schemaInput = input.schema;
       expectedSchemaIdentity = undefined;
     }
+    if (!invalidateAllValidation && input.value !== undefined && speculativeValue !== undefined && deepEqual(value, speculativeValue)) {
+      for (const [key, record] of speculativeRecords) {
+        if (!deepEqual(record.dependencyValues, dependencyValues(record.dependencyPaths, value))) continue;
+        const previous = validationRecords.get(key);
+        if (previous?.token !== record.token) previous?.cancel();
+        validationRecords.set(key, record);
+      }
+    }
+    if (input.value !== undefined || invalidateAllValidation) discardSpeculativeValidation();
     publishedEvaluation = undefined;
     revision += 1;
     validationRun += 1;
@@ -1020,6 +1053,7 @@ export function stages<TValue, TFields, TContext = unknown>(
 
   function dispatch(event: StagesEvent): void {
     if (destroyed) return;
+    if (transactionEvaluation === undefined) discardSpeculativeValidation();
     const draft = proposal ?? value;
     const previousTransactionCollectionKeys = transactionCollectionKeys === undefined
       ? undefined
@@ -1054,6 +1088,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     const isReset = event.name === "reset" && event.target.kind === "form";
 
     if (isReset) {
+      discardSpeculativeValidation();
       transactionSource = "reset";
       focused.clear();
       touched.clear();
@@ -1141,7 +1176,7 @@ export function stages<TValue, TFields, TContext = unknown>(
       const currentBranch = visibleStages[currentIndex];
       const currentStageValidation = currentBranch === undefined
         ? emptyValidation
-        : deriveValidation(result, draft, { address: currentBranch.address });
+        : deriveValidation(result, draft, { address: currentBranch.address }, Object.is(draft, value) ? validationRecords : speculativeRecords);
       let requestedStage: string | undefined;
       if (event.name === "wizard:next") requestedStage = visibleStages[currentIndex + 1]?.id;
       if (event.name === "wizard:previous") requestedStage = visibleStages[currentIndex - 1]?.id;
@@ -1244,6 +1279,8 @@ export function stages<TValue, TFields, TContext = unknown>(
     }
 
     if (!commandRejected) {
+      const records = Object.is(nextDraft, value) ? validationRecords : speculativeRecords;
+      if (records === speculativeRecords) speculativeValue = nextDraft;
       void runValidation(
         result,
         nextDraft,
@@ -1253,8 +1290,10 @@ export function stages<TValue, TFields, TContext = unknown>(
         "form",
         target?.address,
         patches.map((patch) => patch.path),
+        records,
       );
-      validation = deriveValidation(result, nextDraft);
+      const eventValidation = deriveValidation(result, nextDraft, "form", records);
+      if (records === validationRecords) validation = eventValidation;
     }
 
     if (!Object.is(nextDraft, draft)) proposal = nextDraft;
@@ -1374,6 +1413,7 @@ export function stages<TValue, TFields, TContext = unknown>(
     serialize,
     destroy() {
       destroyed = true;
+      discardSpeculativeValidation();
       validationRun += 1;
       listeners.clear();
       selectorListeners.clear();

@@ -862,6 +862,7 @@ const checkedRegions = [
   { fixture: "docs/examples/validation.ts", region: "validator-kinds", page: "validation/validators-and-issues.mdx" },
   { fixture: "docs/examples/validation.ts", region: "execution-and-reveal", page: "validation/execution-and-reveal.mdx" },
   { fixture: "docs/examples/validation.ts", region: "validation-scopes", page: "validation/scopes-and-aggregation.mdx" },
+  { fixture: "docs/examples/validation.ts", region: "controlled-validation", page: "validation/dependencies.mdx" },
   { fixture: "docs/examples/validation.ts", region: "validation-dependencies", page: "validation/dependencies.mdx" },
   { fixture: "docs/examples/validation.ts", region: "async-cancellation", page: "validation/async-and-cancellation.mdx" },
   { fixture: "docs/examples/validation.ts", region: "disabled-and-conditional", page: "validation/disabled-and-conditional.mdx" },

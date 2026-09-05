@@ -85,7 +85,13 @@ Inherited `NodeResolverContext` members are `value`, `context`, `meta`, `path`,
 | `signal` | Passive signal for `when`; per-run cooperative signal for `validate`. |
 
 All value/context/meta projections are deeply readonly at the type level but
-not runtime-frozen.
+not runtime-frozen. Event callbacks receive the proposal value before
+`onChange`; explicit validation receives the accepted value. Proposal results
+are isolated from accepted snapshots and transfer only when the owner accepts
+the same value without changing context, schema, or extensions. Pending work
+keeps its cancellation token during transfer. Rejected/superseded proposal
+work cannot replace accepted results. Reveal policies remain interaction state.
+See [controlled validation](/validation/dependencies#controlled-proposals-and-validation).
 
 ## `ValidationCancellationSignal`
 

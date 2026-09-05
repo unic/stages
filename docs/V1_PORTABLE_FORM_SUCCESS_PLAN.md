@@ -7,7 +7,7 @@ Audience: Stages core, adapter, tooling, and Studio maintainers.
 
 ## Implementation progress
 
-2026-09-05: S0 is in progress. The G5 sibling-change regression now has a
+2026-09-05: S0 implementation is complete. The G5 sibling-change regression now has a
 compiler fix with conservative outer-collection dependencies and fixtures for
 nested rows, variants, reordering/removal, fragments, context/extension updates,
 and async cancellation. A 1,000-row fixture measures conservative invalidation
@@ -15,12 +15,15 @@ fan-out. Computed values are marked unsupported in the inspector and compiler;
 untracked/unavailable validator scopes now produce actionable diagnostics.
 See [the capability contract](../studio/docs/PORTABLE_CAPABILITIES.md).
 
-S0 is not complete: core dispatch can clear accepted validation caches while
-considering unaccepted proposals. Explicit validation still uses accepted values;
-full cache retention across delayed/rejected proposals needs a separate core
-ownership fix with compatibility evidence. S1–S5 and the portable beta release
-gate remain open. No production loader or authoritative server validator is
-claimed by this first change.
+Core now separates proposal validation from accepted records. Delayed/rejected
+proposals retain accepted results and async work; exact acceptance transfers
+matching event results. Replacement, supersession, context/schema/extension
+changes and teardown discard speculative work. Runtime regressions, a checked
+public example, strict type contracts and a packed consumer cover this behavior.
+Release verification also corrected stale Studio browser-test selectors and a
+zero-width Recovery toggle caused by the palette help-button width rule.
+S1–S5 and the portable beta release gate remain open. No production loader or
+authoritative server validator is claimed by S0.
 
 ## 1. Assessment and success criterion
 

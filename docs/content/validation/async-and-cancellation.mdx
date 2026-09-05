@@ -67,12 +67,23 @@ the signal is already aborted, registration calls the listener immediately and
 returns a no-op unsubscribe. Cancellation is cooperative: core cannot stop an
 arbitrary promise or network library by itself.
 
+## Accepted and proposed work
+
+An event may start a request for a proposed value while an accepted-value request
+is pending. The proposed request does not cancel accepted work or appear in
+accepted snapshots. Exact acceptance transfers its result or pending request;
+rejection, supersession, replacement, context/schema/extension updates, and
+teardown discard it. Each ownership branch suppresses its own stale results.
+This can temporarily keep both accepted and proposed requests alive, so hosts
+should include both in concurrency planning. See
+[controlled validation](/validation/dependencies#controlled-proposals-and-validation).
+
 ## What cancels current work
 
 Core cancels a validator record when it is superseded or cannot remain current,
 including:
 
-- a new run for the same owner/config ID;
+- a new run for the same owner/config ID within accepted or proposed work;
 - a value update changing the owner or declared dependency;
 - context, schema, or extension update;
 - a structurally removed/incompatibly replaced owner;
@@ -86,7 +97,7 @@ dependencies or model removal when cancellation is required.
 
 ## Pending and prior issues
 
-As soon as an async rule starts, its record is `pending`, `pendingCount`
+As soon as an accepted-value async rule starts, its record is `pending`, `pendingCount`
 increases, and field `state.validating` becomes true. If the previous record is
 still current for the same inputs, its issues remain while revalidation is
 pending. If inputs changed, stale prior issues are not carried forward.

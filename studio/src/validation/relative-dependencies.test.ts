@@ -68,9 +68,7 @@ it("validates accepted values while proposals are pending or rejected", async ()
   await Promise.resolve();
   expect(proposals).toEqual([{ rows: [{ a: 5, b: 2 }] }]);
   expect(controller.getSnapshot().value).toEqual(accepted);
-  // Existing core dispatch can clear a cached result while evaluating a draft.
-  // Explicit validation must still observe accepted data, never that draft.
-  expect((await controller.validate()).status).toBe("valid");
+  expect(controller.getSnapshot().validation.status).toBe("valid");
   controller.update({ value: accepted });
   expect(controller.getSnapshot().validation.status).toBe("valid");
   controller.update({ value: proposals[0]! });

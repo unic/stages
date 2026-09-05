@@ -65,7 +65,7 @@
         { "symbol": "SerializedStagesState", "kind": "type", "guide": "/persistence/serialization", "reference": "/reference/core/persistence-types#serializedstagesstate", "examples": ["serialized-envelope"], "status": "complete" },
         { "symbol": "StageNodeConfig", "kind": "type", "guide": "/structures/wizards", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "examples": ["wizard-schema"], "status": "complete" },
         { "symbol": "StagesChange", "kind": "type", "reference": "/reference/core/controller#stageschange", "status": "complete" },
-        { "symbol": "StagesController", "kind": "type", "reference": "/reference/core/controller#stagescontroller", "status": "complete" },
+        { "symbol": "StagesController", "kind": "type", "reference": "/reference/core/controller#stagescontroller", "examples": ["controlled-validation"], "status": "complete" },
         { "symbol": "StagesEvent", "kind": "type", "guide": "/core-concepts/events-and-reducers", "reference": "/reference/core/event-types#stagesevent", "examples": ["event-constructors"], "status": "complete" },
         { "symbol": "StagesEventInit", "kind": "type", "guide": "/core-concepts/events-and-reducers", "reference": "/reference/core/event-types#stageseventinit", "examples": ["event-constructors"], "status": "complete" },
         { "symbol": "StagesEventSource", "kind": "type", "guide": "/core-concepts/events-and-reducers", "reference": "/reference/core/event-types#stagesevent", "status": "complete" },
@@ -89,7 +89,7 @@
         { "symbol": "ValidationFailureIssueFactory", "kind": "type", "guide": "/validation/failures-and-localization", "reference": "/reference/core/validation-types#validation-failure-types", "examples": ["failure-localization"], "status": "complete" },
         { "symbol": "ValidationFailureIssuePresentation", "kind": "type", "guide": "/validation/failures-and-localization", "reference": "/reference/core/validation-types#validation-failure-types", "examples": ["failure-localization"], "status": "complete" },
         { "symbol": "ValidationIssue", "kind": "type", "guide": "/validation/validators-and-issues", "reference": "/reference/core/validation-types#validationissue", "examples": ["validator-kinds", "validation-dependencies"], "status": "complete" },
-        { "symbol": "ValidationSnapshot", "kind": "type", "guide": "/validation/scopes-and-aggregation", "reference": "/reference/core/validation-types#validationsnapshot", "examples": ["validation-scopes", "validation-type-usage"], "status": "complete" },
+        { "symbol": "ValidationSnapshot", "kind": "type", "guide": "/validation/scopes-and-aggregation", "reference": "/reference/core/validation-types#validationsnapshot", "examples": ["validation-scopes", "validation-type-usage", "controlled-validation"], "status": "complete" },
         { "symbol": "ValidatorConfig", "kind": "type", "guide": "/validation/validators-and-issues", "reference": "/reference/core/validation-types#validatorconfig", "examples": ["validator-kinds"], "status": "complete" },
         { "symbol": "WizardNavigationConfig", "kind": "type", "guide": "/structures/wizard-validation-and-guards", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "examples": ["wizard-navigation"], "status": "complete" },
         { "symbol": "WizardNodeConfig", "kind": "type", "guide": "/structures/wizards", "reference": "/reference/core/schema-types#stage-and-wizard-nodes", "examples": ["wizard-schema"], "status": "complete" }
