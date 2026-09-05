@@ -386,7 +386,7 @@ describe("StudioEditorPage interactions", () => {
     await screen.findByText("Local draft loaded");
     await openWorkbenchPanel(user, "Insert");
 
-    for (const name of ["text field", "text area", "number", "choice", "checkbox", "date"]) {
+    for (const name of ["text field", "text area", "number", "choice", "checkbox", "date", "email", "phone", "website", "password", "time", "slider"]) {
       expect(screen.getByRole("button", { name: `Add ${name}` })).toBeVisible();
     }
 
@@ -397,6 +397,31 @@ describe("StudioEditorPage interactions", () => {
 
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(screen.queryByRole("spinbutton", { name: "Number" })).toBeNull();
+  });
+
+  it("edits choice options as rows and supports undo", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([emptyProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Insert");
+    await user.click(screen.getByRole("button", { name: "Add choice" }));
+    await user.click(screen.getByRole("button", { name: "Add option" }));
+    await user.clear(screen.getByRole("textbox", { name: "Option 1", exact: true }));
+    await user.type(screen.getByRole("textbox", { name: "Option 1", exact: true }), "Design");
+    await user.click(screen.getByRole("button", { name: "Add option" }));
+    await user.clear(screen.getByRole("textbox", { name: "Option 2", exact: true }));
+    await user.type(screen.getByRole("textbox", { name: "Option 2", exact: true }), "Engineering");
+    const choice = screen.getByRole("combobox", { name: "Choice", exact: true });
+    expect(within(choice).getAllByRole("option").map((option) => option.textContent)).toEqual(["Choose…", "Design", "Engineering"]);
+    await user.click(screen.getByRole("button", { name: "Move option 2 up" }));
+    expect(within(choice).getAllByRole("option")[1]).toHaveTextContent("Engineering");
+    await user.click(screen.getByRole("button", { name: "Remove option 1" }));
+    expect(within(choice).queryByRole("option", { name: "Engineering" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(within(choice).getByRole("option", { name: "Engineering" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Option 1", exact: true })).toHaveValue("Engineering");
+    await user.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByRole("textbox", { name: "Option 1", exact: true })).toHaveValue("Design");
   });
 
   it("authors decorative content without creating a preview form value", async () => {

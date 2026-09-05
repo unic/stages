@@ -5,7 +5,7 @@ export * from "./presentation";
 export * from "./services";
 export * from "./codecs";
 
-export type StudioFieldKey = "checkbox" | "choice" | "date" | "number" | "text" | "textarea";
+export type StudioFieldKey = "checkbox" | "choice" | "date" | "number" | "text" | "textarea" | "email" | "tel" | "url" | "password" | "time" | "range";
 export type StudioFieldValueKind = "boolean" | "number" | "string";
 export type StudioInspectorControlKind = "checkbox" | "number" | "select" | "text" | "textarea";
 
@@ -31,7 +31,7 @@ export interface StudioPropIssue {
 }
 
 export interface StudioFieldAccessibilityContract {
-  readonly controlRole: "checkbox" | "combobox" | "spinbutton" | "textbox";
+  readonly controlRole: "checkbox" | "combobox" | "spinbutton" | "textbox" | "slider";
   readonly labelProp: "label";
   readonly descriptionProp: "helpText";
   readonly keyboard: readonly string[];
@@ -59,7 +59,7 @@ export interface StudioAuthoringFieldDefinition<
   };
   readonly props: readonly StudioPropControl[];
   readonly runtime: FieldDefinition<TValue, JsonObject, TKey>;
-  readonly preview: { readonly control: "checkbox" | "date" | "number" | "select" | "text" | "textarea" };
+  readonly preview: { readonly control: "checkbox" | "date" | "number" | "select" | "text" | "textarea" | "email" | "tel" | "url" | "password" | "time" | "range" };
   readonly accessibility: StudioFieldAccessibilityContract;
   readonly export: { readonly importName: string; readonly module: "@stages/react" };
   readonly legacyTypes: readonly string[];
@@ -186,7 +186,35 @@ const date = define({
   export: { module: "@stages/react", importName: "StagesField" }, legacyTypes: ["calendar"], migrations: [aliasMigration("calendar")],
 });
 
-export const STUDIO_FIELD_DEFINITIONS = Object.freeze({ text, textarea, number, choice, checkbox, date });
+// Native input variants share the same controlled string contract as text.
+function textInput<TKey extends "email" | "tel" | "url" | "password" | "time">(key: TKey, displayName: string, icon: string) {
+  return define({
+    ...text, key, displayName, icon, category: key === "time" ? "Date and time" : "Text",
+    keywords: [key, displayName.toLowerCase()], documentation: `fields/${key}`,
+    runtime: { view: key, initialValue: "", reduce: inputReducer<string>("string") },
+    preview: { control: key }, legacyTypes: [], migrations: [],
+  });
+}
+const email = textInput("email", "Email", "mail");
+const tel = textInput("tel", "Phone", "phone");
+const url = textInput("url", "Website", "link");
+const password = textInput("password", "Password", "lock-keyhole");
+const time = textInput("time", "Time", "clock");
+const range = define({
+  ...number, key: "range", displayName: "Slider", icon: "sliders-horizontal",
+  keywords: ["range", "slider", "scale"], documentation: "fields/range",
+  props: [labelControl, helpControl,
+    { key: "min", label: "Minimum", control: "number", defaultValue: 0 },
+    { key: "max", label: "Maximum", control: "number", defaultValue: 100 },
+    { key: "step", label: "Step", control: "number", defaultValue: 1, min: 0.01 },
+  ],
+  runtime: { view: "range", initialValue: 0, reduce: inputReducer<number>("number") },
+  preview: { control: "range" },
+  accessibility: { ...number.accessibility, controlRole: "slider", keyboard: ["Arrow keys adjust value", "Home and End select bounds"] },
+  legacyTypes: [], migrations: [],
+});
+
+export const STUDIO_FIELD_DEFINITIONS = Object.freeze({ text, textarea, number, choice, checkbox, date, email, tel, url, password, time, range });
 export type StudioRuntimeFieldDefinition =
   | FieldDefinition<boolean, JsonObject, StudioFieldKey>
   | FieldDefinition<number, JsonObject, StudioFieldKey>
@@ -200,6 +228,13 @@ export interface StudioFieldRegistry extends Readonly<Record<string, StudioRunti
   readonly choice: (typeof choice)["runtime"];
   readonly checkbox: (typeof checkbox)["runtime"];
   readonly date: (typeof date)["runtime"];
+  readonly email: (typeof email)["runtime"];
+  readonly tel: (typeof tel)["runtime"];
+  readonly url: (typeof url)["runtime"];
+  readonly password: (typeof password)["runtime"];
+  readonly time: (typeof time)["runtime"];
+  readonly range: (typeof range)["runtime"];
+
 }
 
 export const STUDIO_RUNTIME_FIELDS: StudioFieldRegistry = Object.freeze(Object.fromEntries(

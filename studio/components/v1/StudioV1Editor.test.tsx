@@ -16,6 +16,28 @@ function renderPreview(form: StudioFormDocument, resources?: StudioResourceCatal
   return result;
 }
 
+describe("Studio component gallery", () => {
+  it("renders native controls and accepts their typed values", async () => {
+    const gallery = STUDIO_DEMO_PROJECTS.find(({ id }) => id === "gallery")!;
+    const form = Object.values(gallery.project.forms)[0]!;
+    const preview = renderPreview(form);
+    for (const [label, type, value] of [["Email", "email", "new@example.com"], ["Phone", "tel", "+41 555"], ["Website", "url", "https://stages.test"], ["Password", "password", "test secret"], ["Preferred time", "time", "14:30"]]) {
+      const input = screen.getByLabelText(label!);
+      expect(input).toHaveAttribute("type", type);
+      fireEvent.change(input, { target: { value } });
+      await waitFor(() => expect(input).toHaveValue(value));
+    }
+    const slider = screen.getByRole("slider", { name: "Rating" });
+    fireEvent.change(slider, { target: { value: "9" } });
+    await waitFor(() => expect(slider).toHaveValue("9"));
+    const checkbox = screen.getByRole("checkbox", { name: "Contact me about my request" });
+    expect(checkbox.closest("label")).toHaveClass("studio-field--checkbox");
+    fireEvent.click(checkbox);
+    await waitFor(() => expect(checkbox).not.toBeChecked());
+    expect(preview.container.querySelector(".studio-range-control output")).toHaveTextContent("9");
+  });
+});
+
 describe("Studio responsive preview layout", () => {
   it("packs two half-width fields beside each other inside a group", async () => {
     const style = document.createElement("style");

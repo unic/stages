@@ -47,9 +47,18 @@ const attendees: StudioProjectDocument = { ...attendeesBase, forms: { [attendees
   ...attendeesForm, nodes: { ...attendeesForm.nodes, [guest.uid]: guest },
 } } };
 
+const gallery = project("gallery", "Component gallery", [
+  field("email", "Email", "email"), field("phone", "Phone", "tel"),
+  field("website", "Website", "url"), field("password", "Password", "password"),
+  field("time", "Preferred time", "time"), field("rating", "Rating", "range", { min: 0, max: 10, step: 1 }),
+  field("contactMethod", "Contact method", "choice", { options: "Email\nPhone" }),
+  field("consent", "Contact me about my request", "checkbox"),
+], { email: "sam@example.com", phone: "+41 44 555 01 23", website: "https://example.com", password: "", time: "09:30", rating: 7, contactMethod: "Email", consent: true });
+
 export const STUDIO_DEMO_PROJECTS = [
   { id: "contact", label: "1 · Simple contact", description: "Text, textarea, required validation and responsive columns.", project: contact },
   { id: "controls", label: "2 · Registration & preferences", description: "Numbers, dates, dropdowns, checkboxes and example answers.", project: controls },
   { id: "attendees", label: "3 · Team registration", description: "Repeatable guests with minimum and maximum row limits.", project: attendees },
   { id: "agenda", label: "4 · Event launch wizard", description: "Multiple steps, conditional logic and nested agenda variants.", project: agenda as unknown as StudioProjectDocument },
+  { id: "gallery", label: "5 · Component gallery", description: "Email, phone, website, password, time, slider and choice controls.", project: gallery },
 ] as const;

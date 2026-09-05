@@ -1,3 +1,4 @@
+import { StudioChoiceOptionsEditor } from "./StudioChoiceOptionsEditor";
 import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
 import { Monitor, Smartphone, Tablet, ArrowDown, ArrowUp, Copy, FlaskConical, History, RotateCcw, Trash2, TriangleAlert, ArrowDownToLine, ArrowUpFromLine, Braces, Eye, FolderOpen, GitBranch, Languages, Layers, LayoutGrid, LockKeyhole, MousePointer2, Plus, Redo2, Save, ShieldCheck, SlidersHorizontal, Undo2, X } from "lucide-react";
 import { Switch as SwitchPrimitive } from "radix-ui";
@@ -376,7 +377,7 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
       ))}
     </select>;
   }
-  return <input
+  const input = <input
     {...common}
     type={definition.preview.control}
     value={String(currentValue)}
@@ -386,6 +387,7 @@ function PreviewFieldControl({ definition, field, node, currentValue, descriptio
     step={typeof field.props["step"] === "number" ? field.props["step"] : undefined}
     onChange={(event) => onInput(node, definition.value.kind === "number" ? event.currentTarget.valueAsNumber : event.currentTarget.value)}
   />;
+  return definition.preview.control === "range" ? <span className="studio-range-control">{input}<output aria-hidden="true">{String(currentValue)}</output></span> : input;
 }
 
 function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, onFocus, authoring }: {
@@ -408,7 +410,7 @@ function PreviewField({ form, node, snapshot, value, locale, onInput, onBlur, on
   const descriptionId = issue === undefined ? (description.length > 0 ? `${node.uid}-help` : undefined) : `${node.uid}-issue`;
   const currentValue = getAtPath(value, node.runtimePath) ?? definition.value.emptyValue;
   const formatted = field.format === undefined ? undefined : formatStudioFieldValue(currentValue, field.format, locale);
-  return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}><label className="studio-field">
+  return <PreviewLayout node={node} {...(authoring === undefined ? {} : { authoring })}><label className={`studio-field${definition.preview.control === "checkbox" ? " studio-field--checkbox" : ""}`}>
     <span>{typeof snapshot.props["label"] === "string" ? snapshot.props["label"] : nodeLabel(form, node.uid)}</span>
     <PreviewFieldControl
       definition={definition}
@@ -635,7 +637,7 @@ function FieldInspector({ node, onUpdate }: {
   ));
   const [errors, setErrors] = useState<Readonly<Record<string, string>>>({});
   if (!definition) return <p>This field definition is not available.</p>;
-  const change = (control: StudioPropControl, draft: string | boolean) => {
+  const change = (control: StudioPropControl, draft: string | boolean, coalesce = true) => {
     setDrafts((current) => ({ ...current, [control.key]: draft }));
     const parsed = parseControlDraft(control, draft);
     if (!parsed.ok) {
@@ -653,7 +655,7 @@ function FieldInspector({ node, onUpdate }: {
       delete next[control.key];
       return next;
     });
-    onUpdate(node, { props: nextProps }, `Edit ${definition.displayName} ${control.label.toLowerCase()}`, `props.${control.key}:${node.uid}`);
+    onUpdate(node, { props: nextProps }, `Edit ${definition.displayName} ${control.label.toLowerCase()}`, coalesce ? `props.${control.key}:${node.uid}` : undefined);
   };
   const localizableControls = definition.props.flatMap((control) => control.key === "label" || control.key === "helpText" ? [control] : []);
   return <fieldset className="studio-v1-field-inspector">
@@ -661,6 +663,9 @@ function FieldInspector({ node, onUpdate }: {
     {definition.props.map((control) => {
       const errorId = errors[control.key] ? `${node.uid}-${control.key}-error` : undefined;
       const draft = drafts[control.key] ?? (control.control === "checkbox" ? false : "");
+      if (control.key === "options" && definition.key === "choice") return <StudioChoiceOptionsEditor
+        key={control.key} value={String(node.props[control.key] ?? "")} onChange={(value, coalesce) => change(control, value, coalesce)}
+      />;
       return <label className="studio-field" key={control.key}>
         <span>{control.label}</span>
         {control.control === "textarea" ? <textarea className="ui-input" value={String(draft)} aria-invalid={Boolean(errorId)} aria-describedby={errorId} onChange={(event) => change(control, event.currentTarget.value)} />

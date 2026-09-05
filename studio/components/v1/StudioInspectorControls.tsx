@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { Collapsible, ToggleGroup, Tooltip } from "radix-ui";
-import { AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignLeft, AlignHorizontalJustifyStart, ArrowLeftRight, CalendarDays, ChevronDown, CircleHelp, Columns3, Component, Folder, Hash, Heading, Layers, ListChecks, ListTree, MessageSquare, Minus, Monitor, PanelTop, Smartphone, SquareCheck, Tablet, TextCursorInput, type LucideIcon } from "lucide-react";
+import { Mail, Phone, Link, LockKeyhole, Clock, SlidersHorizontal, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignLeft, AlignHorizontalJustifyStart, ArrowLeftRight, CalendarDays, ChevronDown, CircleHelp, Columns3, Component, Folder, Hash, Heading, Layers, ListChecks, ListTree, MessageSquare, Minus, Monitor, PanelTop, Smartphone, SquareCheck, Tablet, TextCursorInput, type LucideIcon } from "lucide-react";
 import type { StudioLayoutSpec, StudioBreakpoint, StudioAlignment, StudioWidth } from "../../src/registry";
 
 const icons: Readonly<Record<string, LucideIcon>> = {
   text: TextCursorInput, textarea: AlignLeft, number: Hash, choice: ListChecks,
+  email: Mail, tel: Phone, url: Link, password: LockKeyhole, time: Clock, range: SlidersHorizontal,
   checkbox: SquareCheck, date: CalendarDays, "block:heading": Heading,
   "block:divider": Minus, "block:help": CircleHelp, "block:message": MessageSquare,
   group: Folder, collection: ListTree, "variant-collection": ListTree,

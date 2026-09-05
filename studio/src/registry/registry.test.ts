@@ -44,6 +44,13 @@ describe("Studio authoring field registry", () => {
     expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.choice);
     expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.checkbox);
     expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.date);
+    expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.email);
+    expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.tel);
+    expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.url);
+    expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.password);
+    expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.time);
+    expectRuntimeContract(STUDIO_FIELD_DEFINITIONS.range);
+
   });
 
   it("migrates legacy select and calendar references to canonical definitions", () => {
