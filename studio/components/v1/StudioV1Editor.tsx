@@ -1,3 +1,4 @@
+import { StudioBulkInspector } from "./StudioBulkInspector";
 import { StudioDesignFeatures, StudioDesignLegend } from "./StudioDesignFeatures";
 import { StudioHelp } from "./StudioHelp";
 import { StudioChoiceOptionsEditor } from "./StudioChoiceOptionsEditor";
@@ -273,15 +274,23 @@ function PreviewLayout({ node, children, authoring }: {
       data-align-desktop={node.layout.align.desktop}
       {...(selectable ? { role: "group", tabIndex: 0, "aria-label": `Select ${node.uid}` } : {})}
       style={{ "--studio-layout-columns-mobile": node.layout.columns.mobile, "--studio-layout-columns-tablet": node.layout.columns.tablet, "--studio-layout-columns-desktop": node.layout.columns.desktop } as CSSProperties}
+      onClickCapture={selectable ? (event) => {
+        if (!event.shiftKey && !event.metaKey && !event.ctrlKey) return;
+        // Nested canvas items own their modifier-click; do not select their container.
+        if ((event.target as HTMLElement).closest("[data-canvas-uid]") !== event.currentTarget) return;
+        event.preventDefault();
+        event.stopPropagation();
+        authoring.onSelect(node.uid, { toggle: true });
+      } : undefined}
       onClick={selectable ? (event) => {
         event.stopPropagation();
-        authoring.onSelect(node.uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
+        authoring.onSelect(node.uid, { toggle: event.shiftKey || event.metaKey || event.ctrlKey });
       } : undefined}
       onKeyDown={selectable ? (event) => {
         if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
         event.preventDefault();
         event.stopPropagation();
-        authoring.onSelect(node.uid, { extend: event.shiftKey, toggle: event.metaKey || event.ctrlKey });
+        authoring.onSelect(node.uid, { toggle: event.shiftKey || event.metaKey || event.ctrlKey });
       } : undefined}
       onContextMenu={selectable ? (event) => {
         event.preventDefault();
@@ -1363,34 +1372,17 @@ function nodeTransforms(node: StudioNode): readonly StudioLogicRule[] | undefine
     : undefined;
 }
 
-function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onDetach, onBulkLabel }: {
+function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onDetach, onBulkUpdate }: {
   readonly nodes: readonly StudioNode[];
   readonly form: StudioFormDocument;
   readonly fragments: StudioProjectDocument["fragments"];
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
   readonly onUpdateFragment: (fragment: StudioFragmentDefinition, title: string) => void;
   readonly onDetach: (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => void;
-  readonly onBulkLabel: (nodes: readonly StudioFieldNode[], label: string) => void;
+  readonly onBulkUpdate: (updates: readonly { readonly node: StudioNode; readonly changes: Readonly<Record<string, unknown>> }[], label: string) => string | undefined;
 }) {
-  const [bulkLabel, setBulkLabel] = useState("");
-
   if (nodes.length === 0) return <p>Select an item in the outline or canvas.</p>;
-  if (nodes.length > 1) {
-    const fields = nodes.filter((node): node is StudioFieldNode => node.kind === "field");
-    if (fields.length !== nodes.length) {
-      return <p>{nodes.length} items selected. This selection has no compatible bulk edits.</p>;
-    }
-    return (
-      <div className="studio-v1-inspector__bulk">
-        <p>{fields.length} fields selected</p>
-        <label className="studio-field">
-          <span>Label for selected fields</span>
-          <input className="ui-input" value={bulkLabel} onChange={(event) => setBulkLabel(event.currentTarget.value)} />
-        </label>
-        <Button disabled={bulkLabel.length === 0} onClick={() => onBulkLabel(fields, bulkLabel)}>Apply to {fields.length} fields</Button>
-      </div>
-    );
-  }
+  if (nodes.length > 1) return <StudioBulkInspector nodes={nodes} onApply={onBulkUpdate} />;
 
   const node = nodes[0]!;
   return (
@@ -1897,21 +1889,15 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     else setStatus(result.failure.message);
   };
 
-  const updateBulkLabel = (nodes: readonly StudioFieldNode[], label: string) => {
+  const updateBulkSelection = (updates: readonly { readonly node: StudioNode; readonly changes: Readonly<Record<string, unknown>> }[], label: string): string | undefined => {
     const result = dispatchStudioCommand(history, {
-      type: "transaction",
-      label: `Label ${nodes.length} fields`,
-      commands: nodes.map((node) => ({
-        type: "node.update" as const,
-        formUid: form.uid,
-        uid: node.uid,
-        changes: { props: { ...node.props, label } satisfies JsonObject },
-      })),
+      type: "transaction", label,
+      commands: updates.map(({ node, changes }) => ({ type: "node.update" as const, formUid: form.uid, uid: node.uid, changes })),
     });
-    if (result.ok) {
-      setHistory(result.history);
-      setStatus(`${nodes.length} field labels updated`);
-    } else setStatus(result.failure.message);
+    if (!result.ok) { setStatus(result.failure.message); return result.failure.message; }
+    setHistory(result.history);
+    setStatus(`${updates.length} items updated`);
+    return undefined;
   };
 
   const addScenario = (): StudioScenario | undefined => {
@@ -2296,7 +2282,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onUpdate={updateNode}
             onUpdateFragment={updateFragment}
             onDetach={detachFragment}
-            onBulkLabel={updateBulkLabel}
+            onBulkUpdate={updateBulkSelection}
           />}
           </aside>
           {canvasContextMenu !== undefined && form.nodes[canvasContextMenu.uid] !== undefined && (() => {

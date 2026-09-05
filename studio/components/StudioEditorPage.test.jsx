@@ -562,8 +562,8 @@ describe("StudioEditorPage interactions", () => {
     fireEvent.click(secondItem, { ctrlKey: true });
     expect(firstItem).toHaveAttribute("aria-selected", "true");
     expect(secondItem).toHaveAttribute("aria-selected", "true");
-    await user.type(screen.getByRole("textbox", { name: "Label for selected fields" }), "Shared label");
-    await user.click(screen.getByRole("button", { name: "Apply to 2 fields" }));
+    await user.type(screen.getByRole("textbox", { name: /^Label/ }), "Shared label");
+    await user.click(screen.getByRole("button", { name: "Apply Label to selection" }));
     expect(screen.getAllByRole("textbox", { name: "Shared label" })).toHaveLength(2);
 
     await act(async () => { wizardItem.focus(); });
@@ -643,6 +643,49 @@ describe("StudioEditorPage interactions", () => {
     await user.keyboard("{Alt>}{ArrowLeft}{/Alt}");
     await screen.findByText("Second field moved out.");
     expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
+  });
+
+  it("shift-selects canvas items, batch edits shared props with undo, and groups the selection", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    const first = document.querySelector('[data-canvas-uid="field_first"]');
+    const second = document.querySelector('[data-canvas-uid="field_second"]');
+    await user.click(first);
+    fireEvent.click(second, { shiftKey: true });
+    expect(first).toHaveAttribute("data-authoring-selected", "true");
+    expect(second).toHaveAttribute("data-authoring-selected", "true");
+    expect(screen.getByText("2 items selected")).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: "Placeholder" }), "Shared hint");
+    await user.click(screen.getByRole("button", { name: "Apply Placeholder to selection" }));
+    expect(within(first).getByRole("textbox")).toHaveAttribute("placeholder", "Shared hint");
+    expect(within(second).getByRole("textbox")).toHaveAttribute("placeholder", "Shared hint");
+    await user.click(screen.getByRole("button", { name: "Undo", exact: true }));
+    expect(within(first).getByRole("textbox")).not.toHaveAttribute("placeholder", "Shared hint");
+    expect(within(second).getByRole("textbox")).not.toHaveAttribute("placeholder", "Shared hint");
+    fireEvent.contextMenu(second, { clientX: 24, clientY: 32 });
+    await user.click(screen.getByRole("menuitem", { name: "Group", exact: true }));
+    await screen.findByText("2 nodes grouped.");
+    expect(first.closest('[data-design-kind="group"]')).toBe(second.closest('[data-design-kind="group"]'));
+    expect(document.querySelector('[data-design-kind="group"] [data-canvas-uid="field_first"]')).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Undo", exact: true }));
+    expect(document.querySelector('[data-design-kind="group"] [data-canvas-uid="field_first"]')).toBeNull();
+  });
+
+  it("shift-click toggles a nested canvas item independently of collapsed layers", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    const first = document.querySelector('[data-canvas-uid="field_first"]');
+    const nested = document.querySelector('[data-canvas-uid="field_nested"]');
+    await user.click(first);
+    fireEvent.click(nested, { shiftKey: true });
+    expect(first).toHaveAttribute("data-authoring-selected", "true");
+    expect(nested).toHaveAttribute("data-authoring-selected", "true");
+    expect(screen.getByText("2 items selected")).toBeVisible();
+    fireEvent.click(nested, { shiftKey: true });
+    expect(first).toHaveAttribute("data-authoring-selected", "true");
+    expect(nested).not.toHaveAttribute("data-authoring-selected");
   });
 
   it("selects, clears selection, shows drop placement, and opens structure actions on the canvas", async () => {

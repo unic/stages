@@ -273,7 +273,6 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-inspector p { color: var(--muted-foreground); }
 .studio-v1-inspector > h2 { margin-bottom: 0.9rem; }
 .studio-v1-inspector .studio-field { margin-top: 0.8rem; }
-.studio-v1-inspector__bulk .ui-button { width: 100%; margin-top: 0.75rem; }
 .studio-v1-inspector fieldset { min-width: 0; margin: 1rem 0 0; border: 1px solid #e1e5eb; border-radius: var(--radius); padding: 0.85rem; background: #fbfcfe; }
 .studio-v1-inspector fieldset legend { max-width: 100%; padding: 0 0.35rem; color: #364152; font-size: 0.78rem; font-weight: 650; }
 .studio-v1-inspector fieldset fieldset { background: white; }
@@ -1392,3 +1391,13 @@ button, input, select, textarea { font: inherit; }
 .studio-design-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-bottom: 12px; color: #777; font-size: 10px; line-height: 1.4; }
 .studio-design-legend > span { display: inline-flex; align-items: center; gap: 4px; }
 @media (prefers-reduced-motion: reduce) { .studio-v1-authoring-node { transition: none; } }
+
+.studio-bulk-hint { color: #777; font-size: 0.72rem; line-height: 1.5; }
+.studio-bulk-property { display: grid; gap: 5px; margin-bottom: 14px; }
+.studio-bulk-property > label { display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; }
+.studio-bulk-property > label small { color: #8a759f; font-size: 0.65rem; }
+.studio-bulk-property__input { display: flex; align-items: flex-start; gap: 6px; }
+.studio-bulk-property__input > .ui-input { flex: 1; min-width: 0; width: 100%; }
+.studio-bulk-property [role="alert"] { color: #a33636; font-size: 0.7rem; }
+
+.studio-bulk-property__input > .ui-button { flex: 0 0 auto; }

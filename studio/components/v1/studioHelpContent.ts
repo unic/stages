@@ -25,7 +25,7 @@ export const studioHelpTopics: readonly StudioHelpTopic[] = [
   ] },
   { title: "Layers & fragments", summary: "Layers shows the form as a list, including items nested inside other items.", fields: [
     ["Search layers / Expand / Collapse", "Find items by name and show or hide their children in the list. Collapsing a layer does not hide it from the form."],
-    ["Select / Move / Copy / Cut / Paste / Delete", "Select an item to edit it. Drag to rearrange it, or open its context menu for move and clipboard actions. Shift extends a selection; Command or Control toggles individual items."],
+    ["Select / Move / Copy / Cut / Paste / Delete", "Select an item to edit it. Drag to rearrange it, or open its context menu for move and clipboard actions. Shift-click adds or removes an item on the canvas; in Layers, Shift selects a range. Command or Control toggles individual items. Right-click a selected item and choose Group to group the selection."],
     ["Group / Ungroup / Convert", "Put selected items in a container, remove that grouping, or change a supported container type. The available actions depend on your selection."],
     ["Create fragment from selection / Insert fragment", "Save a selection as a reusable group. Insert linked copies so shared settings come from one definition."],
     ["Definition name / Definition ID", "The name identifies the reusable group. Read-only IDs keep its data references stable."],
@@ -37,7 +37,7 @@ export const studioHelpTopics: readonly StudioHelpTopic[] = [
     ["Number / Slider", "Number accepts a numeric answer. Slider lets someone choose a number by moving a handle."],
     ["Choice / Options", "Offer a list of answers. Add, rename, reorder, or remove options; the option text is also its saved value."],
     ["Checkbox / Date", "Checkbox collects a yes-or-no answer. Date collects a calendar date."],
-    ["Label / Label for selected fields", "The question or caption people see. Applying a bulk label gives all selected fields the same label."],
+    ["Label / Label for selected fields", "The question or caption people see. Select several items to edit any field properties they share, plus responsive layout. Mixed means their values differ. Apply updates only that property for all selected items; Undo reverts the whole batch."],
     ["Help text", "Instructions shown alongside the question. For example: ‘Use the email address where you want your confirmation.’"],
     ["Placeholder", "An example shown inside an empty input. It disappears when someone types, so put essential instructions in Help text."],
     ["Rows", "The visible height of a Text area, measured in lines. This does not limit the length of the answer."],
