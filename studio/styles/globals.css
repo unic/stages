@@ -317,6 +317,9 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-dynamic-state li strong { color: var(--muted-foreground); font-weight: 550; }
 .studio-v1-preview__fields { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: start; max-width: 820px; min-height: 10rem; gap: var(--studio-preview-spacing); margin: 1.1rem auto 0; border: 1px solid #dfe4eb; border-radius: calc(var(--studio-preview-radius) + 0.2rem); background: var(--studio-preview-background); padding: clamp(1rem, 3vw, 2.25rem); box-shadow: 0 12px 30px rgb(15 23 42 / 0.08); }
 .studio-v1-preview__layout { display: grid; grid-template-columns: repeat(var(--studio-layout-columns-desktop), minmax(0, 1fr)); align-self: stretch; box-sizing: border-box; }
+/* Each layout item contains one semantic content wrapper. It must fill the
+   item, even in documents that specify multiple internal grid columns. */
+.studio-v1-preview__layout > * { grid-column: 1 / -1; min-width: 0; }
 .studio-v1-preview__layout[data-width-desktop="full"] { width: 100%; }
 .studio-v1-preview__layout[data-width-desktop="three-quarters"] { width: calc(75% - (var(--studio-preview-spacing) / 4)); }
 .studio-v1-preview__layout[data-width-desktop="two-thirds"] { width: calc(66.6667% - (var(--studio-preview-spacing) / 3)); }

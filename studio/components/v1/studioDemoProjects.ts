@@ -1,3 +1,4 @@
+import { STUDIO_KITCHENSINK_PROJECT } from "./studioKitchensinkProject";
 import agenda from "../../src/document/fixtures/event-launch-agenda.json";
 import { toUid } from "../../src/document/uid";
 import type { JsonObject, StudioFieldNode, StudioNode, StudioProjectDocument } from "../../src/document/types";
@@ -61,4 +62,5 @@ export const STUDIO_DEMO_PROJECTS = [
   { id: "attendees", label: "3 · Team registration", description: "Repeatable guests with minimum and maximum row limits.", project: attendees },
   { id: "agenda", label: "4 · Event launch wizard", description: "Multiple steps, conditional logic and nested agenda variants.", project: agenda as unknown as StudioProjectDocument },
   { id: "gallery", label: "5 · Component gallery", description: "Email, phone, website, password, time, slider and choice controls.", project: gallery },
+  { id: "kitchensink", label: "6 · Kitchensink", description: "Every field type, content, responsive layouts, fragments, collections, wizard, visibility, transforms and validation.", project: STUDIO_KITCHENSINK_PROJECT },
 ] as const;

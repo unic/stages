@@ -198,6 +198,24 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getByRole("spinbutton", { name: "Tickets" })).toHaveValue(2);
   });
 
+  it("opens the Kitchensink and exposes interactive feature sections", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository()} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Open demo" })).toBeEnabled());
+    await user.selectOptions(screen.getByLabelText("Demo form"), "kitchensink");
+    await user.click(screen.getByRole("button", { name: "Open demo" }));
+    await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Quantity", exact: true })).toHaveValue(3));
+    expect(screen.getByRole("textbox", { name: "Company name", exact: true })).toBeVisible();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Account type" }), "Personal");
+    await waitFor(() => expect(screen.queryByRole("textbox", { name: "Company name", exact: true })).toBeNull());
+    expect(screen.getByRole("textbox", { name: /^Advanced reference/ })).toBeVisible();
+    await user.click(screen.getByRole("checkbox", { name: "Show advanced options" }));
+    await waitFor(() => expect(screen.queryByRole("textbox", { name: /^Advanced reference/ })).toBeNull());
+    expect(document.querySelectorAll('[data-canvas-uid][data-design-kind="fragment"]')).toHaveLength(2);
+    await user.click(screen.getByRole("button", { name: "Preview", exact: true }));
+    expect(screen.getByRole("option", { name: "Invalid · submit to see errors" })).toBeInTheDocument();
+  });
+
   it("imports live startup state into document v1 behind the feature flag", () => {
     render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository()} />);
     const startup = document.querySelector('[data-studio-startup="document-v1"]');

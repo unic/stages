@@ -2,6 +2,7 @@ import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
 import { readFileSync } from "node:fs";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { studioLayout } from "../../src/registry";
 import { compileStudioForm } from "../../src/compiler";
 import { toUid, type StudioFormDocument, type StudioResourceCatalog } from "../../src/document";
 import { ControlledPreview } from "./StudioV1Editor";
@@ -60,6 +61,32 @@ describe("Studio component gallery", () => {
 });
 
 describe("Studio responsive preview layout", () => {
+  it.each(["desktop", "tablet", "mobile"])("fills nested Kitchensink items at %s even with saved multi-column settings", async (breakpoint) => {
+    const style = document.createElement("style");
+    style.textContent = readFileSync("styles/globals.css", "utf8");
+    document.head.append(style);
+    try {
+      const project = STUDIO_DEMO_PROJECTS.find(({ id }) => id === "kitchensink")!.project;
+      const source = Object.values(project.forms)[0]!;
+      // Reproduce the original saved demo, not just the corrected defaults.
+      const form = { ...source, nodes: Object.fromEntries(Object.entries(source.nodes).map(([id, node]) => [id, {
+        ...node, presentation: { ...node.presentation, layout: { ...studioLayout(node.presentation?.["layout"]), columns: { mobile: 1, tablet: 2, desktop: 4 } } },
+      }])) };
+      const compiled = compileStudioForm(form, project.fragments);
+      render(<div data-preview-breakpoint={breakpoint}><ControlledPreview form={compiled.expandedForm} compiled={compiled} defaultLocale="en" onUpdateScenario={() => {}} onAddScenario={() => undefined} /></div>);
+      await waitFor(() => expect(screen.getByRole("textbox", { name: "Full name" })).toHaveValue("Ada Lovelace"));
+      const wrappers = document.querySelectorAll(".studio-v1-preview__layout > .studio-field, .studio-v1-preview__layout > .studio-v1-preview__group, .studio-v1-preview__layout > .studio-v1-preview__collection, .studio-v1-preview__layout > .studio-v1-preview__wizard, .studio-v1-preview__layout > h2, .studio-v1-preview__layout > [role=note]");
+      expect(wrappers.length).toBeGreaterThan(30);
+      for (const wrapper of wrappers) {
+        expect(getComputedStyle(wrapper).gridColumn).toBe("1 / -1");
+        expect(parseFloat(getComputedStyle(wrapper).minWidth)).toBe(0);
+      }
+      const nameLayout = screen.getByRole("textbox", { name: "Full name" }).closest(".studio-v1-preview__layout")!;
+      expect(nameLayout).toHaveAttribute(`data-width-${breakpoint}`, breakpoint === "mobile" ? "full" : "half");
+      expect(getComputedStyle(nameLayout.parentElement!).display).toBe("flex");
+    } finally { style.remove(); }
+  });
+
   it("packs two half-width fields beside each other inside a group", async () => {
     const style = document.createElement("style");
     style.textContent = readFileSync("styles/globals.css", "utf8");
