@@ -1,6 +1,22 @@
 # Stages v1: Studio and library workflow improvements
 
-Status: proposed implementation roadmap; no runtime changes are implemented by this document.
+Status: implementation started; the first P0 export safety slice is implemented.
+
+Implementation progress (2026-09-05): F1 schema factories and F2 specialized
+field reducers now reject executable export with
+`export.executable-binding-required`; canonical project JSON remains available.
+Generated built-in reducers now enforce preview's payload types and finite-number
+checks. Committed export regressions cover both rejections and generated-consumer
+event behavior for all six built-ins. Dynamic/custom-reducer generated execution,
+packed-consumer equivalence, and F4–F6 remain pending. See
+[export behavior and evidence](../studio/docs/IMPORT_AND_EXPORT.md).
+
+F3 progress (2026-09-05): an editor-owned compiler session now reuses equivalent
+compilations, including specialized reducer definitions. Runtime regressions
+cover touched state, wizard position, row keys, pending owner proposals, and
+in-flight validation; an editor regression verifies that selection and panel
+changes do not compile. Real-edit behavior reuse and migration policies remain
+P1 work. See [preview session behavior](../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md).
 
 Analysis date: 2026-09-04. Baseline: `feature/version-one-point-zero`, commit `883791a`.
 

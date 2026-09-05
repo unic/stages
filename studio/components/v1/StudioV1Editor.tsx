@@ -10,7 +10,8 @@ import {
   undoStudioHistory,
 } from "../../src/commands/history";
 import type { StudioHistoryState } from "../../src/commands/types";
-import { compileStudioForm, createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
+import { createEmptyStudioScenarioValue } from "../../src/compiler/compiler";
+import { createStudioCompilerSession } from "../../src/compiler/session";
 import type { CompiledStudioForm, StudioDiagnostic, StudioRenderNode, StudioRuntimeRenderNode } from "../../src/compiler/types";
 import { isSafeObjectKey, toUid } from "../../src/document/uid";
 import { validateStudioProject } from "../../src/document/validation";
@@ -1427,6 +1428,7 @@ function ProblemsPanel({ diagnostics, onNavigate }: {
 
 export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorProps) {
   const startup = useStudioDocumentStartup();
+  const [compilerSession] = useState(createStudioCompilerSession);
   const repository = useMemo(() => repositoryProp ?? createIndexedDbProjectRepository({
     supportedDefinitions: STUDIO_SUPPORTED_DEFINITIONS,
   }), [repositoryProp]);
@@ -1599,7 +1601,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     return node === undefined ? [] : [node];
   });
   const formSelected = navigation.workbench.selectedUids.includes(form.uid);
-  const compiled = compileStudioForm(form, history.present.fragments, {
+  const compiled = compilerSession.compile(form, history.present.fragments, {
     serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
     localization: { defaultLocale: history.present.project.defaultLocale, resources: history.present.resources },
   });

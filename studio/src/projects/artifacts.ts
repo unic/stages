@@ -1,6 +1,6 @@
 import { compileStudioForm, createEmptyStudioScenarioValue } from "../compiler";
 import { openStudioProject, serializeStudioProject, type StudioDocumentDiagnostic, type StudioDocumentValidationOptions, type StudioFormDocument, type StudioProjectDocument } from "../document";
-import { STUDIO_FIELD_DEFINITIONS, type StudioFieldKey } from "../registry";
+import { STUDIO_FIELD_DEFINITIONS, STUDIO_RUNTIME_FIELDS, type StudioFieldKey } from "../registry";
 
 export interface StudioGeneratedArtifact {
   readonly path: string;
@@ -63,9 +63,9 @@ function usedFieldKeys(form: StudioFormDocument): readonly StudioFieldKey[] {
 function fieldsSource(form: StudioFormDocument): string {
   const entries = usedFieldKeys(form).flatMap((key) => {
     const definition = STUDIO_FIELD_DEFINITIONS[key];
-    return definition === undefined ? [] : [`  ${JSON.stringify(key)}: { view: ${JSON.stringify(key)}, initialValue: ${typescriptValue(definition.value.emptyValue)}, reduce: reduceInput },`];
+    return definition === undefined ? [] : [`  ${JSON.stringify(key)}: { view: ${JSON.stringify(key)}, initialValue: ${typescriptValue(definition.value.emptyValue)}, reduce: inputReducer(${JSON.stringify(definition.value.kind)}) },`];
   });
-  return `import type { FieldDefinition } from "@stages/core";\n\nconst reduceInput: NonNullable<FieldDefinition<unknown>["reduce"]> = ({ event }) =>\n  event.name === "input" ? { value: event.payload } : undefined;\n\nexport const fields = {\n${entries.join("\n")}\n} as const;\n`;
+  return `import type { FieldDefinition } from "@stages/core";\n\nfunction inputReducer(kind: "boolean" | "number" | "string"): NonNullable<FieldDefinition<unknown>["reduce"]> {\n  return ({ event }) => {\n    if (event.name !== "input" || typeof event.payload !== kind) return undefined;\n    if (kind === "number" && !Number.isFinite(event.payload)) return undefined;\n    return { value: event.payload };\n  };\n}\n\nexport const fields = {\n${entries.join("\n")}\n} as const;\n`;
 }
 
 function schemaSource(schema: unknown): string {
@@ -93,7 +93,7 @@ function exportFailure(form: StudioFormDocument, path: readonly (number | string
     code: "export.executable-binding-required",
     severity: "error",
     source: "document",
-    message: "The compiled schema contains executable behavior that needs a named export binding before portable code can be generated.",
+    message: "The compiled form contains executable behavior that needs a named export binding before portable code can be generated.",
     propertyPath: path,
     formUid: form.uid,
   };
@@ -109,7 +109,14 @@ export function generateStudioExportBundle(project: StudioProjectDocument): Stud
       diagnostics.push({ code: compileFailure.code, severity: "error", source: "document", message: compileFailure.message, propertyPath: compileFailure.propertyPath ?? [], formUid: form.uid, ...(compileFailure.entityUid === undefined ? {} : { entityUid: compileFailure.entityUid }) });
       continue;
     }
-    const path = executablePath(compiled.schema);
+    // Factories carry structural conditions that are absent from the static schema.
+    const unsupportedField = Object.entries(compiled.fields).find(([key, definition]) =>
+      !Object.hasOwn(STUDIO_RUNTIME_FIELDS, key) || definition !== STUDIO_RUNTIME_FIELDS[key]);
+    const path = typeof compiled.schemaInput === "function"
+      ? ["schemaInput"]
+      : unsupportedField !== undefined
+        ? ["fields", unsupportedField[0]]
+        : executablePath(compiled.schema);
     if (path !== undefined) {
       diagnostics.push(exportFailure(form, path));
       continue;

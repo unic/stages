@@ -8,6 +8,7 @@ import useStagesStore from "./store";
 import editorConfig from "./configTemplates/initialConfig";
 import { createMemoryProjectRepository } from "../src/projects";
 import { toUid } from "../src/document";
+import * as studioCompiler from "../src/compiler/compiler";
 import projectV0 from "../src/document/fixtures/project-v0.json";
 
 function outlineProjectSnapshot() {
@@ -178,6 +179,20 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getByRole("region", { name: "Canvas" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Canvas" })).toBeNull();
     expect(screen.queryByText(/click to select · drag/)).toBeNull();
+  });
+
+  it("does not recompile the active form for selection and panel changes", async () => {
+    const user = userEvent.setup();
+    const compile = vi.spyOn(studioCompiler, "compileStudioForm");
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository()} />);
+    await screen.findByText("New local draft");
+    expect(compile).toHaveBeenCalled();
+    compile.mockClear();
+    const canvas = screen.getByRole("region", { name: "Canvas" });
+    await user.click(within(canvas).getAllByRole("textbox")[0]);
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    expect(compile).not.toHaveBeenCalled();
   });
 
   it("hydrates before reading the legacy local-storage migration preview", async () => {

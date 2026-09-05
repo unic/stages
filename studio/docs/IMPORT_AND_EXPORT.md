@@ -8,8 +8,8 @@ returns either a detached frozen project plus migration IDs or path-addressed
 diagnostics. Imported data replaces document history only after the complete
 pipeline succeeds.
 
-`generateStudioExportBundle()` always emits `project.stages.json` through the
-canonical serializer. For every form it emits deterministic files for the v1
+A successful `generateStudioExportBundle()` includes `project.stages.json`
+through the canonical serializer. A failed bundle returns diagnostics only. For every form it emits deterministic files for the v1
 schema, field-registry bindings, initial controlled value, named scenarios,
 state-migration skeleton, a minimal controlled React integration, and a short
 README. Generated TypeScript imports only public `@stages/core` and
@@ -24,11 +24,20 @@ silently weakening behavior. The canonical project JSON is still independently
 available for round trips. A future named-binding exporter can resolve those
 diagnostics without changing the project format.
 
+The rejection gate checks `schemaInput` for factories, including structural
+`presentWhen` conditions, and checks the compiled field registry for specialized
+or replaced definitions, including field-specific reducers. These cases remain
+supported in preview and canonical JSON but cannot yet produce executable
+bundles. Built-in generated input reducers accept only their declared value
+kind and reject non-finite numbers, matching preview behavior.
+
 Artifact order, object-key order, indentation, filenames, and trailing newlines
 are stable. The golden fixture guards exact schema output, while the isolated
 consumer test writes a bundle to a temporary package, compiles every generated
-TypeScript/TSX file, and executes the generated schema with the packed-style
-public package boundary.
+TypeScript/TSX file, and dispatches events through the generated schema for all
+six built-in definitions. It checks invalid payloads, ignored events, and the
+controlled proposal/acceptance boundary. This test currently links Studio's
+installed dependencies; it is not a packed-package distribution gate.
 
 ## Evidence
 

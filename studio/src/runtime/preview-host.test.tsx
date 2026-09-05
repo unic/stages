@@ -4,6 +4,8 @@ import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
 import { compileStudioForm, type CompiledStudioForm } from "../compiler";
+import { createStudioCompilerSession } from "../compiler/session";
+import { defineStudioAsyncServiceBindings } from "../registry";
 import { toUid, validateStudioProject, type StudioFieldNode, type StudioFormDocument } from "../document";
 import {
   createStudioPreviewHost,
@@ -43,11 +45,12 @@ describe("Studio preview host", () => {
         [firstUid]: { uid: firstUid, kind: "stage", runtimeId: "first", childUids: [collectionUid] },
         [secondUid]: { uid: secondUid, kind: "stage", runtimeId: "second", childUids: [] },
         [collectionUid]: { uid: collectionUid, kind: "collection", runtimeId: "people", childUids: [nameUid] },
-        [nameUid]: { uid: nameUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Name" } },
+        [nameUid]: { uid: nameUid, kind: "field", runtimeId: "name", definition: { key: "text", version: 1 }, props: { label: "Name" }, reducers: [{ id: "clear", on: "clear", actions: [{ op: "set", target: { kind: "event-target" }, value: { kind: "literal", value: "" } }] }] },
       },
       scenarios: [], settings: {},
     };
-    const artifact = compileStudioForm(form);
+    const session = createStudioCompilerSession();
+    const artifact = session.compile(form);
     const initial = { flow: { first: { people: [{ name: "Ada" }, { name: "Lin" }] }, second: {} } };
     const extensions = { draft: { panel: "review" } };
     const extensionCodecs = { draft: { encode: (value: unknown) => value as CoreJsonValue, decode: (value: CoreJsonValue) => value } };
@@ -76,12 +79,68 @@ describe("Studio preview host", () => {
     expect(state).not.toHaveProperty("workbench");
     expect(state).not.toHaveProperty("browser");
 
+    const originalController = host.controller;
+    const pending = host.pendingProposal;
+    expect(pending).toBeDefined();
+    host.update({
+      compiled: session.compile(structuredClone(form)), value: host.canonicalValue,
+      context: { locale: "de-CH" }, extensions, extensionCodecs,
+    });
+    expect(host.controller).toBe(originalController);
+    expect(host.pendingProposal).toBe(pending);
+    expect(host.serialize()).toEqual(state);
+    expect(host.getSnapshot().value).toEqual(state.value);
+
     host.reset({ value: initial, context: { locale: "en" }, extensions });
+    expect(host.controller).not.toBe(originalController);
+    expect(host.pendingProposal).toBeUndefined();
     expect(host.serialize().meta["visited"]).toEqual([]);
     expect((host.getSnapshot().nodes[0] as { activeStage?: string }).activeStage).toBe("first");
     host.recreate(state);
     expect(host.serialize()).toEqual(state);
     expect((host.getSnapshot().nodes[0] as { activeStage?: string }).activeStage).toBe("second");
+  });
+
+  it("preserves touched state and pending validation across equivalent compilation", async () => {
+    const base = compiled().expandedForm;
+    const field = base.nodes[fieldUid] as StudioFieldNode;
+    const form: StudioFormDocument = { ...base, nodes: { ...base.nodes, [fieldUid]: {
+      ...field,
+      reducers: [{ id: "clear", on: "clear", actions: [{ op: "set", target: { kind: "event-target" }, value: { kind: "literal", value: "" } }] }],
+      validators: [{ kind: "service", service: { key: "availability", version: 1 }, request: { kind: "literal", value: "check" }, on: "submit" }],
+    } } };
+    let finish: ((result: { status: "failure"; code: string }) => void) | undefined;
+    const pending = new Promise<{ status: "failure"; code: string }>((resolve) => { finish = resolve; });
+    const cancelled = vi.fn();
+    const invoke = vi.fn(({ validation }) => {
+      validation.signal.onCancel(cancelled);
+      return pending;
+    });
+    const serviceBindings = defineStudioAsyncServiceBindings([{ key: "availability", version: 1, invoke }]);
+    const session = createStudioCompilerSession();
+    const artifact = session.compile(form, {}, { serviceBindings });
+    expect(artifact.diagnostics).toEqual([]);
+    const host = createStudioPreviewHost({ compiled: artifact, value: initialValue });
+    const original = host.controller;
+    try {
+      host.controller.dispatch(fieldEvent("blur", ["event", "title"]));
+      await publish();
+      const touched = host.serialize().meta["touched"];
+      expect(touched).not.toEqual([]);
+      const validation = host.controller.validate({ event: "submit", reveal: true });
+      expect(host.getSnapshot().validation.pendingCount).toBe(1);
+      host.update({ compiled: session.compile(structuredClone(form), {}, { serviceBindings }), value: initialValue });
+      expect(host.controller).toBe(original);
+      expect(host.serialize().meta["touched"]).toEqual(touched);
+      expect(host.getSnapshot().validation.pendingCount).toBe(1);
+      expect(cancelled).not.toHaveBeenCalled();
+      expect(invoke).toHaveBeenCalledTimes(1);
+      finish?.({ status: "failure", code: "taken" });
+      const result = await validation;
+      expect(result.issues).toContainEqual(expect.objectContaining({ code: "taken" }));
+    } finally {
+      host.destroy();
+    }
   });
 
   it("recreates registered durable extensions without adapter-only workbench state", () => {

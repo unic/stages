@@ -5,7 +5,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import projectV0 from "../document/fixtures/project-v0.json";
 import projectV1 from "../document/fixtures/project-v1.json";
-import type { StudioProjectDocument } from "../document";
+import { serializeStudioProject, toUid, type StudioFieldNode, type StudioProjectDocument } from "../document";
+import { fieldEvent, stages } from "@stages/core";
+import { compileStudioForm } from "../compiler";
+import { STUDIO_FIELD_DEFINITIONS } from "../registry";
 import { generateStudioExportBundle, importStudioProject } from "./artifacts";
 
 const definitions = { text: [1] } as const;
@@ -51,7 +54,15 @@ describe("Studio project artifacts", () => {
   });
 
   it("compiles and runs an isolated generated consumer", async () => {
-    const generated = generateStudioExportBundle(projectV1 as unknown as StudioProjectDocument);
+    const project = structuredClone(projectV1) as unknown as StudioProjectDocument;
+    const form = project.forms[toUid("form_event")]!;
+    const nodes = Object.fromEntries(Object.values(STUDIO_FIELD_DEFINITIONS).map(({ key }) => [key, {
+      uid: toUid(key), kind: "field" as const, runtimeId: key,
+      definition: { key, version: 1 }, props: { label: key },
+    }]));
+    const generated = generateStudioExportBundle({ ...project, forms: { [form.uid]: {
+      ...form, rootNodeUids: Object.keys(nodes).map(toUid), nodes,
+    } } });
     expect(generated.ok).toBe(true);
     if (!generated.ok) return;
     const root = await mkdtemp(join(tmpdir(), "stages-studio-export-"));
@@ -65,13 +76,82 @@ describe("Studio project artifacts", () => {
     await symlink(join(process.cwd(), "node_modules"), join(root, "node_modules"), "dir");
     await writeFile(join(root, "package.json"), JSON.stringify({ type: "module" }));
     await writeFile(join(root, "tsconfig.json"), JSON.stringify({ compilerOptions: {
-      target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext", strict: true,
+      types: ["node", "react"], target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext", strict: true,
       jsx: "react-jsx", esModuleInterop: true, skipLibCheck: true, outDir: "dist",
     }, include: ["form_event", "run.ts"] }));
-    await writeFile(join(root, "run.ts"), `import { stages } from "@stages/core";\nimport { fields } from "./form_event/fields.js";\nimport { initialValue } from "./form_event/initial-value.js";\nimport { schema } from "./form_event/schema.js";\nconst controller = stages({ schema, fields, value: initialValue });\nif (controller.getSnapshot().nodes[0]?.id !== "event") throw new Error("generated schema did not run");\ncontroller.destroy();\n`);
+    await writeFile(join(root, "run.ts"), `import assert from "node:assert/strict";
+import { fieldEvent, stages } from "@stages/core";
+import { fields } from "./form_event/fields.js";
+import { initialValue } from "./form_event/initial-value.js";
+import { schema } from "./form_event/schema.js";
+const proposals: unknown[] = [];
+const controller = stages({ schema, fields, value: initialValue as unknown, onChange: change => proposals.push(change.value) });
+try {
+  for (const [key, definition] of Object.entries(fields)) {
+    const valid = typeof definition.initialValue === "number" ? 42 : typeof definition.initialValue === "boolean" ? true : "Updated";
+    for (const payload of [null, undefined, {}, [], NaN, Infinity, -Infinity, ...[true, 42, "Updated"].filter(value => typeof value !== typeof valid)]) {
+      controller.dispatch(fieldEvent("input", [key], { payload }));
+      await Promise.resolve();
+      assert.equal(proposals.length, 0, key + " accepted invalid input");
+    }
+    controller.dispatch(fieldEvent("unhandled", [key], { payload: valid }));
+    await Promise.resolve();
+    assert.equal(proposals.length, 0);
+    controller.dispatch(fieldEvent("input", [key], { payload: valid }));
+    await Promise.resolve();
+    assert.deepEqual(proposals.splice(0), [{ ...initialValue, [key]: valid }]);
+    assert.deepEqual(controller.getSnapshot().value, initialValue);
+    const accepted = { ...initialValue, [key]: valid };
+    controller.update({ value: accepted });
+    assert.deepEqual(controller.getSnapshot().value, accepted);
+    controller.update({ value: initialValue });
+  }
+} finally {
+  controller.destroy();
+}
+`);
 
-    execFileSync(join(root, "node_modules/typescript/bin/tsc"), ["-p", join(root, "tsconfig.json")], { cwd: root, stdio: "pipe" });
-    execFileSync(process.execPath, [join(root, "dist/run.js")], { cwd: root, stdio: "pipe" });
+    execFileSync(join(root, "node_modules/typescript/bin/tsc"), ["-p", join(root, "tsconfig.json")], { cwd: root, stdio: "inherit" });
+    execFileSync(process.execPath, [join(root, "dist/run.js")], { cwd: root, stdio: "inherit" });
+  });
+
+  it.each(["presence", "reducer"] as const)("rejects unsupported %s behavior while preserving canonical JSON", async (capability) => {
+    const project = structuredClone(projectV1) as unknown as StudioProjectDocument;
+    const form = project.forms[toUid("form_event")]!;
+    const field = form.nodes[toUid("field_title")] as StudioFieldNode;
+    const changedField: StudioFieldNode = capability === "presence"
+      ? { ...field, behavior: { presentWhen: { kind: "reference", scope: "context", path: ["showTitle"] } } }
+      : { ...field, reducers: [{ id: "clear", on: "clear", actions: [{ op: "set", target: { kind: "event-target" }, value: { kind: "literal", value: "" } }] }] };
+    const changedForm = { ...form, nodes: { ...form.nodes, [field.uid]: changedField } };
+    const changed = { ...project, forms: { ...project.forms, [form.uid]: changedForm } };
+    const compiled = compileStudioForm(changedForm, changed.fragments);
+    expect(compiled.diagnostics).toEqual([]);
+    const proposals: unknown[] = [];
+    const controller = stages({
+      schema: compiled.schemaInput, fields: compiled.fields,
+      value: { event: { title: "Launch" } }, context: { showTitle: false },
+      onChange: (change) => proposals.push(change.value),
+    });
+    try {
+      if (capability === "presence") {
+        expect(controller.getSnapshot().nodes[0]).toMatchObject({ id: "event", nodes: [] });
+      } else {
+        controller.dispatch(fieldEvent("clear", ["event", "title"]));
+        await Promise.resolve();
+        expect(proposals).toEqual([{ event: { title: "" } }]);
+        expect(controller.getSnapshot().value).toEqual({ event: { title: "Launch" } });
+      }
+    } finally {
+      controller.destroy();
+    }
+    const result = generateStudioExportBundle(changed);
+    expect(result).toEqual({ ok: false, diagnostics: [expect.objectContaining({
+      code: "export.executable-binding-required", formUid: form.uid,
+      propertyPath: capability === "presence" ? ["schemaInput"] : ["fields", "text__studio__field_title"],
+    })] });
+    const imported = importStudioProject(serializeStudioProject(changed), { supportedDefinitions: definitions });
+    expect(imported.ok).toBe(true);
+    if (imported.ok) expect(imported.value).toEqual(changed);
   });
 
   it("reports executable behavior instead of emitting closure-dependent source", () => {
