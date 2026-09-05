@@ -2,6 +2,20 @@
 
 Status: P0 safeguards for F1–F6 are implemented; P1/P2 work remains.
 
+Capstone progress (2026-09-05): Wave 5 Session 28 now has a checked Studio
+agenda project with matching journeys against the canonical Event Launch
+schema and shared fields. It covers a bounded subset of proposals, variants,
+row identity, validation, diagnostics, and persistence. The
+[capability ledger](../studio/docs/EVENT_LAUNCH_CAPSTONE.md) records missing
+custom-field, optional-number, aggregate-validation, and production-export
+support. This starts equivalence evidence without declaring P1a/P1c or the
+full Event Launch capstone complete.
+
+The checked slice now includes venue capacity and workshop-capacity comparisons
+for finite numeric values. Canonical comparisons verify boundary cases,
+cross-field dependency invalidation, and unchanged validation while a venue
+proposal is pending. Optional-number semantics remain an explicit P1a gap.
+
 Implementation progress (2026-09-05): F1 schema factories and F2 specialized
 field reducers now reject executable export with
 `export.executable-binding-required`; canonical project JSON remains available.

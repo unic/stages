@@ -10,7 +10,10 @@ presentation edits, with runtime evidence for retained interaction state and
 pending owner proposals. Layout, theme, and decorative block-prop edits also
 retain runtime schema identity and in-flight validation; validator edits cancel
 obsolete requests and suppress late results. This advances the preview-continuity prerequisite;
-Wave 5 Sessions 28–31 remain unimplemented and their beta gates remain open.
+Wave 5 Session 28 has started with a checked agenda project and comparative
+canonical-runtime journeys. See the [capstone capability ledger](../studio/docs/EVENT_LAUNCH_CAPSTONE.md)
+for its scope and gaps. Sessions 29–31 remain unimplemented and the beta gates
+remain open.
 
 Execution status:
 
@@ -1066,6 +1069,20 @@ distinct tested meanings.
 ### Wave 5 — Validation and beta hardening
 
 #### Session 28 — Event Launch capstone
+
+Progress (2026-09-05): the [checked agenda slice](../studio/docs/EVENT_LAUNCH_CAPSTONE.md)
+covers portable project loading, variant fields, controlled collection and field
+proposals, row identity, duration-validation paths, minimum-row diagnostics,
+and serialize/recreate against the shared canonical example. Full wizard,
+custom fields, aggregate rules, async bindings, and generated-consumer parity
+remain open; this session is not complete.
+
+Continuation (2026-09-05): the fixture now includes editable venue capacity and
+declarative workshop-capacity validation. Comparative cases cover positive and
+nonpositive values, equality and overflow at the venue bound, dependency
+invalidation, and pending-proposal ownership. Optional numeric data, the full wizard,
+custom fields, aggregate rules, async bindings, and generated-consumer parity
+remain open; this session is not complete.
 
 Deliverables:
 

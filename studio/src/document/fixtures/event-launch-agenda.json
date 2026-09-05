@@ -1,0 +1,482 @@
+{
+  "format": "stages-studio",
+  "formatVersion": 1,
+  "project": {
+    "uid": "project_event_launch_agenda",
+    "title": "Event Launch \u2014 agenda capstone slice",
+    "defaultLocale": "en"
+  },
+  "forms": {
+    "form_agenda": {
+      "uid": "form_agenda",
+      "title": "Event Launch venue and agenda",
+      "runtime": {
+        "schemaId": "studio-event-launch-agenda",
+        "schemaVersion": 1
+      },
+      "rootNodeUids": [
+        "wizard_launch"
+      ],
+      "nodes": {
+        "wizard_launch": {
+          "uid": "wizard_launch",
+          "kind": "wizard",
+          "runtimeId": "launch",
+          "stageUids": [
+            "stage_venue",
+            "stage_agenda"
+          ]
+        },
+        "stage_agenda": {
+          "uid": "stage_agenda",
+          "kind": "stage",
+          "runtimeId": "agenda",
+          "childUids": [
+            "collection_items"
+          ]
+        },
+        "collection_items": {
+          "uid": "collection_items",
+          "kind": "collection",
+          "runtimeId": "items",
+          "min": 1,
+          "max": 12,
+          "itemKey": {
+            "kind": "property",
+            "property": "id"
+          },
+          "discriminator": "kind",
+          "variantUids": [
+            "variant_session",
+            "variant_workshop",
+            "variant_break"
+          ]
+        },
+        "variant_session": {
+          "uid": "variant_session",
+          "kind": "variant",
+          "runtimeId": "session",
+          "childUids": [
+            "field_session_title",
+            "field_session_speaker",
+            "field_session_durationMinutes"
+          ]
+        },
+        "field_session_title": {
+          "uid": "field_session_title",
+          "kind": "field",
+          "runtimeId": "title",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "Session title"
+          },
+          "validators": [
+            {
+              "kind": "required",
+              "code": "required",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "field_session_speaker": {
+          "uid": "field_session_speaker",
+          "kind": "field",
+          "runtimeId": "speaker",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "Speaker"
+          },
+          "validators": [
+            {
+              "kind": "required",
+              "code": "required",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "field_session_durationMinutes": {
+          "uid": "field_session_durationMinutes",
+          "kind": "field",
+          "runtimeId": "durationMinutes",
+          "definition": {
+            "key": "number",
+            "version": 1
+          },
+          "props": {
+            "label": "Duration",
+            "min": 5
+          },
+          "validators": [
+            {
+              "kind": "comparison",
+              "id": "agenda.duration",
+              "code": "agenda.duration",
+              "operator": ">",
+              "other": {
+                "kind": "literal",
+                "value": 0
+              },
+              "message": "Enter a duration.",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "variant_workshop": {
+          "uid": "variant_workshop",
+          "kind": "variant",
+          "runtimeId": "workshop",
+          "childUids": [
+            "field_workshop_title",
+            "field_workshop_facilitator",
+            "field_workshop_durationMinutes",
+            "field_workshop_capacity"
+          ]
+        },
+        "field_workshop_title": {
+          "uid": "field_workshop_title",
+          "kind": "field",
+          "runtimeId": "title",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "Workshop title"
+          },
+          "validators": [
+            {
+              "kind": "required",
+              "code": "required",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "field_workshop_facilitator": {
+          "uid": "field_workshop_facilitator",
+          "kind": "field",
+          "runtimeId": "facilitator",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "Facilitator"
+          },
+          "validators": [
+            {
+              "kind": "required",
+              "code": "required",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "field_workshop_durationMinutes": {
+          "uid": "field_workshop_durationMinutes",
+          "kind": "field",
+          "runtimeId": "durationMinutes",
+          "definition": {
+            "key": "number",
+            "version": 1
+          },
+          "props": {
+            "label": "Duration",
+            "min": 15
+          },
+          "validators": [
+            {
+              "kind": "comparison",
+              "id": "agenda.duration",
+              "code": "agenda.duration",
+              "operator": ">",
+              "other": {
+                "kind": "literal",
+                "value": 0
+              },
+              "message": "Enter a duration.",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "field_workshop_capacity": {
+          "uid": "field_workshop_capacity",
+          "kind": "field",
+          "runtimeId": "capacity",
+          "definition": {
+            "key": "number",
+            "version": 1
+          },
+          "props": {
+            "label": "Workshop capacity",
+            "min": 1
+          },
+          "validators": [
+            {
+              "code": "capacity",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ],
+              "message": "Workshop capacity must be positive and cannot exceed venue capacity.",
+              "dependencies": [
+                [
+                  "launch",
+                  "venue",
+                  "capacity"
+                ]
+              ],
+              "kind": "comparison",
+              "id": "workshop.capacity.positive",
+              "operator": ">",
+              "other": {
+                "kind": "literal",
+                "value": 0
+              }
+            },
+            {
+              "code": "capacity",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ],
+              "message": "Workshop capacity must be positive and cannot exceed venue capacity.",
+              "dependencies": [
+                [
+                  "launch",
+                  "venue",
+                  "capacity"
+                ]
+              ],
+              "kind": "comparison",
+              "id": "workshop.capacity.venue",
+              "operator": "<=",
+              "other": {
+                "kind": "reference",
+                "scope": "value",
+                "path": [
+                  "launch",
+                  "venue",
+                  "capacity"
+                ]
+              },
+              "when": {
+                "kind": "binary",
+                "operator": ">",
+                "left": {
+                  "kind": "reference",
+                  "scope": "row",
+                  "path": [
+                    "capacity"
+                  ]
+                },
+                "right": {
+                  "kind": "literal",
+                  "value": 0
+                }
+              }
+            }
+          ]
+        },
+        "variant_break": {
+          "uid": "variant_break",
+          "kind": "variant",
+          "runtimeId": "break",
+          "childUids": [
+            "field_break_label",
+            "field_break_durationMinutes"
+          ]
+        },
+        "field_break_label": {
+          "uid": "field_break_label",
+          "kind": "field",
+          "runtimeId": "label",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "Break label"
+          },
+          "validators": [
+            {
+              "kind": "required",
+              "code": "required",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "field_break_durationMinutes": {
+          "uid": "field_break_durationMinutes",
+          "kind": "field",
+          "runtimeId": "durationMinutes",
+          "definition": {
+            "key": "number",
+            "version": 1
+          },
+          "props": {
+            "label": "Duration",
+            "min": 5
+          },
+          "validators": [
+            {
+              "kind": "comparison",
+              "id": "agenda.duration",
+              "code": "agenda.duration",
+              "operator": ">",
+              "other": {
+                "kind": "literal",
+                "value": 0
+              },
+              "message": "Enter a duration.",
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ]
+            }
+          ]
+        },
+        "stage_venue": {
+          "uid": "stage_venue",
+          "kind": "stage",
+          "runtimeId": "venue",
+          "childUids": [
+            "field_venue_capacity"
+          ]
+        },
+        "field_venue_capacity": {
+          "uid": "field_venue_capacity",
+          "kind": "field",
+          "runtimeId": "capacity",
+          "definition": {
+            "key": "number",
+            "version": 1
+          },
+          "props": {
+            "label": "Venue capacity",
+            "min": 1
+          },
+          "validators": [
+            {
+              "kind": "comparison",
+              "id": "venue.capacity",
+              "code": "venue.capacity",
+              "operator": ">",
+              "other": {
+                "kind": "literal",
+                "value": 0
+              },
+              "on": [
+                "input",
+                "submit"
+              ],
+              "revealOn": [
+                "blur",
+                "submit"
+              ],
+              "message": "Enter a venue capacity."
+            }
+          ]
+        }
+      },
+      "scenarios": [
+        {
+          "uid": "scenario_agenda",
+          "title": "Canonical agenda",
+          "value": {
+            "launch": {
+              "agenda": {
+                "items": [
+                  {
+                    "id": "agenda-session-1",
+                    "kind": "session",
+                    "title": "Opening keynote",
+                    "speaker": "Ada Lovelace",
+                    "durationMinutes": 45
+                  },
+                  {
+                    "id": "agenda-break-1",
+                    "kind": "break",
+                    "label": "Coffee break",
+                    "durationMinutes": 20
+                  }
+                ]
+              },
+              "venue": {
+                "capacity": 240
+              }
+            }
+          }
+        }
+      ],
+      "settings": {}
+    }
+  },
+  "fragments": {},
+  "resources": {}
+}
