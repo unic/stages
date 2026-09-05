@@ -210,7 +210,7 @@ export function StudioOutline({
   };
 
   return (
-    <aside className="studio-v1-outline" aria-labelledby="studio-v1-outline-title">
+    <aside tabIndex={-1} className="studio-v1-outline" aria-labelledby="studio-v1-outline-title">
       <div className="studio-layer-search"><Search size={14} aria-hidden="true" /><input aria-label="Search layers" placeholder="Search layers…" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />{query && <Button variant="ghost" size="icon" aria-label="Clear layer search" onClick={() => setQuery("")}><X size={12} aria-hidden="true" /></Button>}</div>
       <div className="studio-v1-section-heading studio-layer-toolbar"><h2 id="studio-v1-outline-title">Outline</h2><div>
         <EditorTooltip label="Expand all layers"><Button variant="ghost" size="icon" aria-label="Expand all layers" disabled={Boolean(search)} onClick={() => onChange({ ...state, expandedUids: new Set([...model.items.values()].filter((item) => item.children.length > 0).map((item) => item.uid)) })}><ChevronsUpDown size={13} aria-hidden="true" /></Button></EditorTooltip>

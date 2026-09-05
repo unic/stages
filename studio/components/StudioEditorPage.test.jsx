@@ -645,6 +645,90 @@ describe("StudioEditorPage interactions", () => {
     expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
   });
 
+  it("supports canvas clipboard, backspace cut, duplicate, undo and redo shortcuts", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    const canvasNode = (uid) => document.querySelector(`[data-canvas-uid="${uid}"]`);
+    await user.click(canvasNode("field_first"));
+    await user.keyboard("{Meta>}c{/Meta}");
+    await screen.findByText("Node copied.");
+    await user.keyboard("{Meta>}v{/Meta}");
+    expect(canvasNode("field_first_copy")).toBeTruthy();
+    await user.keyboard("{Backspace}");
+    expect(canvasNode("field_first_copy")).toBeNull();
+    await user.keyboard("{Control>}v{/Control}");
+    expect(canvasNode("field_first_copy_copy")).toBeTruthy();
+    await user.keyboard("{Control>}d{/Control}");
+    expect(canvasNode("field_first_copy_copy_copy")).toBeTruthy();
+    await user.keyboard("{Control>}z{/Control}");
+    expect(canvasNode("field_first_copy_copy_copy")).toBeNull();
+    await user.keyboard("{Control>}{Shift>}z{/Shift}{/Control}");
+    expect(canvasNode("field_first_copy_copy_copy")).toBeTruthy();
+    await user.keyboard("{Escape}");
+    expect(document.querySelector('[data-authoring-selected="true"]')).toBeNull();
+  });
+
+  it("moves adjacent selected items with arrows and keeps keyboard focus across nesting", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    const canvasNode = (uid) => document.querySelector(`[data-canvas-uid="${uid}"]`);
+    await user.click(canvasNode("field_second"));
+    await user.keyboard("{ArrowDown}{ArrowRight}");
+    expect(canvasNode("field_second").parentElement.closest('[data-canvas-uid]')).toBe(canvasNode("group_drop"));
+    await user.keyboard("{ArrowLeft}{ArrowUp}");
+    expect(canvasNode("field_second").parentElement.closest('[data-canvas-uid]')).toBeNull();
+    await user.click(canvasNode("field_first"));
+    fireEvent.click(canvasNode("field_second"), { shiftKey: true });
+    await user.keyboard("{ArrowDown}{ArrowRight}");
+    expect(canvasNode("field_first").parentElement.closest('[data-canvas-uid]')).toBe(canvasNode("group_drop"));
+    expect(canvasNode("field_second").parentElement.closest('[data-canvas-uid]')).toBe(canvasNode("group_drop"));
+    await user.keyboard("{Control>}z{/Control}");
+    expect(canvasNode("field_first").parentElement.closest('[data-canvas-uid]')).toBeNull();
+    expect(canvasNode("field_second").parentElement.closest('[data-canvas-uid]')).toBeNull();
+  });
+
+  it("selects all, groups and ungroups, then deletes with keyboard shortcuts", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    await user.click(document.querySelector('[data-canvas-uid="field_first"]'));
+    await user.keyboard("{Control>}a{/Control}");
+    expect(document.querySelectorAll('[data-authoring-selected="true"]')).toHaveLength(4);
+    await user.keyboard("{Control>}g{/Control}");
+    await screen.findByText("4 nodes grouped.");
+    await user.keyboard("{Control>}{Shift>}g{/Shift}{/Control}");
+    expect(document.querySelectorAll('[data-authoring-selected="true"]')).toHaveLength(4);
+    await user.keyboard("{Delete}");
+    expect(document.querySelector('[data-canvas-uid="field_first"]')).toBeNull();
+    await user.keyboard("{Control>}z{/Control}");
+    expect(document.querySelector('[data-canvas-uid="field_first"]')).toBeTruthy();
+  });
+
+  it("leaves typing and preview keyboard events alone", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    const first = document.querySelector('[data-canvas-uid="field_first"]');
+    await user.click(first);
+    const label = screen.getByRole("textbox", { name: "Label", exact: true });
+    await user.click(label);
+    await user.keyboard("{End}{Backspace}");
+    expect(label).toHaveValue("First fiel");
+    expect(first).toBeInTheDocument();
+    const input = within(first).getByRole("textbox");
+    await user.click(input);
+    const event = createEvent.keyDown(input, { key: "Backspace", bubbles: true, cancelable: true });
+    fireEvent(input, event);
+    expect(event.defaultPrevented).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Preview", exact: true }));
+    const previewInput = screen.getByRole("textbox", { name: "First fiel", exact: true });
+    const previewEvent = createEvent.keyDown(previewInput, { key: "d", ctrlKey: true, bubbles: true, cancelable: true });
+    fireEvent(previewInput, previewEvent);
+    expect(previewEvent.defaultPrevented).toBe(false);
+  });
+
   it("offers contextual field actions for a selection with undo and clipboard preservation", async () => {
     const user = userEvent.setup();
     const snapshot = outlineProjectSnapshot();

@@ -108,6 +108,27 @@ export function createStudioStructuralActions({
   const moveNode = (uid: Uid, direction: StudioMoveDirection) => {
     dispatch(createStudioRelativeMoveCommand(form, uid, direction), `Move ${direction}`, `${nodeLabel(form, uid)} moved ${direction}.`);
   };
+  const moveNodes = (uids: readonly Uid[], direction: StudioMoveDirection) => {
+    const copied = copyStudioNodes(history.present, form.uid, uids);
+    if (!copied.ok) return;
+    const roots = copied.value.rootUids;
+    const placements = roots.map((uid) => locateStudioNode(form, uid));
+    if (placements.some((placement, index) => !placement || placement.parentUid !== placements[0]?.parentUid || placement.index !== placements[0]!.index + index)) {
+      setStatus("Select adjacent siblings to move together."); return;
+    }
+    const ordered = ["down", "bottom", "out"].includes(direction) ? [...roots].reverse() : roots;
+    const commands: StudioCommand[] = [];
+    let staged = history;
+    for (const uid of ordered) {
+      const command = createStudioRelativeMoveCommand(staged.present.forms[form.uid]!, uid, direction);
+      if (!command) { setStatus(`Move ${direction} is not available here.`); return; }
+      const result = dispatchStudioCommand(staged, command);
+      if (!result.ok) { setStatus(result.failure.message); return; }
+      staged = result.history;
+      commands.push(command);
+    }
+    dispatch({ type: "transaction", label: `Move ${direction}`, commands }, `Move ${direction}`, `Selection moved ${direction}.`);
+  };
   const dropNode = (uid: Uid, targetUid: Uid, position?: StudioDropPosition) => {
     const relation = position === "inside" ? "inside" : position;
     dispatch(
@@ -130,16 +151,16 @@ export function createStudioStructuralActions({
       setNavigation((current) => ({ ...current, clipboard: copied.value }));
     }
   };
-  const pasteNodes = (targetUid: Uid) => {
+  const pasteNodes = (targetUid?: Uid) => {
     const clipboard = navigation.clipboard;
     if (!clipboard) { setStatus("Clipboard is empty."); return; }
-    const target = form.nodes[targetUid];
-    if (!target) { setStatus("Paste target does not exist."); return; }
+    const target = targetUid === undefined ? undefined : form.nodes[targetUid];
+    if (targetUid !== undefined && !target) { setStatus("Paste target does not exist."); return; }
     const roots = clipboard.rootUids.flatMap((uid) => clipboard.nodes[uid] ? [clipboard.nodes[uid]] : []);
-    const targetChildren = nodeChildren(target);
-    const inside = roots.length === clipboard.rootUids.length && roots.every((node) => canPlaceStudioNode(target.kind, node!.kind));
-    const placement = locateStudioNode(form, targetUid);
-    const destination = inside
+    const targetChildren = target === undefined ? [] : nodeChildren(target);
+    const inside = target !== undefined && roots.length === clipboard.rootUids.length && roots.every((node) => canPlaceStudioNode(target.kind, node!.kind));
+    const placement = targetUid === undefined ? undefined : locateStudioNode(form, targetUid);
+    const destination = targetUid === undefined ? { formUid: form.uid, parentUid: null, index: form.rootNodeUids.length } : inside
       ? { formUid: form.uid, parentUid: targetUid, index: targetChildren.length }
       : placement && { formUid: form.uid, parentUid: placement.parentUid, index: placement.index + 1 };
     if (!destination) { setStatus("Paste target is unavailable."); return; }
@@ -230,5 +251,5 @@ export function createStudioStructuralActions({
       }));
     }
   };
-  return { deleteNodes, duplicateNodes, moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode };
+  return { moveNodes, deleteNodes, duplicateNodes, moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode };
 }

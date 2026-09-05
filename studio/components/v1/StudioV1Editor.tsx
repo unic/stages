@@ -7,7 +7,7 @@ import { Monitor, Smartphone, Tablet, ArrowDown, ArrowUp, Copy, FlaskConical, Hi
 import { Switch as SwitchPrimitive } from "radix-ui";
 import { EditorTooltip, InspectorSection, StudioItemIcon, StudioLayoutControl } from "./StudioInspectorControls";
 import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
-import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type KeyboardEvent, type ReactNode } from "react";
 import { canPlaceStudioNode } from "../../src/commands/engine";
 import {
   createStudioHistory,
@@ -1974,8 +1974,46 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   const {
-    deleteNodes, duplicateNodes, moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
+    moveNodes, deleteNodes, duplicateNodes, moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
   } = createStudioStructuralActions({ history, form, navigation, replaceHistory, setNavigation, setStatus });
+
+  const designKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    if (surface !== "design" || loading || event.defaultPrevented || event.nativeEvent.isComposing
+      || target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="menu"], [role="dialog"]')
+      || !target.closest(".studio-v1-canvas, .studio-v1-outline")) return;
+    const primary = event.metaKey || event.ctrlKey;
+    const key = event.key.toLowerCase();
+    const uids = navigation.workbench.selectedUids.filter((uid) => form.nodes[uid] !== undefined);
+    let action: (() => void) | undefined;
+    if (primary && !event.altKey) {
+      if (key === "c" && uids.length) action = () => { copyNodes(uids); };
+      else if (key === "x" && uids.length) action = () => cutNodes(uids);
+      else if (key === "v") action = () => pasteNodes(uids.length === 1 ? uids[0] : undefined);
+      else if (key === "d" && uids.length) action = () => duplicateNodes(uids);
+      else if (key === "g" && uids.length) action = () => {
+        if (event.shiftKey && uids.length === 1) ungroupNode(uids[0]!);
+        else if (!event.shiftKey) groupNodes(uids);
+      };
+      else if (key === "z") action = () => replaceHistory(event.shiftKey ? redoStudioHistory(history) : undoStudioHistory(history));
+      else if (key === "y") action = () => replaceHistory(redoStudioHistory(history));
+      else if (key === "a") action = () => setNavigation((current) => ({ ...current, workbench: { ...current.workbench, selectedUids: form.rootNodeUids } }));
+    } else if (!primary && !event.altKey && !event.shiftKey) {
+      if (key === "backspace" && uids.length) action = () => cutNodes(uids);
+      else if (key === "delete" && uids.length) action = () => deleteNodes(uids);
+      else if (key === "escape") action = () => setNavigation((current) => ({ ...current, workbench: clearStudioSelection(current.workbench) }));
+    }
+    if (!action && !primary && target.closest(".studio-v1-canvas") && uids.length) {
+      const direction = key === "arrowup" ? "up" : key === "arrowdown" ? "down" : key === "arrowleft" ? "out" : key === "arrowright" ? "in" : undefined;
+      if (direction) action = () => moveNodes(uids, direction);
+    }
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    // Keep keyboard ownership when moving or removing the focused node unmounts it.
+    target.closest<HTMLElement>(".studio-v1-canvas, .studio-v1-outline")?.focus({ preventScroll: true });
+    action();
+  };
 
   const contextItems = (uid: Uid, uids: readonly Uid[], position: StudioContextMenuPosition): readonly StudioInsertMenuItem[] => {
     const node = form.nodes[uid];
@@ -2192,7 +2230,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   return (
-    <main className="studio-v1-editor" data-testid="studio-v1-editor" data-preview-breakpoint={breakpoint} aria-busy={loading}>
+    <main onKeyDown={designKeyDown} className="studio-v1-editor" data-testid="studio-v1-editor" data-preview-breakpoint={breakpoint} aria-busy={loading}>
       <header className="studio-v1-toolbar">
         <div><strong>{history.present.project.title}</strong><span data-project-dirty={dirty}>{dirty ? "Unsaved project changes" : "Project saved"}</span><span data-preview-state="session-local">Preview session is separate</span></div>
         <nav className="studio-v1-demo-picker" aria-label="Demo forms">
@@ -2293,7 +2331,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           </>}
         </aside>}
         {surface === "design" ? <>
-          <section className="studio-v1-canvas" aria-label="Canvas">
+          <section className="studio-v1-canvas" aria-label="Canvas" tabIndex={-1}>
             <ControlledPreview key={`${history.present.project.uid}:${form.uid}`}
               form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources}
               defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem}
