@@ -384,7 +384,7 @@ describe("StudioEditorPage interactions", () => {
     await user.type(screen.getByRole("textbox", { name: "Heading" }), "About you");
     expect(screen.getByRole("heading", { name: "About you", level: 2 })).toBeVisible();
     expect(screen.queryByRole("textbox", { name: "About you" })).toBeNull();
-    await user.selectOptions(screen.getAllByRole("combobox", { name: "Width" })[2], "half");
+    await user.click(screen.getByRole("radio", { name: "Half width" }));
     expect(screen.getByRole("heading", { name: "About you", level: 2 }).closest(".studio-v1-preview__layout")).toHaveAttribute("data-width-desktop", "half");
     expect(document.querySelector('[data-studio-theme="default"]')).toHaveStyle({
       "--studio-preview-background": "#ffffff",
@@ -442,7 +442,7 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getByRole("textbox", { name: "Label" })).toHaveValue("First field");
     const runtimeIdInput = screen.getByRole("textbox", { name: "Runtime ID" });
     expect(runtimeIdInput).toHaveAttribute("readonly");
-    expect(runtimeIdInput).toHaveAccessibleDescription(/Renaming requires reference updates and a value migration/);
+    expect(runtimeIdInput).toHaveAccessibleDescription(/Read-only.*Used by data and logic references/);
     await user.type(runtimeIdInput, "renamed");
     expect(firstItem).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("textbox", { name: "Runtime ID" })).toHaveValue("first");
@@ -636,14 +636,14 @@ describe("StudioEditorPage interactions", () => {
     await openWorkbenchPanel(user, "Layers");
 
     fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
-    await user.click(screen.getByRole("checkbox", { name: "Conditional visibility" }));
+    await user.click(screen.getByRole("switch", { name: "Conditional visibility" }));
     const visibility = screen.getByLabelText("Visibility expression");
     await user.selectOptions(within(visibility).getByRole("combobox", { name: "Expression" }), "reference");
     const visibilityPath = within(visibility).getByRole("combobox", { name: "Reference path" });
     await user.type(visibilityPath, "second");
     expect(screen.getByLabelText("Visibility expression text")).toHaveTextContent("value.second");
 
-    await user.click(screen.getByRole("checkbox", { name: "Computed value" }));
+    await user.click(screen.getByRole("switch", { name: "Computed value" }));
     const computed = screen.getByLabelText("Computed value expression");
     expect(within(computed).getByRole("combobox", { name: "Reference source" })).toHaveValue("value");
     expect(screen.getByLabelText("Computed value expression text")).toHaveTextContent("value");

@@ -1,3 +1,6 @@
+import { Braces, Eye, FolderOpen, GitBranch, Languages, Layers, LayoutGrid, LockKeyhole, MousePointer2, Plus, Redo2, Save, ShieldCheck, SlidersHorizontal, Undo2, X } from "lucide-react";
+import { Switch as SwitchPrimitive } from "radix-ui";
+import { EditorTooltip, InspectorSection, StudioItemIcon, StudioLayoutControl } from "./StudioInspectorControls";
 import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import { canPlaceStudioNode } from "../../src/commands/engine";
@@ -21,7 +24,6 @@ import { evaluateStudioExpression } from "../../src/expressions/evaluator";
 import {
   STUDIO_FIELD_DEFINITIONS,
   STUDIO_BLOCK_DEFINITIONS,
-  STUDIO_BREAKPOINTS,
   createStudioBlockNode,
   createStudioFieldNode,
   studioBlockDefinition,
@@ -30,11 +32,7 @@ import {
   validateStudioFieldProps,
   type AnyStudioAuthoringFieldDefinition,
   type StudioBlockDefinition,
-  type StudioBreakpoint,
-  type StudioAlignment,
-  type StudioLayoutSpec,
   type StudioPropControl,
-  type StudioWidth,
   STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
   STUDIO_PREVIEW_CODEC_BINDINGS,
   STUDIO_PREVIEW_SERVICE_EXTENSION,
@@ -637,6 +635,7 @@ function FieldInspector({ node, onUpdate }: {
         {errorId && <small id={errorId} role="alert">{errors[control.key]}</small>}
       </label>;
     })}
+    <InspectorSection title="Localization" icon={Languages} defaultOpen={false}>
     {localizableControls.map((control) => <label className="studio-field" key={`localized:${control.key}`}>
       <span>{control.label} locale key</span>
       <input className="ui-input" value={node.localizedProps?.[control.key] ?? ""} placeholder="messages.field.label" onChange={(event) => {
@@ -651,6 +650,7 @@ function FieldInspector({ node, onUpdate }: {
       const kind = event.currentTarget.value as "" | "date" | "number";
       onUpdate(node, { format: kind === "" ? undefined : { kind } }, "Edit localized field format", `format:${node.uid}`);
     }}><option value="">Canonical value only</option>{definition.value.kind === "number" && <option value="number">Localized number</option>}{definition.key === "date" && <option value="date">Localized date</option>}</select></label>}
+    </InspectorSection>
   </fieldset>;
 }
 
@@ -681,30 +681,11 @@ function PresentationInspector({ node, onUpdate }: {
   readonly node: StudioNode;
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
 }) {
-  const layout = studioLayout(node.presentation?.["layout"]);
-  const update = (key: "align" | "columns" | "width", breakpoint: StudioBreakpoint, value: number | string) => {
-    const nextLayout: StudioLayoutSpec = key === "width"
-      ? { ...layout, width: { ...layout.width, [breakpoint]: value as StudioWidth } }
-      : key === "columns"
-        ? { ...layout, columns: { ...layout.columns, [breakpoint]: value as number } }
-        : { ...layout, align: { ...layout.align, [breakpoint]: value as StudioAlignment } };
-    onUpdate(node, { presentation: { ...node.presentation, layout: nextLayout } satisfies JsonObject }, `Edit ${breakpoint} ${key}`, `presentation.layout.${key}.${breakpoint}:${node.uid}`);
-  };
-  return <fieldset className="studio-v1-layout-inspector">
-    <legend>Responsive layout</legend>
-    {STUDIO_BREAKPOINTS.map((breakpoint) => <fieldset key={breakpoint}>
-      <legend>{breakpoint[0]?.toUpperCase()}{breakpoint.slice(1)}</legend>
-      <label className="studio-field"><span>Width</span><select value={layout.width[breakpoint]} onChange={(event) => update("width", breakpoint, event.currentTarget.value)}>
-        {(["full", "three-quarters", "two-thirds", "half", "third", "quarter"] as const).map((width) => <option key={width} value={width}>{width}</option>)}
-      </select></label>
-      <label className="studio-field"><span>Columns</span><select value={layout.columns[breakpoint]} onChange={(event) => update("columns", breakpoint, Number(event.currentTarget.value))}>
-        {[1, 2, 3, 4].map((columns) => <option key={columns} value={columns}>{columns}</option>)}
-      </select></label>
-      <label className="studio-field"><span>Alignment</span><select value={layout.align[breakpoint]} onChange={(event) => update("align", breakpoint, event.currentTarget.value)}>
-        {(["stretch", "start", "center", "end"] as const).map((align) => <option key={align} value={align}>{align}</option>)}
-      </select></label>
-    </fieldset>)}
-  </fieldset>;
+  return <InspectorSection title="Responsive layout" icon={LayoutGrid}>
+    <StudioLayoutControl layout={studioLayout(node.presentation?.["layout"])} onChange={(layout, breakpoint, key) => {
+      onUpdate(node, { presentation: { ...node.presentation, layout } satisfies JsonObject }, `Edit ${breakpoint} ${key}`, `presentation.layout.${key}.${breakpoint}:${node.uid}`);
+    }} />
+  </InspectorSection>;
 }
 
 function ScenarioObjectEditor({ scenario, property, label, onUpdate }: {
@@ -1260,16 +1241,16 @@ function ExpressionInspector({ node, form, onUpdate }: {
   };
   return <fieldset className="studio-v1-expression-inspector">
     <legend>Logic</legend>
-    <label><input type="checkbox" checked={when !== undefined} onChange={(event) => setBehavior("when", event.currentTarget.checked ? { kind: "literal", value: true } : undefined)} /> Conditional visibility</label>
+    <label className="studio-inspector-switch"><span>Conditional visibility</span><SwitchPrimitive.Root className="ui-switch" checked={when !== undefined} onCheckedChange={(checked) => setBehavior("when", checked ? { kind: "literal", value: true } : undefined)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
     {when !== undefined && <StudioExpressionEditor expression={when} label="Visibility expression" references={references} onChange={(expression) => setBehavior("when", expression)} />}
-    <label><input type="checkbox" checked={disabled !== undefined} onChange={(event) => setBehavior("disabled", event.currentTarget.checked ? { kind: "literal", value: false } : undefined)} /> Dynamic disabled state</label>
+    <label className="studio-inspector-switch"><span>Dynamic disabled state</span><SwitchPrimitive.Root className="ui-switch" checked={disabled !== undefined} onCheckedChange={(checked) => setBehavior("disabled", checked ? { kind: "literal", value: false } : undefined)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
     {disabledExpression !== undefined && <StudioExpressionEditor expression={disabledExpression} label="Disabled expression" references={references} onChange={(expression) => setBehavior("disabled", expression)} />}
-    <label><input type="checkbox" checked={presentWhen !== undefined} onChange={(event) => setBehavior("presentWhen", event.currentTarget.checked ? { kind: "literal", value: true } : undefined)} /> Conditional structure</label>
+    <label className="studio-inspector-switch"><span>Conditional structure</span><SwitchPrimitive.Root className="ui-switch" checked={presentWhen !== undefined} onCheckedChange={(checked) => setBehavior("presentWhen", checked ? { kind: "literal", value: true } : undefined)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
     {presentWhen !== undefined && <StudioExpressionEditor expression={presentWhen} label="Structure expression" references={references.filter(({ scope }) => scope !== "row")} onChange={(expression) => setBehavior("presentWhen", expression)} />}
     {node.kind === "field" && <>
-      <label><input type="checkbox" checked={computed !== undefined} onChange={(event) => onUpdate(node, { computed: event.currentTarget.checked ? { kind: "reference", scope: "value", path: [] } : undefined }, "Edit computed value", `logic.computed:${node.uid}`)} /> Computed value</label>
+      <label className="studio-inspector-switch"><span>Computed value</span><SwitchPrimitive.Root className="ui-switch" checked={computed !== undefined} onCheckedChange={(checked) => onUpdate(node, { computed: checked ? { kind: "reference", scope: "value", path: [] } : undefined }, "Edit computed value", `logic.computed:${node.uid}`)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
       {computed !== undefined && <StudioExpressionEditor expression={computed} label="Computed value expression" references={references} onChange={(expression) => onUpdate(node, { computed: expression }, "Edit computed value", `logic.computed:${node.uid}`)} />}
-      <label><input type="checkbox" checked={node.derivedProps?.["label"] !== undefined} onChange={(event) => onUpdate(node, { derivedProps: event.currentTarget.checked ? { ...node.derivedProps, label: { kind: "literal", value: String(node.props["label"] ?? "") } } : undefined }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)} /> Derived label</label>
+      <label className="studio-inspector-switch"><span>Derived label</span><SwitchPrimitive.Root className="ui-switch" checked={node.derivedProps?.["label"] !== undefined} onCheckedChange={(checked) => onUpdate(node, { derivedProps: checked ? { ...node.derivedProps, label: { kind: "literal", value: String(node.props["label"] ?? "") } } : undefined }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
       {node.derivedProps?.["label"] !== undefined && <StudioExpressionEditor expression={node.derivedProps["label"]} label="Derived label expression" references={references} onChange={(expression) => onUpdate(node, { derivedProps: { ...node.derivedProps, label: expression } }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)} />}
     </>}
   </fieldset>;
@@ -1322,11 +1303,11 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
 
   const node = nodes[0]!;
   return (
-    <div>
-      <p><strong>{nodeDisplayLabel(node)}</strong> <small>{node.kind}</small></p>
+    <div className="studio-selection-inspector">
+      <div className="studio-selection-heading"><span className="studio-selection-heading__icon"><StudioItemIcon kind={node.kind === "field" || node.kind === "block" ? node.definition.key : node.kind} /></span><div><strong>{nodeDisplayLabel(node)}</strong><small>{node.kind}</small></div></div>
       {node.kind !== "block" && (
         <label className="studio-field">
-          <span id={`${node.uid}-runtime-id-label`}>Runtime ID</span>
+          <span id={`${node.uid}-runtime-id-label`}>Runtime ID <LockKeyhole size={11} aria-hidden="true" /></span>
           <input
             className="ui-input"
             value={node.runtimeId}
@@ -1334,16 +1315,20 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
             readOnly
             aria-describedby={`${node.uid}-runtime-id-help`}
           />
-          <small id={`${node.uid}-runtime-id-help`}>Renaming requires reference updates and a value migration. Existing runtime IDs are read-only until that workflow is available.</small>
+          <small id={`${node.uid}-runtime-id-help`}>Read-only · Used by data and logic references.</small>
         </label>
       )}
+      <PresentationInspector node={node} onUpdate={onUpdate} />
       {node.kind === "field" && (
         <FieldInspector node={node} onUpdate={onUpdate} />
       )}
       {node.kind === "block" && <BlockInspector node={node} onUpdate={onUpdate} />}
       {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onDetach={onDetach} />}
       <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
+      <InspectorSection title="Logic & behavior" icon={GitBranch}>
       <ExpressionInspector node={node} form={form} onUpdate={onUpdate} />
+      </InspectorSection>
+      {supportsValidators(node) && <InspectorSection title="Value processing" icon={Braces} defaultOpen={Boolean(nodeTransforms(node)?.length || (node.kind === "field" && node.reducers?.length))}>
       {supportsValidators(node) && <StudioLogicEditor
         kind="transform"
         rules={nodeTransforms(node)}
@@ -1358,13 +1343,15 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
         references={expressionReferences(form)}
         onChange={(reducers, label) => onUpdate(node, { reducers }, label, `reducers:${node.uid}`)}
       />}
+      </InspectorSection>}
+      {supportsValidators(node) && <InspectorSection title="Validation" icon={ShieldCheck}>
       {supportsValidators(node) && <StudioValidationEditor
         validators={nodeValidators(node)}
         references={expressionReferences(form)}
         ownerLabel={node.kind === "field" ? "field" : "node"}
         onChange={(validators, label) => onUpdate(node, { validators }, label, `validators:${node.uid}`)}
       />}
-      <PresentationInspector node={node} onUpdate={onUpdate} />
+      </InspectorSection>}
     </div>
   );
 }
@@ -2064,22 +2051,22 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             size="sm"
             aria-pressed={drawer === panel}
             onClick={() => setDrawer((current) => current === panel ? undefined : panel)}
-          >{panel[0]!.toUpperCase() + panel.slice(1)}{panel === "project" && legacyPreview.kind !== "absent" ? <span className="studio-v1-toolbar__notice" aria-hidden="true" title="Legacy project available" /> : null}</Button>)}
+          >{panel === "project" ? <FolderOpen size={15} aria-hidden="true" /> : panel === "layers" ? <Layers size={15} aria-hidden="true" /> : <Plus size={15} aria-hidden="true" />}{panel[0]!.toUpperCase() + panel.slice(1)}{panel === "project" && legacyPreview.kind !== "absent" ? <span className="studio-v1-toolbar__notice" aria-hidden="true" title="Legacy project available" /> : null}</Button>)}
         </nav>
         <nav className="studio-v1-toolbar__surface" aria-label="Studio mode">
-          <Button variant={surface === "design" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "design"} onClick={() => setSurface("design")}>Design</Button>
-          <Button variant={surface === "preview" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "preview"} onClick={() => setSurface("preview")}>Preview</Button>
+          <Button variant={surface === "design" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "design"} onClick={() => setSurface("design")}><MousePointer2 size={14} aria-hidden="true" />Design</Button>
+          <Button variant={surface === "preview" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "preview"} onClick={() => setSurface("preview")}><Eye size={14} aria-hidden="true" />Preview</Button>
         </nav>
         <nav className="studio-v1-toolbar__history" aria-label="Document history">
-          <Button variant="outline" size="sm" disabled={loading || history.past.length === 0} onClick={() => replaceHistory(undoStudioHistory(history))}>Undo</Button>
-          <Button variant="outline" size="sm" disabled={loading || history.future.length === 0} onClick={() => replaceHistory(redoStudioHistory(history))}>Redo</Button>
-          <Button size="sm" disabled={loading || !dirty} onClick={() => void save()}>Save draft</Button>
+          <EditorTooltip label="Undo"><Button variant="ghost" size="icon" aria-label="Undo" disabled={loading || history.past.length === 0} onClick={() => replaceHistory(undoStudioHistory(history))}><Undo2 size={16} aria-hidden="true" /></Button></EditorTooltip>
+          <EditorTooltip label="Redo"><Button variant="ghost" size="icon" aria-label="Redo" disabled={loading || history.future.length === 0} onClick={() => replaceHistory(redoStudioHistory(history))}><Redo2 size={16} aria-hidden="true" /></Button></EditorTooltip>
+          <Button size="sm" disabled={loading || !dirty} onClick={() => void save()}><Save size={14} aria-hidden="true" />Save draft</Button>
         </nav>
         <p role="status" aria-live="polite">{status}</p>
       </header>
       <div className="studio-v1-workspace" data-surface={surface} data-drawer-open={drawer !== undefined}>
         {drawer !== undefined && <aside className="studio-v1-left-panel" aria-label={`${drawer} panel`}>
-          <div className="studio-v1-drawer-heading"><strong>{drawer[0]!.toUpperCase() + drawer.slice(1)}</strong><Button variant="ghost" size="sm" aria-label={`Close ${drawer} panel`} onClick={() => setDrawer(undefined)}>×</Button></div>
+          <div className="studio-v1-drawer-heading"><strong>{drawer[0]!.toUpperCase() + drawer.slice(1)}</strong><Button variant="ghost" size="sm" aria-label={`Close ${drawer} panel`} onClick={() => setDrawer(undefined)}><X size={15} aria-hidden="true" /></Button></div>
           {drawer === "project" && <>
             <StudioProjectPanel
               projects={projects} recovery={recovery} activeUid={history.present.project.uid} title={history.present.project.title}
@@ -2113,11 +2100,11 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           {drawer === "insert" && <>
             <section className="studio-v1-palette" aria-labelledby="studio-v1-palette-title">
               <h2 id="studio-v1-palette-title">Fields</h2>
-              {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}>Add {definition.displayName.toLowerCase()}</Button>)}
+              {Object.values(STUDIO_FIELD_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertField(definition)}><StudioItemIcon kind={definition.key} /><span>Add {definition.displayName.toLowerCase()}</span><Plus className="studio-palette-add" size={13} aria-hidden="true" /></Button>)}
             </section>
             <section className="studio-v1-palette" aria-labelledby="studio-v1-content-palette-title">
               <h2 id="studio-v1-content-palette-title">Content</h2>
-              {Object.values(STUDIO_BLOCK_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertBlock(definition)}>Add {definition.displayName.toLowerCase()}</Button>)}
+              {Object.values(STUDIO_BLOCK_DEFINITIONS).map((definition) => <Button key={definition.key} variant="outline" disabled={loading} onClick={() => insertBlock(definition)}><StudioItemIcon kind={definition.key} /><span>Add {definition.displayName.toLowerCase()}</span><Plus className="studio-palette-add" size={13} aria-hidden="true" /></Button>)}
             </section>
             <section className="studio-v1-palette" aria-labelledby="studio-v1-structure-palette-title">
               <h2 id="studio-v1-structure-palette-title">Structure</h2>
@@ -2159,7 +2146,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             />
           </section>
           <aside className="studio-v1-inspector" aria-labelledby="studio-v1-inspector-title" tabIndex={-1} data-inspector-property={inspectionPropertyPath?.join(".")}>
-          <h2 id="studio-v1-inspector-title">Inspector</h2>
+          <h2 id="studio-v1-inspector-title"><SlidersHorizontal size={14} aria-hidden="true" />Inspector<span className="studio-inspector-caption">Design</span></h2>
           {inspectionPropertyPath !== undefined && <p role="status">Inspecting property: <code>{inspectionPropertyPath.join(".")}</code></p>}
           {formSelected ? <>
             <StudioEventEditor events={form.events} form={form} references={expressionReferences(form)} onChange={updateFormEvents} />

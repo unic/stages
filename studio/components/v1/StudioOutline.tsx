@@ -1,3 +1,5 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { StudioItemIcon } from "./StudioInspectorControls";
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import type { StudioProjectDocument, Uid } from "../../src/document/types";
 import {
@@ -123,6 +125,8 @@ export function StudioOutline({
   const renderItem = (uid: Uid, level: number) => {
     const item = model.items.get(uid);
     if (!item) return null;
+    const node = project.forms[item.formUid]?.nodes[uid];
+    const iconKind = node?.kind === "field" || node?.kind === "block" ? node.definition.key : item.kind;
     const expandable = item.children.length > 0;
     const expanded = expandable && state.expandedUids.has(uid);
     return (
@@ -160,9 +164,9 @@ export function StudioOutline({
               tabIndex={-1}
               aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
               onClick={() => onChange(setStudioExpansion(state, uid, !expanded))}
-            >{expanded ? "−" : "+"}</button>
+            >{expanded ? <ChevronDown size={12} aria-hidden="true" /> : <ChevronRight size={12} aria-hidden="true" />}</button>
           ) : <span aria-hidden="true" className="studio-v1-outline__spacer" />}
-          <span>{item.label}</span><small>{item.kind}</small>
+          <StudioItemIcon kind={iconKind} /><span>{item.label}</span><small>{item.kind}</small>
         </div>
         {expanded && (
           <ul role="group">
