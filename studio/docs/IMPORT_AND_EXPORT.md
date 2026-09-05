@@ -15,35 +15,39 @@ through the canonical serializer. When runtime generation fails, the result has
 forms never receive incomplete runtime code. The panel lists the affected forms
 and nodes and offers a Download artifact link for the selected file.
 
-For each supported form, the exporter emits deterministic files for the v1
-schema, field-registry bindings, initial controlled value, named scenarios,
-state-migration skeleton, a minimal controlled React integration, and a short
-README. Generated TypeScript imports only public `@stages/core` and
-`@stages/react` entry points; the Studio document and compiler are not runtime
-dependencies of the generated application.
+For each supported form, the exporter emits `form.stages.json`: a versioned
+production projection loaded through `@stages/authoring`. It resolves fragments,
+keeps referenced localization messages, and excludes scenario answers, legacy
+metadata and non-theme authoring settings. Initial values come from empty field
+defaults, never from the first scenario. Application tooling can supply explicit
+production defaults to `projectPortableForm`.
 
-The code emitter serializes closure-free compiled schemas. If dynamic
-expressions, reducers, validators, transforms, item-key callbacks, or other
-executable behavior remains in the compiled artifact, that form reports
-`export.executable-binding-required` instead of stringifying a closure or
-silently weakening behavior. The canonical project JSON remains in the artifact picker
-for download and round trips, including all unsupported fields and behavior. A future named-binding exporter can resolve those
-diagnostics without changing the project format.
+The existing static schema and field emitter remains available for closure-free
+forms. Supported rules, conditions, reducers and transforms produce a
+`portable.ts` module that calls the public loader; `schema.ts` uses its
+`schemaInput` and `fields.ts` uses its semantic field bindings. Both paths include
+initial values, separate scenario fixtures, a state-migration skeleton, a minimal
+controlled React integration, and a README. No generated application imports
+Studio or repository source. The React integration remains a scaffold; rendering
+the authored controls and custom field registries is S2 work.
 
-The rejection gate checks `schemaInput` for factories, including structural
-`presentWhen` conditions, and checks the compiled field registry for specialized
-or replaced definitions, including field-specific reducers. These cases remain
-supported in preview and canonical JSON but cannot yet produce executable
-bundles. Built-in generated input reducers accept only their declared value
-kind and reject non-finite numbers, matching preview behavior.
+Unknown definitions, unsupported computed values, row-dependent presence and
+parameterized fragments still fail explicitly. Service rules export JSON with
+exact binding requirements, but cannot emit runnable integration code until the
+host supplies those bindings. The failure report and canonical project remain
+available; no closure is stringified or rule silently omitted. Plain Node hosts
+can register trusted service implementations and load the JSON without React.
 
 Artifact order, object-key order, indentation, filenames, and trailing newlines
 are stable. The golden fixture guards exact schema output, while the isolated
 consumer test writes a bundle to a temporary package, compiles every generated
 TypeScript/TSX file, and dispatches events through the generated schema for all
 built-in definitions. It checks invalid payloads, ignored events, and the
-controlled proposal/acceptance boundary. This test currently links Studio's
-installed dependencies; it is not a packed-package distribution gate.
+controlled proposal/acceptance boundary. That generated-code test links Studio's installed dependencies. Separately, the
+contact-form JSON is checked against the actual Studio export and loaded in an
+isolated core-plus-authoring tarball consumer by `scripts/verify-v1-packages.mjs`.
+It proves required/comparison/conditional/localized behavior and controlled
+ownership without browser or framework dependencies.
 
 ## Evidence
 

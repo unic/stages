@@ -1,0 +1,60 @@
+---
+title: Load a portable form
+description: Run a Studio-exported JSON form through the optional shared compiler.
+---
+
+# Load a portable form
+
+**For:** application developers deploying a Studio-authored form.
+**Prerequisites:** [installation](/start/installation) and
+[controlled values](/core-concepts/controlled-values).
+
+Install matching `@stages/authoring` and `@stages/core` versions. Export a Studio
+project and use the selected form's `form.stages.json` artifact. The canonical
+`project.stages.json` remains an editable project, not the production loader input.
+The optional loader shares Studio's compiler; required rules, comparisons,
+conditions and localized messages retain their runtime behavior.
+
+<CheckedSource fixture="docs/examples/portable.ts" region="portable-runtime" />
+
+Pass `schemaInput`, which can be a factory for structural conditions. Choose
+an adapter and view bindings to render snapshots; loading alone does not render
+controls. The returned render plan and source map are available to custom views.
+Core's controlled ownership is unchanged: `onChange` proposes values, and the
+owner accepts them through `update`. The example accepts immediately.
+
+Production defaults are generated from empty field values. To deploy intentional
+prefilled values, call `projectPortableForm(project, formUid, initialValue)` in
+trusted application tooling. Export never promotes the first scenario's answers
+into production defaults. Keep application context, service credentials, and
+controller state outside the definition. Supply the desired locale through
+controller context, for example `{ locale: 'de' }`.
+
+The `requirements` member lists the standard capability revision and exact
+service references. Register trusted implementations with
+`definePortableServiceBindings` and pass them as `serviceBindings` to the loader.
+Loading checks all bindings before producing a runnable result, and does not
+invoke services. Fix diagnostics before creating a controller; do not treat a
+partial compiler result as a runnable form.
+
+Test the same exported JSON with accepted values, conditional branches, locale
+changes, and delayed proposals. The package's contact fixture does this in Node
+without browser globals, and release checks install tarballs into a separate
+consumer. View owners still supply labels, issue relationships, keyboard support,
+and teardown. Definitions are limited to 5 MiB and 1,000 expanded nodes per form;
+large regular-expression rules and application services need appropriate host budgets.
+
+This loader uses the UI validation contract. It does not decode untrusted
+submission payloads or make hidden fields authoritative. Server acceptance,
+custom portable field descriptors, and hybrid composition are later slices.
+Code-authored forms continue to use core directly, including custom callbacks,
+fields, codecs and renderers, without a portable definition or registry.
+
+Next: read the [portable loader reference](/reference/authoring).
+
+## Evidence
+
+- [Public declarations and loader](https://github.com/unic/stages/blob/master/packages/authoring/src/portable.ts)
+- [Contact, bindings and fragment regressions](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
+- [Studio exporter](https://github.com/unic/stages/blob/master/studio/src/projects/artifacts.ts)
+- [Installed consumer verification](https://github.com/unic/stages/blob/master/scripts/verify-v1-packages.mjs)

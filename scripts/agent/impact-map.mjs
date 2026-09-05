@@ -4,12 +4,15 @@ import { fileURLToPath } from "node:url";
 
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-const packageNames = ["core", "dom", "react", "vue", "angular", "test-kit"];
+const packageNames = ["core", "dom", "react", "vue", "angular", "test-kit", "authoring"];
 const exampleNames = ["vanilla", "react", "vue", "angular"];
 const adapterNames = ["dom", "react", "vue", "angular"];
 const adapterExamples = { dom: "vanilla", react: "react", vue: "vue", angular: "angular" };
 
 export const commands = Object.freeze({
+  "build:authoring": "npx tsc -p packages/authoring/tsconfig.build.json",
+  "typecheck:authoring": "npx tsc -p packages/authoring/tsconfig.test.json --noEmit",
+  "test:authoring": "node --test packages/authoring/test/*.test.mjs",
   "build:core": "npx tsc -p packages/core/tsconfig.build.json",
   "typecheck:core": "npx tsc -p packages/core/tsconfig.json --noEmit",
   "test:core": "node --test packages/core/test/*.test.mjs",
@@ -42,7 +45,7 @@ export const commands = Object.freeze({
   "e2e:angular": "npm run test:examples:v1 -- --adapter angular",
   "check:docs": "npm run check:docs:v1",
   "build:docs": "npm --prefix docs run build",
-  "test:studio": "npm --prefix studio run test:v1",
+  "test:studio": "npx tsc -p packages/core/tsconfig.build.json && npx tsc -p packages/authoring/tsconfig.build.json && npm --prefix studio run test:v1",
   "build:studio": "npm --prefix studio run build",
   "check:v1": "npm run check:v1",
   "test:v1": "npm run test:v1",
@@ -98,6 +101,12 @@ export function commandsForPath(inputPath) {
   const file = normalize(inputPath);
 
   if (file.startsWith("packages/") && file.endsWith("/package.json")) return ["release"];
+
+  if (["packages/authoring/src/index.ts", "packages/authoring/src/studio.ts", "packages/authoring/src/portable.ts", "packages/authoring/src/document/types.ts", "packages/authoring/portable.schema.json"].includes(file)) return ["release"];
+
+  if (file.startsWith("packages/authoring/")) {
+    return ["build:core", "build:authoring", "typecheck:authoring", "test:authoring", "test:studio"];
+  }
 
   if (file.startsWith("packages/core/src/")) {
     return publicCoreFiles.has(file) ? ["release"] : coreFocused;

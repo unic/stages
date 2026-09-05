@@ -5,21 +5,21 @@ For Studio authors and compiler maintainers. Prerequisite: the
 [portable-form implementation plan](../../docs/V1_PORTABLE_FORM_SUCCESS_PLAN.md).
 
 Document acceptance means a project can be preserved, not that all its behavior
-can execute. The production loader and authoritative server validator described
-in the plan are still unimplemented. Direct code-authored core schemas remain
+can execute. The S1 production loader is implemented in `@stages/authoring`; authoritative
+server submission validation remains unimplemented. Direct code-authored core schemas remain
 supported independently of this document layer.
 
 | Capability | Stored document | Studio editing | Preview | Executable export | Authoritative server |
 | --- | --- | --- | --- | --- | --- |
-| Built-in fields and static structure | Accepted | Supported | Supported | Existing static subset | Not implemented |
-| Required, comparison, range, conditional validation | Accepted | Supported | Supported | Rejected until shared loader exists | Not implemented |
-| Row/item validator dependencies | Accepted | Supported | Conservative outer-collection invalidation | Rejected until shared loader exists | Not implemented |
-| Context/interface and extension validation dependencies | Accepted | Supported | Host updates invalidate results | Rejected until shared loader exists | Not implemented |
+| Built-in fields and static structure | Accepted | Supported | Supported | Shared loader + existing static subset | Not implemented |
+| Required, comparison, range, conditional validation | Accepted | Supported | Supported | Shared loader | Not implemented |
+| Row/item validator dependencies | Accepted | Supported | Conservative outer-collection invalidation | Shared loader | Not implemented |
+| Context/interface and extension validation dependencies | Accepted | Supported | Host updates invalidate results | Shared loader | Not implemented |
 | Interaction metadata or event references in validators | Preserved | Not offered | Compile error | Rejected | Not implemented |
-| Derived presentation props | Accepted | Supported | Supported | Rejected until shared loader exists | Not applicable |
+| Derived presentation props | Accepted | Supported | Supported | Shared loader | Not applicable |
 | Persisted `computed` expression | Preserved | Removal only | Compile error | Rejected | Not implemented |
 | Row/item-dependent structural presence | Preserved | Not offered | Compile error | Rejected | Not implemented |
-| Fragment parameter names | Preserved, reserved | Not offered | No argument semantics | No argument semantics | Not implemented |
+| Fragment parameter names | Preserved, reserved | Not offered | No argument semantics | Rejected when parameterized | Not implemented |
 
 ## Authoring a sibling comparison
 

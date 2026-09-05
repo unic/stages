@@ -39,6 +39,11 @@
       "entry": ["test/**/*.test.mjs"],
       "project": ["src/**/*.ts", "test/**/*.mjs"]
     },
+    "packages/authoring": {
+      "entry": ["test/**/*.test.mjs", "test-d/**/*.ts"],
+      "ignoreDependencies": ["@stages/core"],
+      "project": ["src/**/*.ts", "test/**/*.mjs", "test-d/**/*.ts"]
+    },
     "packages/test-kit": {
       "entry": ["src/index.{ts,tsx}", "test/**/*.test.mjs"],
       "project": ["src/**/*.{ts,tsx}", "test/**/*.mjs"]

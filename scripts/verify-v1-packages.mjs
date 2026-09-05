@@ -26,7 +26,7 @@ function run(command, args, cwd = repository) {
   return result.stdout.trim();
 }
 
-const packageDirectories = ["core", "dom", "react", "vue", "angular", "test-kit"];
+const packageDirectories = ["core", "dom", "react", "vue", "angular", "test-kit", "authoring"];
 const expectedRepository = "git+https://github.com/unic/stages.git";
 const rootLicense = readFileSync(join(repository, "LICENSE"), "utf8");
 
@@ -74,7 +74,7 @@ try {
     assert(files.includes("dist/index.js"), `${sourceManifest.name} is missing its ESM entry.`);
     assert(files.includes("dist/index.d.ts"), `${sourceManifest.name} is missing its declaration entry.`);
     assert(
-      files.every((path) => path === "package.json" || path === "README.md" || path === "LICENSE" || path.startsWith("dist/") || path.startsWith("src/")),
+      files.every((path) => path === "package.json" || path === "README.md" || path === "LICENSE" || (directory === "authoring" && path === "portable.schema.json") || path.startsWith("dist/") || path.startsWith("src/")),
       `${sourceManifest.name} contains files outside package.json, README.md, LICENSE, dist/, and src/.`,
     );
     assert.equal(readFileSync(join(packageDirectory, "LICENSE"), "utf8"), rootLicense);
@@ -110,6 +110,21 @@ try {
   }
 
   assert.equal(coreManifest.dependencies, undefined, "@stages/core must not have runtime dependencies.");
+  // Install only core + authoring: no framework packages, workspace symlinks, or browser globals.
+  const portableConsumer = join(temporaryRoot, "portable-consumer");
+  mkdirSync(portableConsumer);
+  writeFileSync(join(portableConsumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
+  run("npm", ["install", "--offline", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false", artifacts.get("@stages/core"), artifacts.get("@stages/authoring")], portableConsumer);
+  for (const [source, target] of [["packed-contact.mjs", "packed-contact.mjs"], ["contact-form-v1.json", "contact-form-v1.json"]]) {
+    writeFileSync(join(portableConsumer, target), readFileSync(join(repository, "packages/authoring/test/fixtures", source)));
+  }
+  const installedAuthoring = JSON.parse(readFileSync(join(portableConsumer, "node_modules/@stages/authoring/package.json"), "utf8"));
+  assert.deepEqual(installedAuthoring.dependencies, { "@stages/core": expectedVersion });
+  assert.equal(installedAuthoring.peerDependencies, undefined);
+  run("node", ["packed-contact.mjs"], portableConsumer);
+  writeFileSync(join(portableConsumer, "contract.ts"), readFileSync(join(repository, "packages/authoring/test-d/contract.ts"), "utf8").replace("../src/index.js", "@stages/authoring"));
+  run(process.execPath, [join(repository, "node_modules/typescript/bin/tsc"), "--noEmit", "--strict", "--exactOptionalPropertyTypes", "--skipLibCheck", "--target", "ES2022", "--module", "NodeNext", "--moduleResolution", "NodeNext", "contract.ts"], portableConsumer);
+
   const domManifest = JSON.parse(readFileSync(join(repository, "packages/dom/package.json"), "utf8"));
   assert.deepEqual(domManifest.dependencies, { "@stages/core": coreManifest.version });
   const reactManifest = JSON.parse(readFileSync(join(repository, "packages/react/package.json"), "utf8"));
@@ -142,6 +157,7 @@ try {
     artifacts.get("@stages/vue"),
     artifacts.get("@stages/angular"),
     artifacts.get("@stages/test-kit"),
+    artifacts.get("@stages/authoring"),
   ], consumerDirectory);
   symlinkSync(join(repository, "node_modules/react"), join(consumerDirectory, "node_modules/react"), "dir");
   symlinkSync(join(repository, "node_modules/vue"), join(consumerDirectory, "node_modules/vue"), "dir");
@@ -329,7 +345,7 @@ adapter.destroy();
   }, null, 2));
   run(join(repository, "node_modules/.bin/tsc"), ["-p", join(consumerDirectory, "tsconfig.json")], consumerDirectory);
 
-  console.log("Verified 6 release-candidate package tarballs and an isolated packed runtime/type consumer.");
+  console.log(`Verified ${packageDirectories.length} release-candidate package tarballs, portable Node loading, and isolated runtime/type consumers.`);
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }

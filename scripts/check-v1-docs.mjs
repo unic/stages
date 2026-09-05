@@ -484,7 +484,7 @@ for (const nonFeature of manifest.contracts.architectureNonFeatures) {
   assert.ok(boundaryPage.includes(nonFeature), `core boundaries are missing ${nonFeature}`);
 }
 const packageManifests = await Promise.all(
-  ["core", "dom", "react", "vue", "angular", "test-kit"].map(async (name) =>
+  ["core", "dom", "react", "vue", "angular", "test-kit", "authoring"].map(async (name) =>
     JSON.parse(await readRoot(`packages/${name}/package.json`))),
 );
 const packageVersions = packageManifests.map(({ version }) => version);
@@ -936,6 +936,7 @@ assertSameInventory(
 );
 
 const renderedRegions = [
+  { fixture: "docs/examples/portable.ts", region: "portable-runtime", page: "start/portable-forms.mdx" },
   { fixture: "docs/examples/recipes.ts", region: "server-save-rejection", page: "recipes/server-save-and-rejection.mdx" },
   { fixture: "docs/examples/recipes.ts", region: "async-options", page: "recipes/async-options.mdx" },
   { fixture: "docs/examples/transforms-and-batching.ts", region: "transform-pipeline", page: "recipes/cross-field-calculation.mdx" },
@@ -1055,7 +1056,7 @@ assert.doesNotMatch(migration, /controller\.reset\(\)|focusFirstVisibleIssue\(\)
 assert.match(api, /MIGRATING_TO_V1\.md/);
 
 const packageReadmes = await Promise.all(
-  ["core", "dom", "react", "vue", "angular", "test-kit"].map((name) => readRoot(`packages/${name}/README.md`)),
+  ["core", "dom", "react", "vue", "angular", "test-kit", "authoring"].map((name) => readRoot(`packages/${name}/README.md`)),
 );
 for (const readme of packageReadmes) assert.match(readme, /MIGRATING_TO_V1\.md/);
 

@@ -1,3 +1,4 @@
+import { loadPortableForm } from "@stages/authoring";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -40,6 +41,7 @@ describe("Studio project artifacts", () => {
     expect(schema?.source).toBe(golden);
     expect(first.value.artifacts.map(({ path }) => path)).toEqual([
       "project.stages.json",
+      "form_event/form.stages.json",
       "form_event/schema.ts",
       "form_event/fields.ts",
       "form_event/initial-value.ts",
@@ -115,7 +117,7 @@ try {
     execFileSync(process.execPath, [join(root, "dist/run.js")], { cwd: root, stdio: "inherit" });
   });
 
-  it.each(["presence", "reducer"] as const)("rejects unsupported %s behavior while preserving canonical JSON", async (capability) => {
+  it.each(["presence", "reducer"] as const)("exports %s through the shared loader while preserving canonical JSON", async (capability) => {
     const project = structuredClone(projectV1) as unknown as StudioProjectDocument;
     const form = project.forms[toUid("form_event")]!;
     const field = form.nodes[toUid("field_title")] as StudioFieldNode;
@@ -145,10 +147,24 @@ try {
       controller.destroy();
     }
     const result = generateStudioExportBundle(changed);
-    expect(result).toMatchObject({ ok: false, diagnostics: [expect.objectContaining({
-      code: "export.executable-binding-required", formUid: form.uid,
-      propertyPath: capability === "presence" ? ["schemaInput"] : ["fields", "text__studio__field_title"],
-    })] });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const artifact = result.value.artifacts.find(({ path }) => path.endsWith("/form.stages.json"))!;
+      const loaded = loadPortableForm(artifact.source);
+      expect(loaded.ok).toBe(true);
+      if (loaded.ok) {
+        const runtime = stages({ schema: loaded.value.schemaInput, fields: loaded.value.fields, value: { event: { title: "Launch" } }, context: { showTitle: false }, onChange: change => proposals.push(change.value) });
+        try {
+          if (capability === "presence") expect(runtime.getSnapshot().nodes[0]).toMatchObject({ id: "event", nodes: [] });
+          else {
+            runtime.dispatch(fieldEvent("clear", ["event", "title"]));
+            await Promise.resolve();
+            expect(proposals.at(-1)).toEqual({ event: { title: "" } });
+            expect(runtime.getSnapshot().value).toEqual({ event: { title: "Launch" } });
+          }
+        } finally { runtime.destroy(); }
+      }
+    }
     const imported = importStudioProject(serializeStudioProject(changed), { supportedDefinitions: definitions });
     expect(imported.ok).toBe(true);
     if (imported.ok) expect(imported.value).toEqual(changed);
@@ -166,7 +182,7 @@ try {
     const result = generateStudioExportBundle(mixed);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: "compiler.unsupported-field-definition", formUid: uid, entityUid: ratingUid }));
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: "document.unsupported-definition-version", formUid: uid, entityUid: ratingUid }));
     expect(JSON.parse(result.artifacts[0]!.source)).toEqual(mixed);
     expect(result.artifacts.some(({ path }) => path === "form_event/schema.ts")).toBe(true);
     expect(result.artifacts.some(({ path }) => path === "form_legacy/schema.ts")).toBe(false);
@@ -174,13 +190,38 @@ try {
     expect(generateStudioExportBundle(mixed)).toEqual(result);
   });
 
-  it("reports executable behavior instead of emitting closure-dependent source", () => {
+  it("exports declarative disabled behavior through the loader", () => {
     const project = structuredClone(projectV1) as unknown as StudioProjectDocument;
     const form = project.forms["form_event" as keyof typeof project.forms]!;
     const field = form.nodes["field_title" as keyof typeof form.nodes]!;
     const dynamic = { ...project, forms: { ...project.forms, [form.uid]: { ...form, nodes: { ...form.nodes, [field.uid]: { ...field, behavior: { disabled: { kind: "reference", scope: "context", path: ["locked"] } } } } } } } as StudioProjectDocument;
     const result = generateStudioExportBundle(dynamic);
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: "export.executable-binding-required" }));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.artifacts.find(({ path }) => path.endsWith("/portable.ts"))?.source).toContain("loadPortableForm");
   });
+});
+
+it("exports the shared required/conditional/localized contact fixture used by packed consumers", async () => {
+  const source = JSON.parse(await readFile(join(process.cwd(), "../packages/authoring/test/fixtures/contact-project-v1.json"), "utf8")) as StudioProjectDocument;
+  const bundle = generateStudioExportBundle(source);
+  expect(bundle.ok).toBe(true);
+  if (!bundle.ok) return;
+  const artifact = bundle.value.artifacts.find(({ path }) => path === "contact/form.stages.json")!;
+  expect(artifact.source).toBe(await readFile(join(process.cwd(), "../packages/authoring/test/fixtures/contact-form-v1.json"), "utf8"));
+  const root = await mkdtemp(join(tmpdir(), "stages-portable-export-"));
+  temporaryDirectories.push(root);
+  for (const generated of bundle.value.artifacts.filter(({ path }) => /\.(?:ts|tsx)$/.test(path))) {
+    const target = join(root, generated.path);
+    await mkdir(join(target, ".."), { recursive: true });
+    await writeFile(target, generated.source);
+  }
+  await symlink(join(process.cwd(), "node_modules"), join(root, "node_modules"), "dir");
+  await writeFile(join(root, "package.json"), JSON.stringify({ type: "module" }));
+  await writeFile(join(root, "tsconfig.json"), JSON.stringify({ compilerOptions: {
+    types: ["react"], target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext", strict: true,
+    jsx: "react-jsx", esModuleInterop: true, skipLibCheck: true, noEmit: true,
+  }, include: ["contact"] }));
+  execFileSync(join(process.cwd(), "node_modules/.bin/tsc"), ["-p", join(root, "tsconfig.json")], { stdio: "pipe" });
+
+  expect(bundle.value.artifacts.find(({ path }) => path === "contact/portable.ts")?.source).toContain("loadPortableForm");
 });

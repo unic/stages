@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-export const publicPackages = ["core", "dom", "react", "vue", "angular", "test-kit"];
+export const publicPackages = ["core", "dom", "react", "vue", "angular", "test-kit", "authoring"];
 
 function declarationFiles(directory, relativeDirectory = "") {
   if (!existsSync(directory)) return [];

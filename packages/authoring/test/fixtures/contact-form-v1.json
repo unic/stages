@@ -1,0 +1,164 @@
+{
+  "defaultLocale": "en",
+  "form": {
+    "nodes": {
+      "company": {
+        "behavior": {
+          "when": {
+            "kind": "reference",
+            "path": [
+              "subscribe"
+            ],
+            "scope": "value"
+          }
+        },
+        "definition": {
+          "key": "text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "label": "company"
+        },
+        "runtimeId": "company",
+        "uid": "company",
+        "validators": [
+          {
+            "kind": "required"
+          }
+        ]
+      },
+      "confirm": {
+        "definition": {
+          "key": "text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "label": "confirm"
+        },
+        "runtimeId": "confirm",
+        "uid": "confirm",
+        "validators": [
+          {
+            "kind": "comparison",
+            "message": "Emails must match",
+            "operator": "===",
+            "other": {
+              "kind": "reference",
+              "path": [
+                "email"
+              ],
+              "scope": "value"
+            }
+          }
+        ]
+      },
+      "email": {
+        "definition": {
+          "key": "text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "label": "email"
+        },
+        "runtimeId": "email",
+        "uid": "email",
+        "validators": [
+          {
+            "kind": "required"
+          },
+          {
+            "kind": "pattern",
+            "message": "Enter an email",
+            "pattern": "^[^@]+@[^@]+\\.[^@]+$"
+          }
+        ]
+      },
+      "name": {
+        "definition": {
+          "key": "text",
+          "version": 1
+        },
+        "kind": "field",
+        "localizedProps": {
+          "label": "name"
+        },
+        "props": {
+          "label": "name"
+        },
+        "runtimeId": "name",
+        "uid": "name",
+        "validators": [
+          {
+            "kind": "required",
+            "message": {
+              "default": "Required",
+              "key": "required"
+            }
+          }
+        ]
+      },
+      "subscribe": {
+        "definition": {
+          "key": "checkbox",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "label": "subscribe"
+        },
+        "runtimeId": "subscribe",
+        "uid": "subscribe"
+      }
+    },
+    "rootNodeUids": [
+      "name",
+      "email",
+      "confirm",
+      "subscribe",
+      "company"
+    ],
+    "runtime": {
+      "schemaId": "contact",
+      "schemaVersion": 1
+    },
+    "settings": {},
+    "title": "Contact",
+    "uid": "contact"
+  },
+  "format": "stages-portable-form",
+  "formatVersion": 1,
+  "initialValue": {
+    "company": "",
+    "confirm": "",
+    "email": "",
+    "name": "",
+    "subscribe": false
+  },
+  "requirements": {
+    "capabilities": [
+      "stages.standard@1"
+    ],
+    "services": []
+  },
+  "resources": {
+    "locales": {
+      "de": {
+        "label": "de",
+        "messages": {
+          "name": "Name",
+          "required": "Name ist erforderlich"
+        }
+      },
+      "en": {
+        "label": "en",
+        "messages": {
+          "name": "Name",
+          "required": "Name is required"
+        }
+      }
+    }
+  }
+}

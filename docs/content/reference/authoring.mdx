@@ -1,0 +1,88 @@
+---
+title: Portable authoring API
+description: Portable form format, loader results, requirements and compatibility boundaries.
+apiVersion: 1.0.0-alpha.0
+lastReviewed: 2026-09-03
+---
+
+# Portable authoring API
+
+**For:** runtime integrators and authoring-tool maintainers.
+**Prerequisites:** [load a portable form](/start/portable-forms).
+
+## Root entry point
+
+| Export | Contract |
+| --- | --- |
+| `PortableFormDefinition` | Immutable JSON envelope: `format: 'stages-portable-form'`, `formatVersion: 1`, resolved `form`, `defaultLocale`, localization `resources`, explicit `initialValue`, and exact `requirements`. `form` retains the project-v1 node vocabulary, runtime identity, title, roots, rules, events and optional theme settings, but has no scenarios or fragment nodes. Legacy node metadata is excluded. |
+| `PortableRequirements` | `capabilities` is exactly `['stages.standard@1']`. `services` contains unique key/version references sorted by key then numeric version; it must exactly match all service rules. Extra, missing, or reordered references fail validation. |
+| `PortableDiagnostic` | Document/compiler diagnostic with `code`, `severity`, `source`, `message`, optional form/entity identity and property/runtime location. Existing `document.*` and `compiler.*` codes remain meaningful. |
+| `PortableResult<T>` | Discriminated result: `{ ok: true, value: T }` or `{ ok: false, diagnostics }`. Failure has no executable value. |
+| `PortableLoadOptions` | Optional trusted `serviceBindings` registry. No source evaluator, module resolver, browser host or implicit preview mocks. |
+| `LoadedPortableForm` | Shared compiler outputs `schema`, `schemaInput`, `fields`, `expandedForm`, `renderPlan`, `sourceMap`, and `diagnostics`, plus immutable `definition` and `initialValue`. Use `schemaInput` for execution; `schema` alone omits dynamic structure. |
+| `validatePortableForm(input: unknown)` | Checks JSON safety, envelope version/shape, graph references, field versions, resource format and exact requirements. Returns a deep frozen copy. Does not resolve services or establish that every accepted authoring feature can execute. |
+| `loadPortableForm(input: unknown, options?)` | Accepts parsed JSON or JSON text. Runs validation, resolves each service exactly once, then compiles with the shared compiler. Rejects unsupported computed values, row-dependent structural presence, invalid scopes and other compiler errors. Returns `PortableResult<LoadedPortableForm>`. Never invokes a service during load. |
+| `projectPortableForm(project, formUid, initialValue?)` | Validates the selected project form, expands its linked fragments, strips scenario answers, legacy metadata and non-theme settings, and copies only referenced localization messages. The graph is bounded before expansion to 1,000 nodes. Missing/cyclic/parameterized fragments fail. Omitted `initialValue` uses empty built-in field values; explicit JSON values, including null, are preserved. Projection checks compiler support with inert service placeholders; real bindings are required to load the artifact. |
+| `serializePortableForm(definition)` | Serializes a typed definition with recursively sorted keys, two-space indentation and a final newline. Does not validate; validate untrusted data first. |
+| `PortableServiceBinding` | Exact `key` and positive integer `version` matching the definition reference, with trusted `invoke({ input, validation })` returning a promise of success or structured failure. Cancellation and issue semantics follow core validation. |
+| `PortableServiceBindings` | Registry with `resolve(reference)` returning an exact binding or undefined. A mismatched result fails loading. Host resolver exceptions propagate as application errors. |
+| `definePortableServiceBindings(bindings)` | Creates an immutable exact-version registry and freezes bindings; duplicate key/version pairs throw `TypeError`. Implementations remain application-owned closures. |
+
+## Format and failure behavior
+
+`@stages/authoring/portable.schema.json` publishes a generated JSON Schema
+2020-12 structural contract. Always run semantic validation and loading too:
+JSON Schema does not prove graph references, cycle absence, execution scope or
+host binding availability. Format version 1 is the first portable format; no
+other portable versions are accepted. Existing Studio project-v0/v1 migration
+remains available through the shared authoring surface. This does not change
+core's serialized-state envelope or provide automatic runtime-state migrations.
+
+The standard revision includes the existing built-in field catalog and bounded
+expression language, ordinary required/length/range/pattern/comparison/collection
+rules, conditional validation, transforms/reducers and localization. Unsupported
+fields or definition versions fail. Resources support localization only; custom
+portable codecs, computed values, and fragment parameters are not supported.
+The runtime value contract remains core's UI contract. An `initialValue` being
+JSON-safe does not mean it passes a submission schema or business validation.
+
+Portable failures use `portable.invalid-format`, `portable.unsupported-version`,
+`portable.unknown-property`, `portable.missing-initial-value`, `portable.scenarios`,
+`portable.unresolved-graph`, `portable.unsupported-resource`,
+`portable.requirements-mismatch`, `portable.missing-service-binding`,
+`portable.size-limit`, `portable.invalid-json`, `portable.missing-form`, and
+`portable.fragment-expansion`. Messages explain the failed property or required
+binding. JSON/document and compiler failures retain their existing codes and
+source paths; document paths are expressed through the validated form graph.
+No controller is created on failure. Successful loading does not mutate the
+caller's data, accept proposals, start async validation, or retain controller state.
+
+## Shared Studio authoring surface
+
+`@stages/authoring/studio` is the extracted project-v1 authoring surface. It keeps
+Studio-prefixed declarations so the existing editor, fixtures and migration
+callers retain source compatibility. It exports the shared document validator,
+serializer, migrations and UID utilities; expression declarations, evaluation and
+validation; built-in field/presentation catalogs and trusted binding helpers;
+localization; compiler outputs, source-map utilities, rule and transform compilers.
+These functions retain their pre-extraction signatures and behavior. The emitted
+API report inventories this compatibility surface. Studio-specific commands,
+history, scenarios used as service mocks, editor state, and preview lifecycle
+remain in Studio; none is required by production loading.
+
+This lower-level compiler assumes validated authoring input. It may return a
+partial graph with error diagnostics for editor recovery. Production consumers
+should use the root loader, which refuses such graphs. The `renderPlan` does not
+supply view components. Changing views does not change the compiler's runtime
+identity, which remains the form's explicit schema ID and numeric version.
+Definitions do not yet carry deployment fingerprints; maintain deployment
+revision identity in the application until the durable-release slice.
+
+Next: [choose a renderer](/start/installation).
+
+## Evidence
+
+- [Root exports](https://github.com/unic/stages/blob/master/packages/authoring/src/index.ts)
+- [Strict contract fixture](https://github.com/unic/stages/blob/master/packages/authoring/test-d/contract.ts)
+- [Runtime tests](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
+- [Shared API report](https://github.com/unic/stages/blob/master/contracts/public-api/authoring.api.json)

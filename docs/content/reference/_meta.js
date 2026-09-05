@@ -1,4 +1,5 @@
 export default {
+  "authoring": "Portable authoring",
   "core": "Core",
   "react": "React",
   "vue": "Vue",

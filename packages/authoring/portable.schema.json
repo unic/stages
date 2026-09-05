@@ -1,0 +1,5029 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stages portable form v1",
+  "description": "Structural schema. Also run validatePortableForm and loadPortableForm for graph, version, capability, binding, and scope checks.",
+  "$ref": "#/$defs/PortableFormDefinition",
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      ]
+    },
+    "PortableFormDefinition": {
+      "type": "object",
+      "required": [
+        "format",
+        "formatVersion",
+        "form",
+        "defaultLocale",
+        "resources",
+        "initialValue",
+        "requirements"
+      ],
+      "properties": {
+        "format": {
+          "const": "stages-portable-form"
+        },
+        "formatVersion": {
+          "const": 1
+        },
+        "form": {
+          "$ref": "#/$defs/Omit"
+        },
+        "defaultLocale": {
+          "type": "string"
+        },
+        "resources": {
+          "$ref": "#/$defs/StudioResourceCatalog"
+        },
+        "initialValue": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "requirements": {
+          "$ref": "#/$defs/PortableRequirements"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Omit": {
+      "type": "object",
+      "required": [
+        "uid",
+        "title",
+        "runtime",
+        "rootNodeUids",
+        "nodes",
+        "settings"
+      ],
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "runtime": {
+          "$ref": "#/$defs/Object"
+        },
+        "rootNodeUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "nodes": {
+          "$ref": "#/$defs/Readonly"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioEventDefinition"
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "settings": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object": {
+      "type": "object",
+      "required": [
+        "schemaId",
+        "schemaVersion"
+      ],
+      "properties": {
+        "schemaId": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Readonly": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/StudioBlockNode"
+          },
+          {
+            "$ref": "#/$defs/StudioHomogeneousCollectionNode"
+          },
+          {
+            "$ref": "#/$defs/StudioVariantCollectionNode"
+          },
+          {
+            "$ref": "#/$defs/StudioFieldNode"
+          },
+          {
+            "$ref": "#/$defs/StudioFragmentInstanceNode"
+          },
+          {
+            "$ref": "#/$defs/StudioGroupNode"
+          },
+          {
+            "$ref": "#/$defs/StudioStageNode"
+          },
+          {
+            "$ref": "#/$defs/StudioVariantNode"
+          },
+          {
+            "$ref": "#/$defs/StudioWizardNode"
+          }
+        ]
+      }
+    },
+    "StudioBlockNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "definition",
+        "props",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "block"
+        },
+        "definition": {
+          "$ref": "#/$defs/StudioDefinitionRef"
+        },
+        "props": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioDefinitionRef": {
+      "type": "object",
+      "required": [
+        "key",
+        "version"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "JsonObject": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "StudioNodeBehavior": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "disabled": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "presentWhen": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_1": {
+      "type": "object",
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "literal"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "const": false
+            },
+            {
+              "const": true
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_2": {
+      "type": "object",
+      "required": [
+        "kind",
+        "scope",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "reference"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "const": "value"
+            },
+            {
+              "const": "row"
+            },
+            {
+              "const": "context"
+            },
+            {
+              "const": "extension"
+            },
+            {
+              "const": "metadata"
+            },
+            {
+              "const": "event"
+            },
+            {
+              "const": "interface"
+            },
+            {
+              "const": "item"
+            }
+          ]
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_3": {
+      "type": "object",
+      "required": [
+        "kind",
+        "operator",
+        "operand"
+      ],
+      "properties": {
+        "kind": {
+          "const": "unary"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "const": "!"
+            },
+            {
+              "const": "-"
+            }
+          ]
+        },
+        "operand": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_4": {
+      "type": "object",
+      "required": [
+        "kind",
+        "operator",
+        "left",
+        "right"
+      ],
+      "properties": {
+        "kind": {
+          "const": "binary"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "const": "-"
+            },
+            {
+              "const": "+"
+            },
+            {
+              "const": "*"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "const": "%"
+            },
+            {
+              "const": "==="
+            },
+            {
+              "const": "!=="
+            },
+            {
+              "const": "<"
+            },
+            {
+              "const": "<="
+            },
+            {
+              "const": ">"
+            },
+            {
+              "const": ">="
+            },
+            {
+              "const": "&&"
+            },
+            {
+              "const": "||"
+            },
+            {
+              "const": "??"
+            }
+          ]
+        },
+        "left": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "right": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_5": {
+      "type": "object",
+      "required": [
+        "kind",
+        "condition",
+        "whenTrue",
+        "whenFalse"
+      ],
+      "properties": {
+        "kind": {
+          "const": "conditional"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "whenTrue": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "whenFalse": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Readonly_1": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "StudioHomogeneousCollectionNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "uid",
+        "childUids"
+      ],
+      "properties": {
+        "kind": {
+          "const": "collection"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "initialRows": {
+          "type": "number"
+        },
+        "itemKey": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_6"
+            },
+            {
+              "$ref": "#/$defs/Object_7"
+            }
+          ]
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "childUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "discriminator": false,
+        "variantUids": false
+      },
+      "additionalProperties": false
+    },
+    "Object_6": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "index"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_7": {
+      "type": "object",
+      "required": [
+        "kind",
+        "property"
+      ],
+      "properties": {
+        "kind": {
+          "const": "property"
+        },
+        "property": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_8": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "required"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioLocalizedValidationMessage": {
+      "type": "object",
+      "required": [
+        "default"
+      ],
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "translations": {
+          "$ref": "#/$defs/Readonly_1"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_9": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "length"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_10": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "range"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_11": {
+      "type": "object",
+      "required": [
+        "kind",
+        "pattern"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "pattern"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "flags": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_12": {
+      "type": "object",
+      "required": [
+        "kind",
+        "operator",
+        "other"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "comparison"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "const": "==="
+            },
+            {
+              "const": "!=="
+            },
+            {
+              "const": "<"
+            },
+            {
+              "const": "<="
+            },
+            {
+              "const": ">"
+            },
+            {
+              "const": ">="
+            }
+          ]
+        },
+        "other": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_13": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "collection"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "uniqueBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_14": {
+      "type": "object",
+      "required": [
+        "kind",
+        "service"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "revealOn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/StudioLocalizedValidationMessage"
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "includeDisabled": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        },
+        "issuePath": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "kind": {
+          "const": "service"
+        },
+        "service": {
+          "$ref": "#/$defs/StudioDefinitionRef"
+        },
+        "request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioLogicRule": {
+      "type": "object",
+      "required": [
+        "id",
+        "on",
+        "actions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_15"
+              },
+              {
+                "$ref": "#/$defs/Object_18"
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_15": {
+      "type": "object",
+      "required": [
+        "op",
+        "target",
+        "value"
+      ],
+      "properties": {
+        "op": {
+          "const": "set"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_16"
+            },
+            {
+              "$ref": "#/$defs/Object_17"
+            }
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_16": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "event-target"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_17": {
+      "type": "object",
+      "required": [
+        "kind",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "node"
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_18": {
+      "type": "object",
+      "required": [
+        "op",
+        "target"
+      ],
+      "properties": {
+        "op": {
+          "const": "remove"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_16"
+            },
+            {
+              "$ref": "#/$defs/Object_17"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioVariantCollectionNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "uid",
+        "discriminator",
+        "variantUids"
+      ],
+      "properties": {
+        "kind": {
+          "const": "collection"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "initialRows": {
+          "type": "number"
+        },
+        "itemKey": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_6"
+            },
+            {
+              "$ref": "#/$defs/Object_7"
+            }
+          ]
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "childUids": false,
+        "discriminator": {
+          "type": "string"
+        },
+        "variantUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "initialVariantUid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioFieldNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "definition",
+        "props",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "field"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "definition": {
+          "$ref": "#/$defs/StudioDefinitionRef"
+        },
+        "props": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "computed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "derivedProps": {
+          "$ref": "#/$defs/Readonly_2"
+        },
+        "format": {
+          "$ref": "#/$defs/Object_19"
+        },
+        "reducers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Readonly_2": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Object_1"
+          },
+          {
+            "$ref": "#/$defs/Object_2"
+          },
+          {
+            "$ref": "#/$defs/Object_3"
+          },
+          {
+            "$ref": "#/$defs/Object_4"
+          },
+          {
+            "$ref": "#/$defs/Object_5"
+          }
+        ]
+      }
+    },
+    "Object_19": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "const": "number"
+            },
+            {
+              "const": "date"
+            }
+          ]
+        },
+        "options": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioFragmentInstanceNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "fragmentUid",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "fragment"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "fragmentUid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "overrides": {
+          "$ref": "#/$defs/Readonly_3"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Readonly_3": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/StudioFragmentNodeOverride"
+      }
+    },
+    "StudioFragmentNodeOverride": {
+      "type": "object",
+      "properties": {
+        "runtimeId": {
+          "type": "string"
+        },
+        "props": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioGroupNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "childUids",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "group"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "childUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioStageNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "childUids",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "stage"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "childUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioVariantNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "childUids",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "variant"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "childUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioWizardNode": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runtimeId",
+        "stageUids",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "wizard"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "stageUids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        },
+        "initialStageUid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "navigation": {
+          "$ref": "#/$defs/Object_20"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Object_8"
+              },
+              {
+                "$ref": "#/$defs/Object_9"
+              },
+              {
+                "$ref": "#/$defs/Object_10"
+              },
+              {
+                "$ref": "#/$defs/Object_11"
+              },
+              {
+                "$ref": "#/$defs/Object_12"
+              },
+              {
+                "$ref": "#/$defs/Object_13"
+              },
+              {
+                "$ref": "#/$defs/Object_14"
+              }
+            ]
+          }
+        },
+        "transforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioLogicRule"
+          }
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        },
+        "presentation": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "behavior": {
+          "$ref": "#/$defs/StudioNodeBehavior"
+        },
+        "localizedProps": {
+          "$ref": "#/$defs/Readonly_1"
+        },
+        "legacy": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_20": {
+      "type": "object",
+      "properties": {
+        "validateCurrent": {
+          "type": "boolean"
+        },
+        "nonLinear": {
+          "type": "boolean"
+        },
+        "guard": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioEventDefinition": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "name",
+        "target"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_21"
+            },
+            {
+              "$ref": "#/$defs/Object_22"
+            }
+          ]
+        },
+        "payload": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Object_1"
+            },
+            {
+              "$ref": "#/$defs/Object_2"
+            },
+            {
+              "$ref": "#/$defs/Object_3"
+            },
+            {
+              "$ref": "#/$defs/Object_4"
+            },
+            {
+              "$ref": "#/$defs/Object_5"
+            }
+          ]
+        },
+        "source": {
+          "anyOf": [
+            {
+              "const": "user"
+            },
+            {
+              "const": "adapter"
+            },
+            {
+              "const": "system"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_21": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "form"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Object_22": {
+      "type": "object",
+      "required": [
+        "kind",
+        "uid"
+      ],
+      "properties": {
+        "kind": {
+          "const": "node"
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+          "not": {
+            "enum": [
+              "__proto__",
+              "prototype",
+              "constructor"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "StudioResourceCatalog": {
+      "type": "object",
+      "properties": {
+        "extensions": {
+          "$ref": "#/$defs/Object_23"
+        },
+        "locales": {
+          "$ref": "#/$defs/Object_32"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_23": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Object_24"
+          },
+          {
+            "$ref": "#/$defs/Object_26"
+          },
+          {
+            "$ref": "#/$defs/Object_27"
+          },
+          {
+            "$ref": "#/$defs/Object_28"
+          },
+          {
+            "$ref": "#/$defs/Object_29"
+          },
+          {
+            "$ref": "#/$defs/Object_30"
+          }
+        ]
+      }
+    },
+    "Object_24": {
+      "type": "object",
+      "required": [
+        "title",
+        "version",
+        "codec",
+        "toString",
+        "charAt",
+        "charCodeAt",
+        "concat",
+        "indexOf",
+        "lastIndexOf",
+        "localeCompare",
+        "match",
+        "replace",
+        "search",
+        "slice",
+        "split",
+        "substring",
+        "toLowerCase",
+        "toLocaleLowerCase",
+        "toUpperCase",
+        "toLocaleUpperCase",
+        "trim",
+        "length",
+        "substr",
+        "valueOf",
+        "codePointAt",
+        "includes",
+        "endsWith",
+        "normalize",
+        "repeat",
+        "startsWith",
+        "anchor",
+        "big",
+        "blink",
+        "bold",
+        "fixed",
+        "fontcolor",
+        "fontsize",
+        "italics",
+        "link",
+        "small",
+        "strike",
+        "sub",
+        "sup",
+        "padStart",
+        "padEnd",
+        "trimEnd",
+        "trimStart",
+        "trimLeft",
+        "trimRight",
+        "matchAll",
+        "replaceAll",
+        "at",
+        "__@iterator@64"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        },
+        "codec": {
+          "$ref": "#/$defs/Object_25"
+        },
+        "toString": {
+          "$ref": "#/$defs/toString"
+        },
+        "charAt": {
+          "$ref": "#/$defs/charAt"
+        },
+        "charCodeAt": {
+          "$ref": "#/$defs/charCodeAt"
+        },
+        "concat": {
+          "$ref": "#/$defs/concat"
+        },
+        "indexOf": {
+          "$ref": "#/$defs/indexOf"
+        },
+        "lastIndexOf": {
+          "$ref": "#/$defs/lastIndexOf"
+        },
+        "localeCompare": {
+          "$ref": "#/$defs/localeCompare"
+        },
+        "match": {
+          "$ref": "#/$defs/match"
+        },
+        "replace": {
+          "$ref": "#/$defs/replace"
+        },
+        "search": {
+          "$ref": "#/$defs/search"
+        },
+        "slice": {
+          "$ref": "#/$defs/slice"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "substring": {
+          "$ref": "#/$defs/substring"
+        },
+        "toLowerCase": {
+          "$ref": "#/$defs/toLowerCase"
+        },
+        "toLocaleLowerCase": {
+          "$ref": "#/$defs/toLocaleLowerCase"
+        },
+        "toUpperCase": {
+          "$ref": "#/$defs/toUpperCase"
+        },
+        "toLocaleUpperCase": {
+          "$ref": "#/$defs/toLocaleUpperCase"
+        },
+        "trim": {
+          "$ref": "#/$defs/trim"
+        },
+        "length": {
+          "type": "number"
+        },
+        "substr": {
+          "$ref": "#/$defs/substr"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf"
+        },
+        "codePointAt": {
+          "$ref": "#/$defs/codePointAt"
+        },
+        "includes": {
+          "$ref": "#/$defs/includes"
+        },
+        "endsWith": {
+          "$ref": "#/$defs/endsWith"
+        },
+        "normalize": {
+          "$ref": "#/$defs/normalize"
+        },
+        "repeat": {
+          "$ref": "#/$defs/repeat"
+        },
+        "startsWith": {
+          "$ref": "#/$defs/startsWith"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "big": {
+          "$ref": "#/$defs/big"
+        },
+        "blink": {
+          "$ref": "#/$defs/blink"
+        },
+        "bold": {
+          "$ref": "#/$defs/bold"
+        },
+        "fixed": {
+          "$ref": "#/$defs/fixed"
+        },
+        "fontcolor": {
+          "$ref": "#/$defs/fontcolor"
+        },
+        "fontsize": {
+          "$ref": "#/$defs/fontsize"
+        },
+        "italics": {
+          "$ref": "#/$defs/italics"
+        },
+        "link": {
+          "$ref": "#/$defs/link"
+        },
+        "small": {
+          "$ref": "#/$defs/small"
+        },
+        "strike": {
+          "$ref": "#/$defs/strike"
+        },
+        "sub": {
+          "$ref": "#/$defs/sub"
+        },
+        "sup": {
+          "$ref": "#/$defs/sup"
+        },
+        "padStart": {
+          "$ref": "#/$defs/padStart"
+        },
+        "padEnd": {
+          "$ref": "#/$defs/padEnd"
+        },
+        "trimEnd": {
+          "$ref": "#/$defs/trimEnd"
+        },
+        "trimStart": {
+          "$ref": "#/$defs/trimStart"
+        },
+        "trimLeft": {
+          "$ref": "#/$defs/trimLeft"
+        },
+        "trimRight": {
+          "$ref": "#/$defs/trimRight"
+        },
+        "matchAll": {
+          "$ref": "#/$defs/matchAll"
+        },
+        "replaceAll": {
+          "$ref": "#/$defs/replaceAll"
+        },
+        "at": {
+          "$ref": "#/$defs/at"
+        },
+        "__@iterator@64": {
+          "$ref": "#/$defs/___iterator_64"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_25": {
+      "type": "object",
+      "required": [
+        "key",
+        "version"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "toString": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "charAt": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "charCodeAt": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "concat": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "indexOf": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "lastIndexOf": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "localeCompare": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "replace": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "search": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "slice": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "split": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "substring": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLowerCase": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLocaleLowerCase": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toUpperCase": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLocaleUpperCase": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "trim": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "substr": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "valueOf": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "codePointAt": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "includes": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "endsWith": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "normalize": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "repeat": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "startsWith": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "big": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "blink": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "bold": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "fixed": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "fontcolor": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "fontsize": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "italics": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "small": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "strike": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "sub": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "sup": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "padStart": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "padEnd": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "trimEnd": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "trimStart": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "trimLeft": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "trimRight": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "matchAll": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "replaceAll": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "at": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "___iterator_64": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_26": {
+      "type": "object",
+      "required": [
+        "title",
+        "version",
+        "codec",
+        "toString",
+        "toFixed",
+        "toExponential",
+        "toPrecision",
+        "valueOf",
+        "toLocaleString"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        },
+        "codec": {
+          "$ref": "#/$defs/Object_25"
+        },
+        "toString": {
+          "$ref": "#/$defs/toString_1"
+        },
+        "toFixed": {
+          "$ref": "#/$defs/toFixed"
+        },
+        "toExponential": {
+          "$ref": "#/$defs/toExponential"
+        },
+        "toPrecision": {
+          "$ref": "#/$defs/toPrecision"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf_1"
+        },
+        "toLocaleString": {
+          "$ref": "#/$defs/toLocaleString"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "toString_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toFixed": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toExponential": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toPrecision": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "valueOf_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLocaleString": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_27": {
+      "type": "object",
+      "required": [
+        "title",
+        "version",
+        "codec",
+        "valueOf"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        },
+        "codec": {
+          "$ref": "#/$defs/Object_25"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf_2"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "valueOf_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_28": {
+      "type": "object",
+      "required": [
+        "title",
+        "version",
+        "codec",
+        "valueOf"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        },
+        "codec": {
+          "$ref": "#/$defs/Object_25"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf_2"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_29": {
+      "type": "object",
+      "required": [
+        "title",
+        "version",
+        "codec"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        },
+        "codec": {
+          "$ref": "#/$defs/Object_25"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_30": {
+      "type": "object",
+      "required": [
+        "title",
+        "version",
+        "codec",
+        "length",
+        "toString",
+        "toLocaleString",
+        "concat",
+        "join",
+        "slice",
+        "indexOf",
+        "lastIndexOf",
+        "every",
+        "some",
+        "forEach",
+        "map",
+        "filter",
+        "reduce",
+        "reduceRight",
+        "find",
+        "findIndex",
+        "entries",
+        "keys",
+        "values",
+        "includes",
+        "flatMap",
+        "flat",
+        "at",
+        "__@iterator@64",
+        "__@unscopables@306"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        },
+        "codec": {
+          "$ref": "#/$defs/Object_25"
+        },
+        "length": {
+          "type": "number"
+        },
+        "toString": {
+          "$ref": "#/$defs/toString_2"
+        },
+        "toLocaleString": {
+          "$ref": "#/$defs/toLocaleString_1"
+        },
+        "concat": {
+          "$ref": "#/$defs/concat_1"
+        },
+        "join": {
+          "$ref": "#/$defs/join"
+        },
+        "slice": {
+          "$ref": "#/$defs/slice_1"
+        },
+        "indexOf": {
+          "$ref": "#/$defs/indexOf_1"
+        },
+        "lastIndexOf": {
+          "$ref": "#/$defs/lastIndexOf_1"
+        },
+        "every": {
+          "$ref": "#/$defs/every"
+        },
+        "some": {
+          "$ref": "#/$defs/some"
+        },
+        "forEach": {
+          "$ref": "#/$defs/forEach"
+        },
+        "map": {
+          "$ref": "#/$defs/map"
+        },
+        "filter": {
+          "$ref": "#/$defs/filter"
+        },
+        "reduce": {
+          "$ref": "#/$defs/reduce"
+        },
+        "reduceRight": {
+          "$ref": "#/$defs/reduceRight"
+        },
+        "find": {
+          "$ref": "#/$defs/find"
+        },
+        "findIndex": {
+          "$ref": "#/$defs/findIndex"
+        },
+        "entries": {
+          "$ref": "#/$defs/entries"
+        },
+        "keys": {
+          "$ref": "#/$defs/keys"
+        },
+        "values": {
+          "$ref": "#/$defs/values"
+        },
+        "includes": {
+          "$ref": "#/$defs/includes_1"
+        },
+        "flatMap": {
+          "$ref": "#/$defs/flatMap"
+        },
+        "flat": {
+          "$ref": "#/$defs/flat"
+        },
+        "at": {
+          "$ref": "#/$defs/at_1"
+        },
+        "__@iterator@64": {
+          "$ref": "#/$defs/___iterator_64_1"
+        },
+        "__@unscopables@306": {
+          "$ref": "#/$defs/Object_31"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "toString_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLocaleString_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "concat_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "join": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "slice_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "indexOf_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "lastIndexOf_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "every": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "some": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "forEach": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "filter": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reduce": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reduceRight": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "find": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "findIndex": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "entries": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "keys": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "includes_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "flatMap": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "flat": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "at_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "___iterator_64_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_31": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "boolean"
+        },
+        "toString": {
+          "type": "boolean"
+        },
+        "toLocaleString": {
+          "type": "boolean"
+        },
+        "concat": {
+          "type": "boolean"
+        },
+        "join": {
+          "type": "boolean"
+        },
+        "slice": {
+          "type": "boolean"
+        },
+        "indexOf": {
+          "type": "boolean"
+        },
+        "lastIndexOf": {
+          "type": "boolean"
+        },
+        "every": {
+          "type": "boolean"
+        },
+        "some": {
+          "type": "boolean"
+        },
+        "forEach": {
+          "type": "boolean"
+        },
+        "map": {
+          "type": "boolean"
+        },
+        "filter": {
+          "type": "boolean"
+        },
+        "reduce": {
+          "type": "boolean"
+        },
+        "reduceRight": {
+          "type": "boolean"
+        },
+        "find": {
+          "type": "boolean"
+        },
+        "findIndex": {
+          "type": "boolean"
+        },
+        "entries": {
+          "type": "boolean"
+        },
+        "keys": {
+          "type": "boolean"
+        },
+        "values": {
+          "type": "boolean"
+        },
+        "includes": {
+          "type": "boolean"
+        },
+        "flatMap": {
+          "type": "boolean"
+        },
+        "flat": {
+          "type": "boolean"
+        },
+        "at": {
+          "type": "boolean"
+        },
+        "__@iterator@64": {
+          "type": "boolean"
+        },
+        "__@unscopables@306": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "const": false
+          },
+          {
+            "const": true
+          }
+        ]
+      }
+    },
+    "Object_32": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Object_33"
+          },
+          {
+            "$ref": "#/$defs/Object_46"
+          },
+          {
+            "$ref": "#/$defs/Object_47"
+          },
+          {
+            "$ref": "#/$defs/Object_48"
+          },
+          {
+            "$ref": "#/$defs/Object_49"
+          },
+          {
+            "$ref": "#/$defs/Object_50"
+          }
+        ]
+      }
+    },
+    "Object_33": {
+      "type": "object",
+      "required": [
+        "label",
+        "messages",
+        "toString",
+        "charAt",
+        "charCodeAt",
+        "concat",
+        "indexOf",
+        "lastIndexOf",
+        "localeCompare",
+        "match",
+        "replace",
+        "search",
+        "slice",
+        "split",
+        "substring",
+        "toLowerCase",
+        "toLocaleLowerCase",
+        "toUpperCase",
+        "toLocaleUpperCase",
+        "trim",
+        "length",
+        "substr",
+        "valueOf",
+        "codePointAt",
+        "includes",
+        "endsWith",
+        "normalize",
+        "repeat",
+        "startsWith",
+        "anchor",
+        "big",
+        "blink",
+        "bold",
+        "fixed",
+        "fontcolor",
+        "fontsize",
+        "italics",
+        "link",
+        "small",
+        "strike",
+        "sub",
+        "sup",
+        "padStart",
+        "padEnd",
+        "trimEnd",
+        "trimStart",
+        "trimLeft",
+        "trimRight",
+        "matchAll",
+        "replaceAll",
+        "at",
+        "__@iterator@64"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "messages": {
+          "$ref": "#/$defs/Object_34"
+        },
+        "toString": {
+          "$ref": "#/$defs/toString"
+        },
+        "charAt": {
+          "$ref": "#/$defs/charAt"
+        },
+        "charCodeAt": {
+          "$ref": "#/$defs/charCodeAt"
+        },
+        "concat": {
+          "$ref": "#/$defs/concat"
+        },
+        "indexOf": {
+          "$ref": "#/$defs/indexOf"
+        },
+        "lastIndexOf": {
+          "$ref": "#/$defs/lastIndexOf"
+        },
+        "localeCompare": {
+          "$ref": "#/$defs/localeCompare"
+        },
+        "match": {
+          "$ref": "#/$defs/match"
+        },
+        "replace": {
+          "$ref": "#/$defs/replace"
+        },
+        "search": {
+          "$ref": "#/$defs/search"
+        },
+        "slice": {
+          "$ref": "#/$defs/slice"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "substring": {
+          "$ref": "#/$defs/substring"
+        },
+        "toLowerCase": {
+          "$ref": "#/$defs/toLowerCase"
+        },
+        "toLocaleLowerCase": {
+          "$ref": "#/$defs/toLocaleLowerCase"
+        },
+        "toUpperCase": {
+          "$ref": "#/$defs/toUpperCase"
+        },
+        "toLocaleUpperCase": {
+          "$ref": "#/$defs/toLocaleUpperCase"
+        },
+        "trim": {
+          "$ref": "#/$defs/trim"
+        },
+        "length": {
+          "type": "number"
+        },
+        "substr": {
+          "$ref": "#/$defs/substr"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf"
+        },
+        "codePointAt": {
+          "$ref": "#/$defs/codePointAt"
+        },
+        "includes": {
+          "$ref": "#/$defs/includes"
+        },
+        "endsWith": {
+          "$ref": "#/$defs/endsWith"
+        },
+        "normalize": {
+          "$ref": "#/$defs/normalize"
+        },
+        "repeat": {
+          "$ref": "#/$defs/repeat"
+        },
+        "startsWith": {
+          "$ref": "#/$defs/startsWith"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "big": {
+          "$ref": "#/$defs/big"
+        },
+        "blink": {
+          "$ref": "#/$defs/blink"
+        },
+        "bold": {
+          "$ref": "#/$defs/bold"
+        },
+        "fixed": {
+          "$ref": "#/$defs/fixed"
+        },
+        "fontcolor": {
+          "$ref": "#/$defs/fontcolor"
+        },
+        "fontsize": {
+          "$ref": "#/$defs/fontsize"
+        },
+        "italics": {
+          "$ref": "#/$defs/italics"
+        },
+        "link": {
+          "$ref": "#/$defs/link"
+        },
+        "small": {
+          "$ref": "#/$defs/small"
+        },
+        "strike": {
+          "$ref": "#/$defs/strike"
+        },
+        "sub": {
+          "$ref": "#/$defs/sub"
+        },
+        "sup": {
+          "$ref": "#/$defs/sup"
+        },
+        "padStart": {
+          "$ref": "#/$defs/padStart"
+        },
+        "padEnd": {
+          "$ref": "#/$defs/padEnd"
+        },
+        "trimEnd": {
+          "$ref": "#/$defs/trimEnd"
+        },
+        "trimStart": {
+          "$ref": "#/$defs/trimStart"
+        },
+        "trimLeft": {
+          "$ref": "#/$defs/trimLeft"
+        },
+        "trimRight": {
+          "$ref": "#/$defs/trimRight"
+        },
+        "matchAll": {
+          "$ref": "#/$defs/matchAll"
+        },
+        "replaceAll": {
+          "$ref": "#/$defs/replaceAll"
+        },
+        "at": {
+          "$ref": "#/$defs/at"
+        },
+        "__@iterator@64": {
+          "$ref": "#/$defs/___iterator_64"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_34": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/$defs/Object_35"
+          },
+          {
+            "$ref": "#/$defs/Object_36"
+          }
+        ]
+      }
+    },
+    "Object_35": {
+      "type": "object",
+      "required": [
+        "toString",
+        "charAt",
+        "charCodeAt",
+        "concat",
+        "indexOf",
+        "lastIndexOf",
+        "localeCompare",
+        "match",
+        "replace",
+        "search",
+        "slice",
+        "split",
+        "substring",
+        "toLowerCase",
+        "toLocaleLowerCase",
+        "toUpperCase",
+        "toLocaleUpperCase",
+        "trim",
+        "length",
+        "substr",
+        "valueOf",
+        "codePointAt",
+        "includes",
+        "endsWith",
+        "normalize",
+        "repeat",
+        "startsWith",
+        "anchor",
+        "big",
+        "blink",
+        "bold",
+        "fixed",
+        "fontcolor",
+        "fontsize",
+        "italics",
+        "link",
+        "small",
+        "strike",
+        "sub",
+        "sup",
+        "padStart",
+        "padEnd",
+        "trimEnd",
+        "trimStart",
+        "trimLeft",
+        "trimRight",
+        "matchAll",
+        "replaceAll",
+        "at",
+        "__@iterator@64"
+      ],
+      "properties": {
+        "toString": {
+          "$ref": "#/$defs/toString"
+        },
+        "charAt": {
+          "$ref": "#/$defs/charAt"
+        },
+        "charCodeAt": {
+          "$ref": "#/$defs/charCodeAt"
+        },
+        "concat": {
+          "$ref": "#/$defs/concat"
+        },
+        "indexOf": {
+          "$ref": "#/$defs/indexOf"
+        },
+        "lastIndexOf": {
+          "$ref": "#/$defs/lastIndexOf"
+        },
+        "localeCompare": {
+          "$ref": "#/$defs/localeCompare"
+        },
+        "match": {
+          "$ref": "#/$defs/match"
+        },
+        "replace": {
+          "$ref": "#/$defs/replace"
+        },
+        "search": {
+          "$ref": "#/$defs/search"
+        },
+        "slice": {
+          "$ref": "#/$defs/slice"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "substring": {
+          "$ref": "#/$defs/substring"
+        },
+        "toLowerCase": {
+          "$ref": "#/$defs/toLowerCase"
+        },
+        "toLocaleLowerCase": {
+          "$ref": "#/$defs/toLocaleLowerCase"
+        },
+        "toUpperCase": {
+          "$ref": "#/$defs/toUpperCase"
+        },
+        "toLocaleUpperCase": {
+          "$ref": "#/$defs/toLocaleUpperCase"
+        },
+        "trim": {
+          "$ref": "#/$defs/trim"
+        },
+        "length": {
+          "type": "number"
+        },
+        "substr": {
+          "$ref": "#/$defs/substr"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf"
+        },
+        "codePointAt": {
+          "$ref": "#/$defs/codePointAt"
+        },
+        "includes": {
+          "$ref": "#/$defs/includes"
+        },
+        "endsWith": {
+          "$ref": "#/$defs/endsWith"
+        },
+        "normalize": {
+          "$ref": "#/$defs/normalize"
+        },
+        "repeat": {
+          "$ref": "#/$defs/repeat"
+        },
+        "startsWith": {
+          "$ref": "#/$defs/startsWith"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "big": {
+          "$ref": "#/$defs/big"
+        },
+        "blink": {
+          "$ref": "#/$defs/blink"
+        },
+        "bold": {
+          "$ref": "#/$defs/bold"
+        },
+        "fixed": {
+          "$ref": "#/$defs/fixed"
+        },
+        "fontcolor": {
+          "$ref": "#/$defs/fontcolor"
+        },
+        "fontsize": {
+          "$ref": "#/$defs/fontsize"
+        },
+        "italics": {
+          "$ref": "#/$defs/italics"
+        },
+        "link": {
+          "$ref": "#/$defs/link"
+        },
+        "small": {
+          "$ref": "#/$defs/small"
+        },
+        "strike": {
+          "$ref": "#/$defs/strike"
+        },
+        "sub": {
+          "$ref": "#/$defs/sub"
+        },
+        "sup": {
+          "$ref": "#/$defs/sup"
+        },
+        "padStart": {
+          "$ref": "#/$defs/padStart"
+        },
+        "padEnd": {
+          "$ref": "#/$defs/padEnd"
+        },
+        "trimEnd": {
+          "$ref": "#/$defs/trimEnd"
+        },
+        "trimStart": {
+          "$ref": "#/$defs/trimStart"
+        },
+        "trimLeft": {
+          "$ref": "#/$defs/trimLeft"
+        },
+        "trimRight": {
+          "$ref": "#/$defs/trimRight"
+        },
+        "matchAll": {
+          "$ref": "#/$defs/matchAll"
+        },
+        "replaceAll": {
+          "$ref": "#/$defs/replaceAll"
+        },
+        "at": {
+          "$ref": "#/$defs/at"
+        },
+        "__@iterator@64": {
+          "$ref": "#/$defs/___iterator_64"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_36": {
+      "type": "object",
+      "required": [
+        "toString",
+        "charAt",
+        "charCodeAt",
+        "concat",
+        "indexOf",
+        "lastIndexOf",
+        "localeCompare",
+        "match",
+        "replace",
+        "search",
+        "slice",
+        "split",
+        "substring",
+        "toLowerCase",
+        "toLocaleLowerCase",
+        "toUpperCase",
+        "toLocaleUpperCase",
+        "trim",
+        "length",
+        "substr",
+        "valueOf",
+        "codePointAt",
+        "includes",
+        "endsWith",
+        "normalize",
+        "repeat",
+        "startsWith",
+        "anchor",
+        "big",
+        "blink",
+        "bold",
+        "fixed",
+        "fontcolor",
+        "fontsize",
+        "italics",
+        "link",
+        "small",
+        "strike",
+        "sub",
+        "sup",
+        "padStart",
+        "padEnd",
+        "trimEnd",
+        "trimStart",
+        "trimLeft",
+        "trimRight",
+        "matchAll",
+        "replaceAll",
+        "at",
+        "__@iterator@64",
+        "toLocaleString",
+        "join",
+        "every",
+        "some",
+        "forEach",
+        "map",
+        "filter",
+        "reduce",
+        "reduceRight",
+        "find",
+        "findIndex",
+        "entries",
+        "keys",
+        "values",
+        "flatMap",
+        "flat",
+        "__@unscopables@306"
+      ],
+      "properties": {
+        "toString": {
+          "$ref": "#/$defs/Object_37"
+        },
+        "charAt": {
+          "$ref": "#/$defs/charAt"
+        },
+        "charCodeAt": {
+          "$ref": "#/$defs/charCodeAt"
+        },
+        "concat": {
+          "$ref": "#/$defs/Object_38"
+        },
+        "indexOf": {
+          "$ref": "#/$defs/Object_39"
+        },
+        "lastIndexOf": {
+          "$ref": "#/$defs/Object_40"
+        },
+        "localeCompare": {
+          "$ref": "#/$defs/localeCompare"
+        },
+        "match": {
+          "$ref": "#/$defs/match"
+        },
+        "replace": {
+          "$ref": "#/$defs/replace"
+        },
+        "search": {
+          "$ref": "#/$defs/search"
+        },
+        "slice": {
+          "$ref": "#/$defs/Object_41"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "substring": {
+          "$ref": "#/$defs/substring"
+        },
+        "toLowerCase": {
+          "$ref": "#/$defs/toLowerCase"
+        },
+        "toLocaleLowerCase": {
+          "$ref": "#/$defs/toLocaleLowerCase"
+        },
+        "toUpperCase": {
+          "$ref": "#/$defs/toUpperCase"
+        },
+        "toLocaleUpperCase": {
+          "$ref": "#/$defs/toLocaleUpperCase"
+        },
+        "trim": {
+          "$ref": "#/$defs/trim"
+        },
+        "length": {
+          "type": "number"
+        },
+        "substr": {
+          "$ref": "#/$defs/substr"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf"
+        },
+        "codePointAt": {
+          "$ref": "#/$defs/codePointAt"
+        },
+        "includes": {
+          "$ref": "#/$defs/Object_42"
+        },
+        "endsWith": {
+          "$ref": "#/$defs/endsWith"
+        },
+        "normalize": {
+          "$ref": "#/$defs/normalize"
+        },
+        "repeat": {
+          "$ref": "#/$defs/repeat"
+        },
+        "startsWith": {
+          "$ref": "#/$defs/startsWith"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "big": {
+          "$ref": "#/$defs/big"
+        },
+        "blink": {
+          "$ref": "#/$defs/blink"
+        },
+        "bold": {
+          "$ref": "#/$defs/bold"
+        },
+        "fixed": {
+          "$ref": "#/$defs/fixed"
+        },
+        "fontcolor": {
+          "$ref": "#/$defs/fontcolor"
+        },
+        "fontsize": {
+          "$ref": "#/$defs/fontsize"
+        },
+        "italics": {
+          "$ref": "#/$defs/italics"
+        },
+        "link": {
+          "$ref": "#/$defs/link"
+        },
+        "small": {
+          "$ref": "#/$defs/small"
+        },
+        "strike": {
+          "$ref": "#/$defs/strike"
+        },
+        "sub": {
+          "$ref": "#/$defs/sub"
+        },
+        "sup": {
+          "$ref": "#/$defs/sup"
+        },
+        "padStart": {
+          "$ref": "#/$defs/padStart"
+        },
+        "padEnd": {
+          "$ref": "#/$defs/padEnd"
+        },
+        "trimEnd": {
+          "$ref": "#/$defs/trimEnd"
+        },
+        "trimStart": {
+          "$ref": "#/$defs/trimStart"
+        },
+        "trimLeft": {
+          "$ref": "#/$defs/trimLeft"
+        },
+        "trimRight": {
+          "$ref": "#/$defs/trimRight"
+        },
+        "matchAll": {
+          "$ref": "#/$defs/matchAll"
+        },
+        "replaceAll": {
+          "$ref": "#/$defs/replaceAll"
+        },
+        "at": {
+          "$ref": "#/$defs/Object_43"
+        },
+        "__@iterator@64": {
+          "$ref": "#/$defs/Object_44"
+        },
+        "toLocaleString": {
+          "$ref": "#/$defs/toLocaleString_2"
+        },
+        "join": {
+          "$ref": "#/$defs/join_1"
+        },
+        "every": {
+          "$ref": "#/$defs/every_1"
+        },
+        "some": {
+          "$ref": "#/$defs/some_1"
+        },
+        "forEach": {
+          "$ref": "#/$defs/forEach_1"
+        },
+        "map": {
+          "$ref": "#/$defs/map_1"
+        },
+        "filter": {
+          "$ref": "#/$defs/filter_1"
+        },
+        "reduce": {
+          "$ref": "#/$defs/reduce_1"
+        },
+        "reduceRight": {
+          "$ref": "#/$defs/reduceRight_1"
+        },
+        "find": {
+          "$ref": "#/$defs/find_1"
+        },
+        "findIndex": {
+          "$ref": "#/$defs/findIndex_1"
+        },
+        "entries": {
+          "$ref": "#/$defs/entries_1"
+        },
+        "keys": {
+          "$ref": "#/$defs/keys_1"
+        },
+        "values": {
+          "$ref": "#/$defs/values_1"
+        },
+        "flatMap": {
+          "$ref": "#/$defs/flatMap_1"
+        },
+        "flat": {
+          "$ref": "#/$defs/flat_1"
+        },
+        "__@unscopables@306": {
+          "$ref": "#/$defs/Object_45"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/$defs/Object_35"
+          },
+          {
+            "$ref": "#/$defs/Object_36"
+          }
+        ]
+      }
+    },
+    "Object_37": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_38": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_39": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_40": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_41": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_42": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_43": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_44": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLocaleString_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "join_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "every_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "some_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "forEach_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "map_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "filter_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reduce_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reduceRight_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "find_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "findIndex_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "entries_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "keys_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "values_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "flatMap_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "flat_1": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_45": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "boolean"
+        },
+        "toString": {
+          "type": "boolean"
+        },
+        "toLocaleString": {
+          "type": "boolean"
+        },
+        "concat": {
+          "type": "boolean"
+        },
+        "join": {
+          "type": "boolean"
+        },
+        "slice": {
+          "type": "boolean"
+        },
+        "indexOf": {
+          "type": "boolean"
+        },
+        "lastIndexOf": {
+          "type": "boolean"
+        },
+        "every": {
+          "type": "boolean"
+        },
+        "some": {
+          "type": "boolean"
+        },
+        "forEach": {
+          "type": "boolean"
+        },
+        "map": {
+          "type": "boolean"
+        },
+        "filter": {
+          "type": "boolean"
+        },
+        "reduce": {
+          "type": "boolean"
+        },
+        "reduceRight": {
+          "type": "boolean"
+        },
+        "find": {
+          "type": "boolean"
+        },
+        "findIndex": {
+          "type": "boolean"
+        },
+        "entries": {
+          "type": "boolean"
+        },
+        "keys": {
+          "type": "boolean"
+        },
+        "values": {
+          "type": "boolean"
+        },
+        "includes": {
+          "type": "boolean"
+        },
+        "flatMap": {
+          "type": "boolean"
+        },
+        "flat": {
+          "type": "boolean"
+        },
+        "at": {
+          "type": "boolean"
+        },
+        "__@iterator@64": {
+          "type": "boolean"
+        },
+        "__@unscopables@306": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "const": false
+          },
+          {
+            "const": true
+          }
+        ]
+      }
+    },
+    "Object_46": {
+      "type": "object",
+      "required": [
+        "label",
+        "messages",
+        "toString",
+        "toFixed",
+        "toExponential",
+        "toPrecision",
+        "valueOf",
+        "toLocaleString"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "messages": {
+          "$ref": "#/$defs/Object_34"
+        },
+        "toString": {
+          "$ref": "#/$defs/toString_1"
+        },
+        "toFixed": {
+          "$ref": "#/$defs/toFixed"
+        },
+        "toExponential": {
+          "$ref": "#/$defs/toExponential"
+        },
+        "toPrecision": {
+          "$ref": "#/$defs/toPrecision"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf_1"
+        },
+        "toLocaleString": {
+          "$ref": "#/$defs/toLocaleString"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_47": {
+      "type": "object",
+      "required": [
+        "label",
+        "messages",
+        "valueOf"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "messages": {
+          "$ref": "#/$defs/Object_34"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf_2"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_48": {
+      "type": "object",
+      "required": [
+        "label",
+        "messages",
+        "valueOf"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "messages": {
+          "$ref": "#/$defs/Object_34"
+        },
+        "valueOf": {
+          "$ref": "#/$defs/valueOf_2"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_49": {
+      "type": "object",
+      "required": [
+        "label",
+        "messages"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "messages": {
+          "$ref": "#/$defs/Object_34"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "Object_50": {
+      "type": "object",
+      "required": [
+        "label",
+        "messages",
+        "length",
+        "toString",
+        "toLocaleString",
+        "concat",
+        "join",
+        "slice",
+        "indexOf",
+        "lastIndexOf",
+        "every",
+        "some",
+        "forEach",
+        "map",
+        "filter",
+        "reduce",
+        "reduceRight",
+        "find",
+        "findIndex",
+        "entries",
+        "keys",
+        "values",
+        "includes",
+        "flatMap",
+        "flat",
+        "at",
+        "__@iterator@64",
+        "__@unscopables@306"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "messages": {
+          "$ref": "#/$defs/Object_34"
+        },
+        "length": {
+          "type": "number"
+        },
+        "toString": {
+          "$ref": "#/$defs/toString_3"
+        },
+        "toLocaleString": {
+          "$ref": "#/$defs/toLocaleString_3"
+        },
+        "concat": {
+          "$ref": "#/$defs/concat_2"
+        },
+        "join": {
+          "$ref": "#/$defs/join_2"
+        },
+        "slice": {
+          "$ref": "#/$defs/slice_2"
+        },
+        "indexOf": {
+          "$ref": "#/$defs/indexOf_2"
+        },
+        "lastIndexOf": {
+          "$ref": "#/$defs/lastIndexOf_2"
+        },
+        "every": {
+          "$ref": "#/$defs/every_2"
+        },
+        "some": {
+          "$ref": "#/$defs/some_2"
+        },
+        "forEach": {
+          "$ref": "#/$defs/forEach_2"
+        },
+        "map": {
+          "$ref": "#/$defs/map_2"
+        },
+        "filter": {
+          "$ref": "#/$defs/filter_2"
+        },
+        "reduce": {
+          "$ref": "#/$defs/reduce_2"
+        },
+        "reduceRight": {
+          "$ref": "#/$defs/reduceRight_2"
+        },
+        "find": {
+          "$ref": "#/$defs/find_2"
+        },
+        "findIndex": {
+          "$ref": "#/$defs/findIndex_2"
+        },
+        "entries": {
+          "$ref": "#/$defs/entries_2"
+        },
+        "keys": {
+          "$ref": "#/$defs/keys_2"
+        },
+        "values": {
+          "$ref": "#/$defs/values_2"
+        },
+        "includes": {
+          "$ref": "#/$defs/includes_2"
+        },
+        "flatMap": {
+          "$ref": "#/$defs/flatMap_2"
+        },
+        "flat": {
+          "$ref": "#/$defs/flat_2"
+        },
+        "at": {
+          "$ref": "#/$defs/at_2"
+        },
+        "__@iterator@64": {
+          "$ref": "#/$defs/___iterator_64_2"
+        },
+        "__@unscopables@306": {
+          "$ref": "#/$defs/Object_51"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      }
+    },
+    "toString_3": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toLocaleString_3": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "concat_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "join_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "slice_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "indexOf_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "lastIndexOf_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "every_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "some_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "forEach_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "map_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "filter_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reduce_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reduceRight_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "find_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "findIndex_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "entries_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "keys_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "values_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "includes_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "flatMap_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "flat_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "at_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "___iterator_64_2": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Object_51": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "boolean"
+        },
+        "toString": {
+          "type": "boolean"
+        },
+        "toLocaleString": {
+          "type": "boolean"
+        },
+        "concat": {
+          "type": "boolean"
+        },
+        "join": {
+          "type": "boolean"
+        },
+        "slice": {
+          "type": "boolean"
+        },
+        "indexOf": {
+          "type": "boolean"
+        },
+        "lastIndexOf": {
+          "type": "boolean"
+        },
+        "every": {
+          "type": "boolean"
+        },
+        "some": {
+          "type": "boolean"
+        },
+        "forEach": {
+          "type": "boolean"
+        },
+        "map": {
+          "type": "boolean"
+        },
+        "filter": {
+          "type": "boolean"
+        },
+        "reduce": {
+          "type": "boolean"
+        },
+        "reduceRight": {
+          "type": "boolean"
+        },
+        "find": {
+          "type": "boolean"
+        },
+        "findIndex": {
+          "type": "boolean"
+        },
+        "entries": {
+          "type": "boolean"
+        },
+        "keys": {
+          "type": "boolean"
+        },
+        "values": {
+          "type": "boolean"
+        },
+        "includes": {
+          "type": "boolean"
+        },
+        "flatMap": {
+          "type": "boolean"
+        },
+        "flat": {
+          "type": "boolean"
+        },
+        "at": {
+          "type": "boolean"
+        },
+        "__@iterator@64": {
+          "type": "boolean"
+        },
+        "__@unscopables@306": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "const": false
+          },
+          {
+            "const": true
+          }
+        ]
+      }
+    },
+    "PortableRequirements": {
+      "type": "object",
+      "required": [
+        "capabilities",
+        "services"
+      ],
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "stages.standard@1"
+            }
+          ],
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StudioDefinitionRef"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

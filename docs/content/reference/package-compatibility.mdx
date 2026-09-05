@@ -13,7 +13,7 @@ Stages v1 packages fit a build and runtime environment.
 **Prerequisites:** [Installation](/start/installation) and the current
 [release status](/project/release-status).
 
-All six packages currently move as one `1.0.0-alpha.0` release unit. Keep
+All seven packages currently move as one `1.0.0-alpha.0` release unit. Keep
 their versions exactly aligned; adapter packages declare an exact dependency
 on the matching core version.
 
@@ -21,6 +21,7 @@ on the matching core version.
 
 | Package | Runtime dependency | Additional runtime/peer requirement | Intended environment |
 | --- | --- | --- | --- |
+| `@stages/authoring` | `@stages/core@1.0.0-alpha.0` | ES2022 JavaScript | Portable JSON loading without framework or browser dependencies |
 | `@stages/core` | None | ES2020 JavaScript | Framework-neutral application, browser, worker, or server code |
 | `@stages/react` | `@stages/core@1.0.0-alpha.0` | Peer `react@>=17.0.0` | A React renderer and lifecycle |
 | `@stages/vue` | `@stages/core@1.0.0-alpha.0` | Peer `vue@>=3.3.0` | A Vue renderer and lifecycle |

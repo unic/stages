@@ -1,4 +1,4 @@
-import { compileStudioForm, createEmptyStudioScenarioValue } from "../compiler";
+import { loadPortableForm, projectPortableForm, serializePortableForm } from "@stages/authoring";
 import { openStudioProject, serializeStudioProject, type StudioDocumentDiagnostic, type StudioDocumentValidationOptions, type StudioFormDocument, type StudioProjectDocument } from "../document";
 import { STUDIO_FIELD_DEFINITIONS, STUDIO_RUNTIME_FIELDS, type StudioFieldKey } from "../registry";
 
@@ -85,30 +85,26 @@ function reactSource(): string {
 }
 
 function readmeSource(form: StudioFormDocument): string {
-  return `# ${form.title}\n\nGenerated from a Stages Studio project. The generated files use public package entry points only.\n\n- \`schema.ts\`: v1 schema\n- \`fields.ts\`: field registry bindings\n- \`initial-value.ts\`: initial controlled value\n- \`scenarios.ts\`: named test fixtures\n- \`migrations.ts\`: schema-state migration skeleton\n- \`App.tsx\`: minimal controlled React integration\n`;
-}
-
-function exportFailure(form: StudioFormDocument, path: readonly (number | string)[]): StudioDocumentDiagnostic {
-  return {
-    code: "export.executable-binding-required",
-    severity: "error",
-    source: "document",
-    message: "The compiled form contains executable behavior that needs a named export binding before portable code can be generated.",
-    propertyPath: path,
-    formUid: form.uid,
-  };
+  return `# ${form.title}\n\nGenerated from a Stages Studio project. The generated files use public package entry points only.\n\n- \`form.stages.json\`: versioned portable definition (load with @stages/authoring)\n- \`schema.ts\`: v1 schema\n- \`fields.ts\`: field registry bindings\n- \`initial-value.ts\`: initial controlled value\n- \`scenarios.ts\`: named test fixtures\n- \`migrations.ts\`: schema-state migration skeleton\n- \`App.tsx\`: minimal controlled React integration\n`;
 }
 
 export function generateStudioExportBundle(project: StudioProjectDocument): StudioExportResult {
   const artifacts: StudioGeneratedArtifact[] = [{ path: "project.stages.json", mediaType: "application/json", source: serializeStudioProject(project) }];
   const diagnostics: StudioDocumentDiagnostic[] = [];
   for (const form of Object.values(project.forms).sort((left, right) => left.uid.localeCompare(right.uid))) {
-    const compiled = compileStudioForm(form, project.fragments, { localization: { defaultLocale: project.project.defaultLocale, resources: project.resources } });
-    const compileFailures = compiled.diagnostics.filter(({ severity }) => severity === "error");
-    if (compileFailures.length > 0) {
-      for (const failure of compileFailures) diagnostics.push({ code: failure.code, severity: "error", source: "document", message: failure.message, propertyPath: failure.propertyPath ?? [], formUid: form.uid, ...(failure.entityUid === undefined ? {} : { entityUid: failure.entityUid }) });
+    const portable = projectPortableForm(project, form.uid);
+    if (!portable.ok) {
+      for (const failure of portable.diagnostics) diagnostics.push({ code: failure.code, severity: "error", source: "document", message: failure.message, propertyPath: failure.propertyPath ?? [], formUid: form.uid, ...(failure.entityUid === undefined ? {} : { entityUid: failure.entityUid }) });
       continue;
     }
+    const directory = safeFileName(form.uid);
+    artifacts.push({ path: `${directory}/form.stages.json`, mediaType: "application/json", source: serializePortableForm(portable.value) });
+    const loaded = loadPortableForm(portable.value);
+    if (!loaded.ok) {
+      for (const failure of loaded.diagnostics) diagnostics.push({ code: failure.code, severity: "error", source: "document", message: failure.message, propertyPath: failure.propertyPath ?? [], formUid: form.uid });
+      continue;
+    }
+    const compiled = loaded.value;
     // Factories carry structural conditions that are absent from the static schema.
     const unsupportedField = Object.entries(compiled.fields).find(([key, definition]) =>
       !Object.hasOwn(STUDIO_RUNTIME_FIELDS, key) || definition !== STUDIO_RUNTIME_FIELDS[key]);
@@ -117,15 +113,13 @@ export function generateStudioExportBundle(project: StudioProjectDocument): Stud
       : unsupportedField !== undefined
         ? ["fields", unsupportedField[0]]
         : executablePath(compiled.schema);
+    const initialValue = portable.value.initialValue;
     if (path !== undefined) {
-      diagnostics.push(exportFailure(form, path));
-      continue;
+      artifacts.push({ path: `${directory}/portable.ts`, mediaType: "text/typescript", source: `import { loadPortableForm } from "@stages/authoring";\n\nconst result = loadPortableForm(${typescriptValue(portable.value)});\nif (!result.ok) throw new Error(JSON.stringify(result.diagnostics));\nexport const loaded = result.value;\n` });
     }
-    const directory = safeFileName(form.uid);
-    const initialValue = form.scenarios[0]?.value ?? createEmptyStudioScenarioValue(form, project.fragments);
     artifacts.push(
-      { path: `${directory}/schema.ts`, mediaType: "text/typescript", source: schemaSource(compiled.schema) },
-      { path: `${directory}/fields.ts`, mediaType: "text/typescript", source: fieldsSource(compiled.expandedForm) },
+      { path: `${directory}/schema.ts`, mediaType: "text/typescript", source: path === undefined ? schemaSource(compiled.schema) : `import { loaded } from "./portable.js";\nexport const schema = loaded.schemaInput;\n` },
+      { path: `${directory}/fields.ts`, mediaType: "text/typescript", source: path === undefined ? fieldsSource(compiled.expandedForm) : `import { loaded } from "./portable.js";\nexport const fields = loaded.fields;\n` },
       { path: `${directory}/initial-value.ts`, mediaType: "text/typescript", source: valueSource("initialValue", initialValue) },
       { path: `${directory}/scenarios.ts`, mediaType: "text/typescript", source: valueSource("scenarios", form.scenarios) },
       { path: `${directory}/migrations.ts`, mediaType: "text/typescript", source: migrationsSource(form) },

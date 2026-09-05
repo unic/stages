@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { loadPortableForm } from '@stages/authoring';
+import { stages, fieldEvent } from '@stages/core';
+assert.equal(JSON.parse(readFileSync(new URL(import.meta.resolve('@stages/authoring/portable.schema.json')), 'utf8')).title, 'Stages portable form v1');
+assert.equal(typeof window, 'undefined');
+assert.equal(typeof document, 'undefined');
+const result = loadPortableForm(readFileSync(new URL('./contact-form-v1.json', import.meta.url), 'utf8'));
+assert.equal(result.ok, true, JSON.stringify(result));
+const loaded = result.value;
+const proposed = [];
+const controller = stages({ schema: loaded.schemaInput, fields: loaded.fields, value: loaded.initialValue, context: { locale: 'de' }, onChange: change => proposed.push(change.value) });
+try {
+  await controller.validate({ scope: 'form', event: 'submit' });
+  assert.equal(controller.getSnapshot().validation.status, 'invalid');
+  assert(controller.getSnapshot().validation.issues.some(issue => issue.message === 'Name ist erforderlich'));
+  controller.update({ value: { name: 'Ada', email: 'ada@example.com', confirm: 'wrong', subscribe: false, company: '' } });
+  await controller.validate({ scope: 'form' });
+  assert.equal(controller.getSnapshot().validation.status, 'invalid');
+  controller.update({ value: { name: 'Ada', email: 'ada@example.com', confirm: 'ada@example.com', subscribe: false, company: '' } });
+  await controller.validate({ scope: 'form' });
+  assert.equal(controller.getSnapshot().validation.status, 'valid');
+  controller.dispatch(fieldEvent('input', ['subscribe'], { payload: true }));
+  await Promise.resolve();
+  assert.equal(controller.getSnapshot().value.subscribe, false);
+  controller.update({ value: proposed.at(-1) });
+  await controller.validate({ scope: 'form' });
+  assert.equal(controller.getSnapshot().validation.status, 'invalid');
+} finally { controller.destroy(); }
+console.log('Packed portable contact form passed without browser or framework dependencies.');

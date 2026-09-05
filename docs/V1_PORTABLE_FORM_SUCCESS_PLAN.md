@@ -1,6 +1,6 @@
 # Stages v1: portable forms from Studio to production
 
-Status: proposed implementation plan, based on a source and runtime review on
+Status: implementation in progress (S0 and S1 complete), based on a source and runtime review on
 2026-09-05 at commit `5e2158e`. Package version: `1.0.0-alpha.0`.
 
 Audience: Stages core, adapter, tooling, and Studio maintainers.
@@ -22,8 +22,46 @@ changes and teardown discard speculative work. Runtime regressions, a checked
 public example, strict type contracts and a packed consumer cover this behavior.
 Release verification also corrected stale Studio browser-test selectors and a
 zero-width Recovery toggle caused by the palette help-button width rule.
-S1–S5 and the portable beta release gate remain open. No production loader or
-authoritative server validator is claimed by S0.
+S0 did not claim a production loader or authoritative server validator.
+S1 is now complete as described below; S2–S5 and the portable beta release gate
+remain open.
+
+2026-09-05: S1 implementation is complete. The optional
+[`@stages/authoring`](../packages/authoring/README.md) package now owns the shared
+framework-neutral document validator, expression interpreter, catalogs and
+compiler consumed by Studio. Its public loader validates a version-1 portable
+envelope, verifies standard capabilities and exact service requirements, resolves
+trusted host bindings, and refuses incomplete/unsupported compilation. A generated
+JSON Schema describes the structural contract; semantic checks remain mandatory.
+
+Studio exports deterministic `form.stages.json` projections with resolved
+fragments, referenced localization messages and production defaults independent
+of scenarios. Supported required/conditional/localized behavior, structural
+conditions and reducers generate loader-based integration code. Unsupported
+features and missing service bindings still fail explicitly. Core remains
+unchanged and code-authored consumers do not need the optional package.
+
+The exported contact fixture is checked against actual Studio output, strict
+contracts and generated TypeScript, then loaded and validated in an isolated
+installation containing only core and authoring tarballs. Its assertions cover
+required rules, comparisons, conditions, German messages and controlled ownership.
+Package verification now covers seven tarballs. See the
+[loader guide](content/start/portable-forms.mdx) and
+[normative reference](content/reference/authoring.mdx).
+
+Verification used Node 24.15.0: static quality, documentation/API/JSON-Schema
+checks, 115 package tests, 318 Studio/Vitest tests plus 10 Studio Node tests,
+packed runtime/type consumers, performance checks, Studio/docs/example builds,
+the React lifecycle test and all 42 browser journeys passed. The combined release
+command reached an Angular/esbuild native abort inside the sandbox; Angular
+passed when retried outside it. Browser listeners also required that permission,
+and the browser suite used the already-running Studio server through the existing
+external-server configuration. These were execution-environment retries, with no
+weakened checks. Generated changes to tracked Angular caches were restored.
+
+S2 values/custom components and hybrid composition are next. Authoritative
+submission decoding, full Event Launch portability and the portable beta gate
+remain unimplemented; S1 establishes the runtime loader, not server acceptance.
 
 ## 1. Assessment and success criterion
 

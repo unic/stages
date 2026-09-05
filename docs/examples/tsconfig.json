@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -11,6 +11,7 @@
     "noEmit": true,
     "paths": {
       "@stages/core": ["../../packages/core/src/index.ts"],
+      "@stages/authoring": ["../../packages/authoring/src/index.ts"],
       "@stages/dom": ["../../packages/dom/src/index.ts"],
       "@stages/react": ["../../packages/react/src/index.tsx"],
       "@stages/test-kit": ["../../packages/test-kit/src/index.ts"]

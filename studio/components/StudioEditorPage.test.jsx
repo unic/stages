@@ -383,7 +383,7 @@ describe("StudioEditorPage interactions", () => {
 
     await user.click(screen.getByRole("button", { name: "Import & export" }));
     await user.click(screen.getByRole("button", { name: "Generate export artifacts" }));
-    expect(screen.getByText(/Generated 8 deterministic artifacts/)).toBeVisible();
+    expect(screen.getByText(/Generated 9 deterministic artifacts/)).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Generated artifact" })).toHaveValue("project.stages.json");
     expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain('"format": "stages-studio"');
     const download = screen.getByRole("link", { name: "Download artifact" });
@@ -413,7 +413,7 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain('"rating"');
     expect(screen.getByRole("link", { name: "Download artifact" })).toHaveAttribute("download", "project.stages.json");
     await user.selectOptions(screen.getByRole("combobox", { name: "Generated artifact" }), "export-report.json");
-    expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain("compiler.unsupported-field-definition");
+    expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain("document.unsupported-definition-version");
     expect(screen.getByRole("link", { name: "Download artifact" })).toHaveAttribute("download", "export-report.json");
   });
 

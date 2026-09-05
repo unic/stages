@@ -4,6 +4,134 @@
   "statusValues": ["complete", "partial", "missing"],
   "packages": [
     {
+      "package": "@stages/authoring",
+      "entrypoint": "packages/authoring/src/index.ts",
+      "tests": [
+        "packages/authoring/test-d/contract.ts",
+        "packages/authoring/test/portable.test.mjs"
+      ],
+      "defaultReference": "/reference/authoring",
+      "exports": [
+        {
+          "symbol": "loadPortableForm",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "projectPortableForm",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "serializePortableForm",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "validatePortableForm",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "LoadedPortableForm",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableDiagnostic",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableFormDefinition",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableLoadOptions",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableRequirements",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableResult",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "definePortableServiceBindings",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableServiceBinding",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableServiceBindings",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-runtime"
+          ],
+          "status": "complete"
+        }
+      ]
+    },
+    {
       "package": "@stages/core",
       "entrypoint": "packages/core/src/index.ts",
       "tests": ["packages/core/test-d/contract.ts", "packages/core/test/controller.test.mjs"],

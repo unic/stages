@@ -99,6 +99,8 @@ away readonly snapshot types.
 ## Package graph
 
 `@stages/core` has no runtime dependencies and imports only its own modules.
+`@stages/authoring` contains the optional portable loader and shared Studio compiler.
+It depends only on core and does not require framework or browser globals.
 `@stages/dom` and `@stages/test-kit` depend only on the matching core version.
 `@stages/react` depends on core and declares React 17 or newer as a peer.
 `@stages/vue` depends on core and declares Vue 3.3 or newer as a peer.
@@ -108,7 +110,7 @@ rejects browser globals or non-relative runtime imports in core source.
 
 ## Evidence
 
-Package boundaries come from the six package manifests and
+Package boundaries come from the seven package manifests and
 `scripts/check-v1-acceptance.mjs`. Normalization is implemented in
 `packages/core/src/schema.ts`; the per-controller state, reconciliation,
 transaction scheduler, and structural sharing are in

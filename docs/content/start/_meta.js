@@ -1,4 +1,5 @@
 export default {
+  "portable-forms": "Load a portable form",
   "introduction": "Introduction",
   "mental-model": "Mental model",
   "installation": "Installation",

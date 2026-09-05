@@ -1,0 +1,50 @@
+{
+  "name": "@stages/authoring",
+  "version": "1.0.0-alpha.0",
+  "description": "Portable Stages form definitions and framework-neutral runtime compiler",
+  "license": "MIT",
+  "author": "Fredi Bach",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unic/stages.git",
+    "directory": "packages/authoring"
+  },
+  "homepage": "https://github.com/unic/stages#readme",
+  "bugs": {
+    "url": "https://github.com/unic/stages/issues"
+  },
+  "keywords": [
+    "forms",
+    "wizard",
+    "portable",
+    "typescript"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@stages/core": "1.0.0-alpha.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./studio": {
+      "types": "./dist/studio.d.ts",
+      "import": "./dist/studio.js"
+    },
+    "./portable.schema.json": "./portable.schema.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "portable.schema.json"
+  ],
+  "devDependencies": {
+    "@stages/core": "file:../core"
+  }
+}

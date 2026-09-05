@@ -22,6 +22,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
+            packages/authoring/package-lock.json
             studio/package-lock.json
             docs/package-lock.json
             examples/shared/event-launch/package-lock.json
@@ -34,6 +35,7 @@ jobs:
       - name: Install locked dependencies
         run: |
           npm ci
+          npm --prefix packages/authoring ci
           npm --prefix studio ci
           npm --prefix docs ci
           npm --prefix examples/shared/event-launch ci

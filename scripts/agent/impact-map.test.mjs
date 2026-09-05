@@ -19,6 +19,9 @@ const cases = [
   ["packages/react/src/index.tsx", ["build:core", "build:react", "typecheck:react", "test:react", "build:example:react", "e2e:react"]],
   ["packages/vue/src/index.ts", ["build:core", "build:vue", "typecheck:vue", "test:vue", "build:example:vue", "e2e:vue"]],
   ["packages/angular/src/index.ts", ["build:core", "build:angular", "typecheck:angular", "test:angular", "build:example:angular", "e2e:angular"]],
+  ["packages/authoring/src/index.ts", ["release"]],
+  ["packages/authoring/src/portable.ts", ["release"]],
+  ["packages/authoring/src/compiler/compiler.ts", ["build:core", "build:authoring", "typecheck:authoring", "test:authoring", "test:studio"]],
   ["packages/test-kit/src/index.ts", ["build:core", "build:test-kit", "typecheck:test-kit", "test:test-kit", "test:adapters"]],
   ["examples/shared/event-launch/schema.ts", ["build:core", "test:shared-example", "build:examples", "e2e:all"]],
   ["examples/react/src/App.tsx", ["build:example:react", "e2e:react"]],
@@ -56,7 +59,7 @@ test("a release-level path supersedes narrower verification", () => {
 });
 
 test("every public package manifest receives release-level verification", () => {
-  for (const packageName of ["core", "dom", "react", "vue", "angular", "test-kit"]) {
+  for (const packageName of ["core", "dom", "react", "vue", "angular", "test-kit", "authoring"]) {
     assert.deepEqual(commandsForPath(`packages/${packageName}/package.json`), ["release"], packageName);
   }
 });

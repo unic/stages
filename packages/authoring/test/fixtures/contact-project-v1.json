@@ -1,0 +1,169 @@
+{
+  "format": "stages-studio",
+  "formatVersion": 1,
+  "project": {
+    "uid": "contact_project",
+    "title": "Contact",
+    "defaultLocale": "en"
+  },
+  "forms": {
+    "contact": {
+      "uid": "contact",
+      "title": "Contact",
+      "runtime": {
+        "schemaId": "contact",
+        "schemaVersion": 1
+      },
+      "rootNodeUids": [
+        "name",
+        "email",
+        "confirm",
+        "subscribe",
+        "company"
+      ],
+      "nodes": {
+        "name": {
+          "uid": "name",
+          "kind": "field",
+          "runtimeId": "name",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "name"
+          },
+          "validators": [
+            {
+              "kind": "required",
+              "message": {
+                "key": "required",
+                "default": "Required"
+              }
+            }
+          ],
+          "localizedProps": {
+            "label": "name"
+          }
+        },
+        "email": {
+          "uid": "email",
+          "kind": "field",
+          "runtimeId": "email",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "email"
+          },
+          "validators": [
+            {
+              "kind": "required"
+            },
+            {
+              "kind": "pattern",
+              "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+              "message": "Enter an email"
+            }
+          ]
+        },
+        "confirm": {
+          "uid": "confirm",
+          "kind": "field",
+          "runtimeId": "confirm",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "confirm"
+          },
+          "validators": [
+            {
+              "kind": "comparison",
+              "operator": "===",
+              "other": {
+                "kind": "reference",
+                "scope": "value",
+                "path": [
+                  "email"
+                ]
+              },
+              "message": "Emails must match"
+            }
+          ]
+        },
+        "subscribe": {
+          "uid": "subscribe",
+          "kind": "field",
+          "runtimeId": "subscribe",
+          "definition": {
+            "key": "checkbox",
+            "version": 1
+          },
+          "props": {
+            "label": "subscribe"
+          }
+        },
+        "company": {
+          "uid": "company",
+          "kind": "field",
+          "runtimeId": "company",
+          "definition": {
+            "key": "text",
+            "version": 1
+          },
+          "props": {
+            "label": "company"
+          },
+          "behavior": {
+            "when": {
+              "kind": "reference",
+              "scope": "value",
+              "path": [
+                "subscribe"
+              ]
+            }
+          },
+          "validators": [
+            {
+              "kind": "required"
+            }
+          ]
+        }
+      },
+      "scenarios": [
+        {
+          "uid": "sample",
+          "title": "Private sample",
+          "value": {
+            "name": "Private answer"
+          }
+        }
+      ],
+      "settings": {}
+    }
+  },
+  "fragments": {},
+  "resources": {
+    "locales": {
+      "en": {
+        "label": "en",
+        "messages": {
+          "required": "Name is required",
+          "name": "Name",
+          "unrelated": "private resource"
+        }
+      },
+      "de": {
+        "label": "de",
+        "messages": {
+          "required": "Name ist erforderlich",
+          "name": "Name",
+          "unrelated": "private resource"
+        }
+      }
+    }
+  }
+}
