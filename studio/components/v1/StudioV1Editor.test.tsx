@@ -1,3 +1,4 @@
+import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
 import { readFileSync } from "node:fs";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -160,6 +161,38 @@ describe("Studio advanced collection and wizard Test mode", () => {
     const variantRoot = variantPreview.container.lastElementChild as HTMLElement;
     fireEvent.click(within(variantRoot).getByRole("button", { name: "Add person" }));
     await waitFor(() => expect(within(variantRoot).getByLabelText("Row 1 test controls")).toBeInTheDocument());
+  });
+
+  it("creates editable keyed agenda variants and gives duplicates fresh identities", async () => {
+    const demo = STUDIO_DEMO_PROJECTS.find(({ id }) => id === "agenda")!;
+    const form = Object.values(demo.project.forms)[0]!;
+    const preview = renderPreview(form);
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Add session" })).toBeEnabled());
+    for (const [variant, label] of [["session", "Session title"], ["workshop", "Workshop title"], ["break", "Break label"]]) {
+      const previousCount = preview.container.querySelectorAll(".studio-v1-preview__row").length;
+      fireEvent.click(screen.getByRole("button", { name: `Add ${variant}` }));
+      await waitFor(() => expect(preview.container.querySelectorAll(".studio-v1-preview__row")).toHaveLength(previousCount + 1));
+      const rows = preview.container.querySelectorAll<HTMLElement>(".studio-v1-preview__row");
+      const added = within(rows[rows.length - 1]!);
+      const input = await added.findByRole("textbox", { name: label! });
+      fireEvent.change(input, { target: { value: `New ${variant}` } });
+      await waitFor(() => expect(input).toHaveValue(`New ${variant}`));
+      expect(added.getByRole("button", { name: /Remove row/ })).toBeEnabled();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate row 4" }));
+    await waitFor(() => expect(screen.getAllByRole("textbox", { name: "Workshop title" })).toHaveLength(2));
+    const titles = screen.getAllByRole("textbox", { name: "Workshop title" });
+    fireEvent.change(titles[1]!, { target: { value: "Independent copy" } });
+    expect(titles[0]).toHaveValue("New workshop");
+    const keys = Array.from(preview.container.querySelectorAll(".studio-v1-preview__row-tools code"), (code) => code.textContent);
+    expect(keys).toHaveLength(6);
+    expect(new Set(keys).size).toBe(6);
+    fireEvent.click(screen.getByRole("button", { name: "Move row 5 up" }));
+    await waitFor(() => expect(screen.getAllByRole("textbox", { name: "Workshop title" })[0]).toHaveValue("Independent copy"));
+    fireEvent.click(screen.getByRole("button", { name: "Remove row 4" }));
+    await waitFor(() => expect(screen.getAllByRole("textbox", { name: "Workshop title" })).toHaveLength(1));
+    expect(screen.getByRole("textbox", { name: "Workshop title" })).toHaveValue("New workshop");
   });
 
   it("shows property-key collision diagnostics and key-strategy guidance", async () => {

@@ -463,7 +463,8 @@ interface PreviewNodeProps {
   readonly authoring?: AuthoringCanvasBindings;
 }
 
-function CollectionRowTestControls({ row, index, size, snapshot, canAdd, canRemove, disabled, onStructureEvent }: {
+function CollectionRowTestControls({ row, index, size, snapshot, canAdd, canRemove, disabled, onDuplicate, onStructureEvent }: {
+  readonly onDuplicate: () => void;
   readonly row: unknown;
   readonly index: number;
   readonly size: number;
@@ -491,7 +492,7 @@ function CollectionRowTestControls({ row, index, size, snapshot, canAdd, canRemo
     {error.length > 0 && <small role="alert">{error}</small>}
     <Button variant="outline" size="sm" disabled={disabled} onClick={replace}>Replace row {index + 1}</Button></div>
     <div className="studio-row-actions"><small>Item {index + 1}</small>
-    <EditorTooltip label="Duplicate item"><Button variant="ghost" size="icon" aria-label={`Duplicate row ${index + 1}`} disabled={!canAdd} onClick={() => dispatch("collection:duplicate")}><Copy size={14} aria-hidden="true" /></Button></EditorTooltip>
+    <EditorTooltip label="Duplicate item"><Button variant="ghost" size="icon" aria-label={`Duplicate row ${index + 1}`} disabled={!canAdd} onClick={onDuplicate}><Copy size={14} aria-hidden="true" /></Button></EditorTooltip>
     <EditorTooltip label="Move item up"><Button variant="ghost" size="icon" aria-label={`Move row ${index + 1} up`} disabled={disabled || index === 0} onClick={() => dispatch("collection:move", { to: index - 1 })}><ArrowUp size={14} aria-hidden="true" /></Button></EditorTooltip>
     <EditorTooltip label="Move item down"><Button variant="ghost" size="icon" aria-label={`Move row ${index + 1} down`} disabled={disabled || index === size - 1} onClick={() => dispatch("collection:move", { to: index + 1 })}><ArrowDown size={14} aria-hidden="true" /></Button></EditorTooltip>
     <EditorTooltip label="Remove item"><Button variant="ghost" size="icon" aria-label={`Remove row ${index + 1}`} disabled={!canRemove} onClick={() => dispatch("collection:remove")}><Trash2 size={14} aria-hidden="true" /></Button></EditorTooltip></div>
@@ -505,13 +506,38 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
   const snapshot = findPreviewSnapshot(snapshotNodes, path);
   const rows = getAtPath(value, path);
   const values = Array.isArray(rows) ? rows : [];
+  const addRow = (variantUid?: Uid) => {
+    if (snapshot?.kind !== "collection" || collection?.kind !== "collection") return;
+    const variant = variantUid === undefined ? undefined : form.nodes[variantUid];
+    const variantId = variant?.kind === "variant" ? variant.runtimeId : undefined;
+    if (collection.itemKey?.kind !== "property") {
+      onStructureEvent(nodeEvent("collection:add", snapshot.address, variantId === undefined ? {} : { payload: { variant: variantId } }));
+      return;
+    }
+    const childUids = isStudioVariantCollection(collection)
+      ? variant?.kind === "variant" ? variant.childUids : []
+      : collection.childUids;
+    const value = {
+      ...createEmptyStudioScenarioValue({ ...form, rootNodeUids: childUids }),
+      ...(isStudioVariantCollection(collection) ? { [collection.discriminator]: variantId } : {}),
+      [collection.itemKey.property]: crypto.randomUUID(),
+    };
+    onStructureEvent(nodeEvent("collection:add", snapshot.address, { payload: { value } }));
+  };
+  const duplicateRow = (row: unknown, index: number, rowSnapshot: ContainerSnapshot) => {
+    if (snapshot?.kind !== "collection" || collection?.kind !== "collection") return;
+    if (collection.itemKey?.kind === "property" && row !== null && typeof row === "object") {
+      const value = { ...structuredClone(row), [collection.itemKey.property]: crypto.randomUUID() };
+      onStructureEvent(nodeEvent("collection:add", snapshot.address, { payload: { value, index: index + 1 } }));
+    } else onStructureEvent(nodeEvent("collection:duplicate", rowSnapshot.address));
+  };
   return <PreviewLayout node={node} {...(props.authoring === undefined ? {} : { authoring: props.authoring })}><div className="studio-v1-preview__collection">
       {!showTestDetails && <p className="studio-collection-label">{nodeLabel(form, node.uid)} <small>{values.length} items</small></p>}
       <p hidden={!showTestDetails}><strong>Collection scope:</strong> {path.join(".")} · size {values.length} · add {snapshot?.kind === "collection" && snapshot.canAdd ? "allowed" : "blocked"} · remove {snapshot?.kind === "collection" && snapshot.canRemove ? "allowed" : "blocked"}</p>
       <div className="studio-v1-preview__collection-actions">
         {collection?.kind === "collection" && isStudioVariantCollection(collection)
-          ? collection.variantUids.map((uid) => <button type="button" key={uid} disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:add", snapshot.address, { payload: { variant: runtimeIdFor(form, uid) } }))}>Add {nodeLabel(form, uid)}</button>)
-          : <button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:add", snapshot.address))}>Add row</button>}
+          ? collection.variantUids.map((uid) => <button type="button" key={uid} disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => addRow(uid)}>Add {nodeLabel(form, uid)}</button>)
+          : <button type="button" disabled={snapshot?.kind !== "collection" || snapshot.canAdd === false} onClick={() => addRow()}>Add row</button>}
         <button type="button" hidden={!showTestDetails} disabled={snapshot?.kind !== "collection" || snapshot.state.disabled || values.length < 2} onClick={() => snapshot?.kind === "collection" && onStructureEvent(nodeEvent("collection:sort", snapshot.address, { payload: { order: values.map((_, index) => values.length - index - 1) } }))}>Reverse row order</button>
       </div>
       {values.map((row, index) => {
@@ -525,7 +551,7 @@ function PreviewCollection(props: PreviewNodeProps & { readonly node: StudioRunt
       const rowKey = rowSnapshot?.kind === "row" ? rowSnapshot.id : `unavailable-${rowPath.join("\u0000")}`;
       return <div className="studio-v1-preview__row" data-row-index={index} key={rowKey}>{children.map((child) => (
         <PreviewNode key={child.uid} form={form} node={child} value={value} snapshotNodes={snapshotNodes} runtimePath={previewChildPath(form, rowPath, child)} expressionContext={{ ...props.expressionContext, row }} onInput={onInput} onStructureEvent={onStructureEvent} onWizardNavigate={onWizardNavigate} {...(props.authoring === undefined ? {} : { authoring: props.authoring })} />
-      ))}{rowSnapshot?.kind === "row" && <CollectionRowTestControls row={row} index={index} size={values.length} snapshot={rowSnapshot} canAdd={snapshot?.kind === "collection" && snapshot.canAdd === true} canRemove={snapshot?.kind === "collection" && snapshot.canRemove === true} disabled={snapshot?.kind !== "collection" || snapshot.state.disabled} onStructureEvent={onStructureEvent} />}</div>;
+      ))}{rowSnapshot?.kind === "row" && <CollectionRowTestControls onDuplicate={() => duplicateRow(row, index, rowSnapshot)} row={row} index={index} size={values.length} snapshot={rowSnapshot} canAdd={snapshot?.kind === "collection" && snapshot.canAdd === true} canRemove={snapshot?.kind === "collection" && snapshot.canRemove === true} disabled={snapshot?.kind !== "collection" || snapshot.state.disabled} onStructureEvent={onStructureEvent} />}</div>;
     })}</div></PreviewLayout>;
 }
 
