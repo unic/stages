@@ -20,7 +20,12 @@ definitions across real edits when rules, definition identity, and expanded
 runtime paths are unchanged. Label-edit runtime evidence retains controller
 identity, accepted state, wizard position, row keys, and pending owner proposals;
 target-path and rule edits invalidate definitions, and fresh diagnostics remain
-available. Fine-grained validation reuse and migration policies remain P1 work.
+available. Layout, theme, and existing decorative block-prop edits now retain
+schema/factory identity while refreshing presentation and source maps. Runtime
+tests preserve pending validation without advancing the controller revision;
+validator-edit tests prove cancellation and late-result suppression. Fragment
+overrides and dynamic factory identity have compiler coverage. Validation reuse
+across runtime-schema edits and migration policies remain P1 work.
 See [preview session behavior](../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md).
 
 F4 progress (2026-09-05): source maps retain variant-qualified candidates.

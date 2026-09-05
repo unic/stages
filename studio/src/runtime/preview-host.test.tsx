@@ -104,10 +104,12 @@ describe("Studio preview host", () => {
     expect((host.getSnapshot().nodes[0] as { activeStage?: string }).activeStage).toBe("second");
   });
 
-  it("preserves touched state and pending validation across equivalent compilation", async () => {
+  it.each(["equivalent", "layout", "theme", "content"])("preserves touched state and pending validation across %s compilation", async (edit) => {
     const base = compiled().expandedForm;
     const field = base.nodes[fieldUid] as StudioFieldNode;
-    const form: StudioFormDocument = { ...base, nodes: { ...base.nodes, [fieldUid]: {
+    const blockUid = toUid("block_help");
+    const form: StudioFormDocument = { ...base, rootNodeUids: [...base.rootNodeUids, blockUid], nodes: {
+      ...base.nodes, [blockUid]: { uid: blockUid, kind: "block", definition: { key: "block:help", version: 1 }, props: { text: "Before" } }, [fieldUid]: {
       ...field,
       reducers: [{ id: "clear", on: "clear", actions: [{ op: "set", target: { kind: "event-target" }, value: { kind: "literal", value: "" } }] }],
       validators: [{ kind: "service", service: { key: "availability", version: 1 }, request: { kind: "literal", value: "check" }, on: "submit" }],
@@ -132,7 +134,23 @@ describe("Studio preview host", () => {
       expect(touched).not.toEqual([]);
       const validation = host.controller.validate({ event: "submit", reveal: true });
       expect(host.getSnapshot().validation.pendingCount).toBe(1);
-      host.update({ compiled: session.compile(structuredClone(form), {}, { serviceBindings }), value: initialValue });
+      const edited: StudioFormDocument = edit === "layout"
+        ? { ...form, nodes: { ...form.nodes, [fieldUid]: { ...form.nodes[fieldUid]!, presentation: {
+          layout: { width: { mobile: "full", tablet: "half", desktop: "half" } },
+        } } } }
+        : edit === "theme" ? { ...form, settings: { ...form.settings, theme: { ...artifact.renderPlan.theme, accent: "#ff0000" } } }
+          : edit === "content" ? { ...form, nodes: { ...form.nodes, [blockUid]: {
+            ...form.nodes[blockUid]!, props: { text: "After" },
+          } } } : structuredClone(form);
+      const next = session.compile(edited, {}, { serviceBindings });
+      if (edit !== "equivalent") {
+        expect(next).not.toBe(artifact);
+        expect(next.renderPlan).not.toEqual(artifact.renderPlan);
+      }
+      expect(next.schemaInput).toBe(artifact.schemaInput);
+      const revision = host.getSnapshot().revision;
+      host.update({ compiled: next, value: initialValue });
+      expect(host.getSnapshot().revision).toBe(revision);
       expect(host.controller).toBe(original);
       expect(host.serialize().meta["touched"]).toEqual(touched);
       expect(host.getSnapshot().validation.pendingCount).toBe(1);
@@ -141,6 +159,49 @@ describe("Studio preview host", () => {
       finish?.({ status: "failure", code: "taken" });
       const result = await validation;
       expect(result.issues).toContainEqual(expect.objectContaining({ code: "taken" }));
+    } finally {
+      host.destroy();
+    }
+  });
+
+  it("cancels obsolete validation after a validator edit and suppresses its late result", async () => {
+    const base = compiled().expandedForm;
+    const field = base.nodes[fieldUid] as StudioFieldNode;
+    const form: StudioFormDocument = { ...base, nodes: { ...base.nodes, [fieldUid]: {
+      ...field, validators: [{ kind: "service", service: { key: "availability", version: 1 }, on: "submit" }],
+    } } };
+    let finish!: (result: { status: "failure"; code: string }) => void;
+    const pending = new Promise<{ status: "failure"; code: string }>((resolve) => { finish = resolve; });
+    const cancelled = vi.fn();
+    const serviceBindings = defineStudioAsyncServiceBindings([{ key: "availability", version: 1, invoke: ({ validation }) => {
+      validation.signal.onCancel(cancelled);
+      return pending;
+    } }]);
+    const session = createStudioCompilerSession();
+    const artifact = session.compile(form, {}, { serviceBindings });
+    const host = createStudioPreviewHost({ compiled: artifact, value: initialValue });
+    try {
+      host.controller.dispatch(fieldEvent("blur", ["event", "title"]));
+      await publish();
+      const touched = host.serialize().meta["touched"];
+      const oldRun = host.controller.validate({ event: "submit", reveal: true });
+      expect(host.getSnapshot().validation.pendingCount).toBe(1);
+      const next = session.compile({ ...form, nodes: { ...form.nodes, [fieldUid]: {
+        ...field, validators: [{ kind: "required", code: "current-required", on: "submit" }],
+      } } }, {}, { serviceBindings });
+      expect(next.schemaInput).not.toBe(artifact.schemaInput);
+      const original = host.controller;
+      host.update({ compiled: next, value: initialValue });
+      expect(host.controller).toBe(original);
+      expect(cancelled).toHaveBeenCalledTimes(1);
+      expect(host.serialize().meta["touched"]).toEqual(touched);
+      const current = await host.controller.validate({ event: "submit", reveal: true });
+      expect(current.issues).toContainEqual(expect.objectContaining({ code: "current-required" }));
+      finish({ status: "failure", code: "obsolete-result" });
+      await oldRun;
+      await publish();
+      expect(JSON.stringify(host.getSnapshot().validation)).not.toContain("obsolete-result");
+      expect(host.getSnapshot().validation.pendingCount).toBe(0);
     } finally {
       host.destroy();
     }

@@ -7,7 +7,9 @@ Last reviewed against the implementation: 2026-09-04
 Workflow continuation (2026-09-05): the companion workflow improvements plan
 now includes compiler-session reuse of unchanged specialized reducers across
 presentation edits, with runtime evidence for retained interaction state and
-pending owner proposals. This advances the preview-continuity prerequisite;
+pending owner proposals. Layout, theme, and decorative block-prop edits also
+retain runtime schema identity and in-flight validation; validator edits cancel
+obsolete requests and suppress late results. This advances the preview-continuity prerequisite;
 Wave 5 Sessions 28–31 remain unimplemented and their beta gates remain open.
 
 Execution status:

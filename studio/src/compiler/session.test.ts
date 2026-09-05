@@ -9,6 +9,41 @@ const project = projectV1 as unknown as StudioProjectDocument;
 const form = project.forms[toUid("form_event")]!;
 
 describe("Studio compiler session", () => {
+  it("retains dynamic schema identity through fragment presentation edits but invalidates runtime inputs", () => {
+    const field = form.nodes[toUid("field_title")] as StudioFieldNode;
+    const fragmentUid = toUid("fragment_details");
+    const instanceUid = toUid("instance_details");
+    const source: typeof form = { ...form, rootNodeUids: [instanceUid], nodes: {
+      [instanceUid]: { uid: instanceUid, kind: "fragment", runtimeId: "details", fragmentUid },
+    } };
+    const definition = { uid: fragmentUid, title: "Details", version: 1, parameters: [], rootNodeUids: [field.uid], nodes: {
+      [field.uid]: { ...field, behavior: { presentWhen: { kind: "literal", value: true } as const } },
+    } };
+    const session = createStudioCompilerSession();
+    const first = session.compile(source, { [fragmentUid]: definition });
+    expect(typeof first.schemaInput).toBe("function");
+    const edited: typeof form = { ...source, nodes: { [instanceUid]: {
+      uid: instanceUid, kind: "fragment", runtimeId: "details", fragmentUid,
+      overrides: { [field.uid]: { presentation: { blockWidth: { desktop: "medium" } } } },
+    } } };
+    const second = session.compile(edited, { [fragmentUid]: definition });
+    expect(second.schema).toBe(first.schema);
+    expect(second.schemaInput).toBe(first.schemaInput);
+    expect(second.renderPlan).not.toEqual(first.renderPlan);
+    expect(second.sourceMap).not.toBe(first.sourceMap);
+    const changedDefinition = { ...definition, nodes: { [field.uid]: {
+      ...field, behavior: { presentWhen: { kind: "literal", value: false } as const },
+    } } };
+    const third = session.compile(edited, { [fragmentUid]: changedDefinition });
+    expect(third.schemaInput).not.toBe(second.schemaInput);
+    const localized = session.compile(edited, { [fragmentUid]: changedDefinition }, { localization: { defaultLocale: "de", resources: {} } });
+    expect(localized.schemaInput).not.toBe(third.schemaInput);
+    const rebound = session.compile(edited, { [fragmentUid]: changedDefinition }, {
+      localization: { defaultLocale: "de", resources: {} }, serviceBindings: defineStudioAsyncServiceBindings([]),
+    });
+    expect(rebound.schemaInput).not.toBe(localized.schemaInput);
+  });
+
   it("reuses reducer definitions for presentation edits but refreshes rules and resolved targets", async () => {
     const field = form.nodes[toUid("field_title")] as StudioFieldNode;
     const targetUid = toUid("field_summary");

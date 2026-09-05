@@ -11,6 +11,18 @@ function documentKey(value: unknown): string {
   });
 }
 
+/** Exclude only inputs that the compiler consumes exclusively in the render plan. */
+function runtimeDocument(form: StudioFormDocument): unknown {
+  return {
+    ...form,
+    settings: Object.fromEntries(Object.entries(form.settings).filter(([key]) => key !== "theme")),
+    nodes: Object.fromEntries(Object.entries(form.nodes).map(([uid, node]) => [uid,
+      Object.fromEntries(Object.entries(node).filter(([key]) =>
+        key !== "presentation" && !(node.kind === "block" && key === "props"))),
+    ])),
+  };
+}
+
 /** One owner's last compilation. Document inputs and binding registries must be immutable. */
 export function createStudioCompilerSession() {
   let previous: {
@@ -18,6 +30,7 @@ export function createStudioCompilerSession() {
     fragments: Readonly<Record<Uid, StudioFragmentDefinition>>;
     options: StudioCompileOptions;
     key: string;
+    runtimeKey: string;
     compiled: CompiledStudioForm;
   } | undefined;
 
@@ -35,10 +48,16 @@ export function createStudioCompilerSession() {
 
       // Functions belong to the trusted binding environment, compared by identity above.
       const key = documentKey({ form, fragments, localization: options.localization });
-      const compiled = sameBindings && cached.key === key
+      const fresh = sameBindings && cached.key === key
         ? cached.compiled
         : compileStudioForm(form, fragments, options, sameBindings ? cached.compiled : undefined);
-      previous = { form, fragments, options, key, compiled };
+      const runtimeKey = documentKey({ form: runtimeDocument(fresh.expandedForm), localization: options.localization });
+      // Keep the fresh render plan, source map, and diagnostics. An unchanged
+      // runtime schema must not cancel validation through controller.update().
+      const compiled = sameBindings && cached.runtimeKey === runtimeKey && fresh !== cached.compiled
+        ? { ...fresh, schema: cached.compiled.schema, schemaInput: cached.compiled.schemaInput }
+        : fresh;
+      previous = { form, fragments, options, key, runtimeKey, compiled };
       return compiled;
     },
   };

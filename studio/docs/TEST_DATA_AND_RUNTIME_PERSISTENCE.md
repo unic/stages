@@ -23,10 +23,19 @@ session reuses specialized field definitions when their definition key/version,
 reducer rules, and the expanded UID-to-runtime-path index are unchanged. Label,
 layout, and other presentation edits therefore retain controller identity,
 interaction metadata, row keys, wizard position, and pending owner proposals.
-The schema and diagnostics are still compiled afresh, including invalid patch
-targets; existing core schema-update rules govern validation invalidation.
-Only equivalent whole-compilation reuse promises uninterrupted in-flight
-validation. A changed reducer, field definition, or path index conservatively
+Compilation still refreshes diagnostics, including invalid patch targets.
+When the only changes are node presentation (including layout), theme tokens,
+or existing decorative block props, the session retains the previous schema
+and schema-factory references while publishing the fresh render plan and source
+map. With unchanged value, context, extensions, and creation options, the preview
+does not update the controller: its revision and in-flight validation remain
+unchanged. This comparison uses the expanded fragment graph and includes
+localization inputs and trusted binding identity.
+
+Field props (including labels), validators, transforms, structural behavior,
+and other runtime inputs still require a schema update. Core then invalidates
+validation, cancels old requests, and suppresses late results. A changed reducer,
+field definition, or path index conservatively
 invalidates specialized definitions and retains the existing recreation policy.
 This is not a runtime-state migration policy. Fragment inputs are compared after
 expansion, so instance overrides and remapped targets participate in reuse.
