@@ -1,4 +1,4 @@
-import { stages } from "@stages/core";
+import { fieldEvent, stages } from "@stages/core";
 import { describe, expect, it } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
 import {
@@ -109,6 +109,28 @@ describe("Studio command engine", () => {
       ok: false,
       failure: { code: "command.invalid-update" },
     });
+  });
+
+  it.each([
+    ["reducers", fieldUid], ["transforms", fieldUid], ["transforms", groupUid],
+  ] as const)("persists %s on %s and applies the rule in the runtime", async (property, uid) => {
+    const initial = project();
+    const rules = [{ id: "process", on: "input", actions: [{ op: "set", target: { kind: "event-target" }, value: { kind: "literal", value: "Processed" } }] }] as const;
+    const updated = success(initial, { type: "node.update", formUid, uid, changes: { [property]: rules } });
+    expect(initial.forms[formUid]!.nodes[uid]).not.toHaveProperty(property);
+    expect(updated.forms[formUid]!.nodes[uid]).toHaveProperty(property, rules);
+    expect(validateStudioProject(updated, { supportedDefinitions: { text: [1] } }).ok).toBe(true);
+    const compiled = compileStudioForm(updated.forms[formUid]!);
+    expect(compiled.diagnostics).toEqual([]);
+    let proposed: unknown;
+    const controller = stages({ schema: compiled.schemaInput, fields: compiled.fields, value: { event: { title: "Before" } }, onChange: (change) => { proposed = change.value; } });
+    controller.dispatch(fieldEvent("input", ["event", "title"], { payload: "Typed" }));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(proposed).toEqual({ event: { title: "Processed" } });
+    controller.destroy();
+    const removed = success(updated, { type: "node.update", formUid, uid, changes: { [property]: undefined } });
+    expect(removed.forms[formUid]!.nodes[uid]).not.toHaveProperty(property);
   });
 
   it("updates form validators immutably", () => {

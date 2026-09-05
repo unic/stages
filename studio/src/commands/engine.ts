@@ -10,7 +10,7 @@ import type {
 
 const UPDATE_KEYS = new Set([
   "runtimeId", "definition", "props", "presentation", "behavior", "legacy",
-  "computed", "derivedProps", "localizedProps", "format", "validators", "min", "max", "initialRows", "itemKey",
+  "computed", "derivedProps", "localizedProps", "format", "validators", "transforms", "reducers", "min", "max", "initialRows", "itemKey",
   "discriminator", "initialVariantUid", "initialStageUid", "navigation",
   "fragmentUid", "overrides",
 ]);
