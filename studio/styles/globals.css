@@ -327,10 +327,11 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-preview__layout[data-align-desktop="center"] { margin-inline: auto; }
 .studio-v1-preview__layout[data-align-desktop="end"] { margin-inline: auto 0; }
 .studio-v1-preview__layout[data-align-desktop="stretch"] { margin-inline: 0; }
-.studio-v1-preview__layout > [role="note"] { border: 1px solid var(--studio-preview-border); border-radius: var(--studio-preview-radius); padding: var(--studio-preview-spacing); color: var(--studio-preview-foreground); }
-.studio-v1-preview__layout > [role="note"][data-tone="info"] { border-inline-start: 0.25rem solid var(--studio-preview-accent); }
+.studio-v1-preview__layout > [role="note"] { border: 0; padding: 0; color: var(--studio-preview-foreground); }
 .studio-v1-preview__layout > [role="separator"] { border-top: 1px solid var(--studio-preview-border); color: var(--studio-preview-muted); padding-top: 0.25rem; }
-.studio-v1-preview__group { display: flex; min-width: 0; flex-wrap: wrap; align-items: start; gap: var(--studio-preview-spacing); margin: 0; border: 1px solid var(--studio-preview-border); border-radius: var(--studio-preview-radius); padding: var(--studio-preview-spacing); }
+.studio-v1-preview__group { display: flex; min-width: 0; flex-wrap: wrap; align-content: flex-start; align-items: start; gap: var(--studio-preview-spacing); margin: 0; border: 0; padding: 0; }
+/* Only the third group level and deeper need an inset to distinguish nested sections. */
+.studio-v1-preview__group .studio-v1-preview__group .studio-v1-preview__group { padding: calc(var(--studio-preview-spacing) / 2); }
 .studio-v1-preview__collection, .studio-v1-preview__wizard { display: grid; min-width: 0; gap: var(--studio-preview-spacing); }
 .studio-v1-preview__collection-actions, .studio-v1-preview__wizard nav { display: flex; flex-wrap: wrap; gap: 0.45rem; }
 .studio-v1-preview__collection-actions button, .studio-v1-preview__wizard button, .studio-v1-preview__row > button { min-height: 2rem; border: 1px solid var(--studio-preview-border); border-radius: calc(var(--studio-preview-radius) - 0.1rem); background: var(--studio-preview-background); padding: 0.4rem 0.65rem; color: var(--studio-preview-foreground); cursor: pointer; }
