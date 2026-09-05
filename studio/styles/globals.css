@@ -1221,7 +1221,9 @@ button, input, select, textarea { font: inherit; }
 .studio-v1-outline__item[data-search-match="true"] > .studio-v1-outline__row { background: #f0f7ff; }
 .studio-v1-outline [role="group"] { border-left: 1px solid #ececef; margin-left: 0.7rem; padding-left: 0.25rem; }
 .studio-fragment-list { display: grid; gap: 0.5rem; padding: 0; list-style: none; }
-.studio-fragment-list li { display: flex; align-items: center; gap: 0.4rem; color: #7554a6; font-size: 0.72rem; }
+.studio-fragment-list li > span { flex: 1; min-width: 5rem; overflow-wrap: anywhere; }
+.studio-v1-outline__resources > .ui-button { margin-top: 0.6rem; white-space: normal; }
+.studio-fragment-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; color: #7554a6; font-size: 0.72rem; }
 @media (max-width: 1000px) {
   .studio-v1-preview-workspace > .studio-v1-preview { height: auto; min-height: 100%; }
   .studio-v1-preview { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(20rem, 65vh) auto; overflow: visible; }

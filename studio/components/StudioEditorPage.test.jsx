@@ -944,6 +944,64 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.getByRole("textbox", { name: "Primary contact" })).toBeVisible();
   });
 
+  it("edits shared fragment settings for every instance with undo, overrides, and persistence", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    const view = render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
+    fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
+    await user.click(screen.getByRole("button", { name: "Create fragment from selection" }));
+    await user.click(screen.getByRole("button", { name: "Insert Fragment 1" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Override First field label" }), { target: { value: "Personal label" } });
+    await user.click(screen.getByRole("button", { name: "Edit shared contents" }));
+    const shared = within(screen.getByRole("region", { name: "Shared fragment editor" }));
+    fireEvent.change(shared.getByRole("textbox", { name: "Label", exact: true }), { target: { value: "Shared name" } });
+    expect(await screen.findByRole("textbox", { name: "Shared name", exact: true })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Personal label", exact: true })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Undo", exact: true }));
+    expect(screen.getByRole("textbox", { name: "First field", exact: true })).toBeVisible();
+    expect(shared.getByRole("textbox", { name: "Label", exact: true })).toHaveValue("First field");
+    await user.click(screen.getByRole("button", { name: "Redo", exact: true }));
+    expect(shared.getByRole("textbox", { name: "Label", exact: true })).toHaveValue("Shared name");
+    await user.click(shared.getByRole("button", { name: "Back to form" }));
+    await user.clear(screen.getByRole("textbox", { name: "Override Shared name label" }));
+    const inputs = screen.getAllByRole("textbox", { name: "Shared name", exact: true });
+    expect(inputs).toHaveLength(2);
+    await user.type(inputs[0], "Alice");
+    await user.type(inputs[1], "Bob");
+    expect(inputs[0]).toHaveValue("Alice");
+    expect(inputs[1]).toHaveValue("Bob");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Local draft saved");
+    view.unmount();
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    expect(screen.getAllByRole("textbox", { name: "Shared name", exact: true })).toHaveLength(2);
+    await openWorkbenchPanel(user, "Layers");
+    await user.click(screen.getByRole("button", { name: "Edit Fragment 1" }));
+    expect(screen.getByRole("region", { name: "Shared fragment editor" })).toBeVisible();
+  });
+
+  it("inserts fragments inside the selected group and through a canvas insertion menu", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
+    const first = document.querySelector('[data-outline-uid="field_first"]');
+    fireEvent.contextMenu(first);
+    await user.click(screen.getByRole("menuitem", { name: "Create fragment from selection" }));
+    fireEvent.click(document.querySelector('[data-outline-uid="group_drop"]'));
+    await user.click(screen.getByRole("button", { name: "Insert Fragment 1" }));
+    const group = document.querySelector('[data-outline-uid="group_drop"]');
+    expect(group.querySelector('[data-kind="fragment"]')).not.toBeNull();
+    fireEvent.contextMenu(group);
+    await user.click(screen.getByRole("menuitem", { name: "Add item…" }));
+    await user.click(screen.getByRole("menuitem", { name: "Insert Fragment 1" }));
+    expect(group.querySelectorAll('[data-kind="fragment"]')).toHaveLength(2);
+    expect(screen.getAllByRole("textbox", { name: "First field", exact: true })).toHaveLength(3);
+  });
+
   it("authors safe visibility and computed expressions with reference pickers and readable text", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);

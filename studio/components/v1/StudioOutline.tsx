@@ -39,11 +39,16 @@ interface StudioOutlineProps {
   readonly onUngroup: (uid: Uid) => void;
   readonly onConvert: (uid: Uid, kind: "collection" | "group" | "wizard") => void;
   readonly contextItems: (uid: Uid, uids: readonly Uid[], position: StudioContextMenuPosition) => readonly StudioInsertMenuItem[];
+  readonly onCreateFragment: () => void;
+  readonly canCreateFragment: boolean;
+  readonly onInsertFragment: (uid: Uid) => void;
+  readonly onEditFragment: (uid: Uid) => void;
   readonly canPaste: boolean;
 }
 
 export function StudioOutline({
   project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup, onConvert, canPaste, contextItems,
+  onCreateFragment, canCreateFragment, onInsertFragment, onEditFragment,
 }: StudioOutlineProps) {
   const [query, setQuery] = useState("");
   const model = useMemo(() => {
@@ -238,7 +243,8 @@ export function StudioOutline({
       <div className="studio-v1-outline__resources">
         <h3>Fragments</h3>
         <p>{Object.keys(project.fragments).length === 0 ? "No reusable fragments yet" : `${Object.keys(project.fragments).length} reusable ${Object.keys(project.fragments).length === 1 ? "fragment" : "fragments"}`}</p>
-        <ul className="studio-fragment-list">{Object.values(project.fragments).map((fragment) => <li key={fragment.uid}><Component size={13} aria-hidden="true" /><span>{fragment.title}</span></li>)}</ul>
+        <Button variant="outline" size="sm" disabled={!canCreateFragment} onClick={onCreateFragment}>Create fragment from selection</Button>
+        <ul className="studio-fragment-list">{Object.values(project.fragments).map((fragment) => <li key={fragment.uid}><Component size={13} aria-hidden="true" /><span>{fragment.title}</span><Button variant="ghost" size="sm" aria-label={`Edit ${fragment.title}`} onClick={() => onEditFragment(fragment.uid)}>Edit</Button><Button variant="outline" size="sm" aria-label={`Insert ${fragment.title}`} onClick={() => onInsertFragment(fragment.uid)}>Insert</Button></li>)}</ul>
       </div>
     </aside>
   );
