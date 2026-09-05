@@ -4,7 +4,7 @@
 - Preserve strict TypeScript. Do not introduce `any`, `@ts-ignore`, or `@ts-nocheck`.
 - Packages remain ESM-only, side-effect-free, and version-aligned.
 - Non-core packages depend on the exact matching `@stages/core` version.
-- Build core before an adapter, and build every affected package before running its `.mjs` tests.
+- Use the root change verifier to ensure current core and package output before `.mjs` tests. It orders prerequisites and reuses verified unchanged builds; test-only edits do not by themselves require recompilation.
 - Package export changes are public API changes.
 - Adapter behavior must remain expressible through the shared controller contract.
 

@@ -47,7 +47,7 @@ for (const [file, expected] of cases) {
 test("deduplicates commands while preserving dependency order", () => {
   assert.deepEqual(
     mapChangedPaths(["packages/react/src/index.tsx", "packages/react/src/index.tsx", "examples/react/src/App.tsx"]).commandIds,
-    ["build:core", "build:react", "typecheck:react", "test:react", "build:example:react", "e2e:react", "quality:knip", "quality:react"],
+    ["build:core", "build:react", "typecheck:react", "test:react", "build:shared-example", "build:example:react", "e2e:react", "quality:knip", "quality:react"],
   );
 });
 
@@ -89,4 +89,44 @@ test("detects a newly added package directory", async () => {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("instructions and agent tooling select setup checks without runtime builds", () => {
+  for (const file of ["AGENTS.md", "docs/AGENTS.md", ".agents/skills/stages-verify-change/SKILL.md"]) {
+    assert.deepEqual(mapChangedPaths([file]).commandIds, ["check:agent-setup"]);
+  }
+  assert.deepEqual(mapChangedPaths(["scripts/agent/verify-changed.mjs"]).commandIds, ["quality:knip", "check:agent-setup"]);
+  assert.deepEqual(mapChangedPaths(["README.md"]).commandIds, []);
+});
+
+test("runtime and compile-time test edits stay within their package", () => {
+  const runtime = mapChangedPaths(["packages/core/test/equality.test.mjs"]).commandIds;
+  assert.deepEqual(runtime, ["build:core", "test:core", "quality:knip"]);
+  const types = mapChangedPaths(["packages/core/test-d/contract.ts"]).commandIds;
+  assert.deepEqual(types, ["build:core", "typecheck:core", "quality:knip"]);
+});
+
+test("authoring and adapter aggregate tests receive every prerequisite in order", () => {
+  const ids = mapChangedPaths(["packages/authoring/src/compiler/compiler.ts", "packages/test-kit/src/index.ts"]).commandIds;
+  assert.equal(new Set(ids).size, ids.length);
+  assert(ids.indexOf("build:core") < ids.indexOf("build:authoring"));
+  for (const name of ["dom", "react", "vue", "angular"]) {
+    assert(ids.indexOf(`build:${name}`) < ids.indexOf("test:authoring"));
+    assert(ids.indexOf(`build:${name}`) < ids.indexOf("test:adapters"));
+  }
+  assert(ids.indexOf("build:shared-example") < ids.indexOf("test:authoring"));
+});
+
+test("shared example changes build each application once", () => {
+  const ids = mapChangedPaths(["examples/shared/event-launch/schema.ts", "examples/react/src/App.tsx"]).commandIds;
+  assert(!ids.includes("build:examples"));
+  for (const name of ["vanilla", "react", "vue", "angular"]) {
+    assert.equal(ids.filter((id) => id === `build:example:${name}`).length, 1);
+  }
+});
+
+test("known application assets avoid the repository-wide fallback", () => {
+  assert.deepEqual(commandsForPath("studio/styles/globals.css"), ["build:studio"]);
+  assert.deepEqual(commandsForPath("studio/lib/storage.js"), ["test:studio"]);
+  assert.deepEqual(commandsForPath("docs/app/layout.jsx"), ["check:docs", "build:docs"]);
 });

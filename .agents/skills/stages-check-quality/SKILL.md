@@ -1,6 +1,6 @@
 ---
 name: stages-check-quality
-description: Run and interpret Stages static quality checks. Use for dependencies, dead code, package efficiency, React diagnostics, or after changing JavaScript or TypeScript.
+description: Select and interpret Stages static checks for imports, exports, dependencies, dead code, package efficiency, or React changes. Use the change verifier for ordinary build and test selection.
 ---
 
 # Check Stages quality
@@ -11,6 +11,8 @@ Choose the narrowest relevant check while iterating:
 - Run `npm run doctor` after React work in `packages/react`, `examples/react`, `studio`, or `docs`.
 - Run `npm run check:e18e` after dependency, lockfile, package, or runtime-efficiency changes.
 - Run `npm run check:quality` before handoff for broad changes.
+
+Inspect `npm run verify:changed -- plan` first. If the selected verification already runs a required quality check, let it run there instead of invoking it again manually. Prose and agent-instruction edits do not require React Doctor or dependency analysis. Do not repeat a passed static check without a relevant edit or new finding.
 
 Treat Knip findings as evidence to verify against package exports, runtime loading, framework conventions, and tests before deleting code. Public package entry exports are intentional consumer surfaces.
 

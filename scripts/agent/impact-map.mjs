@@ -12,7 +12,7 @@ const adapterExamples = { dom: "vanilla", react: "react", vue: "vue", angular: "
 export const commands = Object.freeze({
   "build:authoring": "npx tsc -p packages/authoring/tsconfig.build.json",
   "typecheck:authoring": "npx tsc -p packages/authoring/tsconfig.test.json --noEmit",
-  "test:authoring": "npm --prefix examples/shared/event-launch run build && node --test packages/authoring/test/*.test.mjs",
+  "test:authoring": "node --test packages/authoring/test/*.test.mjs",
   "build:core": "npx tsc -p packages/core/tsconfig.build.json",
   "typecheck:core": "npx tsc -p packages/core/tsconfig.json --noEmit",
   "test:core": "node --test packages/core/test/*.test.mjs",
@@ -32,7 +32,8 @@ export const commands = Object.freeze({
   "typecheck:test-kit": "npx tsc -p packages/test-kit/tsconfig.json --noEmit",
   "test:test-kit": "node --test packages/test-kit/test/*.test.mjs",
   "test:adapters": "node --test packages/dom/test/*.test.mjs packages/react/test/*.test.mjs packages/vue/test/*.test.mjs packages/angular/test/*.test.mjs packages/test-kit/test/*.test.mjs",
-  "test:shared-example": "npm run test:example-contract:v1",
+  "build:shared-example": "npm --prefix examples/shared/event-launch run build",
+  "test:shared-example": "node --test examples/shared/event-launch/test/*.test.mjs",
   "build:examples": "npm run build:examples:v1",
   "build:example:vanilla": "npm --prefix examples/vanilla run build",
   "build:example:react": "npm --prefix examples/react run build",
@@ -45,16 +46,55 @@ export const commands = Object.freeze({
   "e2e:angular": "npm run test:examples:v1 -- --adapter angular",
   "check:docs": "npm run check:docs:v1",
   "build:docs": "npm --prefix docs run build",
-  "test:studio": "npx tsc -p packages/core/tsconfig.build.json && npx tsc -p packages/authoring/tsconfig.build.json && npm --prefix studio run test:v1",
+  "test:studio": "npm --prefix studio run test:v1",
   "build:studio": "npm --prefix studio run build",
   "check:v1": "npm run check:v1",
   "test:v1": "npm run test:v1",
   "verify:packages": "npm run verify:packages:v1",
   "quality:knip": "npm run check:knip",
   "quality:react": "npm run doctor",
+  "check:agent-setup": "npm run check:agent-setup",
   "build:legacy": "npm run build",
   "release": "npm run release:check:v1",
 });
+
+// Prerequisites are explicit so a cold checkout and a mixed change use the same
+// topological order. Never rely on object insertion order or a pre-existing dist.
+export const commandDependencies = {
+  ...Object.fromEntries(packageNames.filter((name) => name !== "core").map((name) => [`build:${name}`, ["build:core"]])),
+  ...Object.fromEntries(packageNames.flatMap((name) => [
+    [`typecheck:${name}`, [`build:${name}`]],
+    [`test:${name}`, [`build:${name}`]],
+  ])),
+  "build:shared-example": ["build:core"],
+  "test:shared-example": ["build:shared-example"],
+  "test:authoring": ["build:authoring", ...adapterNames.map((name) => `build:${name}`), "build:shared-example"],
+  "test:adapters": [...adapterNames, "test-kit"].map((name) => `build:${name}`),
+  ...Object.fromEntries(Object.entries(adapterExamples).map(([adapter, example]) => [
+    `build:example:${example}`, [`build:${adapter}`, "build:shared-example"],
+  ])),
+  "build:examples": exampleNames.map((name) => `build:example:${name}`),
+  "test:studio": ["build:authoring", "build:react", "build:shared-example"],
+  "build:studio": ["build:authoring", "build:react", "build:shared-example"],
+  "e2e:all": ["build:authoring", "build:react", "build:shared-example"],
+};
+
+export function orderCommands(ids) {
+  const ordered = new Set();
+  const visiting = new Set();
+  function visit(id) {
+    if (ordered.has(id)) return;
+    if (!commands[id]) throw new Error(`Unknown verification command: ${id}`);
+    if (visiting.has(id)) throw new Error(`Verification dependency cycle: ${id}`);
+    visiting.add(id);
+    for (const dependency of commandDependencies[id] ?? []) visit(dependency);
+    visiting.delete(id);
+    // The aggregate build is already fulfilled by its prerequisites.
+    if (id !== "build:examples") ordered.add(id);
+  }
+  for (const id of ids) visit(id);
+  return [...ordered];
+}
 
 const coreFocused = ["build:core", "typecheck:core", "test:core"];
 const fallback = ["check:v1", "test:v1"];
@@ -100,6 +140,16 @@ function adapterCommands(adapter) {
 export function commandsForPath(inputPath) {
   const file = normalize(inputPath);
 
+  if (path.posix.basename(file) === "AGENTS.md" || file.startsWith(".agents/")) return ["check:agent-setup"];
+  if (["scripts/agent/public-api-report.mjs", "scripts/agent/portable-schema.mjs"].includes(file)) return ["release"];
+  if (file.startsWith("scripts/agent/")) return ["check:agent-setup"];
+  if (["README.md", "CHANGELOG.md", "LICENSE", "demo/README.md"].includes(file)) return [];
+
+  for (const name of packageNames) {
+    if (file.startsWith(`packages/${name}/test/`)) return [`test:${name}`];
+    if (file.startsWith(`packages/${name}/test-d/`)) return [`typecheck:${name}`];
+  }
+
   if (file.startsWith("packages/") && file.endsWith("/package.json")) return ["release"];
 
   if (["packages/authoring/src/index.ts", "packages/authoring/src/studio.ts", "packages/authoring/src/portable.ts", "packages/authoring/src/document/types.ts", "packages/authoring/portable.schema.json"].includes(file)) return ["release"];
@@ -141,9 +191,14 @@ export function commandsForPath(inputPath) {
   if (file.startsWith("docs/components/") || file === "docs/mdx-components.jsx" || file === "docs/next.config.mjs") {
     return ["check:docs", "build:docs"];
   }
+  if (file.startsWith("docs/app/") || file.startsWith("docs/public/")) return ["check:docs", "build:docs"];
+  if (/^docs\/[^/]+\.md$/.test(file)) return ["check:docs"];
 
   if (studioIntegrationFiles.has(file)) return ["test:studio", "build:studio"];
   if (file.startsWith("studio/components/")) return ["test:studio"];
+  if (/^studio\/(?:lib|shared|src|test|scripts)\//.test(file)) return ["test:studio"];
+  if (/^studio\/(?:styles|public)\//.test(file)) return ["build:studio"];
+  if (file.startsWith("studio/docs/") || file === "studio/LEGACY_POC_BASELINE.md") return [];
   if (file.startsWith("studio/pages/") || file === "studio/next.config.js") {
     return ["test:studio", "build:studio"];
   }
@@ -155,12 +210,12 @@ export function commandsForPath(inputPath) {
   return fallback;
 }
 
-export function mapChangedPaths(paths) {
+export function mapChangedPaths(paths, { expandDependencies = true } = {}) {
   const normalizedPaths = [...new Set(paths.map(normalize).filter(Boolean))].sort();
   const selected = new Set();
   for (const file of normalizedPaths) {
     for (const commandId of commandsForPath(file)) selected.add(commandId);
-    if (/^(?:packages|examples|studio|docs)\//.test(file) && /\.(?:[cm]?[jt]sx?|vue)$/.test(file)) {
+    if (/^(?:packages|examples|studio|docs|scripts\/agent)\//.test(file) && /\.(?:[cm]?[jt]sx?|vue)$/.test(file)) {
       selected.add("quality:knip");
     }
     if (/^(?:packages\/react|examples\/react|studio|docs)\//.test(file) && /\.[cm]?[jt]sx?$/.test(file)) {
@@ -169,7 +224,7 @@ export function mapChangedPaths(paths) {
   }
   const commandIds = Object.keys(commands).filter((commandId) => selected.has(commandId));
   if (selected.has("release")) return { paths: normalizedPaths, commandIds: ["release"] };
-  return { paths: normalizedPaths, commandIds };
+  return { paths: normalizedPaths, commandIds: expandDependencies ? orderCommands(commandIds) : commandIds };
 }
 
 function childDirectoriesWithManifest(parent, root) {
