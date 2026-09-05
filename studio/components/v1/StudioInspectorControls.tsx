@@ -20,11 +20,12 @@ export function StudioItemIcon({ kind }: { readonly kind: string }) {
 export function InspectorSection({ title, icon: Icon, children, defaultOpen = true }: {
   readonly title: string; readonly icon: LucideIcon; readonly children: ReactNode; readonly defaultOpen?: boolean;
 }) {
-  return <Collapsible.Root defaultOpen={defaultOpen} className="studio-inspector-section">
+  const [open, setOpen] = useState(defaultOpen);
+  return <Collapsible.Root open={open} onOpenChange={setOpen} className="studio-inspector-section">
     <Collapsible.Trigger className="studio-inspector-section__trigger">
       <Icon size={14} aria-hidden="true" /><span>{title}</span><ChevronDown size={13} aria-hidden="true" />
     </Collapsible.Trigger>
-    <Collapsible.Content className="studio-inspector-section__content">{children}</Collapsible.Content>
+    <Collapsible.Content forceMount hidden={!open} className="studio-inspector-section__content">{children}</Collapsible.Content>
   </Collapsible.Root>;
 }
 

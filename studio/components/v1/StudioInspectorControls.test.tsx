@@ -41,5 +41,9 @@ describe("Studio layout authoring controls", () => {
     await user.keyboard("{ArrowRight} ");
     expect(within(devices).getByRole("radio", { name: "Tablet" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radiogroup", { name: "tablet width" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Responsive layout" }));
+    expect(screen.queryByRole("radiogroup", { name: "tablet width" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Responsive layout" }));
+    expect(screen.getByRole("radiogroup", { name: "tablet width" })).toBeVisible();
   });
 });

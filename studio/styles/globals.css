@@ -1129,3 +1129,102 @@ button, input, select, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .studio-inspector-section__trigger > svg:last-child { transition: none; }
 }
+
+/* Project drawer: everyday actions first, recovery and source editors on demand. */
+.studio-v1-editor { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.studio-v1-editor > .studio-v1-workspace { height: auto; min-height: 0; }
+.studio-editor-status { display: flex; align-items: center; gap: 1rem; min-width: 0; border-top: 1px solid var(--studio-panel-border); background: #fafafa; padding: 0.35rem 0.85rem; color: #747474; font-size: 0.65rem; }
+.studio-editor-status__local { display: inline-flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.studio-editor-status p { min-width: 0; margin: 0; max-height: 5rem; overflow-y: auto; overflow-wrap: anywhere; }
+.studio-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.studio-v1-projects { display: block; padding-bottom: 0; }
+.studio-v1-projects > h2 { margin-bottom: 0.65rem; color: #777; font-size: 0.66rem; font-weight: 500; }
+.studio-project-picker { display: flex; align-items: center; gap: 0.5rem; width: 100%; }
+.studio-project-picker > span:first-of-type { flex: 1; overflow: hidden; text-overflow: ellipsis; text-align: left; white-space: nowrap; }
+.studio-project-picker > svg { flex-shrink: 0; color: #168bd2; }
+.studio-project-options { min-width: var(--radix-select-trigger-width); max-width: min(24rem, 90vw); max-height: var(--radix-select-content-available-height); }
+.studio-project-options .ui-select-item { display: flex; gap: 0.7rem; justify-content: space-between; padding-left: 0.7rem; }
+.studio-project-title-row { display: flex; align-items: flex-end; gap: 0.3rem; margin-top: 0.8rem; }
+.studio-project-title-row .studio-field { flex: 1; min-width: 0; margin: 0; }
+.studio-project-title-row .ui-button { width: 1.9rem; height: 1.9rem; flex-shrink: 0; }
+.studio-project-title-row .ui-input { background: #f7f7f8; border-color: transparent; min-height: 1.9rem; }
+.studio-project-actions { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.25rem; margin-top: 0.65rem; }
+.studio-project-actions .ui-button { gap: 0.35rem; font-size: 0.7rem; }
+.studio-project-actions .ui-button--icon { width: 1.9rem; height: 1.9rem; }
+.studio-project-menu { z-index: 100; min-width: 13rem; border: 1px solid #e4e4e7; border-radius: 7px; padding: 4px; background: white; box-shadow: 0 8px 25px #0002; }
+.studio-project-menu [role="menuitem"] { display: flex; align-items: center; gap: 0.55rem; padding: 0.5rem 0.6rem; border-radius: 4px; outline: none; font-size: 0.75rem; cursor: default; }
+.studio-project-menu [data-highlighted] { background: #f1f5f9; }
+.studio-project-menu__danger { color: #c33c37; }
+.studio-project-menu [role="separator"] { height: 1px; margin: 4px; background: #eee; }
+.studio-project-confirm { margin-top: 0.6rem; padding: 0.65rem; border: 1px solid #eadbcd; border-radius: 6px; background: #fffcf7; }
+.studio-project-confirm p { margin: 0 0 0.5rem; font-size: 0.72rem; line-height: 1.5; }
+.studio-v1-projects .studio-v1-recovery-list { display: grid; gap: 0.5rem; max-height: 18rem; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
+.studio-v1-recovery-list li { min-width: 0; border: 1px solid #e9e9ed; border-radius: 6px; padding: 0.6rem; background: #fafafb; }
+.studio-recovery-title { display: block; overflow-wrap: anywhere; font-size: 0.71rem; font-weight: 550; }
+.studio-v1-recovery-list time, .studio-v1-recovery-list small { display: block; margin-top: 0.2rem; color: #888; font-size: 0.63rem; }
+.studio-recovery-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.3rem; margin-top: 0.3rem; }
+.studio-recovery-actions .ui-button { gap: 0.3rem; height: 1.65rem; min-height: 0; padding: 0.2rem 0.35rem; font-size: 0.66rem; }
+.studio-recovery-actions .ui-button--icon { width: 1.65rem; }
+.studio-v1-legacy-migration { margin-top: 0.8rem; padding: 0.7rem; border: 1px solid #e5e3f1; border-radius: 6px; background: #faf9fe; }
+.studio-v1-legacy-migration h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 0.72rem; }
+.studio-v1-legacy-migration p { font-size: 0.67rem; line-height: 1.5; }
+.studio-v1-legacy-migration .ui-button { font-size: 0.69rem; }
+.studio-project-advanced { padding: 0 0.85rem 1rem; }
+.studio-project-advanced .studio-v1-palette { padding: 0; border: 0; }
+.studio-project-advanced textarea { font-family: ui-monospace, monospace; font-size: 0.65rem; line-height: 1.55; }
+.studio-project-advanced .studio-v1-palette > p { font-size: 0.7rem; line-height: 1.5; }
+@media (max-width: 700px) {
+  .studio-editor-status__local { display: none; }
+}
+
+/* Preview keeps the form in view; test tools have their own compact rail. */
+.studio-v1-preview-workspace > .studio-v1-preview { height: 100%; min-height: 0; }
+.studio-v1-preview { display: grid; grid-template-columns: minmax(0, 1fr) 290px; grid-template-rows: auto auto minmax(0, 1fr); align-content: start; gap: 0.7rem 1rem; padding: 1rem; overflow: hidden; }
+.studio-v1-preview > .studio-v1-section-heading { grid-row: 1; }
+.studio-preview-actions { display: flex; gap: 0.4rem; }
+.studio-preview-actions .ui-button { gap: 0.4rem; }
+.studio-preview-problems { grid-column: 1 / -1; grid-row: 2; border: 1px solid #e3e3e6; border-radius: 6px; background: white; padding: 0 0.8rem; }
+.studio-preview-problems > .studio-inspector-section { margin: 0; border: 0; }
+.studio-preview-problems .studio-inspector-section__trigger { padding-block: 0.65rem; }
+.studio-preview-problems[data-has-problems="true"] .studio-inspector-section__trigger { color: #b04729; }
+.studio-preview-problems .studio-inspector-section__content { max-height: 17rem; overflow-y: auto; padding-bottom: 0.7rem; }
+.studio-preview-problems .studio-v1-problems { padding: 0; border: 0; box-shadow: none; }
+.studio-preview-problems .studio-v1-problems > .studio-v1-section-heading { display: none; }
+.studio-preview-problems .studio-v1-problems li button { display: grid; grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 1.3fr); text-align: left; gap: 0.7rem; }
+.studio-preview-problems .studio-v1-problems li code { overflow-wrap: anywhere; font-size: 0.67rem; }
+.studio-preview-problems .studio-v1-problems li small { display: block; overflow-wrap: anywhere; font-size: 0.63rem; }
+.studio-preview-tools { grid-column: 2; grid-row: 3; min-height: 0; overflow-y: auto; background: white; border: 1px solid #e3e3e6; border-radius: 7px; padding: 0.8rem; }
+.studio-preview-tools .studio-v1-scenarios, .studio-preview-tools .studio-inspector-section__content > section { display: block; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.studio-preview-tools .studio-inspector-section__content > section > h3 { display: none; }
+.studio-preview-tools h3 { font-size: 0.75rem; }
+.studio-preview-tools .studio-field { margin-top: 0.55rem; gap: 0.3rem; font-size: 0.68rem; }
+.studio-preview-tools .studio-field > span { color: #777; font-size: 0.67rem; }
+.studio-preview-tools .ui-input, .studio-preview-tools select { font-size: 0.73rem; min-height: 1.9rem; }
+.studio-preview-tools textarea { font: 0.65rem/1.5 ui-monospace, monospace; }
+.studio-preview-tools .ui-button { margin-top: 0.4rem; font-size: 0.68rem; }
+.studio-preview-tools p, .studio-preview-tools small, .studio-preview-tools dl, .studio-preview-tools li { font-size: 0.68rem; line-height: 1.5; overflow-wrap: anywhere; }
+.studio-preview-tools .studio-v1-scenarios > .studio-field { display: grid; width: 100%; margin-right: 0; }
+.studio-v1-preview > .studio-v1-preview__fields { position: static; grid-column: 1; grid-row: 3; align-self: stretch; min-height: 0; max-height: none; max-width: none; padding: clamp(1rem, 2.5vw, 2.25rem); }
+.studio-row-actions { display: flex; align-items: center; gap: 0.25rem; border-top: 1px solid #edf0f4; padding-top: 0.45rem; }
+.studio-row-actions > small { margin-right: auto; color: var(--studio-preview-muted); font-size: 0.67rem; }
+.studio-row-actions .ui-button--icon { width: 1.8rem; height: 1.8rem; }
+.studio-collection-label { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; font-weight: 600; }
+.studio-collection-label small { font-size: 0.65rem; color: var(--studio-preview-muted); font-weight: 400; }
+.studio-v1-preview__row-tools > [hidden], .studio-v1-preview__wizard-summary[hidden], .studio-v1-preview__collection > p[hidden], .studio-v1-preview__collection-actions > button[hidden] { display: none; }
+.studio-layer-search { display: flex; align-items: center; gap: 0.4rem; border: 1px solid transparent; border-radius: 5px; background: #f4f4f6; padding: 0.35rem 0.5rem; margin-bottom: 0.65rem; color: #999; }
+.studio-layer-search:focus-within { border-color: #0d99ff; background: white; }
+.studio-layer-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 0.72rem; }
+.studio-layer-search .ui-button { width: 1rem; height: 1rem; padding: 0; }
+.studio-layer-toolbar > div { display: flex; gap: 0.15rem; }
+.studio-layer-toolbar .ui-button { width: 1.5rem; height: 1.5rem; padding: 0; }
+.studio-layer-search-count { color: #888; font-size: 0.65rem; margin: 0.4rem 0; }
+.studio-v1-outline__item[data-search-match="true"] > .studio-v1-outline__row { background: #f0f7ff; }
+.studio-v1-outline [role="group"] { border-left: 1px solid #ececef; margin-left: 0.7rem; padding-left: 0.25rem; }
+.studio-fragment-list { display: grid; gap: 0.5rem; padding: 0; list-style: none; }
+.studio-fragment-list li { display: flex; align-items: center; gap: 0.4rem; color: #7554a6; font-size: 0.72rem; }
+@media (max-width: 1000px) {
+  .studio-v1-preview-workspace > .studio-v1-preview { height: auto; min-height: 100%; }
+  .studio-v1-preview { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(20rem, 65vh) auto; overflow: visible; }
+  .studio-preview-tools { grid-column: 1; grid-row: 4; }
+  .studio-preview-problems .studio-v1-problems li button { grid-template-columns: 1fr; }
+}

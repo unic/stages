@@ -120,6 +120,9 @@ async function openWorkbenchPanel(user, name) {
 async function openPreview(user) {
   const trigger = screen.getByRole("button", { name: "Preview" });
   if (trigger.getAttribute("aria-pressed") !== "true") await user.click(trigger);
+  for (const name of [/^Problems \(/, "Scenario data", "Dynamic structure", "Runtime observability", "Validation tools"]) {
+    await user.click(screen.getByRole("button", { name }));
+  }
 }
 
 describe("StudioEditorPage interactions", () => {
@@ -266,9 +269,11 @@ describe("StudioEditorPage interactions", () => {
     await user.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Local draft saved");
 
-    await user.click(screen.getByRole("button", { name: "Delete project…" }));
+    await user.click(screen.getByRole("button", { name: "Project actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete project…" }));
     await user.click(screen.getByRole("button", { name: "Confirm delete" }));
     await screen.findByText("Project moved to recovery");
+    await user.click(screen.getByRole("button", { name: /^Recovery/ }));
     const deleted = screen.getByText(/Workshop copy · deleted r2/).closest("li");
     expect(deleted).toBeTruthy();
     await user.click(within(deleted).getByRole("button", { name: "Restore…" }));
@@ -333,6 +338,7 @@ describe("StudioEditorPage interactions", () => {
     await screen.findByText("Local draft loaded");
     await openWorkbenchPanel(user, "Project");
 
+    await user.click(screen.getByRole("button", { name: "Import & export" }));
     await user.click(screen.getByRole("button", { name: "Generate export artifacts" }));
     expect(screen.getByText(/Generated 8 deterministic artifacts/)).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Generated artifact" })).toHaveValue("project.stages.json");
@@ -417,6 +423,42 @@ describe("StudioEditorPage interactions", () => {
     await user.click(screen.getByRole("button", { name: "Add stage to selected wizard" }));
     await openWorkbenchPanel(user, "Layers");
     expect(document.querySelectorAll('[data-kind="stage"]')).toHaveLength(2);
+  });
+
+  it("searches nested layers without losing the existing collapsed state", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    await openWorkbenchPanel(user, "Layers");
+    await user.click(screen.getByRole("button", { name: "Collapse all layers" }));
+    expect(screen.queryByRole("treeitem", { name: "Nested field" })).toBeNull();
+    await user.type(screen.getByRole("textbox", { name: "Search layers" }), "Nested");
+    expect(screen.getByRole("treeitem", { name: "Journey" })).toHaveAttribute("aria-expanded", "true");
+    const nested = screen.getByRole("treeitem", { name: "Nested field" });
+    expect(nested).toBeVisible();
+    expect(screen.queryByRole("treeitem", { name: "First field" })).toBeNull();
+    fireEvent.click(nested);
+    expect(nested).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("button", { name: "Clear layer search" }));
+    expect(screen.queryByRole("treeitem", { name: "Nested field" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Expand all layers" }));
+    expect(screen.getByRole("treeitem", { name: "Nested field" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("starts preview with the form visible and technical tools collapsed", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    await user.click(screen.getByRole("button", { name: "Preview" }));
+    expect(screen.getByRole("textbox", { name: "First field" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Named scenario" })).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "Problem source" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save runtime envelope" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Simulated route" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Test details" }));
+    expect(screen.getByRole("combobox", { name: "Simulated route" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Runtime persistence" }));
+    expect(screen.getByRole("button", { name: "Save runtime envelope" })).toBeVisible();
   });
 
   it("coordinates keyboard outline navigation and multi-selection across compiled structural nodes", async () => {

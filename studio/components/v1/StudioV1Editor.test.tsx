@@ -6,7 +6,13 @@ import { toUid, type StudioFormDocument, type StudioResourceCatalog } from "../.
 import { ControlledPreview } from "./StudioV1Editor";
 
 function renderPreview(form: StudioFormDocument, resources?: StudioResourceCatalog, defaultLocale = "en") {
-  return render(<ControlledPreview form={form} compiled={compileStudioForm(form, {}, resources === undefined ? {} : { localization: { defaultLocale, resources } })} {...(resources === undefined ? {} : { resources })} defaultLocale={defaultLocale} onUpdateScenario={() => {}} onAddScenario={() => undefined} />);
+  const result = render(<ControlledPreview form={form} compiled={compileStudioForm(form, {}, resources === undefined ? {} : { localization: { defaultLocale, resources } })} {...(resources === undefined ? {} : { resources })} defaultLocale={defaultLocale} onUpdateScenario={() => {}} onAddScenario={() => undefined} />);
+  // These contract tests exercise the explicitly revealed runtime tools.
+  for (const name of [/^Problems \(/, "Scenario data", "Runtime persistence", "Events & proposals", "Dynamic structure", "Runtime observability", "Validation tools"]) {
+    fireEvent.click(screen.getByRole("button", { name }));
+  }
+  fireEvent.click(screen.getByRole("button", { name: "Test details" }));
+  return result;
 }
 
 describe("Studio responsive preview layout", () => {

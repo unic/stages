@@ -1,5 +1,7 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { StudioItemIcon } from "./StudioInspectorControls";
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Component, Search, X } from "lucide-react";
+import { Button } from "../ui/button";
+import { studioBlockDefinition } from "../../src/registry";
+import { StudioItemIcon, EditorTooltip } from "./StudioInspectorControls";
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import type { StudioProjectDocument, Uid } from "../../src/document/types";
 import {
@@ -42,8 +44,34 @@ interface StudioOutlineProps {
 export function StudioOutline({
   project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup, onConvert, canPaste,
 }: StudioOutlineProps) {
-  const model = useMemo(() => createStudioOutlineModel(project), [project]);
-  const visibleUids = visibleStudioOutlineUids(model, state.expandedUids);
+  const [query, setQuery] = useState("");
+  const model = useMemo(() => {
+    const outline = createStudioOutlineModel(project);
+    const items = new Map(outline.items);
+    for (const [uid, item] of items) {
+      const node = project.forms[item.formUid]?.nodes[uid];
+      if (node?.kind === "block" && item.label === node.definition.key) {
+        const text = node.props["text"];
+        items.set(uid, { ...item, label: typeof text === "string" && text.trim() ? text : studioBlockDefinition(node.definition)?.displayName ?? item.label });
+      }
+    }
+    return { ...outline, items };
+  }, [project]);
+  const search = query.trim().toLocaleLowerCase();
+  const matching = new Set<Uid>();
+  const included = new Set<Uid>();
+  if (search) for (const [uid, item] of model.items) {
+    if (!`${item.label} ${item.kind} ${uid}`.toLocaleLowerCase().includes(search)) continue;
+    matching.add(uid);
+    let ancestor: Uid | undefined = uid;
+    while (ancestor !== undefined && !included.has(ancestor)) {
+      included.add(ancestor);
+      ancestor = model.parentByUid.get(ancestor);
+    }
+  }
+  const expandedUids = search ? included : state.expandedUids;
+  const visibleUids = visibleStudioOutlineUids(model, expandedUids).filter((uid) => !search || included.has(uid));
+  const focusTarget = state.focusedUid !== undefined && visibleUids.includes(state.focusedUid) ? state.focusedUid : visibleUids[0];
   const itemRefs = useRef(new Map<Uid, HTMLLIElement>());
   const [contextMenu, setContextMenu] = useState<(StudioContextMenuPosition & { readonly uid: Uid }) | undefined>();
 
@@ -92,10 +120,10 @@ export function StudioOutline({
     else if (event.key === "Home") focusUid(visibleUids[0]!);
     else if (event.key === "End") focusUid(visibleUids[visibleUids.length - 1]!);
     else if (event.key === "ArrowRight" && item.children.length > 0) {
-      if (!state.expandedUids.has(uid)) onChange(setStudioExpansion(state, uid, true));
-      else focusUid(item.children[0]!);
+      if (!expandedUids.has(uid)) onChange(setStudioExpansion(state, uid, true));
+      else { const child = item.children.find((childUid) => visibleUids.includes(childUid)); if (child) focusUid(child); }
     } else if (event.key === "ArrowLeft") {
-      if (state.expandedUids.has(uid) && item.children.length > 0) onChange(setStudioExpansion(state, uid, false));
+      if (!search && expandedUids.has(uid) && item.children.length > 0) onChange(setStudioExpansion(state, uid, false));
       else {
         const parentUid = model.parentByUid.get(uid);
         if (parentUid !== undefined) focusUid(parentUid);
@@ -124,11 +152,11 @@ export function StudioOutline({
   };
   const renderItem = (uid: Uid, level: number) => {
     const item = model.items.get(uid);
-    if (!item) return null;
+    if (!item || (search && !included.has(uid))) return null;
     const node = project.forms[item.formUid]?.nodes[uid];
     const iconKind = node?.kind === "field" || node?.kind === "block" ? node.definition.key : item.kind;
     const expandable = item.children.length > 0;
-    const expanded = expandable && state.expandedUids.has(uid);
+    const expanded = expandable && expandedUids.has(uid);
     return (
       <li
         key={uid}
@@ -137,8 +165,10 @@ export function StudioOutline({
         aria-level={level}
         aria-selected={state.selectedUids.includes(uid)}
         {...(expandable ? { "aria-expanded": expanded } : {})}
-        tabIndex={state.focusedUid === uid ? 0 : -1}
+        tabIndex={focusTarget === uid ? 0 : -1}
         className="studio-v1-outline__item"
+        aria-label={item.label}
+        data-search-match={search ? matching.has(uid) : undefined}
         data-kind={item.kind}
         data-outline-uid={uid}
         draggable={item.kind !== "form"}
@@ -162,11 +192,12 @@ export function StudioOutline({
             <button
               type="button"
               tabIndex={-1}
+              disabled={Boolean(search)}
               aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
               onClick={() => onChange(setStudioExpansion(state, uid, !expanded))}
             >{expanded ? <ChevronDown size={12} aria-hidden="true" /> : <ChevronRight size={12} aria-hidden="true" />}</button>
           ) : <span aria-hidden="true" className="studio-v1-outline__spacer" />}
-          <StudioItemIcon kind={iconKind} /><span>{item.label}</span><small>{item.kind}</small>
+          <StudioItemIcon kind={iconKind} /><span title={item.label}>{item.label}</span><small>{item.kind}</small>
         </div>
         {expanded && (
           <ul role="group">
@@ -179,7 +210,12 @@ export function StudioOutline({
 
   return (
     <aside className="studio-v1-outline" aria-labelledby="studio-v1-outline-title">
-      <div className="studio-v1-section-heading"><h2 id="studio-v1-outline-title">Outline</h2><span>{project.project.title}</span></div>
+      <div className="studio-layer-search"><Search size={14} aria-hidden="true" /><input aria-label="Search layers" placeholder="Search layers…" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />{query && <Button variant="ghost" size="icon" aria-label="Clear layer search" onClick={() => setQuery("")}><X size={12} aria-hidden="true" /></Button>}</div>
+      <div className="studio-v1-section-heading studio-layer-toolbar"><h2 id="studio-v1-outline-title">Outline</h2><div>
+        <EditorTooltip label="Expand all layers"><Button variant="ghost" size="icon" aria-label="Expand all layers" disabled={Boolean(search)} onClick={() => onChange({ ...state, expandedUids: new Set([...model.items.values()].filter((item) => item.children.length > 0).map((item) => item.uid)) })}><ChevronsUpDown size={13} aria-hidden="true" /></Button></EditorTooltip>
+        <EditorTooltip label="Collapse all layers"><Button variant="ghost" size="icon" aria-label="Collapse all layers" disabled={Boolean(search)} onClick={() => onChange({ ...state, expandedUids: new Set() })}><ChevronsDownUp size={13} aria-hidden="true" /></Button></EditorTooltip>
+      </div></div>
+      {search && <p className="studio-layer-search-count" role="status">{matching.size} matching {matching.size === 1 ? "layer" : "layers"}</p>}
       <ul role="tree" aria-label="Project structure" aria-multiselectable="true">
         {model.roots.map((uid) => renderItem(uid, 1))}
       </ul>
@@ -199,7 +235,8 @@ export function StudioOutline({
       })()}
       <div className="studio-v1-outline__resources">
         <h3>Fragments</h3>
-        <p>{Object.keys(project.fragments).length === 0 ? "No fragments" : `${Object.keys(project.fragments).length} fragments`}</p>
+        <p>{Object.keys(project.fragments).length === 0 ? "No reusable fragments yet" : `${Object.keys(project.fragments).length} reusable ${Object.keys(project.fragments).length === 1 ? "fragment" : "fragments"}`}</p>
+        <ul className="studio-fragment-list">{Object.values(project.fragments).map((fragment) => <li key={fragment.uid}><Component size={13} aria-hidden="true" /><span>{fragment.title}</span></li>)}</ul>
       </div>
     </aside>
   );
