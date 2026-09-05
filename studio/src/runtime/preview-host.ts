@@ -111,6 +111,7 @@ class PreviewHost implements StudioPreviewHost {
       diagnostic,
       this.compiledValue.sourceMap,
       this.compiledValue.renderPlan.formUid,
+      this.getSnapshot().value,
     ));
 
   subscribe = (listener: () => void): (() => void) => {
@@ -244,6 +245,7 @@ class PreviewHost implements StudioPreviewHost {
 
   private createController(state?: SerializedStagesState): StudioPreviewController {
     const creation = this.creationValue;
+    let restoring = state !== undefined;
     const options = {
       schema: this.compiledValue.schemaInput,
       fields: this.compiledValue.fields,
@@ -255,9 +257,12 @@ class PreviewHost implements StudioPreviewHost {
       ...(creation.extensionCodecs === undefined ? {} : { extensionCodecs: creation.extensionCodecs }),
       ...(creation.validationFailureIssue === undefined ? {} : { validationFailureIssue: creation.validationFailureIssue }),
       onChange: (proposal: StagesChange<unknown>) => this.receiveProposal(proposal),
-      onDiagnostic: (diagnostic: Diagnostic) => this.receiveDiagnostic(diagnostic),
+      // During restoration the decoded value is not available until creation returns.
+      onDiagnostic: (diagnostic: Diagnostic) => this.receiveDiagnostic(diagnostic, restoring ? undefined : this.canonicalValueValue),
     };
-    return stages<unknown, StudioFieldRegistry, unknown>(options);
+    const controller = stages<unknown, StudioFieldRegistry, unknown>(options);
+    restoring = false;
+    return controller;
   }
 
   private observeController(): void {
@@ -284,13 +289,14 @@ class PreviewHost implements StudioPreviewHost {
     this.callbacksValue.onProposal?.(proposal);
   }
 
-  private receiveDiagnostic(diagnostic: Diagnostic): void {
+  private receiveDiagnostic(diagnostic: Diagnostic, value: unknown): void {
     if (this.destroyedValue) return;
     this.callbacksValue.onDiagnostic?.(
       translateStudioRuntimeDiagnostic(
         diagnostic,
         this.compiledValue.sourceMap,
         this.compiledValue.renderPlan.formUid,
+        value,
       ),
     );
     this.emitTelemetry({ name: "preview.diagnostic", code: diagnostic.code, severity: diagnostic.severity });

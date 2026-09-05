@@ -8,7 +8,7 @@ field reducers now reject executable export with
 Generated built-in reducers now enforce preview's payload types and finite-number
 checks. Committed export regressions cover both rejections and generated-consumer
 event behavior for all six built-ins. Dynamic/custom-reducer generated execution,
-packed-consumer equivalence, and F4–F6 remain pending. See
+packed-consumer equivalence, and F5–F6 remain pending. See
 [export behavior and evidence](../studio/docs/IMPORT_AND_EXPORT.md).
 
 F3 progress (2026-09-05): an editor-owned compiler session now reuses equivalent
@@ -17,6 +17,13 @@ cover touched state, wizard position, row keys, pending owner proposals, and
 in-flight validation; an editor regression verifies that selection and panel
 changes do not compile. Real-edit behavior reuse and migration policies remain
 P1 work. See [preview session behavior](../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md).
+
+F4 progress (2026-09-05): source maps retain variant-qualified candidates.
+Diagnostics and validation inspection resolve actual rows from accepted values,
+including nested collections and fragment instances. Reordering preserves row
+addresses; ambiguous or unavailable occurrence data leaves navigation unmapped.
+Runtime regressions cover resolver failures, validation, pending moves, fragment
+provenance, and restoration. See [diagnostic mapping behavior](../studio/docs/PROBLEMS_INSPECTION_AND_OBSERVABILITY.md).
 
 Analysis date: 2026-09-04. Baseline: `feature/version-one-point-zero`, commit `883791a`.
 

@@ -23,6 +23,7 @@ import type {
   StudioFieldRegistry,
   StudioRenderNode,
   StudioSourceMapEntry,
+  StudioSourceVariant,
   StudioCompileOptions,
 } from "./types";
 
@@ -30,6 +31,8 @@ interface CompileContext {
   readonly form: StudioFormDocument;
   readonly diagnostics: StudioDiagnostic[];
   readonly byUid: Map<Uid, StudioSourceMapEntry>;
+  readonly entriesByPath: Map<string, StudioSourceMapEntry[]>;
+  readonly entriesByAddress: Map<string, StudioSourceMapEntry[]>;
   readonly uidByPath: Map<string, Uid>;
   readonly uidByAddress: Map<string, Uid>;
   readonly visited: Set<Uid>;
@@ -183,11 +186,19 @@ function recordSource(
   uid: Uid,
   runtimePath: DataPath,
   runtimeAddress: NodeAddress,
+  variants: readonly StudioSourceVariant[] = [],
 ): void {
-  const entry = Object.freeze({ uid, runtimePath, runtimeAddress, ...context.provenance.get(uid) });
+  const entry = Object.freeze({ uid, runtimePath, runtimeAddress, ...(variants.length === 0 ? {} : { variants }), ...context.provenance.get(uid) });
   context.byUid.set(uid, entry);
-  context.uidByPath.set(studioRuntimePathKey(runtimePath), uid);
-  context.uidByAddress.set(studioRuntimeAddressKey(runtimeAddress), uid);
+  for (const [entries, unique, key] of [
+    [context.entriesByPath, context.uidByPath, studioRuntimePathKey(runtimePath)],
+    [context.entriesByAddress, context.uidByAddress, studioRuntimeAddressKey(runtimeAddress)],
+  ] as const) {
+    const candidates = [...(entries.get(key) ?? []), entry];
+    entries.set(key, candidates);
+    if (candidates.length === 1 && variants.length === 0) unique.set(key, uid);
+    else unique.delete(key);
+  }
 }
 
 function unsupportedBehavior(
@@ -314,6 +325,8 @@ function compileSiblings(
   uids: readonly Uid[],
   parentPath: DataPath,
   parentAddress: NodeAddress,
+  variants: readonly StudioSourceVariant[] = [],
+  collection?: Omit<StudioSourceVariant, "variantId">,
 ): readonly CompiledNode[] {
   const output: CompiledNode[] = [];
   const siblingIds = new Set<string>();
@@ -337,7 +350,9 @@ function compileSiblings(
       continue;
     }
     if (node.kind !== "block") siblingIds.add(node.runtimeId);
-    const compiled = compileNode(context, node, parentPath, parentAddress);
+    const compiled = compileNode(context, node, parentPath, parentAddress, node.kind === "variant" && collection !== undefined
+      ? [...variants, { ...collection, variantId: node.runtimeId }]
+      : variants);
     if (compiled) output.push(compiled);
   }
   return output;
@@ -348,6 +363,7 @@ function compileNode(
   node: StudioNode,
   parentPath: DataPath,
   parentAddress: NodeAddress,
+  variants: readonly StudioSourceVariant[],
 ): CompiledNode | undefined {
   if (context.visiting.has(node.uid)) {
     diagnostic(context, "compiler.node-cycle", `Node graph contains a cycle at ${node.uid}.`, { entityUid: node.uid });
@@ -400,8 +416,8 @@ function compileNode(
   const variant = node.kind === "variant";
   const runtimePath: DataPath = variant ? parentPath : [...parentPath, node.runtimeId];
   const runtimeAddress: NodeAddress = variant ? parentAddress : [...parentAddress, { kind: "node", id: node.runtimeId }];
-  if (variant) context.byUid.set(node.uid, Object.freeze({ uid: node.uid, runtimePath, runtimeAddress, ...context.provenance.get(node.uid) }));
-  else recordSource(context, node.uid, runtimePath, runtimeAddress);
+  if (variant) context.byUid.set(node.uid, Object.freeze({ uid: node.uid, runtimePath, runtimeAddress, variants, ...context.provenance.get(node.uid) }));
+  else recordSource(context, node.uid, runtimePath, runtimeAddress, variants);
   if (node.behavior?.presentWhen !== undefined) {
     if (studioExpressionDependencies(node.behavior.presentWhen).some(({ scope }) => scope === "row" || scope === "item")) diagnostic(
       context,
@@ -509,7 +525,10 @@ function compileNode(
     };
   }
 
-  const children = compileSiblings(context, renderChildren(node), runtimePath, runtimeAddress);
+  const children = compileSiblings(context, renderChildren(node), runtimePath, runtimeAddress, variants,
+    node.kind === "collection" && isStudioVariantCollection(node)
+      ? { collectionPath: runtimePath, discriminator: node.discriminator }
+      : undefined);
   context.visiting.delete(node.uid);
   if (node.kind === "variant") {
     return {
@@ -727,6 +746,8 @@ export function compileStudioForm(
     form: expanded.form,
     diagnostics: [...expanded.diagnostics],
     byUid: new Map(),
+    entriesByPath: new Map(),
+    entriesByAddress: new Map(),
     uidByPath: new Map(),
     uidByAddress: new Map(),
     visited: new Set(),
@@ -802,6 +823,8 @@ export function compileStudioForm(
     },
     sourceMap: {
       byUid: context.byUid,
+      entriesByPath: context.entriesByPath,
+      entriesByAddress: context.entriesByAddress,
       uidByPath: context.uidByPath,
       uidByAddress: context.uidByAddress,
     },

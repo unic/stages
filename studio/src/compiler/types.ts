@@ -27,8 +27,15 @@ export interface StudioDiagnostic {
   readonly fragmentInstanceUids?: readonly Uid[];
 }
 
+export interface StudioSourceVariant {
+  readonly collectionPath: DataPath;
+  readonly discriminator: string;
+  readonly variantId: string;
+}
+
 export interface StudioSourceMapEntry {
   readonly uid: Uid;
+  readonly variants?: readonly StudioSourceVariant[];
   readonly runtimePath: DataPath;
   readonly runtimeAddress: NodeAddress;
   readonly fragmentDefinitionUid?: Uid;
@@ -37,8 +44,12 @@ export interface StudioSourceMapEntry {
 }
 
 export interface StudioSourceMap {
+  readonly entriesByPath: ReadonlyMap<string, readonly StudioSourceMapEntry[]>;
+  readonly entriesByAddress: ReadonlyMap<string, readonly StudioSourceMapEntry[]>;
   readonly byUid: ReadonlyMap<Uid, StudioSourceMapEntry>;
+  /** Only unqualified, unambiguous definitions; use occurrence resolution for variants. */
   readonly uidByPath: ReadonlyMap<string, Uid>;
+  /** Only unqualified, unambiguous definitions; use occurrence resolution for variants. */
   readonly uidByAddress: ReadonlyMap<string, Uid>;
 }
 

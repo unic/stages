@@ -1,7 +1,7 @@
 import type { DataPath, StagesSnapshot, ValidationIssue, ValidationSnapshot } from "@stages/core";
 import type { StudioSourceMap } from "../compiler/types";
 import type { Uid } from "../document/types";
-import { studioRuntimePathKey } from "../compiler/source-map";
+import { resolveStudioSourceEntry } from "../compiler/source-map";
 
 export interface StudioValidationIssueInspection {
   readonly issue: ValidationIssue;
@@ -17,13 +17,6 @@ export interface StudioValidationInspection {
   readonly issues: readonly StudioValidationIssueInspection[];
 }
 
-function targetUidForPath(path: DataPath, sourceMap: StudioSourceMap): Uid | undefined {
-  const exact = sourceMap.uidByPath.get(studioRuntimePathKey(path));
-  if (exact !== undefined) return exact;
-  if (!path.some((segment) => typeof segment === "number")) return undefined;
-  return sourceMap.uidByPath.get(studioRuntimePathKey(path.filter((segment) => typeof segment !== "number")));
-}
-
 export function inspectStudioValidation(snapshot: StagesSnapshot<unknown>, sourceMap: StudioSourceMap): StudioValidationInspection {
   const visible = new Set(snapshot.validation.visibleIssues);
   return {
@@ -31,7 +24,7 @@ export function inspectStudioValidation(snapshot: StagesSnapshot<unknown>, sourc
     pendingCount: snapshot.validation.pendingCount,
     unknownCount: snapshot.validation.unknownCount,
     issues: snapshot.validation.issues.map((issue) => {
-      const targetUid = targetUidForPath(issue.path, sourceMap);
+      const targetUid = resolveStudioSourceEntry(sourceMap, issue.path, snapshot.value)?.uid;
       return { issue, visible: visible.has(issue), ...(targetUid === undefined ? {} : { targetUid }) };
     }),
   };
