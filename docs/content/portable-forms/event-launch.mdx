@@ -1,0 +1,65 @@
+# Full Event Launch and scoped host rules
+
+**For:** application developers deploying portable forms.  
+**Prerequisites:** [load a portable form](/start/portable-forms).
+
+The complete [Event Launch project](https://github.com/unic/stages/blob/master/studio/src/document/fixtures/event-launch.json)
+includes all stages, collection variants, money, blank numbers, consent and review.
+Register its [field descriptors and trusted domain bindings](https://github.com/unic/stages/blob/master/examples/shared/event-launch/portable.mjs)
+in a Studio host using `customFields.fields`, `customFields.views` and
+`customFields.behaviorBindings`. Import the project and select its canonical
+scenario. Bind native or application components to the stable field tokens.
+The scenario context is JSON; reserved slugs are an array there and a trusted Set
+in the code-authored host. Both use the same deterministic service callback.
+
+Export produces the checked `event-launch-form-v1.json`; production defaults are
+empty values, independent of the canonical test scenario. Load it with the same
+exact host bindings, then bind your renderer. This example imports the repository's
+shared host implementation; copy/build that application-owned implementation with
+your deployment, alongside the artifact. Installed-consumer tests do exactly that.
+
+<CheckedSource fixture="docs/examples/portable-event-launch.ts" region="portable-event-launch" />
+
+The form's `behaviors` references survive Studio save and production projection.
+A binding's optional second factory argument supplies the approved form, allowing
+rules to respect edited props. `nodes` maps document UIDs to scoped core validators,
+transforms, derived props, additional visibility/disabled predicates and wizard
+navigation. Collection templates apply to each matching variant occurrence.
+Keep business applicability explicit in validators: server submission removes
+all display exemptions. Aggregate validators may return multiple row issues.
+
+Event Launch reuses its canonical callbacks, with conservative whole-form
+validation dependencies. Portable blank numbers are null; the host maps them to
+canonical undefined when invoking existing callbacks. Money retains this domain's
+decimal major-unit contract. The [custom money example](/portable-forms/custom-fields) instead uses integer minor units.
+Collection key properties are declared transport: they must be nonempty unique
+strings. Unknown row keys remain rejected. All collection min/max bounds apply
+on submission, including inactive sections, under the complete-value submission policy.
+
+Computed field expressions persist values through controlled proposals. Their
+value/row dependencies are topologically ordered and cycles are rejected.
+Input, blur, submit, standard collection operations, declared events and
+`recompute` trigger calculation; owner updates and context changes do not silently
+accept derived changes. Dispatch `recompute` after an external update or a custom
+host event not declared in the artifact. Validation and server submission check
+consistency and reject forged computed results. Derived props affect presentation
+only. Fragment parameters and row-dependent structural presence remain reserved;
+use row visibility and discriminated variants instead.
+
+The shared journeys compare canonical, portable and Studio validation, then run
+against installed core/authoring packages without a framework. Four installed
+adapters load the full artifact with independent controls. Automated release and migration checks are also complete; manual portable beta
+sessions remain open. See [releases and saved state](/portable-forms/releases).
+
+**API reference:** [Portable authoring contracts](/reference/authoring).
+
+**Next:** [Deploy releases and resume saved state](/portable-forms/releases).
+
+## Evidence
+
+- [Submission matrix, also run from installed tarballs](https://github.com/unic/stages/blob/master/packages/authoring/test/fixtures/packed-submissions.mjs)
+
+- [Public declarations and loader](https://github.com/unic/stages/blob/master/packages/authoring/src/portable.ts)
+- [Contact, bindings and fragment regressions](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
+- [Studio exporter](https://github.com/unic/stages/blob/master/studio/src/projects/artifacts.ts)
+- [Installed consumer verification](https://github.com/unic/stages/blob/master/scripts/verify-v1-packages.mjs)

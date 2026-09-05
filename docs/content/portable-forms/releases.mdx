@@ -1,0 +1,64 @@
+# Deploy immutable releases and resume state
+
+**For:** application developers deploying portable forms.  
+**Prerequisites:** [load a portable form](/start/portable-forms).
+
+Keep document format, compiler semantics, schema/value version, and deployment
+identity separate. Wrap the existing artifact with `createPortableRelease`.
+Supply immutable host build and acceptance-policy identities; exact named binding
+versions alone cannot identify changes inside application code. Store approved
+releases in an append-only host registry. A content hash is not authentication.
+
+<CheckedSource fixture="docs/examples/portable-release.ts" region="portable-release" />
+
+The owner-created cache reuses standard compilation, with detached outputs for
+independent controllers. It deliberately recompiles host-bound definitions so
+application callback state cannot leak between requests.
+
+Studio exports `release.ts` alongside `form.stages.json` to prepare this same
+release envelope with host-supplied IDs. Studio's publication service also accepts
+an explicit portable gate: exact-release packed/server/adapter reports and complete
+migration fixtures are required, and a portable lineage cannot drop that gate.
+Production publication sets `requirePortable: true`; local project snapshots alone
+remain insufficient. See `studio/docs/VERSIONING_AND_PUBLICATION.md` for the host
+verification port.
+
+For an upgrade, pass `previous` and an explicit `compatibility` decision to
+`createPortableRelease`. Use `comparePortableReleases` to inspect its conservative
+shape/behavior/presentation/bindings classification. Review the changes and record
+a rationale. Shape changes require a schema version increase and a migrate/reset
+decision. Behavior changes get a new release identity even at the same value version.
+
+Save only accepted `controller.serialize()` output. `migratePortableState` follows
+exact release transitions, processes both value and baseline, and requires a
+preserve/migrate/reset policy for every metadata key. Reset metadata by omitting
+its key; reset baseline by setting it to the migrated value. Preserve the original
+saved envelope until controller recreation succeeds. A release declaring `reset`
+requires a fresh controller; keep its old save recoverable. Migration does not
+make a saved client value authoritative: submit values to the approved server release.
+
+The Node hosting recipe in `scripts/portable/isolated-submission.mjs` terminates
+workers for synchronous regex or host-code overruns. Its trusted module URL exports
+`deployment` and `validatePortableSubmission`; never select that URL from request
+input. It admits four concurrent requests, bounds serialized input to 1 MB,
+limits each worker's V8 heap, and includes module loading in its deadline. Map
+worker failures to an unavailable response. These are application hosting limits,
+not a sandbox for untrusted executable bindings. External service quotas, total
+process memory, and distributed concurrency remain host responsibilities.
+
+See the [release contract](/reference/authoring#durable-release-and-state-contract)
+and the repository's `studio/docs/PORTABLE_RELEASE_GATES.md` for measured evidence
+and the remaining manual beta gates.
+
+**API reference:** [Portable authoring contracts](/reference/authoring).
+
+**Next:** [Continue with the authoring reference](/reference/authoring).
+
+## Evidence
+
+- [Submission matrix, also run from installed tarballs](https://github.com/unic/stages/blob/master/packages/authoring/test/fixtures/packed-submissions.mjs)
+
+- [Public declarations and loader](https://github.com/unic/stages/blob/master/packages/authoring/src/portable.ts)
+- [Contact, bindings and fragment regressions](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
+- [Studio exporter](https://github.com/unic/stages/blob/master/studio/src/projects/artifacts.ts)
+- [Installed consumer verification](https://github.com/unic/stages/blob/master/scripts/verify-v1-packages.mjs)

@@ -22,7 +22,7 @@
         {
           "symbol": "createPortableReleaseCache",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -31,7 +31,7 @@
         {
           "symbol": "PortableReleaseCache",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -40,7 +40,7 @@
         {
           "symbol": "PortableNodeComposition",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/event-launch",
           "examples": [
             "portable-event-launch"
           ],
@@ -49,7 +49,7 @@
         {
           "symbol": "validatePortableSubmission",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/server-submissions",
           "examples": [
             "portable-submission"
           ],
@@ -58,7 +58,7 @@
         {
           "symbol": "PortableSubmissionDeployment",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/server-submissions",
           "examples": [
             "portable-submission"
           ],
@@ -67,7 +67,7 @@
         {
           "symbol": "PortableSubmissionOptions",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/server-submissions",
           "examples": [
             "portable-submission"
           ],
@@ -76,7 +76,7 @@
         {
           "symbol": "PortableSubmissionIdentity",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/server-submissions",
           "examples": [
             "portable-submission"
           ],
@@ -85,7 +85,7 @@
         {
           "symbol": "PortableSubmissionResult",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/server-submissions",
           "examples": [
             "portable-submission"
           ],
@@ -211,7 +211,7 @@
         {
           "symbol": "PortableProjectOptions",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -220,7 +220,7 @@
         {
           "symbol": "definePortableFieldBindings",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -229,7 +229,7 @@
         {
           "symbol": "portableFieldToken",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -238,7 +238,7 @@
         {
           "symbol": "matchesPortableValue",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -247,7 +247,7 @@
         {
           "symbol": "PortableFieldDescriptor",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -256,7 +256,7 @@
         {
           "symbol": "PortableFieldBinding",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -265,7 +265,7 @@
         {
           "symbol": "PortableFieldBindings",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -274,7 +274,7 @@
         {
           "symbol": "PortableValueContract",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -283,7 +283,7 @@
         {
           "symbol": "composePortableForm",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -292,7 +292,7 @@
         {
           "symbol": "PortableComposition",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -301,7 +301,7 @@
         {
           "symbol": "definePortableBehaviorBindings",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -310,7 +310,7 @@
         {
           "symbol": "PortableBehaviorBinding",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -319,7 +319,7 @@
         {
           "symbol": "PortableBehaviorBindings",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -328,7 +328,7 @@
         {
           "symbol": "PortableBehaviorReference",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -337,7 +337,7 @@
         {
           "symbol": "bindPortableViews",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -346,7 +346,7 @@
         {
           "symbol": "PortableViewFields",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -355,7 +355,7 @@
         {
           "symbol": "PortableViewForm",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/custom-fields",
           "examples": [
             "portable-custom"
           ],
@@ -364,7 +364,7 @@
         {
           "symbol": "createPortableRelease",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -373,7 +373,7 @@
         {
           "symbol": "comparePortableReleases",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -382,7 +382,7 @@
         {
           "symbol": "loadPortableRelease",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -391,7 +391,7 @@
         {
           "symbol": "savePortableState",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -400,7 +400,7 @@
         {
           "symbol": "migratePortableState",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -409,7 +409,7 @@
         {
           "symbol": "serializePortableRelease",
           "kind": "runtime",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -418,7 +418,7 @@
         {
           "symbol": "PortableRelease",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -427,7 +427,7 @@
         {
           "symbol": "PortableReleaseOptions",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -436,7 +436,7 @@
         {
           "symbol": "PortableReleaseChange",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -445,7 +445,7 @@
         {
           "symbol": "PortableCompatibilityDecision",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -454,7 +454,7 @@
         {
           "symbol": "LoadedPortableRelease",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -463,7 +463,7 @@
         {
           "symbol": "PortableSavedState",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -472,7 +472,7 @@
         {
           "symbol": "PortableStateMigration",
           "kind": "type",
-          "guide": "/start/portable-forms",
+          "guide": "/portable-forms/releases",
           "examples": [
             "portable-release"
           ],
@@ -578,7 +578,7 @@
       "tests": ["packages/react/test/react.test.mjs", "examples/react/test/strict-mode.test.mjs"],
       "defaultReference": "/reference/react",
       "exports": [
-        { "symbol": "StagesField", "kind": "runtime", "guide": "/adapters/react/fields", "reference": "/reference/react#stagesfield", "examples": ["react-field-views"], "status": "complete" },
+        { "symbol": "StagesField", "kind": "runtime", "guide": "/adapters/react/fields", "reference": "/reference/react#stagesfield", "examples": ["react-field-views", "react-layout-fixed", "react-layout-tree"], "status": "complete" },
         { "symbol": "useStages", "kind": "runtime", "guide": "/adapters/react/lifecycle", "reference": "/reference/react#usestages", "examples": ["react-lifecycle"], "status": "complete" },
         { "symbol": "useStagesCollection", "kind": "runtime", "guide": "/adapters/react/collections", "reference": "/reference/react#usestagescollection", "examples": ["react-collection"], "status": "complete" },
         { "symbol": "useStagesController", "kind": "runtime", "guide": "/adapters/react/accessibility", "reference": "/reference/react#usestagescontroller", "examples": ["react-accessibility"], "status": "complete" },

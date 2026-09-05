@@ -182,6 +182,8 @@ export function commandsForPath(inputPath) {
 
   if (file.startsWith("examples/e2e/")) return ["build:examples", "e2e:all"];
 
+  if (file === "scripts/check-v1-docs.mjs") return ["check:docs", "build:docs"];
+
   if (file.startsWith("docs/content/") || file.startsWith("docs/examples/")) {
     return file.endsWith(".mdx") || file.endsWith("/_meta.js") || file === "docs/content/_meta.js"
       ? ["check:docs", "build:docs"]

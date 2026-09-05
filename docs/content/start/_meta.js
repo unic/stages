@@ -1,5 +1,4 @@
 export default {
-  "portable-forms": "Load a portable form",
   "introduction": "Introduction",
   "mental-model": "Mental model",
   "installation": "Installation",
@@ -7,5 +6,6 @@ export default {
   "react-quickstart": "React quickstart",
   "vue-quickstart": "Vue quickstart",
   "angular-quickstart": "Angular quickstart",
-  "dom-quickstart": "DOM quickstart"
+  "dom-quickstart": "DOM quickstart",
+  "portable-forms": "Load a portable form"
 }

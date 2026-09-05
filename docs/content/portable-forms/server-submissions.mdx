@@ -1,0 +1,54 @@
+# Accept submissions on the server
+
+**For:** application developers deploying portable forms.  
+**Prerequisites:** [load a portable form](/start/portable-forms).
+
+Resolve an approved artifact and immutable deployment revision in your server
+registry. Pass only the parsed request value to `validatePortableSubmission`;
+context and semantic/service bindings come from the server. Never use the
+request's artifact, validation result, visibility, privileges, or serialized
+controller state as acceptance evidence.
+
+<CheckedSource fixture="docs/examples/portable-submission.ts" region="portable-submission" />
+
+The submission policy is deliberately strict: all declared fields are included
+and required in the value shape, even when hidden, disabled, or structurally
+absent in the UI. Unknown keys are rejected at every object level. Display
+conditions grant no validation exemption. Use explicit validator `when`
+conditions for business applicability, evaluated from values and trusted
+context. A contact form whose hidden company field has an unconditional
+required rule therefore fails submission with an empty company. If that rule
+is conditional business policy, declare the condition on the validator too.
+
+Missing values are not filled from production defaults. Draft strings are not
+coerced to numbers; null is accepted only by a matching custom contract. Choice
+values must match declared options (or the explicit empty string); built-in
+date/time/email values remain strings, with format rules declared as validators.
+The decoded copy is the canonical output. UI events, reducers and transforms
+are not replayed: put authoritative constraints in validators and portable
+behavior bindings, including rules for any host-calculated values. Computed fields are consistency-checked; mismatched submitted values are rejected.
+
+Only `accepted` exposes a value. `rejected` distinguishes decoding from business
+validation; `unavailable` covers configuration, execution, timeout and cancellation.
+A service failure cannot accept even if presented as a warning. Services should
+subscribe to `validation.signal.onCancel` and stop their transport work; the
+controller is destroyed on every completed or cancelled request. Run concurrent
+requests with independent context and test failures as well as successes.
+
+This entry point does not accept an already composed controller/schema. Move
+server-relevant hybrid rules into exact portable behavior bindings and include
+their implementation and policy in the host revision. Core's code-authored and
+controlled UI contracts are unchanged.
+
+**API reference:** [Portable authoring contracts](/reference/authoring).
+
+**Next:** [Explore the full Event Launch form](/portable-forms/event-launch).
+
+## Evidence
+
+- [Submission matrix, also run from installed tarballs](https://github.com/unic/stages/blob/master/packages/authoring/test/fixtures/packed-submissions.mjs)
+
+- [Public declarations and loader](https://github.com/unic/stages/blob/master/packages/authoring/src/portable.ts)
+- [Contact, bindings and fragment regressions](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
+- [Studio exporter](https://github.com/unic/stages/blob/master/studio/src/projects/artifacts.ts)
+- [Installed consumer verification](https://github.com/unic/stages/blob/master/scripts/verify-v1-packages.mjs)

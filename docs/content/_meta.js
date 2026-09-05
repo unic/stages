@@ -1,6 +1,7 @@
 export default {
   "index": "Overview",
   "start": "Start here",
+  "portable-forms": "Portable forms",
   "comparison": "Compare form libraries",
   "core-concepts": "Core concepts",
   "structures": "Structures",

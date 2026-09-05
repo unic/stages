@@ -26,6 +26,7 @@ const cases = [
   ["examples/shared/event-launch/schema.ts", ["build:core", "test:shared-example", "build:examples", "e2e:all"]],
   ["examples/react/src/App.tsx", ["build:example:react", "e2e:react"]],
   ["examples/e2e/event-launch.spec.ts", ["build:examples", "e2e:all"]],
+  ["scripts/check-v1-docs.mjs", ["check:docs", "build:docs"]],
   ["docs/examples/persistence.ts", ["check:docs"]],
   ["docs/content/core.mdx", ["check:docs", "build:docs"]],
   ["docs/components/StagesExample.jsx", ["check:docs", "build:docs"]],

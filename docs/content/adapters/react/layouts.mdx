@@ -1,0 +1,179 @@
+---
+title: React custom layouts and dynamic forms
+description: Compose several fields, nested collections, wizard panels, and conditional content in application-owned React layouts.
+---
+
+# React custom layouts and dynamic forms
+
+**For:** React developers building forms in an existing design system, including
+forms loaded from Studio JSON.  
+**Prerequisites:** [React quickstart](/start/react-quickstart),
+[lifecycle and ownership](/adapters/react/lifecycle), and
+[field views](/adapters/react/fields).
+
+One controller can drive an entire screen. Render as many `StagesField`
+components as you need, sharing that controller. Your JSX owns columns, cards,
+tabs, headings, help text, and surrounding application UI. A registry view owns
+an individual control; it does not determine the layout of the whole form.
+
+## Choose how to place fields
+
+| Layout requirement | Approach |
+| --- | --- |
+| Known fields in a bespoke screen | Place several `StagesField` components at explicit data paths. |
+| Repeated rows with known contents | Use `useStagesCollection`; render several fields per item with `item.fieldPath`. |
+| Wizard with bespoke stage screens | Use `useStagesWizard`; mount the screen matching the accepted active stage. |
+| Conditional fields, nested variants, or arbitrary portable forms | Walk the current render snapshot and delegate each node kind to a React component. |
+| Mostly bespoke layout with a changing subsection | Combine fixed JSX with a snapshot-driven subtree. |
+
+## Place several fields in a custom screen
+
+This example uses the schema, controller type, and views from the checked
+[React adapter fixture](https://github.com/unic/stages/blob/master/docs/examples/react-adapter.tsx).
+Its profile fields are always present. The collection and wizard are separate
+components borrowing the same controller; neither creates another form owner.
+
+<CheckedSource fixture="docs/examples/react-layouts.tsx" region="react-layout-fixed" />
+
+`profile-grid` and `profile-main` are application CSS hooks: supply your own grid
+or design-system wrappers. Moving a field into a column does not change its data
+path. Groups and stages do affect paths: a field inside checkout's details stage
+uses `['checkout', 'details', 'deliveryNote']`. A compound field such as `location`
+still occupies one path; its view renders latitude and longitude together.
+
+Keep one accepted value in the owner, using `useStages` as shown in the lifecycle
+guide. Input emits a proposal; only the owner's update accepts it. The same
+applies to collection edits. These layout components borrow the controller and
+must not destroy it. Put submission on an outer form using the
+[validation and focus pattern](/adapters/react/accessibility); navigation and row
+buttons must use `type="button"`.
+
+## Render several fields per row and nest collections
+
+The [collection binding example](/adapters/react/collections) renders one email
+per contact. For a row with name, email, and role, place three `StagesField`
+components inside the same keyed row and call `item.fieldPath` for each property.
+Use `item.key` for the row's React key, never its array index. Read `fieldPath`
+again on each render because accepted moves change positions.
+
+For a group inside a row, append the child's property to the group's path. For a
+nested collection, pass that collection's current path to a child component
+using `useStagesCollection`. The hook belongs at the top of that child component,
+not inside the parent's map or a conditional branch. A typed literal path infers
+row values; runtime paths may require application-owned type narrowing.
+
+Prefer the snapshot walker below when rows contain different variants or
+conditionally absent fields. It uses each row's actual `nodes`, so a company row
+can render company name and tax fields while a person row renders name and date
+of birth. Nested collections recurse through the same renderer, at any level.
+The [discriminated collection guide](/structures/discriminated-collections)
+explains discriminator values and variant-qualified identity.
+
+## Render the current tree, including dynamic parts
+
+`controller.getSnapshot().nodes` is the evaluated render tree. It contains
+current paths, resolved field props, row occurrences, and wizard state. Subscribe
+with `useStagesController` so accepted values, context, and schema updates can
+change the rendered structure. Do not enumerate the original schema or a portable
+artifact as if it were the live tree.
+
+The following renderer handles every public render-node kind. `label` supplies
+application labels for containers and rows; field labels remain in their views.
+`createRow` supplies a complete row value for the selected collection, including
+a unique key and the discriminator for union rows. For multiple variants, replace
+the single Add button with your own variant picker and construct the chosen
+variant's value. Supply these callbacks when mounting `DynamicLayout` with your
+existing controller.
+
+<CheckedSource fixture="docs/examples/react-layouts.tsx" region="react-layout-tree" />
+
+Use this as a layout foundation: replace the fieldsets with your cards, grids,
+and stage panels. The command payloads are the public
+[collection and wizard events](/reference/standard-events). `canAdd`,
+`canRemove`, and navigation flags describe available actions; core still checks
+commands. Supply complete valid row values and respect collection bounds.
+The renderer derives move destinations from current row paths and targets row
+addresses, preserving identity across accepted reorders.
+
+For a bespoke dynamic section, select the desired container from the subscribed
+tree and pass its `nodes` to the same recursive component. Keep the rest of the
+screen in fixed JSX. Render each field occurrence once to avoid duplicate
+controls and generated IDs.
+
+### Visibility, structural conditions, and changing variants
+
+Hidden fields are absent from the render snapshot. `StagesField` throws if its
+path is missing, hidden, or refers to a container. Mount conditional field and
+container bindings only when that node exists in the current snapshot. Keeping a
+hidden binding mounted and hiding its DOM with CSS does not solve this.
+
+The walker mounts exactly the nodes it receives. It therefore follows changes to
+visibility, schema-factory structure, collection membership, and variant children
+without maintaining a second list of fields. It keys nodes by full addresses:
+local IDs repeat in nested structures, while paths change when rows move. A
+variant replacement may change child identity and remount that child's local
+input draft; do not key all variants by their shared data path.
+
+Pass a portable loader's `schemaInput` into the controller, preserving factories
+for structural conditions. Update context through the owner rather than mutating
+it in place. See [dynamic configuration](/core-concepts/dynamic-configuration)
+for visibility versus structural presence and revision failures. Portable
+row-dependent structural presence remains reserved; use row visibility and
+variants as described in [Event Launch](/portable-forms/event-launch).
+
+### Wizards, guards, and conditional stages
+
+Visible stages can include inactive stages. Render only active stage content;
+otherwise users can tab into steps they have not navigated to. The walker filters
+active stages, while the fixed [wizard example](/adapters/react/wizards) selects
+bespoke JSX by stage ID. Both let the controller determine the active stage.
+Do not keep a second React step index that advances optimistically on click.
+
+Previous, Next, and Go dispatch navigation events. Enabled navigation does not
+promise validation or guard success; inspect the subsequent snapshot and
+[diagnostics](/diagnostics/observability-and-troubleshooting) when a transition is
+rejected. A wizard with no visible stages has no active panel. When conditional
+stages disappear, use the controller's reconciled active stage.
+
+After a successful transition, move focus to the new panel heading or first
+control. Provide useful localized step labels and error summaries. The minimal
+walker demonstrates structure and commands; add container validation summaries
+and focus management using the [accessibility guide](/adapters/react/accessibility).
+
+## Use the same layouts with portable forms
+
+After [loading the artifact](/start/portable-forms), use `bindPortableViews` to
+associate every field token with a React view, then create the controller with
+the bound `fields`, `schemaInput`, and initial accepted value. The
+[custom field guide](/portable-forms/custom-fields) shows those bindings. A
+missing view is a render error; include standard views as well as custom ones.
+
+Use fixed paths when your application intentionally owns the form's structure.
+Use `DynamicLayout` when Studio authors can add or rearrange fields and sections.
+The portable render plan and source map can inform presentation, but the live
+snapshot supplies current field occurrences and state. The layout does not
+change value contracts, validators, or controlled acceptance. Server acceptance
+still uses [submission validation](/portable-forms/server-submissions).
+
+## Check the complete layout
+
+Exercise adding, removing, and moving nested rows; changing row variants;
+showing and hiding fields through value and context changes; and guarded wizard
+navigation. Confirm that focus, input drafts, errors, and labels stay attached
+to the correct occurrence. Also delay or reject an owner proposal and confirm
+that the screen continues to reflect accepted state.
+
+The root snapshot subscription intentionally rerenders the layout on every
+publication. Start here for correctness, then profile large forms and use the
+[performance guide](/adapters/react/performance) for narrower subscriptions and
+memoized views. Do not cache a structural snapshot indefinitely.
+
+**Next:** Add [accessible submission and focus](/adapters/react/accessibility).
+
+## Evidence
+
+- [Public snapshot declarations](https://github.com/unic/stages/blob/master/packages/core/src/types.ts)
+- [React bindings and field lookup](https://github.com/unic/stages/blob/master/packages/react/src/index.tsx)
+- [Field, row identity, and wizard binding tests](https://github.com/unic/stages/blob/master/packages/react/test/react.test.mjs)
+- [Controlled and dynamic snapshot invariants](https://github.com/unic/stages/blob/master/packages/core/test/controller-property.test.mjs)
+- [Strictly checked layout source](https://github.com/unic/stages/blob/master/docs/examples/react-layouts.tsx)

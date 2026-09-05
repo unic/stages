@@ -936,10 +936,12 @@ assertSameInventory(
 );
 
 const renderedRegions = [
-  { fixture: "docs/examples/portable-release.ts", region: "portable-release", page: "start/portable-forms.mdx" },
-  { fixture: "docs/examples/portable-event-launch.ts", region: "portable-event-launch", page: "start/portable-forms.mdx" },
-  { fixture: "docs/examples/portable-submission.ts", region: "portable-submission", page: "start/portable-forms.mdx" },
-  { fixture: "docs/examples/portable-custom.tsx", region: "portable-custom", page: "start/portable-forms.mdx" },
+  { fixture: "docs/examples/react-layouts.tsx", region: "react-layout-fixed", page: "adapters/react/layouts.mdx" },
+  { fixture: "docs/examples/react-layouts.tsx", region: "react-layout-tree", page: "adapters/react/layouts.mdx" },
+  { fixture: "docs/examples/portable-release.ts", region: "portable-release", page: "portable-forms/releases.mdx" },
+  { fixture: "docs/examples/portable-event-launch.ts", region: "portable-event-launch", page: "portable-forms/event-launch.mdx" },
+  { fixture: "docs/examples/portable-submission.ts", region: "portable-submission", page: "portable-forms/server-submissions.mdx" },
+  { fixture: "docs/examples/portable-custom.tsx", region: "portable-custom", page: "portable-forms/custom-fields.mdx" },
   { fixture: "docs/examples/portable.ts", region: "portable-runtime", page: "start/portable-forms.mdx" },
   { fixture: "docs/examples/recipes.ts", region: "server-save-rejection", page: "recipes/server-save-and-rejection.mdx" },
   { fixture: "docs/examples/recipes.ts", region: "async-options", page: "recipes/async-options.mdx" },

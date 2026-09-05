@@ -1,0 +1,87 @@
+# Custom values, components and hybrid behavior
+
+**For:** application developers deploying portable forms.  
+**Prerequisites:** [load a portable form](/start/portable-forms).
+
+A custom field has three separate registrations: a JSON descriptor, a trusted
+semantic binding, and a component for each chosen framework. Pass descriptors
+in the fourth `projectPortableForm` argument as `{ fieldDescriptors }`; production
+JSON carries only referenced descriptors and their exact binding requirements.
+Studio hosts pass resolved fields and token-keyed views through the
+`StudioV1Editor` `customFields` prop. `resolvePortableFields` from the `/studio`
+entry point connects descriptors to semantic bindings. The palette adds these
+fields, the properties inspector checks structured JSON and commits on blur, and preview uses the
+host's components. Missing preview views are reported explicitly. Custom bulk
+property editing is not yet provided.
+
+The descriptor specifies accepted JSON values, empty values, props, draft
+parsing/formatting expectations and accessibility requirements. A component
+keeps incomplete input locally and emits only an accepted value or a draft that
+its registered reducer understands. For optional numbers, use a nullable number
+contract: an empty draft maps to null, while the draft `"0"` maps to zero. Money
+uses safe integer minor units and a declared currency; the trusted binding must
+enforce precision. Object contracts require all declared keys and reject extra
+keys; arrays and enums can contain JSON values. These are field contracts, not
+an authoritative decoder for arbitrary controller values or server submissions.
+
+Bind the compiler's opaque view tokens with `bindPortableViews(loaded, views)`.
+Pass the returned `schemaInput` and `fields` together to core; their types agree
+on the chosen view components. Supply a view
+for every token in `loaded.fields` (including the standard catalog). This changes
+only views; reducers, validators, schema identity, and accepted values remain
+unchanged. DOM, React, Vue and Angular adapters can consume the same loaded
+schema, and a custom layout can use public snapshots and field bindings directly.
+
+The optional `loaded.renderPlan` contains blocks, runtime paths/addresses,
+responsive layout and theme tokens. A renderer matches those addresses to the
+current snapshot; snapshot visibility, disabled state and validation remain
+authoritative for UI behavior. Render blocks from their props, recurse through
+containers, and use the chosen adapter's collection/wizard commands for navigation
+and stable row identity. Labels, help and visible issues must stay associated
+with each occurrence's control. See the [DOM](/reference/dom),
+[React](/reference/react), [Vue](/reference/vue) and [Angular](/reference/angular)
+bindings for field events, focus and teardown contracts. Another framework can
+subscribe to snapshots and dispatch the same public core events without using
+this presentation model.
+
+For host-only behavior, `composePortableForm` appends root validators and
+transforms while retaining structural schema factories. Supply a distinct
+deployment schema ID and version so persisted state cannot confuse the composed
+contract with its source. The example below shows a money field and a custom
+React layout; the host supplies its standard component map.
+
+<CheckedSource fixture="docs/examples/portable-custom.tsx" region="portable-custom" />
+
+When custom rules must travel with the artifact, pass `behaviors` alongside
+`fieldDescriptors` during projection. Each entry has a namespaced `key`, exact
+`version`, and JSON-object `config`. Supply `definePortableBehaviorBindings`
+through the loader's `behaviorBindings` option. Its trusted `configure(config)`
+factory returns core `validators` and/or `transforms`; it can reject invalid
+configuration. Factories run once during load, never during structural updates.
+Portable rules run before binding rules, bindings follow document order, and
+host-only composition follows those. Duplicate validator IDs fail rather than
+replace rules. Core event scheduling, dependency paths, cancellation, and
+proposal/acceptance behavior apply throughout.
+
+Record behavior changes in the deployed schema version and application revision;
+Use [immutable releases](/portable-forms/releases) to fingerprint the deployed contract. Server deployments must supply the same
+semantic bindings before claiming equivalence. Direct code-authored schemas,
+rich values, codecs, closures, custom adapters and schema factories remain
+available through core without this optional package.
+
+For several fields, nested rows, conditional sections, and wizard panels, follow
+[React custom layouts](/adapters/react/layouts). The money example above defines
+a single control; the layout guide composes controls into a complete screen.
+
+**API reference:** [Portable authoring contracts](/reference/authoring).
+
+**Next:** [Validate server submissions](/portable-forms/server-submissions).
+
+## Evidence
+
+- [Submission matrix, also run from installed tarballs](https://github.com/unic/stages/blob/master/packages/authoring/test/fixtures/packed-submissions.mjs)
+
+- [Public declarations and loader](https://github.com/unic/stages/blob/master/packages/authoring/src/portable.ts)
+- [Contact, bindings and fragment regressions](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
+- [Studio exporter](https://github.com/unic/stages/blob/master/studio/src/projects/artifacts.ts)
+- [Installed consumer verification](https://github.com/unic/stages/blob/master/scripts/verify-v1-packages.mjs)

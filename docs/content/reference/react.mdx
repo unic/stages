@@ -108,6 +108,10 @@ that view with an explicit or generated ID. Emits target the field's current
 path with `source: "adapter"`. Missing paths use the hook error above; a missing
 view throws `Error("Stages field view is missing at …")`.
 
+For composition across fields, groups, collections, and active stages, see
+[custom layouts and dynamic forms](/adapters/react/layouts). The adapter supplies
+field and container bindings; applications own recursive layout rendering.
+
 ## Field types
 
 ### ReactFieldProps
