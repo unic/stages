@@ -1370,6 +1370,56 @@ button, input, select, textarea { font: inherit; }
 .studio-design-node.studio-v1-authoring-node:hover, .studio-design-node.studio-v1-authoring-node:focus-visible { outline-color: #80b9e2; }
 .studio-design-node.studio-v1-authoring-node[data-authoring-selected="true"] { outline: 2px solid var(--studio-selection); }
 .studio-design-node.studio-v1-authoring-node[data-drop-position="inside"] { outline: 2px dashed var(--studio-selection); }
+.studio-design-node { --studio-item-color: #64748b; padding-top: 1rem; }
+.studio-design-node.studio-v1-authoring-node { min-height: 4.5rem; }
+.studio-design-node[data-design-kind="field"] { --studio-item-color: #0787e5; }
+.studio-design-node[data-design-kind="fragment"] { --studio-item-color: #9755bd; outline-color: #b892cb; }
+.studio-canvas-identity {
+  position: absolute;
+  top: -0.75rem;
+  right: 0.4rem;
+  max-width: calc(100% - 2rem);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  background: var(--studio-preview-background);
+  color: var(--studio-item-color);
+  font-size: 0.65rem;
+  line-height: 1.2rem;
+  z-index: 2;
+}
+.studio-canvas-identity > svg { flex-shrink: 0; }
+.studio-canvas-identity code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: inherit; }
+.studio-canvas-widths {
+  position: absolute;
+  top: 1.1rem;
+  left: -0.85rem;
+  z-index: 4;
+  display: grid;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+.studio-design-node:hover > .studio-canvas-widths,
+.studio-design-node:focus-within > .studio-canvas-widths,
+.studio-design-node[data-authoring-selected="true"] > .studio-canvas-widths { opacity: 1; pointer-events: auto; }
+.studio-canvas-widths button {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 1px solid #b8c2ce;
+  border-radius: 3px;
+  background: var(--studio-preview-background);
+  color: #64748b;
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.studio-canvas-widths button[aria-pressed="true"] { border-color: var(--studio-item-color); color: var(--studio-item-color); font-weight: 700; }
+.studio-canvas-widths button:focus-visible { outline: 2px solid var(--studio-selection); outline-offset: 2px; }
+@media (hover: none) { .studio-design-node > .studio-canvas-widths { opacity: 1; pointer-events: auto; } }
 .studio-design-features {
   position: absolute;
   right: 5px;

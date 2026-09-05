@@ -5,6 +5,7 @@ import { StudioChoiceOptionsEditor } from "./StudioChoiceOptionsEditor";
 import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
 import { Monitor, Smartphone, Tablet, ArrowDown, ArrowUp, Copy, FlaskConical, History, RotateCcw, Trash2, TriangleAlert, ArrowDownToLine, ArrowUpFromLine, Braces, Eye, FolderOpen, GitBranch, Languages, Layers, LayoutGrid, LockKeyhole, MousePointer2, Plus, Redo2, Save, ShieldCheck, SlidersHorizontal, Undo2, X } from "lucide-react";
 import { Switch as SwitchPrimitive } from "radix-ui";
+import { StudioCanvasChrome } from "./StudioCanvasChrome";
 import { EditorTooltip, InspectorSection, StudioItemIcon, StudioLayoutControl } from "./StudioInspectorControls";
 import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
 import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type KeyboardEvent, type ReactNode } from "react";
@@ -34,6 +35,9 @@ import {
   studioBlockDefinition,
   studioFieldDefinition,
   studioLayout,
+  studioPresentationLayout,
+  type StudioBreakpoint,
+  type StudioWidth,
   validateStudioFieldProps,
   type AnyStudioAuthoringFieldDefinition,
   type StudioBlockDefinition,
@@ -210,6 +214,9 @@ function expressionReferences(form: StudioFormDocument): readonly StudioExpressi
 }
 
 interface AuthoringCanvasBindings {
+  readonly breakpoint: StudioBreakpoint;
+  readonly sourceNodes: ReadonlyMap<Uid, StudioNode>;
+  readonly onWidth: (uid: Uid, width: StudioWidth) => void;
   readonly selectedUids: readonly Uid[];
   readonly selectableUids: ReadonlySet<Uid>;
   readonly onSelect: (uid: Uid, options?: StudioSelectionOptions) => void;
@@ -237,7 +244,8 @@ function PreviewLayout({ node, children, authoring }: {
   readonly authoring?: AuthoringCanvasBindings;
 }) {
   const designNodes = useContext(DesignNodesContext);
-  const designNode = designNodes?.[node.uid];
+  const designNode = authoring?.sourceNodes.get(node.uid) ?? designNodes?.[node.uid];
+  const canvasPath = node.kind === "block" ? node.uid : node.runtimePath.map(String).join(".");
   const selectable = authoring?.selectableUids.has(node.uid) === true;
   const selected = selectable && authoring.selectedUids.includes(node.uid);
   const insertBefore = authoring?.insertBeforeByUid.get(node.uid);
@@ -262,7 +270,7 @@ function PreviewLayout({ node, children, authoring }: {
   return (
     <div
       className={`studio-v1-preview__layout${designNodes ? " studio-design-node" : ""}${selectable ? " studio-v1-authoring-node" : ""}`}
-      data-design-kind={designNodes ? node.kind : undefined}
+      data-design-kind={designNodes ? designNode?.kind ?? node.kind : undefined}
       data-authoring-selected={selected || undefined}
       data-drop-position={dropPosition}
       data-canvas-uid={selectable ? node.uid : undefined}
@@ -333,6 +341,9 @@ function PreviewLayout({ node, children, authoring }: {
         onClick={(event) => { event.stopPropagation(); authoring.onSelect(node.uid); }}
         onDragStart={(event) => writeCanvasDragData(event, node.uid)}
       >⠿</button>}
+      {designNodes && authoring && <StudioCanvasChrome kind={designNode?.kind ?? node.kind} path={canvasPath}
+        breakpoint={authoring.breakpoint} width={node.layout.width[authoring.breakpoint]}
+        {...(selectable ? { onWidth: (width: StudioWidth) => authoring.onWidth(node.uid, width) } : {})} />}
       {children}
       {designNode && <StudioDesignFeatures node={designNode} />}
     </div>
@@ -1700,6 +1711,12 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
     localization: { defaultLocale: history.present.project.defaultLocale, resources: history.present.resources },
   });
+  const canvasSourceNodes = new Map<Uid, StudioNode>(Object.entries(form.nodes) as [Uid, StudioNode][]);
+  for (const [uid, entry] of compiled.sourceMap.byUid) {
+    if (canvasSourceNodes.has(uid) || !entry.fragmentDefinitionUid || !entry.fragmentNodeUid) continue;
+    const source = history.present.fragments[entry.fragmentDefinitionUid]?.nodes[entry.fragmentNodeUid];
+    if (source) canvasSourceNodes.set(uid, source);
+  }
   const insertBeforeByUid = new Map<Uid, StudioInsertPlacement>();
   for (const uid of Object.keys(form.nodes) as Uid[]) {
     const placement = locateStudioNode(form, uid);
@@ -2403,6 +2420,14 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem}
               onUpdateScenario={updateScenario} onAddScenario={addScenario} variant="canvas"
               authoring={{
+                breakpoint,
+                sourceNodes: canvasSourceNodes,
+                onWidth: (uid, width) => {
+                  const node = form.nodes[uid];
+                  if (!node) return;
+                  const layout = studioPresentationLayout(node.presentation ?? {});
+                  updateNode(node, { presentation: { ...node.presentation, layout: { ...layout, width: { ...layout.width, [breakpoint]: width } } } }, `Edit ${breakpoint} width`);
+                },
                 selectedUids: navigation.workbench.selectedUids,
                 selectableUids: new Set(Object.keys(form.nodes) as Uid[]),
                 insertBeforeByUid,

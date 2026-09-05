@@ -912,6 +912,62 @@ describe("StudioEditorPage interactions", () => {
     expect(screen.queryByRole("textbox", { name: "Text field" })).toBeNull();
   });
 
+  it("changes canvas widths only at the active breakpoint with undo and saved layout", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
+    const view = render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    await user.type(screen.getByRole("textbox", { name: "First field", exact: true }), "Keep this answer");
+    const canvas = within(screen.getByRole("region", { name: "Canvas", exact: true }));
+    await user.click(screen.getByRole("button", { name: "Tablet", exact: true }));
+    await user.click(canvas.getByRole("button", { name: "Half width for first on tablet" }));
+    const field = document.querySelector('[data-canvas-uid="field_first"]');
+    await waitFor(() => expect(field).toHaveAttribute("data-width-tablet", "half"));
+    expect(field).toHaveAttribute("data-width-mobile", "full");
+    expect(field).toHaveAttribute("data-width-desktop", "full");
+    expect(canvas.getByRole("button", { name: "Half width for first on tablet" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("textbox", { name: "First field", exact: true })).toHaveValue("Keep this answer");
+    await user.click(screen.getByRole("button", { name: "Undo", exact: true }));
+    await waitFor(() => expect(field).toHaveAttribute("data-width-tablet", "full"));
+    await user.click(screen.getByRole("button", { name: "Redo", exact: true }));
+    await waitFor(() => expect(field).toHaveAttribute("data-width-tablet", "half"));
+    await user.click(screen.getByRole("button", { name: "Mobile", exact: true }));
+    await user.click(canvas.getByRole("button", { name: "Quarter width for first on mobile" }));
+    await waitFor(() => expect(field).toHaveAttribute("data-width-mobile", "quarter"));
+    expect(field).toHaveAttribute("data-width-tablet", "half");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Local draft saved");
+    view.unmount();
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await screen.findByText("Local draft loaded");
+    const restored = document.querySelector('[data-canvas-uid="field_first"]');
+    expect(restored).toHaveAttribute("data-width-mobile", "quarter");
+    expect(restored).toHaveAttribute("data-width-tablet", "half");
+    expect(restored).toHaveAttribute("data-width-desktop", "full");
+  });
+
+  it("labels canvas borders with paths and source kinds and resizes fragment instances independently", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    expect(document.querySelector('[data-canvas-uid="field_nested"] > .studio-canvas-identity')).toHaveTextContent(/^journey\.details\.nested$/);
+    expect(document.querySelector('[data-canvas-uid="group_drop"] > .studio-canvas-identity')).toHaveTextContent(/^drop$/);
+    await openWorkbenchPanel(user, "Layers");
+    fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
+    await user.click(screen.getByRole("button", { name: "Create fragment from selection" }));
+    await user.click(screen.getByRole("button", { name: "Insert Fragment 1" }));
+    const fragments = document.querySelectorAll('[data-canvas-uid][data-design-kind="fragment"]');
+    expect(fragments).toHaveLength(2);
+    expect(fragments[0].querySelector('.studio-canvas-identity')).toHaveTextContent(/^fragment$/);
+    expect(fragments[0].querySelector('[data-design-kind="field"] > .studio-canvas-identity')).toHaveTextContent(/^fragment\.first$/);
+    await user.click(within(fragments[0]).getByRole("button", { name: "Half width for fragment on desktop" }));
+    await waitFor(() => expect(fragments[0]).toHaveAttribute("data-width-desktop", "half"));
+    expect(fragments[1]).toHaveAttribute("data-width-desktop", "full");
+    await user.click(screen.getByRole("button", { name: "Preview", exact: true }));
+    expect(document.querySelector('.studio-canvas-identity')).toBeNull();
+    expect(document.querySelector('.studio-canvas-widths')).toBeNull();
+  });
+
   it("creates, reuses, overrides, edits, and detaches linked fragments", async () => {
     const user = userEvent.setup();
     const repository = createMemoryProjectRepository([outlineProjectSnapshot()]);
