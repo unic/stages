@@ -18,11 +18,21 @@ validation. It does not accept a pending proposal.
 Replace the trusted binding registry when its implementations change. Compiler
 sessions must not be shared between independent owners, and inputs must not be
 mutated in place. Changed document content, localization, or binding identity
-invalidates the cached compilation. This initial cache does not yet reuse
-individual behavior definitions across real edits: those edits retain the
-existing preview update/recreation policy. Calling `compileStudioForm()` directly
-still performs a fresh compilation. Scenario selection and explicit reset
-continue to create intentionally fresh controller sessions.
+invalidates the cached compilation. Within the same binding environment, the
+session reuses specialized field definitions when their definition key/version,
+reducer rules, and the expanded UID-to-runtime-path index are unchanged. Label,
+layout, and other presentation edits therefore retain controller identity,
+interaction metadata, row keys, wizard position, and pending owner proposals.
+The schema and diagnostics are still compiled afresh, including invalid patch
+targets; existing core schema-update rules govern validation invalidation.
+Only equivalent whole-compilation reuse promises uninterrupted in-flight
+validation. A changed reducer, field definition, or path index conservatively
+invalidates specialized definitions and retains the existing recreation policy.
+This is not a runtime-state migration policy. Fragment inputs are compared after
+expansion, so instance overrides and remapped targets participate in reuse.
+Calling `compileStudioForm()` without a previous result still performs a fresh
+compilation. Scenario selection and explicit reset continue to create
+intentionally fresh controller sessions.
 
 Form, stage, and data-path actions call the public `validate()` contract. They
 use the same event and reveal behavior, while differing only in scope: the whole

@@ -32,7 +32,7 @@ async function publish(): Promise<void> {
 }
 
 describe("Studio preview host", () => {
-  it("resets and recreates accepted controller state with durable metadata only", async () => {
+  it.each(["equivalent", "label"])("preserves accepted state and owner proposals across %s edits, then explicitly resets/recreates", async (edit) => {
     const wizardUid = toUid("wizard_flow");
     const firstUid = toUid("stage_first");
     const secondUid = toUid("stage_second");
@@ -82,8 +82,11 @@ describe("Studio preview host", () => {
     const originalController = host.controller;
     const pending = host.pendingProposal;
     expect(pending).toBeDefined();
+    const editedForm = edit === "label" ? { ...form, nodes: { ...form.nodes, [nameUid]: {
+      ...form.nodes[nameUid]!, props: { label: "Full name" },
+    } } } : structuredClone(form);
     host.update({
-      compiled: session.compile(structuredClone(form)), value: host.canonicalValue,
+      compiled: session.compile(editedForm), value: host.canonicalValue,
       context: { locale: "de-CH" }, extensions, extensionCodecs,
     });
     expect(host.controller).toBe(originalController);

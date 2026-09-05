@@ -736,10 +736,12 @@ export function createEmptyStudioScenarioValue(form: StudioFormDocument, fragmen
   return emptyScope(expanded, expanded.rootNodeUids);
 }
 
+/** Previous output is an owner-local reuse hint from the same trusted binding environment. */
 export function compileStudioForm(
   form: StudioFormDocument,
   fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {},
   options: StudioCompileOptions = {},
+  previous?: CompiledStudioForm,
 ): CompiledStudioForm {
   const expanded = expandStudioFragments(form, fragments);
   const context: CompileContext = {
@@ -762,6 +764,27 @@ export function compileStudioForm(
   };
   recordSource(context, expanded.form.uid, [], []);
   const nodes = compileSiblings(context, expanded.form.rootNodeUids, [], []);
+  // Reducers close over the UID-to-path index. Reuse only inside an owner's
+  // session, after compiling afresh so invalid targets still emit diagnostics.
+  const previousPaths = previous === undefined ? undefined : indexRuntimePaths(previous.expandedForm);
+  const samePaths = previousPaths !== undefined && previousPaths.size === context.targetPaths.size
+    && [...context.targetPaths].every(([uid, path]) =>
+      JSON.stringify(previousPaths.get(uid)) === JSON.stringify(path));
+  if (samePaths && previous !== undefined) {
+    for (const node of Object.values(expanded.form.nodes)) {
+      if (node.kind !== "field" || !node.reducers?.length) continue;
+      const priorNode = previous.expandedForm.nodes[node.uid];
+      const type = `${node.definition.key}__studio__${node.uid}`;
+      const priorDefinition = previous.fields[type];
+      if (priorDefinition !== undefined && context.fields[type] !== undefined
+        && priorNode?.kind === "field"
+        && priorNode.definition.key === node.definition.key
+        && priorNode.definition.version === node.definition.version
+        && JSON.stringify(priorNode.reducers) === JSON.stringify(node.reducers)) {
+        context.fields[type] = priorDefinition;
+      }
+    }
+  }
   if (context.localization !== undefined) {
     for (const node of Object.values(expanded.form.nodes)) for (const [property, key] of Object.entries(node.localizedProps ?? {})) {
       const resolved = resolveStudioMessage(key, context.localization.defaultLocale, context.localization);

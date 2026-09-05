@@ -15,8 +15,13 @@ F3 progress (2026-09-05): an editor-owned compiler session now reuses equivalent
 compilations, including specialized reducer definitions. Runtime regressions
 cover touched state, wizard position, row keys, pending owner proposals, and
 in-flight validation; an editor regression verifies that selection and panel
-changes do not compile. Real-edit behavior reuse and migration policies remain
-P1 work. See [preview session behavior](../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md).
+changes do not compile. A P1 continuation now reuses specialized reducer
+definitions across real edits when rules, definition identity, and expanded
+runtime paths are unchanged. Label-edit runtime evidence retains controller
+identity, accepted state, wizard position, row keys, and pending owner proposals;
+target-path and rule edits invalidate definitions, and fresh diagnostics remain
+available. Fine-grained validation reuse and migration policies remain P1 work.
+See [preview session behavior](../studio/docs/TEST_DATA_AND_RUNTIME_PERSISTENCE.md).
 
 F4 progress (2026-09-05): source maps retain variant-qualified candidates.
 Diagnostics and validation inspection resolve actual rows from accepted values,

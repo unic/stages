@@ -37,7 +37,7 @@ export function createStudioCompilerSession() {
       const key = documentKey({ form, fragments, localization: options.localization });
       const compiled = sameBindings && cached.key === key
         ? cached.compiled
-        : compileStudioForm(form, fragments, options);
+        : compileStudioForm(form, fragments, options, sameBindings ? cached.compiled : undefined);
       previous = { form, fragments, options, key, compiled };
       return compiled;
     },

@@ -4,6 +4,12 @@ Status: proposed multi-session implementation roadmap
 
 Last reviewed against the implementation: 2026-09-04
 
+Workflow continuation (2026-09-05): the companion workflow improvements plan
+now includes compiler-session reuse of unchanged specialized reducers across
+presentation edits, with runtime evidence for retained interaction state and
+pending owner proposals. This advances the preview-continuity prerequisite;
+Wave 5 Sessions 28–31 remain unimplemented and their beta gates remain open.
+
 Execution status:
 
 - Session 01 completed: [`../studio/LEGACY_POC_BASELINE.md`](../studio/LEGACY_POC_BASELINE.md)
