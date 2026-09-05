@@ -37,6 +37,8 @@ describe("Studio layout authoring controls", () => {
     await user.keyboard("{Enter}");
     const devices = screen.getByRole("radiogroup", { name: "Layout breakpoint" });
     await user.tab();
+    expect(screen.getByRole("button", { name: "Help: Responsive layout" })).toHaveFocus();
+    await user.tab();
     expect(within(devices).getByRole("radio", { name: "Desktop" })).toHaveFocus();
     await user.keyboard("{ArrowRight} ");
     expect(within(devices).getByRole("radio", { name: "Tablet" })).toHaveAttribute("aria-checked", "true");

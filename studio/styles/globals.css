@@ -1312,3 +1312,37 @@ button, input, select, textarea { font: inherit; }
 .studio-validator-advanced { margin: 0.75rem 0; border-top: 1px solid var(--studio-panel-border); padding-top: 0.65rem; }
 .studio-validator-advanced > summary { cursor: pointer; font-size: 0.75rem; color: #666; }
 .studio-validator-advanced[open] > summary { margin-bottom: 0.75rem; }
+
+/* Help stays out of the canvas until explicitly opened. */
+.studio-inspector-section__heading { display: flex; align-items: center; gap: 0.25rem; }
+.studio-inspector-section__heading > .studio-inspector-section__trigger { flex: 1; min-width: 0; }
+.studio-help-trigger { flex-shrink: 0; width: 28px; height: 28px; color: #666; vertical-align: middle; }
+.studio-help-overlay { position: fixed; inset: 0; z-index: 200; background: #14203066; }
+.studio-help-dialog { position: fixed; z-index: 201; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(900px, calc(100vw - 32px)); height: min(740px, calc(100dvh - 32px)); display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #303030; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 16px 64px #0003; font-size: 14px; line-height: 1.6; }
+.studio-help-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 24px 24px 12px; }
+.studio-help-heading h2 { margin: 0; font-size: 20px; font-weight: 650; }
+.studio-help-heading p { margin: 4px 0 0; color: #666; }
+.studio-help-search { display: grid; gap: 6px; padding: 0 24px 20px; font-size: 12px; font-weight: 600; }
+.studio-help-search input { width: 100%; font-size: 14px; font-weight: 400; }
+.studio-help-body { display: grid; grid-template-columns: 210px minmax(0, 1fr); flex: 1; min-height: 0; border-top: 1px solid #e5e5e5; }
+.studio-help-body nav { overflow-y: auto; padding: 12px; border-right: 1px solid #e5e5e5; background: #fafafa; }
+.studio-help-body nav button { display: block; width: 100%; border: 0; border-radius: 5px; padding: 8px 10px; background: transparent; color: #555; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.studio-help-body nav button:hover { background: #eee; }
+.studio-help-body nav button[aria-current] { background: #e6f2ff; color: #0066ba; }
+.studio-help-dialog button:focus-visible, .studio-help-dialog input:focus-visible { outline: 2px solid #007be5; outline-offset: 2px; }
+.studio-help-articles { overflow-y: auto; padding: 24px; overscroll-behavior: contain; }
+.studio-help-articles article + article { margin-top: 32px; padding-top: 24px; border-top: 1px solid #ddd; }
+.studio-help-articles h3 { margin: 0 0 8px; font-size: 18px; font-weight: 650; }
+.studio-help-articles p { margin: 0 0 20px; color: #666; }
+.studio-help-articles dl { margin: 0; }
+.studio-help-articles dl > div + div { margin-top: 20px; }
+.studio-help-articles dt { font-weight: 600; }
+.studio-help-articles dd { margin: 4px 0 0; color: #555; }
+@media (max-width: 600px) {
+  .studio-help-heading { padding: 16px 16px 12px; }
+  .studio-help-search { padding: 0 16px 12px; }
+  .studio-help-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .studio-help-body nav { display: flex; overflow-x: auto; padding: 8px; border-right: 0; border-bottom: 1px solid #e5e5e5; }
+  .studio-help-body nav button { flex: 0 0 auto; width: auto; white-space: nowrap; }
+  .studio-help-articles { padding: 16px; }
+}

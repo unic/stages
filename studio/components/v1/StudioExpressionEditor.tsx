@@ -1,3 +1,4 @@
+import { StudioHelp } from "./StudioHelp";
 import { useId } from "react";
 import { isSafeObjectKey } from "../../src/document/uid";
 import { projectStudioExpression } from "../../src/expressions/serialization";
@@ -103,6 +104,7 @@ function ExpressionNodeEditor({ expression, references, onChange, depth }: {
 
 export function StudioExpressionEditor({ expression, label, references, onChange }: StudioExpressionEditorProps) {
   return <div className="studio-expression-editor" aria-label={label}>
+    <StudioHelp topic="Expressions" compact />
     <ExpressionNodeEditor expression={expression} references={references} depth={0} onChange={onChange} />
     <output aria-label={`${label} text`} className="studio-expression-editor__projection">{projectStudioExpression(expression)}</output>
   </div>;

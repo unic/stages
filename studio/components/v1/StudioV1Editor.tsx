@@ -1,3 +1,4 @@
+import { StudioHelp } from "./StudioHelp";
 import { StudioChoiceOptionsEditor } from "./StudioChoiceOptionsEditor";
 import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
 import { Monitor, Smartphone, Tablet, ArrowDown, ArrowUp, Copy, FlaskConical, History, RotateCcw, Trash2, TriangleAlert, ArrowDownToLine, ArrowUpFromLine, Braces, Eye, FolderOpen, GitBranch, Languages, Layers, LayoutGrid, LockKeyhole, MousePointer2, Plus, Redo2, Save, ShieldCheck, SlidersHorizontal, Undo2, X } from "lucide-react";
@@ -659,7 +660,7 @@ function FieldInspector({ node, onUpdate }: {
   };
   const localizableControls = definition.props.flatMap((control) => control.key === "label" || control.key === "helpText" ? [control] : []);
   return <fieldset className="studio-v1-field-inspector">
-    <legend>{definition.displayName} properties</legend>
+    <legend>{definition.displayName} properties <StudioHelp topic="Fields & content" compact /></legend>
     {definition.props.map((control) => {
       const errorId = errors[control.key] ? `${node.uid}-${control.key}-error` : undefined;
       const draft = drafts[control.key] ?? (control.control === "checkbox" ? false : "");
@@ -700,7 +701,7 @@ function BlockInspector({ node, onUpdate }: {
   const definition = studioBlockDefinition(node.definition);
   if (!definition) return <p>This content definition is not available.</p>;
   return <fieldset className="studio-v1-block-inspector">
-    <legend>{definition.displayName} properties</legend>
+    <legend>{definition.displayName} properties <StudioHelp topic="Fields & content" compact /></legend>
     {definition.props.map((control) => <label className="studio-field" key={control.key}>
       <span>{control.label}</span>
       {control.control === "textarea" ? (
@@ -1223,7 +1224,7 @@ function StructuralInspector({ node, form, onUpdate }: {
     };
     const discriminated = isStudioVariantCollection(node);
     return <fieldset className="studio-v1-structural-inspector">
-      <legend>{discriminated ? "Variant collection" : "Collection"} settings</legend>
+      <legend>{discriminated ? "Variant collection" : "Collection"} settings <StudioHelp topic="Collections & wizards" compact /></legend>
       {(["min", "max", "initialRows"] as const).map((key) => <label className="studio-field" key={key}>
         <span>{key === "initialRows" ? "Initial scenario rows" : key}</span>
         <input className="ui-input" type="number" min="0" value={node[key] ?? ""} onChange={(event) => updateNumber(key, event.currentTarget.value)} />
@@ -1256,7 +1257,7 @@ function StructuralInspector({ node, form, onUpdate }: {
     </fieldset>;
   }
   if (node.kind === "wizard") return <fieldset className="studio-v1-structural-inspector">
-    <legend>Wizard settings</legend>
+    <legend>Wizard settings <StudioHelp topic="Collections & wizards" compact /></legend>
     <label className="studio-field"><span>Initial stage</span><select value={node.initialStageUid ?? ""} onChange={(event) => onUpdate(node, { initialStageUid: event.currentTarget.value === "" ? undefined : toUid(event.currentTarget.value) }, "Edit initial stage") }>
       <option value="">First visible stage</option>
       {node.stageUids.map((uid) => <option key={uid} value={uid}>{nodeLabel(form, uid)}</option>)}
@@ -1286,7 +1287,7 @@ function FragmentInspector({ instance, fragment, onUpdate, onUpdateFragment, onD
 }) {
   if (!fragment) return <p role="alert">The linked fragment is missing.</p>;
   return <fieldset className="studio-v1-fragment-inspector">
-    <legend>Linked fragment</legend>
+    <legend>Linked fragment <StudioHelp topic="Layers & fragments" compact /></legend>
     <label className="studio-field"><span>Definition name</span><input className="ui-input" value={fragment.title} onChange={(event) => onUpdateFragment(fragment, event.currentTarget.value)} /></label>
     <p><small>Version {fragment.version} · label overrides below apply to this instance.</small></p>
     <p id={`${instance.uid}-definition-id-help`}><small>Definition IDs are read-only until reference refactoring and value migration are supported.</small></p>
@@ -2177,6 +2178,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
           <EditorTooltip label="Redo"><Button variant="ghost" size="icon" aria-label="Redo" disabled={loading || history.future.length === 0} onClick={() => replaceHistory(redoStudioHistory(history))}><Redo2 size={16} aria-hidden="true" /></Button></EditorTooltip>
           <Button size="sm" disabled={loading || !dirty} onClick={() => void save()}><Save size={14} aria-hidden="true" />Save draft</Button>
         </nav>
+        <StudioHelp />
       </header>
       <div className="studio-v1-workspace" data-surface={surface} data-drawer-open={drawer !== undefined}>
         {drawer !== undefined && <aside className="studio-v1-left-panel" aria-label={`${drawer} panel`}>

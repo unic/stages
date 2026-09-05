@@ -1,3 +1,4 @@
+import { StudioHelp } from "./StudioHelp";
 import { useState } from "react";
 import type { StudioValidatorSpec } from "../../src/document";
 import type { StudioExpressionReferenceOption } from "./StudioExpressionEditor";
@@ -43,7 +44,7 @@ export function StudioValidationEditor({ validators = [], references, ownerLabel
     onChange([...validators, preset.create(id)], `Add ${kind} validator`);
   };
   return <fieldset className="studio-v1-validation-inspector">
-    <legend>Validation · {ownerLabel}</legend>
+    <legend>Validation · {ownerLabel} <StudioHelp topic="Validation" compact /></legend>
     <div className="studio-v1-validation-inspector__add">
       <label className="studio-field"><span>Validation rule</span><select value={kind} onChange={(event) => setSelected(event.currentTarget.value)}>
         {presets.map((entry) => <option key={entry.key} value={entry.key}>{entry.displayName}</option>)}

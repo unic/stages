@@ -1,3 +1,5 @@
+import { StudioHelp } from "./StudioHelp";
+import { studioHelpTitle } from "./studioHelpContent";
 import { useState, type ReactNode } from "react";
 import { Collapsible, ToggleGroup, Tooltip } from "radix-ui";
 import { Mail, Phone, Link, LockKeyhole, Clock, SlidersHorizontal, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignLeft, AlignHorizontalJustifyStart, ArrowLeftRight, CalendarDays, ChevronDown, CircleHelp, Columns3, Component, Folder, Hash, Heading, Layers, ListChecks, ListTree, MessageSquare, Minus, Monitor, PanelTop, Smartphone, SquareCheck, Tablet, TextCursorInput, type LucideIcon } from "lucide-react";
@@ -22,10 +24,11 @@ export function InspectorSection({ title, icon: Icon, children, defaultOpen = tr
   readonly title: string; readonly icon: LucideIcon; readonly children: ReactNode; readonly defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const helpTopic = studioHelpTitle(title);
   return <Collapsible.Root open={open} onOpenChange={setOpen} className="studio-inspector-section">
-    <Collapsible.Trigger className="studio-inspector-section__trigger">
+    <div className="studio-inspector-section__heading"><Collapsible.Trigger className="studio-inspector-section__trigger">
       <Icon size={14} aria-hidden="true" /><span>{title}</span><ChevronDown size={13} aria-hidden="true" />
-    </Collapsible.Trigger>
+    </Collapsible.Trigger>{helpTopic && <StudioHelp topic={helpTopic} compact />}</div>
     <Collapsible.Content forceMount hidden={!open} className="studio-inspector-section__content">{children}</Collapsible.Content>
   </Collapsible.Root>;
 }

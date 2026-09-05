@@ -1,3 +1,4 @@
+import { StudioHelp } from "./StudioHelp";
 import type {
   StudioEventDefinition,
   StudioFormDocument,
@@ -91,7 +92,7 @@ export function StudioEventEditor({ events, form, references, onChange }: {
   const nodes = targetNodes(form);
   const update = (index: number, event: StudioEventDefinition) => onChange(current.map((item, itemIndex) => itemIndex === index ? event : item), "Edit event definition");
   return <fieldset className="studio-v1-event-editor">
-    <legend>Named events</legend>
+    <legend>Named events <StudioHelp topic="Events & proposals" compact /></legend>
     {current.map((definition, index) => <fieldset key={`${definition.id}:${index}`}>
       <legend>{definition.title}</legend>
       <label className="studio-field"><span>Event ID</span><input className="ui-input" value={definition.id} onChange={(event) => update(index, { ...definition, id: event.currentTarget.value })} /></label>
