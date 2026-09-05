@@ -104,3 +104,40 @@ session.
 - `studio/src/projects/versioning.test.ts`
 - `studio/src/projects/structural-contract.ts`
 - `studio/src/commands/engine.ts`
+
+
+## Portable production releases
+
+`prepareStudioRelease` accepts an opt-in `portable` gate. `forms` maps each form UID
+to immutable host `bindingId`/`policyId`, exact semantic bindings, field descriptors,
+and a reviewed compatibility decision for upgrades. The gate projects production
+JSON, creates a content-addressed `PortableRelease`, and resolves its exact bindings.
+Its loaded schemas also feed the existing scenario runner, so custom fields and
+behavior use the production compiler during publication.
+
+Every non-reset upgrade supplies `states` from the exact previous portable release
+and ordered `PortableStateMigration` bindings. Preparation runs full-envelope
+migration and target controller recreation, with `extensionCodecs` where needed.
+The old value-only scenario migration check is replaced by this stronger evidence
+for portable lineages; structural checks and the scenario runner remain active.
+Reset starts a new controller while the prior snapshot/save stays recoverable.
+
+The host `verify(releases)` port executes the installed-artifact matrix and returns
+one `StudioPortableEvidence` record per exact release ID: a nonempty report locator,
+passing packed and server checks, and DOM/React/Vue/Angular adapter results. Missing,
+failing, duplicate or unrelated reports block preparation. There is no default
+successful verifier. The reports are trusted host attestations, not cryptographic
+proof that tests ran; CI should produce and retain their logs. Manual product gates
+remain separately required before portable beta.
+
+The immutable snapshot stores `portable.releases`, `portable.evidence`, and per-form
+artifact manifests containing release, compiler, binding and policy IDs. Existing
+append-only version repositories retain them. A portable predecessor cannot be
+followed by a snapshot omitting this gate. Production hosts call
+`publishStudioRelease` with `requirePortable: true`; the old local-only project
+snapshot mode remains available without claiming a production portable contract.
+The export bundle includes a checked `release.ts` preparation scaffold; host identities,
+compatibility decisions and verification evidence are never inferred from preview.
+
+Evidence: `studio/src/projects/versioning.test.ts`, `artifacts.test.ts`, the public
+release tests and installed consumers in `scripts/verify-v1-packages.mjs`.

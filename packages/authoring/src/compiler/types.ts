@@ -97,6 +97,7 @@ export interface CompiledStudioForm {
 }
 
 export interface StudioCompileOptions {
+  readonly behaviorBindings?: import('../behaviors.js').PortableBehaviorBindings;
   readonly customFields?: readonly import("../fields.js").ResolvedPortableField[];
   readonly serviceBindings?: StudioAsyncServiceBindings;
   readonly localization?: StudioLocalizationOptions;

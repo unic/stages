@@ -5,3 +5,4 @@ export * from "./memory-project-repository";
 export * from "./types";
 export * from "./workflows";
 export * from "./versioning";
+export * from "./portable-publication";

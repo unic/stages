@@ -199,14 +199,12 @@ it.each(["metadata", "event"] as const)("rejects untracked or unavailable %s val
   }));
 });
 
-it("retains computed documents but reports the exact unsupported property", () => {
+it("compiles a constant computed field in a collection", () => {
   const base = rowForm();
   const a = base.nodes[toUid("a")] as StudioFieldNode;
   const compiled = compileStudioForm({ ...base, nodes: { ...base.nodes, [a.uid]: { ...a, computed: { kind: "literal", value: 5 } } } });
-  expect(compiled.diagnostics).toContainEqual(expect.objectContaining({
-    code: "compiler.unsupported-computed", severity: "error", entityUid: a.uid,
-    propertyPath: ["nodes", a.uid, "computed"], message: expect.stringContaining("event transforms"),
-  }));
+  expect(compiled.diagnostics).toEqual([]);
+  expect(compiled.schema.transforms).toHaveLength(1);
 });
 
 it("bounds the documented invalidation fan-out to the containing collection", async () => {

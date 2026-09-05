@@ -294,3 +294,40 @@ describe("Studio versioning and publication", () => {
     expect(publicationService.publish).toHaveBeenCalledOnce();
   });
 });
+
+it('requires exact installed-artifact reports and full states for portable production publication', async () => {
+  const api = await import('@stages/authoring');
+  const core = await import('@stages/core');
+  const project = fixture();
+  const identities = { bindingId: 'studio-host-build-1', policyId: 'all-values-1' };
+  const verify = async (releases: Readonly<Record<string, import('@stages/authoring').PortableRelease>>) => Object.values(releases).map(release => ({
+    releaseId: release.id, report: 'installed-matrix/contact-v1', packed: true, server: true, adapters: ['dom', 'react', 'vue', 'angular'] as const,
+  }));
+  const options = { project, projectRevision: 1, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now,
+    portable: { forms: { [formUid]: identities }, verify } };
+  expect(await prepareStudioRelease({ ...options, portable: { ...options.portable, verify: async () => [] } })).toMatchObject({ ok: false, diagnostics: [expect.objectContaining({ code: 'publication.portable-gate' })] });
+  const first = await prepareStudioRelease(options);
+  expect(first.ok).toBe(true); if (!first.ok) return;
+  const old = first.value.portable!.releases[formUid]!;
+  expect(first.value.artifacts[0]).toMatchObject({ portableReleaseId: old.id, bindingId: identities.bindingId });
+  const loaded = await api.loadPortableRelease(old, identities);
+  const controller = core.stages({ schema: loaded.schemaInput, fields: loaded.fields, value: loaded.initialValue as unknown });
+  const saved = api.savePortableState(loaded, controller.serialize()); controller.destroy();
+  const form = project.forms[formUid]!;
+  const changed = { ...project, forms: { [formUid]: { ...form, title: 'Next release' } } };
+  const compatibility = { changes: ['presentation'] as const, state: 'compatible' as const, rationale: 'Title-only update.' };
+  const projected = api.projectPortableForm(changed, formUid); expect(projected.ok).toBe(true); if (!projected.ok) return;
+  const next = await api.createPortableRelease(projected.value, { ...identities, previous: old, compatibility });
+  const migratedOptions = { ...options, project: changed, projectRevision: 2, previousRelease: first.value,
+    portable: { forms: { [formUid]: { ...identities, compatibility, states: [saved], migrations: [{ from: old, to: next, baseline: 'preserve' as const,
+      metadata: Object.fromEntries(Object.keys(saved.state.meta).map(key => [key, 'preserve' as const])), migrate: (state: import('@stages/core').SerializedStagesState) => state }] } }, verify } };
+  const second = await prepareStudioRelease(migratedOptions);
+  expect(second.ok).toBe(true);
+  expect(await prepareStudioRelease({ ...migratedOptions, portable: { ...migratedOptions.portable, forms: { [formUid]: { ...identities, compatibility } } } })).toMatchObject({ ok: false });
+  expect(await prepareStudioRelease({ project: changed, projectRevision: 2, previousRelease: first.value, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS })).toMatchObject({ ok: false, diagnostics: [expect.objectContaining({ code: 'publication.portable-required' })] });
+  const service = { publish: vi.fn(async () => ({ id: 'p', releaseId: first.value.id, channel: 'production', publishedAt: now().toISOString() })) };
+  await publishStudioRelease({ release: first.value, channel: 'production', requirePortable: true, service });
+  const local = await prepareStudioRelease({ project, projectRevision: 1, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS });
+  expect(local.ok).toBe(true); if (!local.ok) return;
+  await expect(publishStudioRelease({ release: local.value, channel: 'production', requirePortable: true, service })).rejects.toThrow(/portable/);
+});

@@ -12,7 +12,7 @@ const adapterExamples = { dom: "vanilla", react: "react", vue: "vue", angular: "
 export const commands = Object.freeze({
   "build:authoring": "npx tsc -p packages/authoring/tsconfig.build.json",
   "typecheck:authoring": "npx tsc -p packages/authoring/tsconfig.test.json --noEmit",
-  "test:authoring": "node --test packages/authoring/test/*.test.mjs",
+  "test:authoring": "npm --prefix examples/shared/event-launch run build && node --test packages/authoring/test/*.test.mjs",
   "build:core": "npx tsc -p packages/core/tsconfig.build.json",
   "typecheck:core": "npx tsc -p packages/core/tsconfig.json --noEmit",
   "test:core": "node --test packages/core/test/*.test.mjs",

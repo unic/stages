@@ -1,3 +1,4 @@
+import { validPortableBehaviorReferences } from '../behaviors.js';
 import type {
   DiagnosticPath,
   StudioDocumentDiagnostic,
@@ -506,6 +507,7 @@ export function validateStudioProject(
       const formUid = formUidValue;
       if (formKey !== formUid) failures.push(issue("document.uid-key-mismatch", `Form key ${formKey} does not match uid ${formUid}.`, formPath, { formUid, entityUid: formUid }));
       if (typeof own(formUnknown, "title") !== "string") failures.push(issue("document.invalid-title", "Form title must be a string.", [...formPath, "title"], { formUid }));
+      if (own(formUnknown, "behaviors") !== undefined && !validPortableBehaviorReferences(own(formUnknown, "behaviors"))) failures.push(issue("document.invalid-behaviors", "Behaviors require unique exact references and JSON configuration.", [...formPath, "behaviors"], { formUid }));
       validateValidators(own(formUnknown, "validators"), [...formPath, "validators"], failures, { formUid, entityUid: formUid });
       validateEventDefinitions(own(formUnknown, "events"), [...formPath, "events"], failures, { formUid, entityUid: formUid });
       validateLogicRules(own(formUnknown, "transforms"), [...formPath, "transforms"], failures, { formUid, entityUid: formUid });

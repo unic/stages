@@ -1,0 +1,35 @@
+{
+  "format": "stages-portable-state",
+  "formatVersion": 1,
+  "releaseId": "sha256:d0db9cb9a1a6f492896442048f31e56afc99b26d5654e37bd08a4452b6c7dea7",
+  "state": {
+    "format": "stages",
+    "formatVersion": 1,
+    "schema": {
+      "id": "contact",
+      "version": 1
+    },
+    "value": {
+      "company": "",
+      "confirm": "",
+      "email": "",
+      "name": "Historical accepted value",
+      "subscribe": false
+    },
+    "baseline": {
+      "company": "",
+      "confirm": "",
+      "email": "",
+      "name": "",
+      "subscribe": false
+    },
+    "meta": {
+      "touched": [],
+      "visited": [],
+      "revealedValidation": [],
+      "activeWizards": [],
+      "collectionKeys": [],
+      "extensions": {}
+    }
+  }
+}

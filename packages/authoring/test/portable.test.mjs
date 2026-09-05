@@ -63,8 +63,8 @@ test('rejects malformed/unsafe inputs, versions, forged requirements and unsuppo
   const cyclic = {}; cyclic.self = cyclic;
   assert.equal(validatePortableForm(cyclic).ok, false);
   const altered = JSON.parse(serializePortableForm(definition()));
-  altered.form.nodes.name.computed = { kind: 'literal', value: 1 };
-  assert.equal(loadPortableForm(altered).diagnostics.some(item => item.code === 'compiler.unsupported-computed'), true);
+  altered.form.nodes.name.computed = { kind: 'reference', scope: 'event', path: [] };
+  assert.equal(loadPortableForm(altered).diagnostics.some(item => item.code === 'compiler.computed-scope'), true);
   altered.form.nodes.name.definition.version = 99;
   assert.equal(loadPortableForm(altered).ok, false);
 });
@@ -101,4 +101,18 @@ test('resolves fragments with bounded expansion, preserves defaults, and rejects
   source.fragments.part.nodes.loop = { uid: 'loop', kind: 'fragment', runtimeId: 'loop', fragmentUid: 'part' };
   source.fragments.part.rootNodeUids.push('loop');
   assert.equal(projectPortableForm(source, toUid('contact')).ok, false);
+});
+
+test('preview refuses exponential fragment expansion before allocating the graph', () => {
+  const source = structuredClone(project);
+  source.forms.contact.nodes = { entry: { uid: 'entry', kind: 'fragment', runtimeId: 'entry', fragmentUid: 'level0' } };
+  source.forms.contact.rootNodeUids = ['entry'];
+  for (let level = 0; level < 12; level++) {
+    const nodes = level === 11 ? { leaf: { uid: 'leaf', kind: 'field', runtimeId: 'leaf', definition: { key: 'text', version: 1 }, props: {} } }
+      : Object.fromEntries(['a', 'b'].map(id => [id, { uid: id, kind: 'fragment', runtimeId: id, fragmentUid: `level${level + 1}` }]));
+    source.fragments[`level${level}`] = { uid: `level${level}`, title: 'Level', rootNodeUids: Object.keys(nodes), nodes };
+  }
+  const result = compileStudioForm(source.forms.contact, source.fragments);
+  assert.equal(result.diagnostics.some(item => item.code === 'compiler.fragment-expansion-limit'), true);
+  assert.equal(Object.keys(result.expandedForm.nodes).length, 0);
 });

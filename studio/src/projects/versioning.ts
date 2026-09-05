@@ -1,3 +1,4 @@
+import { preparePortablePublication, type StudioPortablePublication, type StudioPortablePublicationOptions } from "./portable-publication";
 import type { JsonValue, StudioFormDocument, StudioProjectDocument, StudioScenario, Uid } from "../document";
 import { inspectJsonSafety, serializeStudioProject, validateStudioProject } from "../document";
 import type { StudioCommand } from "../commands";
@@ -31,6 +32,10 @@ export interface StudioArtifactManifestEntry {
   readonly digest: string;
   readonly nodeCount: number;
   readonly scenarioCount: number;
+  readonly portableReleaseId?: string;
+  readonly compiler?: string;
+  readonly bindingId?: string;
+  readonly policyId?: string;
 }
 
 export interface StudioPublicationDiagnostic {
@@ -57,6 +62,7 @@ export interface StudioContractScenarioRunner {
 }
 
 export interface StudioReleaseSnapshot {
+  readonly portable?: StudioPortablePublication;
   readonly id: string;
   readonly projectUid: Uid;
   readonly projectRevision: number;
@@ -104,6 +110,7 @@ export interface StudioPublicationService {
 }
 
 export interface PrepareStudioReleaseOptions {
+  readonly portable?: StudioPortablePublicationOptions;
   readonly project: StudioProjectDocument;
   readonly projectRevision: number;
   readonly supportedDefinitions: Readonly<Record<string, readonly number[]>>;
@@ -230,8 +237,14 @@ export async function prepareStudioRelease(options: PrepareStudioReleaseOptions)
   if (diagnostics.length > 0) return { ok: false, diagnostics };
   const project = validated.ok ? validated.value : options.project;
   const compiledForms = new Map<Uid, CompiledStudioForm>();
+  let portable: Awaited<ReturnType<typeof preparePortablePublication>> | undefined;
+  if (options.previousRelease?.portable && !options.portable) return { ok: false, diagnostics: [publicationDiagnostic("publication.portable-required", "A portable release lineage cannot silently drop its production gate.")] };
+  if (options.portable) {
+    try { portable = await preparePortablePublication(project, options.portable, options.previousRelease?.portable); }
+    catch (error) { return { ok: false, diagnostics: [publicationDiagnostic("publication.portable-gate", error instanceof Error ? error.message : "Portable release gate failed.")] }; }
+  }
   for (const form of Object.values(project.forms)) {
-    const compiled = compileStudioForm(form, project.fragments, {
+    const compiled = portable?.loaded.get(form.uid) ?? compileStudioForm(form, project.fragments, {
       ...(options.serviceBindings === undefined ? {} : { serviceBindings: options.serviceBindings }),
       localization: { defaultLocale: project.project.defaultLocale, resources: project.resources },
     });
@@ -267,7 +280,9 @@ export async function prepareStudioRelease(options: PrepareStudioReleaseOptions)
         ));
       }
     }
-    const migration = migrationForForm(form, previous, options.migrations ?? [], diagnostics);
+    // Portable production upgrades already proved full-envelope migration/recreation above.
+    const migration = portable && options.previousRelease?.portable ? undefined
+      : migrationForForm(form, previous, options.migrations ?? [], diagnostics);
     if (migration !== undefined) acceptedMigrations.push(migration);
   }
   const scenarios = Object.values(project.forms).flatMap((form) => form.scenarios.map((scenario) => ({ formUid: form.uid, scenario })));
@@ -293,6 +308,12 @@ export async function prepareStudioRelease(options: PrepareStudioReleaseOptions)
     digest: await sha256(serializeStudioProject({ ...project, forms: { [form.uid]: form } })),
     nodeCount: compiledForms.get(form.uid)!.sourceMap.byUid.size - 1,
     scenarioCount: form.scenarios.length,
+    ...(portable?.publication.releases[form.uid] ? {
+      portableReleaseId: portable.publication.releases[form.uid]!.id,
+      compiler: portable.publication.releases[form.uid]!.compiler,
+      bindingId: portable.publication.releases[form.uid]!.bindingId,
+      policyId: portable.publication.releases[form.uid]!.policyId,
+    } : {}),
   })));
   return { ok: true, value: cloneAndFreeze({
     id: `${project.project.uid}:r${options.projectRevision}:${documentDigest.slice(0, 12)}`,
@@ -303,6 +324,7 @@ export async function prepareStudioRelease(options: PrepareStudioReleaseOptions)
     documentDigest,
     artifacts,
     migrations: acceptedMigrations.map(migrationManifest),
+    ...(portable ? { portable: portable.publication } : {}),
     gate: { status: "passed", checkedAt, scenarioCount: scenarios.length },
   }) };
 }
@@ -335,7 +357,9 @@ export async function publishStudioRelease(input: Readonly<{
   service: StudioPublicationService;
   review?: StudioReviewRecord;
   requireApproval?: boolean;
+  requirePortable?: boolean;
 }>): Promise<StudioPublicationRecord> {
+  if (input.requirePortable && !input.release.portable) throw new TypeError("Production publication requires the portable installed-artifact gate.");
   if (input.channel.trim() === "") throw new TypeError("Publication channel must be non-empty.");
   if (input.release.gate.status !== "passed") throw new TypeError("Only a gate-passed immutable release can be published.");
   if (input.review !== undefined && input.review.releaseId !== input.release.id) throw new TypeError("Review belongs to another release.");

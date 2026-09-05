@@ -259,6 +259,7 @@ export interface StudioResourceCatalog extends JsonObject {
 }
 
 export interface StudioFormDocument {
+  readonly behaviors?: readonly import('../behaviors.js').PortableBehaviorReference[];
   readonly uid: Uid;
   readonly title: string;
   readonly runtime: { readonly schemaId: string; readonly schemaVersion: number };

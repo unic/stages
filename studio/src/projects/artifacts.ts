@@ -85,7 +85,7 @@ function reactSource(): string {
 }
 
 function readmeSource(form: StudioFormDocument): string {
-  return `# ${form.title}\n\nGenerated from a Stages Studio project. The generated files use public package entry points only. App.tsx is an integration scaffold, not a renderer for the authored form. Use the portable loader output with your framework adapter and component system.\n\n- \`form.stages.json\`: versioned portable definition (load with @stages/authoring)\n- \`schema.ts\`: v1 schema\n- \`fields.ts\`: field registry bindings\n- \`initial-value.ts\`: initial controlled value\n- \`scenarios.ts\`: named test fixtures\n- \`migrations.ts\`: schema-state migration skeleton\n- \`App.tsx\`: controlled React integration scaffold; bind views and replace the value dump with your layout\n`;
+  return `# ${form.title}\n\nGenerated from a Stages Studio project. The generated files use public package entry points only. App.tsx is an integration scaffold, not a renderer for the authored form. Use the portable loader output with your framework adapter and component system.\n\n- \`form.stages.json\`: versioned portable definition (load with @stages/authoring)\n- \`release.ts\`: immutable release preparation using host build/policy IDs and compatibility decisions\n- \`schema.ts\`: v1 schema\n- \`fields.ts\`: field registry bindings\n- \`initial-value.ts\`: initial controlled value\n- \`scenarios.ts\`: named test fixtures\n- \`migrations.ts\`: schema-state migration skeleton\n- \`App.tsx\`: controlled React integration scaffold; bind views and replace the value dump with your layout\n`;
 }
 
 export function generateStudioExportBundle(project: StudioProjectDocument, fieldDescriptors: readonly PortableFieldDescriptor[] = []): StudioExportResult {
@@ -99,6 +99,7 @@ export function generateStudioExportBundle(project: StudioProjectDocument, field
     }
     const directory = safeFileName(form.uid);
     artifacts.push({ path: `${directory}/form.stages.json`, mediaType: "application/json", source: serializePortableForm(portable.value) });
+    artifacts.push({ path: `${directory}/release.ts`, mediaType: "text/typescript", source: `import { createPortableRelease, validatePortableForm, type PortableReleaseOptions } from "@stages/authoring";\n\nconst checked = validatePortableForm(${typescriptValue(portable.value)});\nif (!checked.ok) throw new Error(JSON.stringify(checked.diagnostics));\nconst definition = checked.value;\n\n// Host-owned build/policy IDs and explicit prior-release decisions are required.\n// Preparation does not replace installed-artifact or manual release gates.\nexport function createRelease(options: PortableReleaseOptions) {\n  return createPortableRelease(definition, options);\n}\n` });
     const loaded = loadPortableForm(portable.value);
     if (!loaded.ok) {
       for (const failure of loaded.diagnostics) diagnostics.push({ code: failure.code, severity: "error", source: "document", message: failure.message, propertyPath: failure.propertyPath ?? [], formUid: form.uid });

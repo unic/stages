@@ -14,6 +14,7 @@ export interface StudioCustomFieldViewProps {
   readonly onFocus: () => void;
 }
 export interface StudioCustomFields {
+  readonly behaviorBindings?: import("@stages/authoring").PortableBehaviorBindings;
   readonly fields: readonly ResolvedPortableField[];
   readonly views: Readonly<Record<string, ComponentType<StudioCustomFieldViewProps>>>;
 }

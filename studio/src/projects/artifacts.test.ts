@@ -42,6 +42,7 @@ describe("Studio project artifacts", () => {
     expect(first.value.artifacts.map(({ path }) => path)).toEqual([
       "project.stages.json",
       "form_event/form.stages.json",
+      "form_event/release.ts",
       "form_event/schema.ts",
       "form_event/fields.ts",
       "form_event/initial-value.ts",

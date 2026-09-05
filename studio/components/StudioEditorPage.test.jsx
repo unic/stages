@@ -383,7 +383,8 @@ describe("StudioEditorPage interactions", () => {
 
     await user.click(screen.getByRole("button", { name: "Import & export" }));
     await user.click(screen.getByRole("button", { name: "Generate export artifacts" }));
-    expect(screen.getByText(/Generated 9 deterministic artifacts/)).toBeVisible();
+    expect(screen.getByText(/Generated 10 deterministic artifacts/)).toBeVisible();
+    expect(screen.getByRole("option", { name: /release\.ts$/ })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Generated artifact" })).toHaveValue("project.stages.json");
     expect(screen.getByRole("textbox", { name: "Artifact source" }).value).toContain('"format": "stages-studio"');
     const download = screen.getByRole("link", { name: "Download artifact" });
@@ -1091,8 +1092,8 @@ describe("StudioEditorPage interactions", () => {
     await user.type(visibilityPath, "second");
     expect(screen.getByLabelText("Visibility expression text")).toHaveTextContent("value.second");
 
-    expect(screen.queryByRole("switch", { name: "Computed value" })).toBeNull();
-    expect(screen.getByText(/Computed values are reserved and cannot execute/)).toBeVisible();
+    expect(screen.getByRole("switch", { name: "Computed value" })).not.toBeChecked();
+    expect(screen.getByText(/Computed values are persisted proposals/)).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Local draft saved");
@@ -1112,10 +1113,10 @@ describe("StudioEditorPage interactions", () => {
     await screen.findByText("Local draft loaded");
     await openWorkbenchPanel(user, "Layers");
     fireEvent.click(document.querySelector('[data-outline-uid="field_first"]'));
-    expect(screen.getByText(/This imported field contains an unsupported computed value/)).toBeVisible();
+    expect(screen.getByRole("switch", { name: "Computed value" })).toBeChecked();
     expect((await repository.load(snapshot.uid)).project.forms.form_outline.nodes.field_first.computed).toEqual(computed);
-    await user.click(screen.getByRole("button", { name: "Remove unsupported computed value" }));
-    expect(screen.queryByRole("button", { name: "Remove unsupported computed value" })).toBeNull();
+    await user.click(screen.getByRole("switch", { name: "Computed value" }));
+    expect(screen.getByRole("switch", { name: "Computed value" })).not.toBeChecked();
     await user.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Local draft saved");
     expect((await repository.load(snapshot.uid)).project.forms.form_outline.nodes.field_first.computed).toBeUndefined();

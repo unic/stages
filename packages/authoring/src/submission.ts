@@ -93,9 +93,13 @@ function transport(input: unknown): JsonValue {
 function decode(definition: PortableFormDefinition, value: JsonValue): readonly ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const fail = (code: string, path: Path) => { if (issues.length < 100) issues.push(issue(code, path)); };
-  const scope = (uids: readonly Uid[], input: unknown, path: Path, discriminator?: string): void => {
+  const scope = (uids: readonly Uid[], input: unknown, path: Path, discriminator?: string, identityKey?: string): void => {
     if (!isPlainRecord(input)) { fail('submission.object', path); return; }
     const allowed = new Set(discriminator === undefined ? [] : [discriminator]);
+    if (identityKey !== undefined) {
+      allowed.add(identityKey);
+      if (typeof input[identityKey] !== 'string' || input[identityKey].length === 0) fail('submission.row-key', [...path, identityKey]);
+    }
     for (const uid of uids) {
       const node = definition.form.nodes[uid]!;
       if (node.kind === 'block') continue;
@@ -112,13 +116,19 @@ function decode(definition: PortableFormDefinition, value: JsonValue): readonly 
       } else if (node.kind === 'collection') {
         if (!Array.isArray(child)) { fail('submission.array', childPath); continue; }
         if (child.length < (node.min ?? 0) || child.length > Math.min(node.max ?? MAX_ROWS, MAX_ROWS)) { fail('submission.collection-size', childPath); continue; }
+        const identityKey = node.itemKey?.kind === 'property' ? node.itemKey.property : undefined;
+        const keys = new Set<unknown>();
         child.forEach((row: unknown, index: number) => {
           const rowPath = [...childPath, index];
+          if (identityKey !== undefined && isPlainRecord(row)) {
+            if (keys.has(row[identityKey])) fail('submission.row-key', [...rowPath, identityKey]);
+            keys.add(row[identityKey]);
+          }
           if (node.variantUids !== undefined) {
             const variant = isPlainRecord(row) ? node.variantUids.map(id => definition.form.nodes[id]).find(item => item?.kind === 'variant' && item.runtimeId === row[node.discriminator]) : undefined;
             if (!variant || variant.kind !== 'variant') fail('submission.discriminator', [...rowPath, node.discriminator]);
-            else scope(variant.childUids, row, rowPath, node.discriminator);
-          } else scope(node.childUids, row, rowPath);
+            else scope(variant.childUids, row, rowPath, node.discriminator, identityKey);
+          } else scope(node.childUids, row, rowPath, undefined, identityKey);
         });
       } else scope(node.kind === 'wizard' ? node.stageUids : node.childUids, child, childPath);
     }

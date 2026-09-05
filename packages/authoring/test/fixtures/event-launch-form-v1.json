@@ -1,0 +1,1366 @@
+{
+  "behaviors": [
+    {
+      "config": {},
+      "key": "event-launch/domain",
+      "version": 1
+    }
+  ],
+  "defaultLocale": "en-CH",
+  "fieldDescriptors": [
+    {
+      "accessibility": {
+        "description": "description",
+        "keyboard": [
+          "Tab",
+          "Native control interaction"
+        ],
+        "label": "label",
+        "role": "checkbox"
+      },
+      "defaultProps": {
+        "description": "",
+        "label": "",
+        "placeholder": "",
+        "required": false
+      },
+      "displayName": "Event Launch checkbox",
+      "emptyValue": false,
+      "input": {
+        "draft": "string",
+        "formatting": "Use the canonical Event Launch view formatter.",
+        "parsing": "Blank numbers use null in JSON and undefined in canonical code. Money retains decimal major units."
+      },
+      "key": "event-launch/checkbox",
+      "props": {
+        "description": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        },
+        "placeholder": {
+          "kind": "string"
+        },
+        "required": {
+          "kind": "boolean"
+        }
+      },
+      "value": {
+        "kind": "boolean"
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "description",
+        "keyboard": [
+          "Tab",
+          "Native control interaction"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "description": "",
+        "label": "",
+        "options": [],
+        "placeholder": "",
+        "required": false
+      },
+      "displayName": "Event Launch choice",
+      "emptyValue": "",
+      "input": {
+        "draft": "string",
+        "formatting": "Use the canonical Event Launch view formatter.",
+        "parsing": "Blank numbers use null in JSON and undefined in canonical code. Money retains decimal major units."
+      },
+      "key": "event-launch/choice",
+      "props": {
+        "description": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        },
+        "options": {
+          "items": {
+            "kind": "object",
+            "properties": {
+              "label": {
+                "kind": "string"
+              },
+              "value": {
+                "kind": "string"
+              }
+            }
+          },
+          "kind": "array"
+        },
+        "placeholder": {
+          "kind": "string"
+        },
+        "required": {
+          "kind": "boolean"
+        }
+      },
+      "value": {
+        "kind": "string"
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "description",
+        "keyboard": [
+          "Tab",
+          "Native control interaction"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "currency": "CHF",
+        "description": "",
+        "label": "",
+        "locale": "en-CH",
+        "max": null,
+        "min": null,
+        "placeholder": "",
+        "required": false,
+        "step": null,
+        "suffix": ""
+      },
+      "displayName": "Event Launch money",
+      "emptyValue": null,
+      "input": {
+        "draft": "string",
+        "formatting": "Use the canonical Event Launch view formatter.",
+        "parsing": "Blank numbers use null in JSON and undefined in canonical code. Money retains decimal major units."
+      },
+      "key": "event-launch/money",
+      "props": {
+        "currency": {
+          "kind": "string"
+        },
+        "description": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        },
+        "locale": {
+          "kind": "string"
+        },
+        "max": {
+          "kind": "nullable",
+          "value": {
+            "kind": "number"
+          }
+        },
+        "min": {
+          "kind": "nullable",
+          "value": {
+            "kind": "number"
+          }
+        },
+        "placeholder": {
+          "kind": "string"
+        },
+        "required": {
+          "kind": "boolean"
+        },
+        "step": {
+          "kind": "nullable",
+          "value": {
+            "kind": "number"
+          }
+        },
+        "suffix": {
+          "kind": "string"
+        }
+      },
+      "value": {
+        "kind": "nullable",
+        "value": {
+          "kind": "number"
+        }
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "description",
+        "keyboard": [
+          "Tab",
+          "Native control interaction"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "description": "",
+        "label": "",
+        "max": null,
+        "min": null,
+        "placeholder": "",
+        "required": false,
+        "step": null,
+        "suffix": ""
+      },
+      "displayName": "Event Launch number",
+      "emptyValue": null,
+      "input": {
+        "draft": "string",
+        "formatting": "Use the canonical Event Launch view formatter.",
+        "parsing": "Blank numbers use null in JSON and undefined in canonical code. Money retains decimal major units."
+      },
+      "key": "event-launch/number",
+      "props": {
+        "description": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        },
+        "max": {
+          "kind": "nullable",
+          "value": {
+            "kind": "number"
+          }
+        },
+        "min": {
+          "kind": "nullable",
+          "value": {
+            "kind": "number"
+          }
+        },
+        "placeholder": {
+          "kind": "string"
+        },
+        "required": {
+          "kind": "boolean"
+        },
+        "step": {
+          "kind": "nullable",
+          "value": {
+            "kind": "number"
+          }
+        },
+        "suffix": {
+          "kind": "string"
+        }
+      },
+      "value": {
+        "kind": "nullable",
+        "value": {
+          "kind": "number"
+        }
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "description",
+        "keyboard": [
+          "Tab",
+          "Native control interaction"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "autocomplete": "",
+        "description": "",
+        "inputType": "text",
+        "label": "",
+        "placeholder": "",
+        "required": false
+      },
+      "displayName": "Event Launch text",
+      "emptyValue": "",
+      "input": {
+        "draft": "string",
+        "formatting": "Use the canonical Event Launch view formatter.",
+        "parsing": "Blank numbers use null in JSON and undefined in canonical code. Money retains decimal major units."
+      },
+      "key": "event-launch/text",
+      "props": {
+        "autocomplete": {
+          "kind": "string"
+        },
+        "description": {
+          "kind": "string"
+        },
+        "inputType": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        },
+        "placeholder": {
+          "kind": "string"
+        },
+        "required": {
+          "kind": "boolean"
+        }
+      },
+      "value": {
+        "kind": "string"
+      },
+      "version": 1
+    },
+    {
+      "accessibility": {
+        "description": "description",
+        "keyboard": [
+          "Tab",
+          "Native control interaction"
+        ],
+        "label": "label",
+        "role": "textbox"
+      },
+      "defaultProps": {
+        "description": "",
+        "label": "",
+        "placeholder": "",
+        "required": false
+      },
+      "displayName": "Event Launch textarea",
+      "emptyValue": "",
+      "input": {
+        "draft": "string",
+        "formatting": "Use the canonical Event Launch view formatter.",
+        "parsing": "Blank numbers use null in JSON and undefined in canonical code. Money retains decimal major units."
+      },
+      "key": "event-launch/textarea",
+      "props": {
+        "description": {
+          "kind": "string"
+        },
+        "label": {
+          "kind": "string"
+        },
+        "placeholder": {
+          "kind": "string"
+        },
+        "required": {
+          "kind": "boolean"
+        }
+      },
+      "value": {
+        "kind": "string"
+      },
+      "version": 1
+    }
+  ],
+  "form": {
+    "nodes": {
+      "launch": {
+        "initialStageUid": "launch_basics",
+        "kind": "wizard",
+        "navigation": {
+          "nonLinear": true,
+          "validateCurrent": true
+        },
+        "runtimeId": "launch",
+        "stageUids": [
+          "launch_basics",
+          "launch_venue",
+          "launch_streaming",
+          "launch_agenda",
+          "launch_tickets",
+          "launch_compliance",
+          "launch_review"
+        ],
+        "uid": "launch"
+      },
+      "launch_agenda": {
+        "childUids": [
+          "launch_agenda_items"
+        ],
+        "kind": "stage",
+        "runtimeId": "agenda",
+        "uid": "launch_agenda"
+      },
+      "launch_agenda_items": {
+        "discriminator": "kind",
+        "itemKey": {
+          "kind": "property",
+          "property": "id"
+        },
+        "kind": "collection",
+        "max": 12,
+        "min": 1,
+        "runtimeId": "items",
+        "uid": "launch_agenda_items",
+        "variantUids": [
+          "launch_agenda_items_session",
+          "launch_agenda_items_workshop",
+          "launch_agenda_items_break"
+        ]
+      },
+      "launch_agenda_items_break": {
+        "childUids": [
+          "launch_agenda_items_break_label",
+          "launch_agenda_items_break_durationMinutes"
+        ],
+        "kind": "variant",
+        "runtimeId": "break",
+        "uid": "launch_agenda_items_break"
+      },
+      "launch_agenda_items_break_durationMinutes": {
+        "definition": {
+          "key": "event-launch/number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Duration",
+          "max": null,
+          "min": 5,
+          "placeholder": "",
+          "required": false,
+          "step": null,
+          "suffix": "minutes"
+        },
+        "runtimeId": "durationMinutes",
+        "uid": "launch_agenda_items_break_durationMinutes"
+      },
+      "launch_agenda_items_break_label": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Break label",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "label",
+        "uid": "launch_agenda_items_break_label"
+      },
+      "launch_agenda_items_session": {
+        "childUids": [
+          "launch_agenda_items_session_title",
+          "launch_agenda_items_session_speaker",
+          "launch_agenda_items_session_durationMinutes"
+        ],
+        "kind": "variant",
+        "runtimeId": "session",
+        "uid": "launch_agenda_items_session"
+      },
+      "launch_agenda_items_session_durationMinutes": {
+        "definition": {
+          "key": "event-launch/number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Duration",
+          "max": null,
+          "min": 5,
+          "placeholder": "",
+          "required": false,
+          "step": null,
+          "suffix": "minutes"
+        },
+        "runtimeId": "durationMinutes",
+        "uid": "launch_agenda_items_session_durationMinutes"
+      },
+      "launch_agenda_items_session_speaker": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Speaker",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "speaker",
+        "uid": "launch_agenda_items_session_speaker"
+      },
+      "launch_agenda_items_session_title": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Session title",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "title",
+        "uid": "launch_agenda_items_session_title"
+      },
+      "launch_agenda_items_workshop": {
+        "childUids": [
+          "launch_agenda_items_workshop_title",
+          "launch_agenda_items_workshop_facilitator",
+          "launch_agenda_items_workshop_durationMinutes",
+          "launch_agenda_items_workshop_capacity"
+        ],
+        "kind": "variant",
+        "runtimeId": "workshop",
+        "uid": "launch_agenda_items_workshop"
+      },
+      "launch_agenda_items_workshop_capacity": {
+        "definition": {
+          "key": "event-launch/number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Workshop capacity",
+          "max": null,
+          "min": 1,
+          "placeholder": "",
+          "required": false,
+          "step": null,
+          "suffix": "people"
+        },
+        "runtimeId": "capacity",
+        "uid": "launch_agenda_items_workshop_capacity"
+      },
+      "launch_agenda_items_workshop_durationMinutes": {
+        "definition": {
+          "key": "event-launch/number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Duration",
+          "max": null,
+          "min": 15,
+          "placeholder": "",
+          "required": false,
+          "step": null,
+          "suffix": "minutes"
+        },
+        "runtimeId": "durationMinutes",
+        "uid": "launch_agenda_items_workshop_durationMinutes"
+      },
+      "launch_agenda_items_workshop_facilitator": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Facilitator",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "facilitator",
+        "uid": "launch_agenda_items_workshop_facilitator"
+      },
+      "launch_agenda_items_workshop_title": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Workshop title",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "title",
+        "uid": "launch_agenda_items_workshop_title"
+      },
+      "launch_basics": {
+        "childUids": [
+          "launch_basics_identity",
+          "launch_basics_schedule",
+          "launch_basics_deliveryMode",
+          "launch_basics_accessModel"
+        ],
+        "kind": "stage",
+        "runtimeId": "basics",
+        "uid": "launch_basics"
+      },
+      "launch_basics_accessModel": {
+        "definition": {
+          "key": "event-launch/choice",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Registration",
+          "options": [
+            {
+              "label": "Free",
+              "value": "free"
+            },
+            {
+              "label": "Paid",
+              "value": "paid"
+            }
+          ],
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "accessModel",
+        "uid": "launch_basics_accessModel"
+      },
+      "launch_basics_deliveryMode": {
+        "definition": {
+          "key": "event-launch/choice",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Delivery",
+          "options": [
+            {
+              "label": "In person",
+              "value": "in-person"
+            },
+            {
+              "label": "Virtual",
+              "value": "virtual"
+            },
+            {
+              "label": "Hybrid",
+              "value": "hybrid"
+            }
+          ],
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "deliveryMode",
+        "uid": "launch_basics_deliveryMode"
+      },
+      "launch_basics_identity": {
+        "childUids": [
+          "launch_basics_identity_title",
+          "launch_basics_identity_slug",
+          "launch_basics_identity_description"
+        ],
+        "kind": "group",
+        "runtimeId": "identity",
+        "uid": "launch_basics_identity"
+      },
+      "launch_basics_identity_description": {
+        "definition": {
+          "key": "event-launch/textarea",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "Tell attendees what they will learn.",
+          "label": "Description",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "description",
+        "uid": "launch_basics_identity_description"
+      },
+      "launch_basics_identity_slug": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Event URL",
+          "placeholder": "product-systems-conf",
+          "required": true
+        },
+        "runtimeId": "slug",
+        "uid": "launch_basics_identity_slug"
+      },
+      "launch_basics_identity_title": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "organization-title",
+          "description": "The public name shown to attendees.",
+          "inputType": "text",
+          "label": "Event title",
+          "placeholder": "Product Systems Conference",
+          "required": true
+        },
+        "runtimeId": "title",
+        "uid": "launch_basics_identity_title"
+      },
+      "launch_basics_schedule": {
+        "childUids": [
+          "launch_basics_schedule_startsAt",
+          "launch_basics_schedule_endsAt",
+          "launch_basics_schedule_timezone"
+        ],
+        "kind": "group",
+        "runtimeId": "schedule",
+        "uid": "launch_basics_schedule"
+      },
+      "launch_basics_schedule_endsAt": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "datetime-local",
+          "label": "Ends",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "endsAt",
+        "uid": "launch_basics_schedule_endsAt"
+      },
+      "launch_basics_schedule_startsAt": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "datetime-local",
+          "label": "Starts",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "startsAt",
+        "uid": "launch_basics_schedule_startsAt"
+      },
+      "launch_basics_schedule_timezone": {
+        "definition": {
+          "key": "event-launch/choice",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Timezone",
+          "options": [
+            {
+              "label": "Zurich (CET/CEST)",
+              "value": "Europe/Zurich"
+            },
+            {
+              "label": "London (GMT/BST)",
+              "value": "Europe/London"
+            },
+            {
+              "label": "New York (ET)",
+              "value": "America/New_York"
+            }
+          ],
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "timezone",
+        "uid": "launch_basics_schedule_timezone"
+      },
+      "launch_compliance": {
+        "behavior": {
+          "presentWhen": {
+            "kind": "reference",
+            "path": [
+              "requiresDataProcessingAgreement"
+            ],
+            "scope": "context"
+          }
+        },
+        "childUids": [
+          "launch_compliance_dataProcessingAccepted"
+        ],
+        "kind": "stage",
+        "runtimeId": "compliance",
+        "uid": "launch_compliance"
+      },
+      "launch_compliance_dataProcessingAccepted": {
+        "definition": {
+          "key": "event-launch/checkbox",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "I accept the organization data-processing agreement",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "dataProcessingAccepted",
+        "uid": "launch_compliance_dataProcessingAccepted"
+      },
+      "launch_review": {
+        "childUids": [
+          "launch_review_termsAccepted",
+          "launch_review_confirmation"
+        ],
+        "kind": "stage",
+        "runtimeId": "review",
+        "uid": "launch_review"
+      },
+      "launch_review_confirmation": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Confirm the event title",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "confirmation",
+        "uid": "launch_review_confirmation"
+      },
+      "launch_review_termsAccepted": {
+        "definition": {
+          "key": "event-launch/checkbox",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "I accept the publishing terms",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "termsAccepted",
+        "uid": "launch_review_termsAccepted"
+      },
+      "launch_streaming": {
+        "behavior": {
+          "when": {
+            "kind": "binary",
+            "left": {
+              "kind": "reference",
+              "path": [
+                "launch",
+                "basics",
+                "deliveryMode"
+              ],
+              "scope": "value"
+            },
+            "operator": "!==",
+            "right": {
+              "kind": "literal",
+              "value": "in-person"
+            }
+          }
+        },
+        "childUids": [
+          "launch_streaming_platform",
+          "launch_streaming_url",
+          "launch_streaming_recordEvent",
+          "launch_streaming_recordingConsent"
+        ],
+        "kind": "stage",
+        "runtimeId": "streaming",
+        "uid": "launch_streaming"
+      },
+      "launch_streaming_platform": {
+        "definition": {
+          "key": "event-launch/choice",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Streaming platform",
+          "options": [
+            {
+              "label": "YouTube Live",
+              "value": "youtube"
+            },
+            {
+              "label": "Zoom",
+              "value": "zoom"
+            },
+            {
+              "label": "Other",
+              "value": "other"
+            }
+          ],
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "platform",
+        "uid": "launch_streaming_platform"
+      },
+      "launch_streaming_recordEvent": {
+        "definition": {
+          "key": "event-launch/checkbox",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "The recording setting is application policy.",
+          "label": "Record this event",
+          "placeholder": "",
+          "required": false
+        },
+        "runtimeId": "recordEvent",
+        "uid": "launch_streaming_recordEvent"
+      },
+      "launch_streaming_recordingConsent": {
+        "behavior": {
+          "when": {
+            "kind": "reference",
+            "path": [
+              "launch",
+              "streaming",
+              "recordEvent"
+            ],
+            "scope": "value"
+          }
+        },
+        "definition": {
+          "key": "event-launch/checkbox",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "All speakers have consented to recording",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "recordingConsent",
+        "uid": "launch_streaming_recordingConsent"
+      },
+      "launch_streaming_url": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "url",
+          "label": "Attendee stream URL",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "url",
+        "uid": "launch_streaming_url"
+      },
+      "launch_tickets": {
+        "behavior": {
+          "when": {
+            "kind": "binary",
+            "left": {
+              "kind": "reference",
+              "path": [
+                "launch",
+                "basics",
+                "accessModel"
+              ],
+              "scope": "value"
+            },
+            "operator": "===",
+            "right": {
+              "kind": "literal",
+              "value": "paid"
+            }
+          }
+        },
+        "childUids": [
+          "launch_tickets_currency",
+          "launch_tickets_tiers"
+        ],
+        "kind": "stage",
+        "runtimeId": "tickets",
+        "uid": "launch_tickets"
+      },
+      "launch_tickets_currency": {
+        "definition": {
+          "key": "event-launch/choice",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Currency",
+          "options": [
+            {
+              "label": "Swiss franc (CHF)",
+              "value": "CHF"
+            },
+            {
+              "label": "Euro (EUR)",
+              "value": "EUR"
+            },
+            {
+              "label": "US dollar (USD)",
+              "value": "USD"
+            }
+          ],
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "currency",
+        "uid": "launch_tickets_currency"
+      },
+      "launch_tickets_tiers": {
+        "childUids": [
+          "launch_tickets_tiers_name",
+          "launch_tickets_tiers_price",
+          "launch_tickets_tiers_quantity"
+        ],
+        "itemKey": {
+          "kind": "property",
+          "property": "id"
+        },
+        "kind": "collection",
+        "max": 4,
+        "min": 1,
+        "runtimeId": "tiers",
+        "uid": "launch_tickets_tiers"
+      },
+      "launch_tickets_tiers_name": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Tier name",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "name",
+        "uid": "launch_tickets_tiers_name"
+      },
+      "launch_tickets_tiers_price": {
+        "definition": {
+          "key": "event-launch/money",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "currency": "CHF",
+          "description": "",
+          "label": "Price",
+          "locale": "en-CH",
+          "max": null,
+          "min": 0.01,
+          "placeholder": "",
+          "required": false,
+          "step": 0.01,
+          "suffix": ""
+        },
+        "runtimeId": "price",
+        "uid": "launch_tickets_tiers_price"
+      },
+      "launch_tickets_tiers_quantity": {
+        "definition": {
+          "key": "event-launch/number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Quantity",
+          "max": null,
+          "min": 1,
+          "placeholder": "",
+          "required": false,
+          "step": null,
+          "suffix": "tickets"
+        },
+        "runtimeId": "quantity",
+        "uid": "launch_tickets_tiers_quantity"
+      },
+      "launch_venue": {
+        "behavior": {
+          "when": {
+            "kind": "binary",
+            "left": {
+              "kind": "reference",
+              "path": [
+                "launch",
+                "basics",
+                "deliveryMode"
+              ],
+              "scope": "value"
+            },
+            "operator": "!==",
+            "right": {
+              "kind": "literal",
+              "value": "virtual"
+            }
+          }
+        },
+        "childUids": [
+          "launch_venue_name",
+          "launch_venue_address",
+          "launch_venue_capacity",
+          "launch_venue_accessibilityNotes"
+        ],
+        "kind": "stage",
+        "runtimeId": "venue",
+        "uid": "launch_venue"
+      },
+      "launch_venue_accessibilityNotes": {
+        "definition": {
+          "key": "event-launch/textarea",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "Share step-free access, seating, captioning, or contact details.",
+          "label": "Accessibility notes",
+          "placeholder": "",
+          "required": false
+        },
+        "runtimeId": "accessibilityNotes",
+        "uid": "launch_venue_accessibilityNotes"
+      },
+      "launch_venue_address": {
+        "childUids": [
+          "launch_venue_address_street",
+          "launch_venue_address_city",
+          "launch_venue_address_country"
+        ],
+        "kind": "group",
+        "runtimeId": "address",
+        "uid": "launch_venue_address"
+      },
+      "launch_venue_address_city": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "City",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "city",
+        "uid": "launch_venue_address_city"
+      },
+      "launch_venue_address_country": {
+        "definition": {
+          "key": "event-launch/choice",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Country",
+          "options": [
+            {
+              "label": "Switzerland",
+              "value": "CH"
+            },
+            {
+              "label": "Germany",
+              "value": "DE"
+            },
+            {
+              "label": "United Kingdom",
+              "value": "GB"
+            }
+          ],
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "country",
+        "uid": "launch_venue_address_country"
+      },
+      "launch_venue_address_street": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Street address",
+          "placeholder": "",
+          "required": true
+        },
+        "runtimeId": "street",
+        "uid": "launch_venue_address_street"
+      },
+      "launch_venue_capacity": {
+        "definition": {
+          "key": "event-launch/number",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "description": "",
+          "label": "Venue capacity",
+          "max": null,
+          "min": 1,
+          "placeholder": "",
+          "required": false,
+          "step": null,
+          "suffix": "people"
+        },
+        "runtimeId": "capacity",
+        "uid": "launch_venue_capacity"
+      },
+      "launch_venue_name": {
+        "definition": {
+          "key": "event-launch/text",
+          "version": 1
+        },
+        "kind": "field",
+        "props": {
+          "autocomplete": "",
+          "description": "",
+          "inputType": "text",
+          "label": "Venue name",
+          "placeholder": "Kraftwerk",
+          "required": true
+        },
+        "runtimeId": "name",
+        "uid": "launch_venue_name"
+      }
+    },
+    "rootNodeUids": [
+      "launch"
+    ],
+    "runtime": {
+      "schemaId": "portable-event-launch",
+      "schemaVersion": 1
+    },
+    "settings": {},
+    "title": "Event Launch",
+    "uid": "event_launch"
+  },
+  "format": "stages-portable-form",
+  "formatVersion": 1,
+  "initialValue": {
+    "launch": {
+      "agenda": {
+        "items": []
+      },
+      "basics": {
+        "accessModel": "",
+        "deliveryMode": "",
+        "identity": {
+          "description": "",
+          "slug": "",
+          "title": ""
+        },
+        "schedule": {
+          "endsAt": "",
+          "startsAt": "",
+          "timezone": ""
+        }
+      },
+      "compliance": {
+        "dataProcessingAccepted": false
+      },
+      "review": {
+        "confirmation": "",
+        "termsAccepted": false
+      },
+      "streaming": {
+        "platform": "",
+        "recordEvent": false,
+        "recordingConsent": false,
+        "url": ""
+      },
+      "tickets": {
+        "currency": "",
+        "tiers": []
+      },
+      "venue": {
+        "accessibilityNotes": "",
+        "address": {
+          "city": "",
+          "country": "",
+          "street": ""
+        },
+        "capacity": null,
+        "name": ""
+      }
+    }
+  },
+  "requirements": {
+    "behaviors": [
+      {
+        "key": "event-launch/domain",
+        "version": 1
+      }
+    ],
+    "capabilities": [
+      "stages.standard@1"
+    ],
+    "fields": [
+      {
+        "key": "event-launch/checkbox",
+        "version": 1
+      },
+      {
+        "key": "event-launch/choice",
+        "version": 1
+      },
+      {
+        "key": "event-launch/money",
+        "version": 1
+      },
+      {
+        "key": "event-launch/number",
+        "version": 1
+      },
+      {
+        "key": "event-launch/text",
+        "version": 1
+      },
+      {
+        "key": "event-launch/textarea",
+        "version": 1
+      }
+    ],
+    "services": []
+  },
+  "resources": {}
+}

@@ -80,3 +80,32 @@ test("local projects autosave across reload and recover confirmed deletion", asy
   await expect(corrupt).toBeVisible();
   await expect(corrupt.getByRole("button", { name: "Restore…" })).toHaveCount(0);
 });
+
+test('portable import, 1000-control render/edit and export stay within the browser budget', async ({ page }, testInfo) => {
+  const { readFileSync } = await import('node:fs');
+  const source = JSON.parse(readFileSync(new URL('../../packages/authoring/test/fixtures/contact-project-v1.json', import.meta.url), 'utf8'));
+  source.forms.contact.nodes = Object.fromEntries(Array.from({ length: 1000 }, (_, index) => [`field${index}`, {
+    uid: `field${index}`, kind: 'field', runtimeId: `field${index}`, definition: { key: 'text', version: 1 }, props: { label: `Scale field ${index}` },
+  }]));
+  source.forms.contact.rootNodeUids = Object.keys(source.forms.contact.nodes);
+  source.forms.contact.scenarios = [];
+  await page.goto('/demo-v1');
+  await expect(page.getByTestId('studio-v1-editor')).toHaveAttribute('aria-busy', 'false');
+  await page.getByRole('button', { name: 'Project', exact: true }).click();
+  await page.getByText('Import & export', { exact: true }).first().click();
+  await page.getByRole('textbox', { name: 'Studio project JSON', exact: true }).fill(JSON.stringify(source));
+  const before = Date.now();
+  await page.getByRole('button', { name: 'Import and validate', exact: true }).click();
+  const last = page.getByRole('textbox', { name: 'Scale field 999', exact: true });
+  await expect(last).toBeVisible();
+  await last.fill('Keyboard edit');
+  await expect(last).toHaveValue('Keyboard edit');
+  await page.getByRole('button', { name: 'Generate export artifacts', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Generated artifact', exact: true }).selectOption('contact/form.stages.json');
+  const artifact = JSON.parse(await page.getByRole('textbox', { name: 'Artifact source', exact: true }).inputValue());
+  expect(Object.keys(artifact.form.nodes)).toHaveLength(1000);
+  expect(artifact.initialValue.field999).toBe('');
+  const elapsed = Date.now() - before;
+  expect(elapsed).toBeLessThan(10000);
+  await testInfo.attach('portable-browser-budget', { body: JSON.stringify({ controls: 1000, importRenderEditExportMilliseconds: elapsed, maximumMilliseconds: 10000 }), contentType: 'application/json' });
+});

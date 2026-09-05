@@ -6,10 +6,14 @@ export type { StudioAsyncServiceBinding as PortableServiceBinding, StudioAsyncSe
 export { definePortableFieldBindings, portableFieldToken, matchesPortableValue } from "./fields.js";
 export type { PortableFieldDescriptor, PortableFieldBinding, PortableFieldBindings, PortableValueContract } from "./fields.js";
 export { composePortableForm } from './hybrid.js';
-export type { PortableComposition } from './hybrid.js';
+export type { PortableComposition, PortableNodeComposition } from './hybrid.js';
 export { definePortableBehaviorBindings } from "./behaviors.js";
 export type { PortableBehaviorBinding, PortableBehaviorBindings, PortableBehaviorReference } from "./behaviors.js";
 export { bindPortableViews } from './fields.js';
 export type { PortableViewFields, PortableViewForm } from './fields.js';
 export { validatePortableSubmission } from './submission.js';
 export type { PortableSubmissionDeployment, PortableSubmissionOptions, PortableSubmissionIdentity, PortableSubmissionResult } from './submission.js';
+export { createPortableRelease, comparePortableReleases, loadPortableRelease, savePortableState, migratePortableState, serializePortableRelease } from './releases.js';
+export type { PortableRelease, PortableReleaseOptions, PortableReleaseChange, PortableCompatibilityDecision, LoadedPortableRelease, PortableSavedState, PortableStateMigration } from './releases.js';
+export { createPortableReleaseCache } from './releases.js';
+export type { PortableReleaseCache } from './releases.js';

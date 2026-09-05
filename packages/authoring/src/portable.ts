@@ -21,7 +21,7 @@ export interface PortableRequirements {
 export interface PortableFormDefinition {
   readonly format: 'stages-portable-form';
   readonly formatVersion: 1;
-  readonly form: Omit<StudioFormDocument, 'scenarios'>;
+  readonly form: Omit<StudioFormDocument, 'scenarios' | 'behaviors'>;
   readonly defaultLocale: string;
   readonly resources: StudioResourceCatalog;
   readonly initialValue: JsonValue;
@@ -49,7 +49,7 @@ function failure(code: string, message: string, propertyPath: readonly (string |
   return { ok: false, diagnostics: [{ code, message, propertyPath, severity: 'error', source: 'document' }] };
 }
 
-function requirements(form: Omit<StudioFormDocument, 'scenarios'>, descriptors: readonly PortableFieldDescriptor[] = [], behaviors: readonly PortableBehaviorReference[] = []): PortableRequirements {
+function requirements(form: Omit<StudioFormDocument, 'scenarios' | 'behaviors'>, descriptors: readonly PortableFieldDescriptor[] = [], behaviors: readonly PortableBehaviorReference[] = []): PortableRequirements {
   const services = new Map<string, StudioDefinitionRef>();
   for (const owner of [form, ...Object.values(form.nodes)]) {
     for (const rule of 'validators' in owner ? owner.validators ?? [] : []) {
@@ -142,7 +142,7 @@ function compile(definition: PortableFormDefinition, options: PortableLoadOption
   }
   for (const { binding, reference } of behaviorBindings) {
     try {
-      loaded = extendPortableForm(loaded, { ...binding.configure(reference.config), schemaId: loaded.schema.id, schemaVersion: loaded.schema.version });
+      loaded = extendPortableForm(loaded, { ...binding.configure(reference.config, { ...definition.form, scenarios: [] }), schemaId: loaded.schema.id, schemaVersion: loaded.schema.version });
     } catch (error) { return failure('portable.behavior-composition', String(error), ['behaviors']); }
   }
   return { ok: true, value: loaded };
@@ -177,6 +177,7 @@ export function projectPortableForm(project: StudioProjectDocument, formUid: Uid
   if (!checked.ok) return checked;
   const source = checked.value.forms[formUid];
   if (!source) return failure('portable.missing-form', `Form ${formUid} does not exist.`);
+  const behaviors = options.behaviors ?? source.behaviors;
   // Bound expansion before allocating a potentially exponential fragment graph.
   let count = 0;
   const visit = (nodes: Readonly<Record<Uid, StudioNode>>, active: readonly Uid[]): boolean => {
@@ -217,9 +218,9 @@ export function projectPortableForm(project: StudioProjectDocument, formUid: Uid
   const used = new Set(Object.values(nodes).flatMap(node => node.kind === 'field' ? [`${node.definition.key}@${node.definition.version}`] : []));
   const descriptors = fieldDescriptors.filter(descriptor => used.has(`${descriptor.key}@${descriptor.version}`))
     .sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : a.version - b.version);
-  const definition = validatePortableForm({ ...(options.behaviors?.length ? { behaviors: options.behaviors } : {}), ...(descriptors.length ? { fieldDescriptors: descriptors } : {}), format: 'stages-portable-form', formatVersion: 1, form: portableForm,
+  const definition = validatePortableForm({ ...(behaviors?.length ? { behaviors } : {}), ...(descriptors.length ? { fieldDescriptors: descriptors } : {}), format: 'stages-portable-form', formatVersion: 1, form: portableForm,
     defaultLocale: checked.value.project.defaultLocale, resources: Object.keys(locales).length ? { locales } : {},
-    initialValue: initialValue === undefined ? createEmptyStudioScenarioValue(expanded.form, {}, resolvePortableFields(descriptors, undefined, true)) : initialValue, requirements: requirements(portableForm, descriptors, options.behaviors) });
+    initialValue: initialValue === undefined ? createEmptyStudioScenarioValue(expanded.form, {}, resolvePortableFields(descriptors, undefined, true)) : initialValue, requirements: requirements(portableForm, descriptors, behaviors) });
   if (!definition.ok) return definition;
   const compiled = compile(definition.value, {}, true);
   return compiled.ok ? definition : compiled;

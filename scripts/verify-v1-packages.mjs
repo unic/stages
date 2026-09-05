@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,14 +110,48 @@ try {
   }
 
   assert.equal(coreManifest.dependencies, undefined, "@stages/core must not have runtime dependencies.");
+  run('node', ['scripts/event-launch-portable.mjs'], repository);
   // Install only core + authoring: no framework packages, workspace symlinks, or browser globals.
   const portableConsumer = join(temporaryRoot, "portable-consumer");
   mkdirSync(portableConsumer);
   writeFileSync(join(portableConsumer, "package.json"), JSON.stringify({ private: true, type: "module" }));
   run("npm", ["install", "--offline", "--ignore-scripts", "--no-audit", "--no-fund", "--package-lock=false", artifacts.get("@stages/core"), artifacts.get("@stages/authoring")], portableConsumer);
-  for (const [source, target] of [["packed-submissions.mjs", "packed-submissions.mjs"], ["packed-extensions.mjs", "packed-extensions.mjs"], ["custom-bindings.mjs", "custom-bindings.mjs"], ["custom-form-v1.json", "custom-form-v1.json"], ["packed-contact.mjs", "packed-contact.mjs"], ["contact-form-v1.json", "contact-form-v1.json"]]) {
+  for (const [source, target] of [["contact-release-v1.json", "contact-release-v1.json"], ["contact-state-v1.json", "contact-state-v1.json"], ["packed-submissions.mjs", "packed-submissions.mjs"], ["packed-extensions.mjs", "packed-extensions.mjs"], ["custom-bindings.mjs", "custom-bindings.mjs"], ["custom-form-v1.json", "custom-form-v1.json"], ["packed-contact.mjs", "packed-contact.mjs"], ["contact-form-v1.json", "contact-form-v1.json"]]) {
     writeFileSync(join(portableConsumer, target), readFileSync(join(repository, "packages/authoring/test/fixtures", source)));
   }
+  const copyEventLaunch = target => {
+    mkdirSync(join(target, 'event-launch'), { recursive: true });
+    for (const file of ['portable.mjs', 'portable-journeys.mjs']) cpSync(join(repository, 'examples/shared/event-launch', file), join(target, 'event-launch', file));
+    cpSync(join(repository, 'examples/shared/event-launch/dist'), join(target, 'event-launch/dist'), { recursive: true });
+  };
+  copyEventLaunch(portableConsumer);
+  cpSync(join(repository, 'packages/authoring/test/fixtures/event-launch-form-v1.json'), join(portableConsumer, 'event-launch-form-v1.json'));
+  writeFileSync(join(portableConsumer, 'event-launch.mjs'), `import * as authoring from '@stages/authoring';
+import * as core from '@stages/core';
+import { readFileSync } from 'node:fs';
+import { eventLaunchJourneys } from './event-launch/portable-journeys.mjs';
+await eventLaunchJourneys(authoring, core, JSON.parse(readFileSync(new URL('./event-launch-form-v1.json', import.meta.url))));
+`);
+  run('node', ['event-launch.mjs'], portableConsumer);
+  const releaseTests = readFileSync(join(repository, 'packages/authoring/test/releases.test.mjs'), 'utf8')
+    .replaceAll('../dist/index.js', '@stages/authoring').replaceAll('../../core/dist/index.js', '@stages/core')
+    .replaceAll('./fixtures/contact-form-v1.json', './contact-form-v1.json')
+    .replaceAll('./fixtures/contact-release-v1.json', './contact-release-v1.json')
+    .replaceAll('./fixtures/contact-state-v1.json', './contact-state-v1.json');
+  writeFileSync(join(portableConsumer, 'releases.test.mjs'), releaseTests);
+  run('node', ['--test', 'releases.test.mjs'], portableConsumer);
+  mkdirSync(join(portableConsumer, 'portable'));
+  for (const file of ['isolated-submission.mjs', 'submission-worker.mjs']) cpSync(join(repository, 'scripts/portable', file), join(portableConsumer, 'portable', file));
+  writeFileSync(join(portableConsumer, 'isolated-deployment.mjs'), readFileSync(join(repository, 'packages/authoring/test/fixtures/isolated-deployment.mjs'), 'utf8').replaceAll('../../dist/index.js', '@stages/authoring'));
+  writeFileSync(join(portableConsumer, 'resources.test.mjs'), readFileSync(join(repository, 'packages/authoring/test/resources.test.mjs'), 'utf8')
+    .replaceAll('../../../scripts/portable/isolated-submission.mjs', './portable/isolated-submission.mjs')
+    .replaceAll('./fixtures/isolated-deployment.mjs', './isolated-deployment.mjs'));
+  run('node', ['--test', 'resources.test.mjs'], portableConsumer);
+  const computedTests = readFileSync(join(repository, 'packages/authoring/test/computed.test.mjs'), 'utf8')
+    .replaceAll('../dist/index.js', '@stages/authoring').replaceAll('../../core/dist/index.js', '@stages/core')
+    .replaceAll('./fixtures/contact-form-v1.json', './contact-form-v1.json');
+  writeFileSync(join(portableConsumer, 'computed.test.mjs'), computedTests);
+  run('node', ['--test', 'computed.test.mjs'], portableConsumer);
   const installedAuthoring = JSON.parse(readFileSync(join(portableConsumer, "node_modules/@stages/authoring/package.json"), "utf8"));
   assert.deepEqual(installedAuthoring.dependencies, { "@stages/core": expectedVersion });
   assert.equal(installedAuthoring.peerDependencies, undefined);
@@ -175,9 +209,11 @@ try {
 
   // Stages itself is installed from tarballs; framework/test peers use the existing installation.
   for (const peer of ["react-dom", "jsdom", "react-bootstrap", "@angular/platform-browser", "@angular/common"]) symlinkSync(join(repository, "node_modules", peer), join(consumerDirectory, "node_modules", peer), "dir");
+  copyEventLaunch(consumerDirectory);
   mkdirSync(join(consumerDirectory, "fixtures"));
-  for (const file of ["custom-bindings.mjs", "custom-form-v1.json", "contact-form-v1.json"]) writeFileSync(join(consumerDirectory, "fixtures", file), readFileSync(join(repository, "packages/authoring/test/fixtures", file)));
+  for (const file of ["custom-bindings.mjs", "custom-form-v1.json", "contact-form-v1.json", "event-launch-form-v1.json"]) writeFileSync(join(consumerDirectory, "fixtures", file), readFileSync(join(repository, "packages/authoring/test/fixtures", file)));
   const adapterTests = readFileSync(join(repository, "packages/authoring/test/adapters.test.mjs"), "utf8")
+    .replaceAll("../../../examples/shared/event-launch/portable.mjs", "./event-launch/portable.mjs")
     .replaceAll("../dist/index.js", "@stages/authoring")
     .replace(/\.\.\/\.\.\/(core|dom|react|vue|angular)\/dist\/index\.js/g, "@stages/$1");
   writeFileSync(join(consumerDirectory, "adapters.test.mjs"), adapterTests);

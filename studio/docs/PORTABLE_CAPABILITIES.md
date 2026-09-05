@@ -11,17 +11,17 @@ supported independently of this document layer.
 
 | Capability | Stored document | Studio editing | Preview | Executable export | Authoritative server |
 | --- | --- | --- | --- | --- | --- |
-| Built-in fields and static structure | Accepted | Supported | Supported | Shared loader + existing static subset | Not implemented |
-| Custom money, composite and nullable-number fields | Exact host references; portable descriptors | Host palette and structured props inspector | Host component map | JSON + trusted field bindings | Decoder not implemented |
-| Custom JS validators/transforms | Portable exact references and JSON config | Host integration | Public compiler/loader bindings | Trusted behavior bindings; hybrid composition | Same bindings required; decoder not implemented |
+| Built-in fields and static structure | Accepted | Supported | Supported | Shared loader + existing static subset | Strict decoding and validation |
+| Custom money, composite and nullable-number fields | Exact host references; portable descriptors | Host palette and structured props inspector | Host component map | JSON + trusted field bindings | Descriptor decoding and trusted validation |
+| Custom JS validators/transforms | Portable exact references and JSON config | Host integration | Public compiler/loader bindings | Trusted behavior bindings; hybrid composition | Same exact bindings, scoped rules and strict decoding |
 | Component and layout replacement | Optional neutral render plan | Host-supplied preview views | Independent of semantics | DOM, React, Vue, Angular bindings; generated App remains a scaffold | Views not required |
-| Required, comparison, range, conditional validation | Accepted | Supported | Supported | Shared loader | Not implemented |
-| Row/item validator dependencies | Accepted | Supported | Conservative outer-collection invalidation | Shared loader | Not implemented |
-| Context/interface and extension validation dependencies | Accepted | Supported | Host updates invalidate results | Shared loader | Not implemented |
-| Interaction metadata or event references in validators | Preserved | Not offered | Compile error | Rejected | Not implemented |
+| Required, comparison, range, conditional validation | Accepted | Supported | Supported | Shared loader | Supported under submission policy |
+| Row/item validator dependencies | Accepted | Supported | Conservative outer-collection invalidation | Shared loader | Supported under submission policy |
+| Context/interface and extension validation dependencies | Accepted | Supported | Host updates invalidate results | Shared loader | Supported under submission policy |
+| Interaction metadata or event references in validators | Preserved | Not offered | Compile error | Rejected | Rejected |
 | Derived presentation props | Accepted | Supported | Supported | Shared loader | Not applicable |
-| Persisted `computed` expression | Preserved | Removal only | Compile error | Rejected | Not implemented |
-| Row/item-dependent structural presence | Preserved | Not offered | Compile error | Rejected | Not implemented |
+| Persisted `computed` expression | Accepted | Expression editor | Controlled proposals | Ordered computation | Consistency validation |
+| Row/item-dependent structural presence | Preserved | Not offered | Compile error | Rejected | Rejected |
 | Fragment parameter names | Preserved, reserved | Not offered | No argument semantics | Rejected when parameterized | Not implemented |
 
 ## Authoring a sibling comparison
@@ -80,12 +80,11 @@ and [public contract](../../docs/content/validation/dependencies.mdx).
 
 ## Unsupported behavior
 
-Computed values remain reserved. The inspector does not offer an enable switch;
-imported expressions show an unsupported indicator and can be removed. The
-compiler preserves `compiler.unsupported-computed` and identifies the property,
-with guidance to use explicit event transforms for persisted changes or derived
-props for presentation. These are alternatives with different semantics, not
-automatic computed-expression migrations.
+Computed values now support value/current-parent-row/trusted-context expressions,
+ordered dependencies, cycle diagnostics, controlled proposals and authoritative
+consistency validation. Owner/context updates require an explicit recompute event
+when persisted derived values should change. Derived props remain presentation-only.
+See the [normative computed contract](../../docs/content/reference/authoring.mdx).
 
 Fragment parameter names remain inert reserved data with no instance argument
 contract. Use ordinary linked fragments without parameters. Do not claim
@@ -136,4 +135,28 @@ UI visibility, disabled state or structural presence. Use validator conditions
 for conditional business applicability. Missing/extra/malformed values fail
 decoding; failed/unavailable services, pending work and cancellation never accept.
 The host supplies an approved revision and exact semantic bindings. Full Event
-Launch parity and durable fingerprints/resource isolation remain S4/S5 work.
+Launch parity is covered by S4 below; durable fingerprints/resource isolation remain S5 work.
+
+## S4 full Event Launch
+
+[The full capstone ledger](EVENT_LAUNCH_CAPSTONE.md) now covers all canonical stages,
+scoped rules, aggregate issues, custom number/money contracts, context-driven
+compliance, transforms, service failures and persistence. The exported artifact
+is checked against actual Studio output, then loaded by installed Node and four
+adapter consumers. Host behavior and view registrations are explicit requirements.
+The complete-value submission policy remains stricter than permissive UI values.
+S5 accessibility, resource and durable-release gates remain open.
+
+
+## S5 durable releases
+
+The optional authoring API now supplies immutable content-addressed release wrappers,
+explicit compatibility decisions and exact-release full-envelope state migration.
+Contact and full Event Launch exercise them in workspace/Studio and installed Node
+consumers. Preview and export both bound the fully expanded graph to 1,000 nodes.
+A tested application-owned worker recipe supplies hard synchronous server deadlines.
+Studio production publication, generated release scaffolding, exact-identity
+standard compilation caching and full scale/resource/browser gates are implemented
+and release-verified. Custom executable bindings still compile per request. Only
+manual authoring and accessibility sessions remain before portable beta; see
+[PORTABLE_RELEASE_GATES.md](PORTABLE_RELEASE_GATES.md).

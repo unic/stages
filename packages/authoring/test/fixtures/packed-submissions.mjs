@@ -100,7 +100,7 @@ const unavailableCondition = structuredClone(contact);
 unavailableCondition.form.nodes.name.validators[0].when = { kind: 'reference', scope: 'context', path: ['missing'] };
 assert.equal((await api.validatePortableSubmission({ ...deployment, definition: unavailableCondition }, valid)).reason, 'execution');
 const computed = structuredClone(contact);
-computed.form.nodes.name.computed = { kind: 'literal', value: 'derived' };
+computed.form.nodes.name.computed = { kind: 'reference', scope: 'event', path: [] };
 assert.equal((await api.validatePortableSubmission({ ...deployment, definition: computed }, valid)).reason, 'configuration');
 
 const grouped = structuredClone(contact);

@@ -1,3 +1,5 @@
+import { compileComputed } from './computed.js';
+import { extendPortableForm } from '../hybrid.js';
 import { matchesPortableValue, portableFieldToken, type ResolvedPortableField } from "../fields.js";
 import type { CollectionVariantConfig, DataPath, DynamicConfigContext, FieldDefinition, NodeAddress, NodeConfig, NodeResolverContext, StageNodeConfig, StagesSchema } from "@stages/core";
 import type { JsonObject, JsonValue, StudioFormDocument, StudioFragmentDefinition, StudioFragmentInstanceNode, StudioLogicRule, StudioNode, StudioValidatorSpec, Uid } from "../document/index.js";
@@ -95,6 +97,23 @@ export function expandStudioFragments(
   form: StudioFormDocument,
   fragments: Readonly<Record<Uid, StudioFragmentDefinition>> = {},
 ): ExpandedFragments {
+  // Count before cloning: nested fragment reuse can otherwise expand exponentially.
+  let work = 0;
+  const bounded = (graph: Readonly<Record<Uid, StudioNode>>, active: readonly Uid[]): boolean => {
+    for (const node of Object.values(graph)) {
+      if (++work > 1_000) return false;
+      if (node.kind === "fragment" && !active.includes(node.fragmentUid)) {
+        const fragment = fragments[node.fragmentUid];
+        if (fragment && !bounded(fragment.nodes, [...active, node.fragmentUid])) return false;
+      }
+    }
+    return true;
+  };
+  if (!bounded(form.nodes, [])) return {
+    form: { ...form, nodes: {}, rootNodeUids: [] }, provenance: new Map(),
+    diagnostics: [{ code: "compiler.fragment-expansion-limit", severity: "error", source: "compiler", formUid: form.uid,
+      message: "Reduce the fully expanded form to at most 1000 nodes before preview or deployment." }],
+  };
   const nodes: Record<Uid, StudioNode> = { ...form.nodes };
   const allocated = new Set<Uid>(Object.keys(nodes) as Uid[]);
   const provenance = new Map<Uid, FragmentProvenance>();
@@ -202,20 +221,6 @@ function recordSource(
     if (candidates.length === 1 && variants.length === 0) unique.set(key, uid);
     else unique.delete(key);
   }
-}
-
-function unsupportedBehavior(
-  context: CompileContext,
-  node: StudioNode,
-  runtimePath: DataPath,
-  runtimeAddress: NodeAddress,
-): void {
-  if (node.kind === "field" && node.computed !== undefined) diagnostic(
-    context,
-    "compiler.unsupported-computed",
-    "Computed values are reserved and cannot execute in preview or production. Remove computed and use explicit event transforms for persisted changes, or derived props for presentation.",
-    { entityUid: node.uid, propertyPath: ["nodes", node.uid, "computed"], runtimePath, runtimeAddress },
-  );
 }
 
 function validatorsForNode(node: StudioNode): readonly StudioValidatorSpec[] | undefined {
@@ -394,7 +399,6 @@ function compileNode(
 
   if (node.kind === "block") {
     const definition = studioBlockDefinition(node.definition);
-    unsupportedBehavior(context, node, parentPath, parentAddress);
     context.visiting.delete(node.uid);
     if (!definition) {
       diagnostic(context, "compiler.unsupported-block-definition", `Block definition ${node.definition.key}@${node.definition.version} is not supported.`, {
@@ -440,7 +444,6 @@ function compileNode(
     else if (variant) context.variantPresence.set(variantPresenceKey(parentAddress, node.runtimeId), node.behavior.presentWhen);
     else context.presenceByAddress.set(studioRuntimeAddressKey(runtimeAddress), node.behavior.presentWhen);
   }
-  unsupportedBehavior(context, node, runtimePath, runtimeAddress);
   const validation = compiledValidators(context, validatorsForNode(node), {
     entityUid: node.uid,
     propertyPath: ["nodes", node.uid, "validators"],
@@ -858,7 +861,7 @@ export function compileStudioForm(
         ...schema,
         nodes: dynamicNodes(schema.nodes, [], dynamicContext, context.presenceByAddress, context.variantPresence),
       });
-  return {
+  let compiled: CompiledStudioForm = {
     expandedForm: expanded.form,
     schema,
     schemaInput,
@@ -877,4 +880,13 @@ export function compileStudioForm(
     },
     diagnostics: context.diagnostics,
   };
+
+  for (const reference of form.behaviors ?? []) {
+    try {
+      const binding = options.behaviorBindings?.resolve(reference);
+      if (!binding || binding.key !== reference.key || binding.version !== reference.version) throw new Error(`Supply behavior binding ${reference.key}@${reference.version}.`);
+      compiled = extendPortableForm(compiled, { ...binding.configure(reference.config, expanded.form), schemaId: schema.id, schemaVersion: schema.version });
+    } catch (error) { diagnostic(context, 'compiler.behavior-binding', String(error), { entityUid: form.uid, propertyPath: ['behaviors'] }); }
+  }
+  return compileComputed(compiled, context.customFields);
 }

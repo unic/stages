@@ -1392,11 +1392,9 @@ function ExpressionInspector({ node, form, onUpdate }: {
     <label className="studio-inspector-switch"><span>Conditional structure</span><SwitchPrimitive.Root className="ui-switch" checked={presentWhen !== undefined} onCheckedChange={(checked) => setBehavior("presentWhen", checked ? { kind: "literal", value: true } : undefined)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
     {presentWhen !== undefined && <StudioExpressionEditor expression={presentWhen} label="Structure expression" references={references.filter(({ scope }) => scope !== "row")} onChange={(expression) => setBehavior("presentWhen", expression)} />}
     {node.kind === "field" && <>
-      <p>Computed values are reserved and cannot execute in preview or production. Use event transforms for persisted changes, or derived properties for presentation.</p>
-      {computed !== undefined && <>
-        <p role="alert">This imported field contains an unsupported computed value. Remove it before preview or executable export.</p>
-        <Button variant="outline" size="sm" onClick={() => onUpdate(node, { computed: undefined }, "Remove unsupported computed value", `logic.computed:${node.uid}`)}>Remove unsupported computed value</Button>
-      </>}
+      <p>Computed values are persisted proposals on input, blur, submit, collection operations and recompute. Validation rejects inconsistent values; the owner still accepts or rejects proposals.</p>
+      <label className="studio-inspector-switch"><span>Computed value</span><SwitchPrimitive.Root className="ui-switch" checked={computed !== undefined} onCheckedChange={(checked) => onUpdate(node, { computed: checked ? { kind: "literal", value: "" } : undefined }, "Edit computed value", `logic.computed:${node.uid}`)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
+      {computed !== undefined && <StudioExpressionEditor expression={computed} label="Computed expression" references={references.filter(({ scope }) => scope === "value" || scope === "row" || scope === "context")} onChange={(expression) => onUpdate(node, { computed: expression }, "Edit computed expression", `logic.computed:${node.uid}`)} />}
       <label className="studio-inspector-switch"><span>Derived label</span><SwitchPrimitive.Root className="ui-switch" checked={node.derivedProps?.["label"] !== undefined} onCheckedChange={(checked) => onUpdate(node, { derivedProps: checked ? { ...node.derivedProps, label: { kind: "literal", value: String(node.props["label"] ?? "") } } : undefined }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)}><SwitchPrimitive.Thumb className="ui-switch__thumb" /></SwitchPrimitive.Root></label>
       {node.derivedProps?.["label"] !== undefined && <StudioExpressionEditor expression={node.derivedProps["label"]} label="Derived label expression" references={references} onChange={(expression) => onUpdate(node, { derivedProps: { ...node.derivedProps, label: expression } }, "Edit derived label", `logic.derivedProps.label:${node.uid}`)} />}
     </>}
@@ -1745,6 +1743,7 @@ function StudioV1EditorContent({ repository: repositoryProp }: StudioV1EditorPro
   const compiled = compilerSession.compile(form, history.present.fragments, {
     serviceBindings: STUDIO_PREVIEW_ASYNC_SERVICE_BINDINGS,
     customFields: custom.fields,
+    ...(custom.behaviorBindings ? { behaviorBindings: custom.behaviorBindings } : {}),
     localization: { defaultLocale: history.present.project.defaultLocale, resources: history.present.resources },
   });
   const canvasSourceNodes = new Map<Uid, StudioNode>(Object.entries(form.nodes) as [Uid, StudioNode][]);

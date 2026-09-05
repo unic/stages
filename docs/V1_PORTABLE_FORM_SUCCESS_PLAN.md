@@ -1,6 +1,6 @@
 # Stages v1: portable forms from Studio to production
 
-Status: implementation in progress (S0–S3 complete), based on a source and runtime review on
+Status: implementation in progress (S0–S4 complete; S5 code and automated verification complete; manual beta gates open), based on a source and runtime review on
 2026-09-05 at commit `5e2158e`. Package version: `1.0.0-alpha.0`.
 
 Audience: Stages core, adapter, tooling, and Studio maintainers.
@@ -153,6 +153,99 @@ journeys. Angular's native build required an outside-sandbox retry. The existing
 1,000-row Studio regression timed out once under full-suite load, then passed
 isolated and full retries without changing its five-second limit or assertions.
 Generated Angular cache changes were restored. S4 is next.
+
+2026-09-05: S4 implementation and release verification are complete.
+The full Event Launch Studio project now exports a checked portable artifact with
+all stages, three agenda variants, scoped domain rules, custom money/nullable
+numbers, context-driven compliance, localization props, template/blur transforms,
+aggregate row issues and the canonical deterministic slug service. Trusted exact
+behavior references persist in Studio forms and move to the production envelope.
+Bindings can append rules by document UID without losing variant qualification or
+dynamic factories; authored props are available to binding factories. The canonical
+code-authored schema, fields, value types and persistence contract remain unchanged.
+
+Computed expressions now support value/current-parent-row/trusted-context scopes,
+conservative dependency ordering, cycle diagnostics and controlled event proposals.
+Owner/context updates do not silently accept computed changes. Full validation and
+submission check consistency; forged computed values fail. Derived props remain
+presentation-only. Row-dependent structural presence and fragment parameters remain
+reserved. Collection property keys now have an explicit nonempty unique string
+transport contract rather than being treated as undeclared extra fields.
+
+The shared full-domain journeys compare canonical and portable results and add
+actual Studio preview hosts. Studio export is checked against the deployed JSON.
+Installed core/authoring consumers run the same server/runtime matrix with copied
+application-owned bindings; installed DOM, React, Vue and Angular consumers load
+the full artifact with independent components. Empty production defaults remain
+independent of scenarios. Optional canonical undefined values map explicitly to
+portable null; Event Launch money retains its decimal-major-unit contract.
+
+S3's complete-value policy still enforces all keys and collection bounds, even in
+inactive sections. Business applicability is explicitly conditional; malformed
+transport is never exempt. S4 does not claim interchangeable canonical/portable
+persistence envelopes or S5's durable identities, resource isolation, accessibility
+sessions and portable beta gate. See the [full capstone ledger](../studio/docs/EVENT_LAUNCH_CAPSTONE.md).
+
+S4 verification used Node 24.15.0. The final `npm run verify:changed -- change`
+selected `npm run release:check:v1` and passed: static quality, docs/API/JSON-Schema
+checks, isolated packed runtime/type consumers (including full Event Launch and
+computed-value regressions), four-adapter rendering, performance checks, 145
+package tests, 324 Studio/Vitest tests plus 10 Studio Node tests, Studio/docs and
+all example builds, the React lifecycle test and all 42 browser journeys. The
+run used the outside-sandbox environment required by Angular and browser listeners.
+Generated Angular cache changes were restored. S5 is next; the portable beta gate
+remains open.
+
+2026-09-05: S5 code and automated verification are complete. Manual product
+sessions remain open, so this does not declare the portable beta gate complete.
+Additive `stages-portable-release` and `stages-portable-state` envelopes preserve
+existing portable-v1 artifact bytes. Canonical SHA-256 identities cover definition,
+compiler compatibility, immutable host binding build/policy IDs, predecessor and
+explicit compatibility decisions. Conservative shape/behavior/presentation/binding
+classification prevents silent upgrades; shape changes require a value-version
+bump and migration/reset decision.
+
+Ordered full-envelope migrations enforce schema identity, deterministic output,
+and explicit baseline/metadata preserve/migrate/reset policies. Historical fixtures
+recreate with dirty baseline intact; contact covers rejected proposals, extensions
+and failure recovery. Full Event Launch preserves collection keys, wizard position
+and interaction state across a release transition. Submissions identify the approved
+server release. Workspace and isolated packed consumers share this evidence.
+
+Studio publication integrates production projection, trusted bindings, exact-release
+packed/server/four-adapter report ports and full saved-state migration/recreation.
+Append-only snapshots retain release/compiler/binding/policy identities and reports;
+a portable lineage cannot silently drop its gate. Production hosts require the
+portable gate explicitly. Generated `release.ts` uses the public release API and
+requires host IDs/decisions rather than inferring production readiness from preview.
+The bounded owner-created LRU cache reuses standard compilation with detached output;
+custom field/service/behavior factories compile freshly to prevent closure leakage.
+
+Preview and export enforce 1,000 total expanded nodes before allocation. The tested
+Node worker recipe bounds JSON input, concurrency, heap and synchronous execution,
+refuses coercion/accessors/non-JSON input, kills pathological regex and leaves later
+requests isolated. The performance gate covers contact, full Event Launch, 1,000
+fields, 1,000 rows, 40 nested groups, 780 nested rows and eight simultaneous submissions.
+A focused run completed the matrix in 3,049 ms with 29 MiB live heap, within the
+6-second/256-MiB aggregate and 3-second per-workflow budgets. The browser imports,
+renders, edits and exports 1,000 real controls within its 10-second budget; the focused
+journey passed in 4.7 seconds including setup. Whole-process RSS and unbounded host
+services remain infrastructure responsibilities, not claims of the portable runtime.
+
+Final verification used Node 24.15.0. `npm run verify:changed -- change` selected
+`npm run release:check:v1` and returned success: static quality, docs/API/JSON-Schema
+checks, seven packed tarballs and runtime/type/rendering consumers, performance,
+155 package tests, 325 Studio/Vitest tests plus 10 Studio Node tests, Studio/docs/all
+example builds, the React lifecycle test and all 43 browser journeys. It ran outside
+the sandbox for Angular and browser listeners, using the existing Studio server on
+port 3000. Earlier runs exposed a stale nine-artifact assertion (the new release
+scaffold makes ten) and a scale-test dropdown locator; both were corrected without
+weakening the gates. Generated Angular cache changes were restored.
+
+Only the manual exit evidence remains: timed new/experienced-author sessions and
+actual macOS/Safari/VoiceOver and Windows/Edge/NVDA accessibility passes. The
+[S5 evidence ledger](../studio/docs/PORTABLE_RELEASE_GATES.md) records these as pending.
+Automated timing, DOM assertions and Chromium journeys do not substitute for them.
 
 ## 1. Assessment and success criterion
 

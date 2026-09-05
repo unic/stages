@@ -11,10 +11,41 @@
         "packages/authoring/test/portable.test.mjs",
         "packages/authoring/test/extensions.test.mjs",
         "packages/authoring/test/adapters.test.mjs",
-        "packages/authoring/test/submission.test.mjs"
+        "packages/authoring/test/submission.test.mjs",
+        "packages/authoring/test/event-launch.test.mjs",
+        "packages/authoring/test/computed.test.mjs",
+        "packages/authoring/test/releases.test.mjs",
+        "packages/authoring/test/resources.test.mjs"
       ],
       "defaultReference": "/reference/authoring",
       "exports": [
+        {
+          "symbol": "createPortableReleaseCache",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableReleaseCache",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableNodeComposition",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-event-launch"
+          ],
+          "status": "complete"
+        },
         {
           "symbol": "validatePortableSubmission",
           "kind": "runtime",
@@ -327,6 +358,123 @@
           "guide": "/start/portable-forms",
           "examples": [
             "portable-custom"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "createPortableRelease",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "comparePortableReleases",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "loadPortableRelease",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "savePortableState",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "migratePortableState",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "serializePortableRelease",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableRelease",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableReleaseOptions",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableReleaseChange",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableCompatibilityDecision",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "LoadedPortableRelease",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableSavedState",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableStateMigration",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-release"
           ],
           "status": "complete"
         }

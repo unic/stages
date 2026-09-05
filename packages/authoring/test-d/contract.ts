@@ -56,3 +56,42 @@ export async function submissionContract(deployment: PortableSubmissionDeploymen
   await validatePortableSubmission(deployment, input, { extensions: { admin: true } });
   return result;
 }
+
+import type { PortableNodeComposition } from '../src/index.js';
+const scoped: PortableNodeComposition = {
+  validators: [{ id: 'scoped', on: 'submit', validate: ({ path }) => [{ id: 'scoped', code: 'scoped', severity: 'error', path }] }],
+  deriveProps: ({ context }) => ({ helpText: String(context) }),
+};
+void composePortableForm;
+const scopedOptions = { schemaId: 'scoped', schemaVersion: 1, nodes: { name: scoped } } satisfies import('../src/index.js').PortableComposition;
+void scopedOptions;
+// @ts-expect-error scoped nodes accept core rules, not executable source strings
+const invalidScoped: PortableNodeComposition = { validators: 'source' };
+void invalidScoped;
+
+import { createPortableRelease, loadPortableRelease, savePortableState, migratePortableState, comparePortableReleases, serializePortableRelease, type PortableReleaseOptions, type PortableStateMigration, type PortableSavedState, type PortableCompatibilityDecision } from '../src/index.js';
+async function releaseContract(definition: PortableFormDefinition) {
+  const options: PortableReleaseOptions = { bindingId: 'build:123', policyId: 'acceptance:1' };
+  const release = await createPortableRelease(definition, options);
+  const loaded = await loadPortableRelease(release, options);
+  const controller = stages({ schema: loaded.schemaInput, fields: loaded.fields, value: loaded.initialValue as unknown });
+  const saved: PortableSavedState = savePortableState(loaded, controller.serialize());
+  const changes = comparePortableReleases(release, { definition, ...options });
+  const decision: PortableCompatibilityDecision = { changes, state: 'compatible', rationale: 'Reviewed.' };
+  const migration: PortableStateMigration = { from: release, to: release, baseline: 'preserve', metadata: {}, migrate: state => state };
+  void decision; void serializePortableRelease(release);
+  await migratePortableState(saved, loaded, [migration]);
+  // @ts-expect-error saved state is immutable
+  saved.releaseId = 'changed';
+  // @ts-expect-error full envelopes, not just values, are required
+  savePortableState(loaded, { name: 'Ada' });
+  // @ts-expect-error exact host binding identity is mandatory
+  await createPortableRelease(definition, { policyId: 'only-policy' });
+  controller.destroy();
+}
+void releaseContract;
+import { createPortableReleaseCache, type PortableReleaseCache } from '../src/index.js';
+const releaseCache: PortableReleaseCache = createPortableReleaseCache(16);
+releaseCache.clear();
+// @ts-expect-error cache load requires both exact host identities
+void releaseCache.load({} as import('../src/index.js').PortableRelease, { bindingId: 'missing-policy' });

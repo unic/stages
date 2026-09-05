@@ -1,9 +1,10 @@
+import { eventLaunchBindings, defaultEventLaunchContext } from '../../../examples/shared/event-launch/portable.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import * as authoring from '../dist/index.js';
-import { stages } from '../../core/dist/index.js';
+import { stages, getAtPath } from '../../core/dist/index.js';
 import { customBindings } from './fixtures/custom-bindings.mjs';
 
 const dom = new JSDOM('<body></body>');
@@ -15,17 +16,22 @@ const contact = JSON.parse(readFileSync(new URL('./fixtures/contact-form-v1.json
 const result = authoring.loadPortableForm(definition, customBindings(authoring, definition.fieldDescriptors));
 assert.equal(result.ok, true, JSON.stringify(result));
 const custom = result.value;
-const standard = authoring.loadPortableForm(contact).value;
+const releaseIdentities = { bindingId: 'adapter-fixture-build-1', policyId: 'all-values-1' };
+const releaseCache = authoring.createPortableReleaseCache();
+const standard = await releaseCache.load(await authoring.createPortableRelease(contact, releaseIdentities), releaseIdentities);
+
+const eventDefinition = JSON.parse(readFileSync(new URL('./fixtures/event-launch-form-v1.json', import.meta.url)));
+const eventLoaded = await releaseCache.load(await authoring.createPortableRelease(eventDefinition, releaseIdentities), { ...releaseIdentities, ...eventLaunchBindings(authoring) });
 
 function open(loaded, view) {
   const bound = authoring.bindPortableViews(loaded, Object.fromEntries(Object.values(loaded.fields).map(field => [field.view, view])));
-  const controller = stages({ schema: bound.schemaInput, fields: bound.fields, value: loaded.initialValue, onChange: change => controller.update({ value: change.value }) });
+  const controller = stages({ schema: bound.schemaInput, fields: bound.fields, value: loaded.initialValue, context: defaultEventLaunchContext, onChange: change => controller.update({ value: change.value }) });
   return controller;
 }
-function nextValue(path) { return path === 'name' ? 'Ada' : path === 'person' ? { given: 'Ada', family: 'Lovelace' } : { minorUnits: 1234, currency: 'CHF' }; }
+function nextValue(path) { return path === 'launch.basics.identity.title' ? 'Portable Event Launch' : path === 'name' ? 'Ada' : path === 'person' ? { given: 'Ada', family: 'Lovelace' } : { minorUnits: 1234, currency: 'CHF' }; }
 function root(tag = 'main') { const node = document.createElement(tag); document.body.append(node); return node; }
 
-for (const [label, loaded, path] of [['contact', standard, 'name'], ['money', custom, 'money'], ['person', custom, 'person']]) {
+for (const [label, loaded, path] of [['event-launch', eventLoaded, 'launch.basics.identity.title'], ['contact', standard, 'name'], ['money', custom, 'money'], ['person', custom, 'person']]) {
   test(`DOM renders portable ${label} with a custom layout and preserves semantic bindings`, async () => {
     const { mountStages } = await import('../../dom/dist/index.js');
     const target = root();
@@ -39,7 +45,7 @@ for (const [label, loaded, path] of [['contact', standard, 'name'], ['money', cu
     try {
       const input = target.querySelector(`input[data-path="${path}"]`); assert(input);
       input.dispatchEvent(new dom.window.Event('input'));
-      await tick(); assert.deepEqual(controller.getSnapshot().value[path], nextValue(path));
+      await tick(); assert.deepEqual(getAtPath(controller.getSnapshot().value, path.split('.')), nextValue(path));
       await controller.validate({ scope: 'form' });
     } finally { mounted.destroy(); controller.destroy(); target.remove(); }
   });
@@ -53,10 +59,10 @@ for (const [label, loaded, path] of [['contact', standard, 'name'], ['money', cu
       const controller = open(loaded, View);
       const target = root(); const app = createRoot(target);
       try {
-        await act(async () => app.render(h('section', { 'aria-label': 'Custom layout' }, h(StagesField, { controller, path: [path] }))));
+        await act(async () => app.render(h('section', { 'aria-label': 'Custom layout' }, h(StagesField, { controller, path: path.split('.') }))));
         assert(target.querySelector(`label.${system} input`));
         await act(async () => { target.querySelector('button').click(); await tick(); });
-        assert.deepEqual(controller.getSnapshot().value[path], nextValue(path));
+        assert.deepEqual(getAtPath(controller.getSnapshot().value, path.split('.')), nextValue(path));
       } finally { await act(async () => app.unmount()); controller.destroy(); target.remove(); }
     }
   });
@@ -65,10 +71,10 @@ for (const [label, loaded, path] of [['contact', standard, 'name'], ['money', cu
     const { StagesField } = await import('../../vue/dist/index.js');
     const View = ({ field, props, emit }) => h('label', null, [props.label, h('input', { value: JSON.stringify(field.value), onInput: () => emit('input', nextValue(path)) })]);
     const controller = open(loaded, View); const target = root();
-    const app = createApp({ render: () => h('section', { 'aria-label': 'Custom layout' }, [h(StagesField, { controller, path: [path] })]) });
+    const app = createApp({ render: () => h('section', { 'aria-label': 'Custom layout' }, [h(StagesField, { controller, path: path.split('.') })]) });
     try {
       app.mount(target); target.querySelector('input').dispatchEvent(new dom.window.Event('input'));
-      await tick(); await nextTick(); assert.deepEqual(controller.getSnapshot().value[path], nextValue(path));
+      await tick(); await nextTick(); assert.deepEqual(getAtPath(controller.getSnapshot().value, path.split('.')), nextValue(path));
     } finally { app.unmount(); controller.destroy(); target.remove(); }
   });
   test(`Angular renders portable ${label} with an application component`, async () => {
@@ -80,13 +86,13 @@ for (const [label, loaded, path] of [['contact', standard, 'name'], ['money', cu
     for (const name of ['id', 'field', 'props', 'emit']) Input()(View.prototype, name);
     Component({ selector: `portable-view-${label}`, standalone: true, template: '<label>{{ props.label }}<input [id]="id" [value]="field.value" (input)="update()" /></label>' })(View);
     const controller = open(loaded, View);
-    class App { controller = controller; path = [path]; }
+    class App { controller = controller; path = path.split('.'); }
     Component({ selector: `portable-${label}`, standalone: true, imports: [StagesFieldComponent], template: '<section aria-label="Custom layout"><stages-field [controller]="controller" [path]="path" /></section>' })(App);
     const target = root(`portable-${label}`); const app = await bootstrapApplication(App);
     try {
       await app.whenStable(); const input = target.querySelector('input'); assert(input);
       input.dispatchEvent(new dom.window.Event('input')); await tick(); await app.whenStable();
-      assert.deepEqual(controller.getSnapshot().value[path], nextValue(path));
+      assert.deepEqual(getAtPath(controller.getSnapshot().value, path.split('.')), nextValue(path));
     } finally { app.destroy(); controller.destroy(); target.remove(); }
   });
 }

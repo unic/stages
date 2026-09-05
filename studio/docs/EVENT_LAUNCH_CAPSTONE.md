@@ -1,79 +1,86 @@
 # Event Launch capstone
 
-Status: Session 28 started; agenda slice checked, full capstone incomplete.
+Status: S4 implementation and release verification complete. S5 and the portable
+beta gate remain open.
 
-For Studio maintainers and authors testing advanced collection workflows.
-The canonical behavioral design remains in
-[`examples/shared/event-launch`](../../examples/shared/event-launch/).
+For Studio maintainers and application hosts. The canonical code-authored
+[Event Launch domain](../../examples/shared/event-launch/) remains unchanged and
+independent of the optional authoring package.
 
-## Try the checked project
+## Full portable project
 
-Import [`event-launch-agenda.json`](../src/document/fixtures/event-launch-agenda.json)
-through Studio's canonical project JSON import, then select the **Canonical
-agenda** scenario in Test mode. The project contains a venue-capacity stage and
-an agenda stage with a discriminated collection: session, workshop, and break.
-Its initial agenda and venue capacity are checked against the shared example
-fixture. Enter a workshop in Test mode, then change venue capacity to test the
-cross-field upper bound.
+Import [event-launch.json](../src/document/fixtures/event-launch.json) in a Studio
+host registered with the shared [descriptors and behavior bindings](../../examples/shared/event-launch/portable.mjs).
+Supply `customFields.fields`, `customFields.views` and `customFields.behaviorBindings`.
+The host owns components and executable callbacks; neither is recovered from JSON.
+Select **Canonical Event Launch** in Test mode. The scenario includes JSON context
+and values; production export uses empty defaults independently of scenarios.
 
-This is a venue-capacity and agenda project with schema ID `studio-event-launch-agenda`.
-Its envelopes are not interchangeable with the full `event-launch` schema.
-The fixture is editable document v1 JSON, not generated TypeScript or an import
-of executable callbacks. No application package or framework example changed.
+The project has schema ID `portable-event-launch`, distinct from both the original
+`event-launch` code-authored schema and the earlier `studio-event-launch-agenda`
+subset. Runtime envelopes are not interchangeable. Optional canonical numbers use
+undefined in code and null in portable JSON, through explicit host conversion.
+Money retains canonical decimal major units; S2's separate money fixture uses
+integer minor units. Row IDs are declared, nonempty unique string transport keys.
 
-## Executable capability ledger
+The full portable graph is maintained from the canonical schema by
+[`scripts/event-launch-portable.mjs`](../../scripts/event-launch-portable.mjs).
+Build packages/shared examples, then run it with `--update` after intentional
+canonical changes. Package verification runs it in check mode. JSON is editable
+in Studio; fixture regeneration is a maintainer workflow, not a runtime requirement.
 
-[`event-launch-agenda.test.ts`](../src/runtime/event-launch-agenda.test.ts)
-runs matching steps against the Studio preview and the canonical schema using
-the shared field contract and agenda-item factory. It compares selected
-observable semantics rather than framework view tokens or the full wizard.
-The test belongs to the existing `npm --prefix studio run test:v1` gate.
+## Executable ledger
 
-| Capability | Current evidence and boundary |
+The [shared journeys](../../examples/shared/event-launch/portable-journeys.mjs)
+compare code-authored and portable validation, and run authoritative submissions.
+The [Studio test](../src/runtime/event-launch-portable.test.ts) adds actual preview
+hosts and compares the export bundle byte-equivalent JSON. The same journeys run
+with only installed core/authoring packages and copied application host modules.
+Four installed adapters load the full artifact with independent components; their
+rendering tests cover the integration boundary while the shared journeys cover
+all domain rules.
+
+| Capability | Evidence |
 | --- | --- |
-| Portable authoring | Validated JSON, serialize/load round trip, compiler with no diagnostics, canonical initial agenda |
-| Variant structure | All three variants; matching field order, type, label, minimum prop, value, path, and address |
-| Controlled ownership | Add and field input remain proposals until acceptance; rejected movement retains accepted rows |
-| Collection identity | Add, move, sort, and same-key variant replacement preserve matching row IDs and addresses |
-| Validation | Positive duration rule matches canonical code, severity, and exact row path for each variant |
-| Workshop capacity | Finite numeric cases match canonical code, message, severity, and row path: positive capacity bounded by the current venue capacity; equality is allowed |
-| Cross-field dependencies | Accepted venue-bound changes discard obsolete capacity issues; pending venue proposals do not change the accepted validation result |
-| Diagnostic navigation | Minimum-row removal is rejected in both runtimes; Studio maps `collection.min` to the collection UID |
-| Persistence | Touched state and row identities survive serialize/recreate using each schema's own envelope |
-| Wizard navigation | Not covered: only venue capacity and agenda are present; full navigation policies remain outstanding |
-| Packed/generated consumer | Not covered: comparison consumes shared example source and public core APIs inside the repository |
+| Full structure | Basics, venue, streaming, agenda, tickets, compliance and review; nested groups and all three agenda variants |
+| Context and presentation | Compliance factory changes; localized help/confirmation props; custom choice/number/money props and views |
+| Business validation | Required strings, slug syntax/availability, dates, HTTPS URL, recording consent, venue/workshop capacity, ticket rules and review confirmation |
+| Aggregates | Original canonical normalized cross-variant duplicate-title and duplicate-tier callbacks; exact row issue code/path/message/severity and warnings |
+| Applicability | Original predicates retained as explicit business validator conditions; display visibility/disabled state is independent of server acceptance |
+| Controlled changes | Delayed acceptance, blur trim, conference template proposals; no automatic owner acceptance |
+| Collections | Add, move and same-key variant replacement; stable row identity; strict declared transport keys |
+| Wizard | Scoped validation before navigation; original wizard policy and guard bindings; dynamic compliance stage |
+| Services | Original deterministic slug callback via exact domain binding; unavailable execution and cancellation cannot accept |
+| Persistence | Portable values serialize/recreate under their own schema identity |
+| Authoritative decoding | Wrong/extra values, duplicate row IDs and computed inconsistencies rejected; server-owned context/bindings/revision |
+| Installation | Workspace and isolated packed Node journeys; installed DOM/React/Vue/Angular rendering; no Studio/framework dependency in the server consumer |
 
-## Gaps and next work
+S3's strict complete-value policy still applies. All declared keys and collection
+bounds are required even for inactive UI sections. A hidden empty collection below
+its declared minimum can be UI-valid and still fail authoritative shape decoding.
+Business conditions do exempt inactive business rules; they do not make malformed
+transport acceptable. Unknown context/privilege fields are never accepted as values.
 
-| Gap | Required follow-up |
-| --- | --- |
-| Extensible fields | Studio's catalog cannot bind the shared `money` definition. Establish the descriptor/binding contract from P1a before adding tickets. |
-| Optional numeric drafts | Shared numbers accept `undefined`; Studio numbers require finite numeric payloads. Add explicit empty-value/codec support and equivalence evidence. |
-| Field presentation | Shared numeric `suffix` and other domain props are not reproduced by this fixture; extend descriptors and view bindings. |
-| Aggregate agenda validation | Canonical uniqueness normalizes title/label across variants and reports per-row paths; warnings also inspect duration/capacity. The current catalog's simple uniqueness rule is not an equivalent replacement. |
-| Optional venue/workshop capacity | The checked rule covers finite numeric data. Canonical optional-number behavior still needs descriptor/codec support and equivalent missing-value handling. |
-| Full wizard | Add basics, venue, streaming, tickets, compliance, and review, including dynamic stages, guards, localization, and template transforms. |
-| Trusted async services | Adapt canonical deterministic service behavior through explicit Studio bindings and compare cancellation outcomes. No async behavior is claimed for the agenda fixture. |
-| Production handoff | Run shared scenarios against packed generated artifacts once executable behavior export and bindings support the full document. |
+## Remaining boundaries
 
-These gaps keep Session 28 and Gate D open. Sessions 29–31 still require their
-accessibility, performance/security, and beta-cutover work. No coverage status
-for the full Event Launch capstone is marked complete.
+Computed expressions have their own runtime/type/Studio tests for dependency
+ordering, row occurrences, cycles, proposal ownership and submission consistency.
+They are not needed to replace any canonical Event Launch rule. Trusted scoped
+validators supply the bounded fixture's aggregate behavior; no unrestricted
+expression-language aggregation was introduced.
 
-The capacity rule uses two declarative validators: a positive-value comparison
-and a venue-bound comparison applied only to positive workshop values. Their
-explicit rule IDs differ from the canonical single callback ID; tests compare
-the user-facing issue code, message, severity, and path, with exactly one issue
-for each checked invalid input. Both rules declare the venue-capacity dependency.
-No schema, compiler, or public runtime contract was extended for this slice.
+Row-dependent structural presence and fragment parameters remain reserved. S5
+still owns durable fingerprints/migrations, expanded-work and synchronous resource
+isolation, accessibility sessions and the complete portable beta release gate.
+The original [agenda-only fixture](../src/document/fixtures/event-launch-agenda.json)
+and [regressions](../src/runtime/event-launch-agenda.test.ts) remain valid evidence
+for that earlier bounded slice; they are not relabeled as the complete form.
 
-Next: establish shared field descriptors and executable bindings, then expand
-this checked project and its comparison journeys without weakening the ledger.
+Next: record the remaining manual authoring and accessibility beta sessions.
 
-## Evidence
 
-- [Canonical schema](../../examples/shared/event-launch/schema.ts)
-- [Shared fields](../../examples/shared/event-launch/field-contract.ts)
-- [Canonical behavior journeys](../../examples/shared/event-launch/test/behavior-contract.test.mjs)
-- [Domain validation rules](../../examples/shared/event-launch/validators.ts)
-- [Workflow improvements plan](../../docs/V1_STUDIO_LIBRARY_WORKFLOW_IMPROVEMENTS_PLAN.md)
+S5 now adds a content-addressed release transition to the shared portable journeys.
+A presentation-only upgrade preserves the complete serialized baseline, collection
+keys, wizard position and touched state before recreation. Installed core/authoring
+consumers run the same assertions. See [the S5 evidence ledger](PORTABLE_RELEASE_GATES.md)
+for the remaining manual beta gates. S5 code and automated verification are complete.

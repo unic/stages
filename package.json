@@ -30,7 +30,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "build:v1": "tsc -p packages/core/tsconfig.build.json && tsc -p packages/dom/tsconfig.build.json && tsc -p packages/react/tsconfig.build.json && tsc -p packages/vue/tsconfig.build.json && ngc -p packages/angular/tsconfig.build.json && tsc -p packages/test-kit/tsconfig.build.json && tsc -p packages/authoring/tsconfig.build.json",
+    "build:v1": "tsc -p packages/core/tsconfig.build.json && tsc -p packages/dom/tsconfig.build.json && tsc -p packages/react/tsconfig.build.json && tsc -p packages/vue/tsconfig.build.json && ngc -p packages/angular/tsconfig.build.json && tsc -p packages/test-kit/tsconfig.build.json && tsc -p packages/authoring/tsconfig.build.json && npm --prefix examples/shared/event-launch run build",
     "test:example-contract:v1": "npm --prefix examples/shared/event-launch test",
     "build:examples:v1": "npm --prefix examples/vanilla run build && npm --prefix examples/react run build && npm --prefix examples/vue run build && npm --prefix examples/angular run build",
     "test:examples:v1": "npm --prefix examples/e2e test --",
@@ -45,7 +45,7 @@
     "check:agent-setup": "node --test scripts/agent/*.test.mjs && node scripts/agent/validate-setup.mjs",
     "check:public-api:v1": "node scripts/agent/public-api-report.mjs --check && node scripts/agent/portable-schema.mjs --check",
     "check:acceptance:v1": "node scripts/check-v1-acceptance.mjs",
-    "performance:v1": "node scripts/check-v1-performance.mjs",
+    "performance:v1": "node scripts/check-v1-performance.mjs && node scripts/check-portable-performance.mjs",
     "verify:packages:v1": "node scripts/verify-v1-packages.mjs",
     "verify:changed": "node scripts/agent/verify-changed.mjs",
     "release:check:v1": "npm run check:v1 && npm run test:v1 && npm --prefix studio run test:v1 && npm --prefix studio run build && npm --prefix docs run build && npm run build:examples:v1 && npm --prefix examples/react test && npm run test:examples:v1",

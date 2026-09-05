@@ -21,7 +21,7 @@ lastReviewed: 2026-09-03
 | `PortableLoadOptions` | Optional trusted `serviceBindings`, `fieldBindings`, and `behaviorBindings` registries. No source evaluator, module resolver, browser host or implicit preview mocks. |
 | `LoadedPortableForm` | Shared compiler outputs `schema`, `schemaInput`, `fields`, `expandedForm`, `renderPlan`, `sourceMap`, and `diagnostics`, plus immutable `definition` and `initialValue`. Use `schemaInput` for execution; `schema` alone omits dynamic structure. |
 | `validatePortableForm(input: unknown)` | Checks JSON safety, envelope version/shape, graph references, field versions, resource format and exact requirements. Returns a deep frozen copy. Does not resolve services or establish that every accepted authoring feature can execute. Custom descriptor shape and exact field/behavior requirements are checked before binding resolution. |
-| `loadPortableForm(input: unknown, options?)` | Accepts parsed JSON or JSON text. Runs validation, resolves each service exactly once, then compiles with the shared compiler. Rejects unsupported computed values, row-dependent structural presence, invalid scopes and other compiler errors. Returns `PortableResult<LoadedPortableForm>`. Never invokes a service during load; trusted behavior configuration factories do run during load. |
+| `loadPortableForm(input: unknown, options?)` | Accepts parsed JSON or JSON text. Runs validation, resolves each service exactly once, then compiles with the shared compiler. Rejects cyclic/unsupported-scope computed values, row-dependent structural presence, invalid scopes and other compiler errors. Returns `PortableResult<LoadedPortableForm>`. Never invokes a service during load; trusted behavior configuration factories do run during load. |
 | `projectPortableForm(project, formUid, initialValue?, options?)` | Validates the selected project form, expands its linked fragments, strips scenario answers, legacy metadata and non-theme settings, and copies only referenced localization messages. The graph is bounded before expansion to 1,000 nodes. Missing/cyclic/parameterized fragments fail. Omitted `initialValue` uses empty built-in and custom field values; explicit JSON values, including null, are preserved. Projection checks compiler support with inert service placeholders; real bindings are required to load the artifact. |
 | `serializePortableForm(definition)` | Serializes a typed definition with recursively sorted keys, two-space indentation and a final newline. Does not validate; validate untrusted data first. |
 | `PortableServiceBinding` | Exact `key` and positive integer `version` matching the definition reference, with trusted `invoke({ input, validation })` returning a promise of success or structured failure. Cancellation and issue semantics follow core validation. |
@@ -66,6 +66,58 @@ record their implementation/configuration and compatibility decision separately;
 content identity and full persistence migration remain S5 work. JSON value
 contracts here supply the shape checks used by authoritative submissions.
 
+## Scoped composition and computed values
+
+`PortableNodeComposition` is accepted by `PortableComposition.nodes` and the
+objects returned by a behavior binding. Keys are document UIDs; blocks, stages,
+variants and unknown targets are rejected. `validators` and `transforms` append
+to that node's rules. Duplicate validator IDs fail per scope, including repeated
+binding composition. Field-only `deriveProps` merges after declarative derived
+props. Additional `when` predicates combine by AND; `disabled` combines by OR.
+Wizard-only `navigation` merges navigation settings; competing guards fail.
+Collection variants are qualified by their source-map identity, so bindings do
+not leak to another variant that shares a field path. Dynamic factories preserve
+the same rules when a node reappears. Scoped transform contexts retain core's
+event-target semantics, including `path`, rather than rebasing to the owner.
+
+`PortableBehaviorBinding.configure(config, form?)` receives the approved form
+from the loader/compiler. The optional second argument is additive to existing
+factories. Studio forms may declare exact `behaviors` references. Projection moves
+those references to the production envelope; explicit projection options override
+the project references. Missing bindings fail Studio compilation with
+`compiler.behavior-binding` and production loading with the existing portable
+binding diagnostics. Invalid project references fail `document.invalid-behaviors`.
+Studio compilation caches include binding-registry identity.
+
+A field's `computed` expression supports `value`, current-parent `row`, and trusted
+`context` scopes. Dependencies on computed fields are ordered conservatively by
+path, including row templates; cycles fail with `compiler.computed-cycle` and
+unsupported scopes with `compiler.computed-scope`. Both identify the computed
+property. Expressions retain the existing bounded interpreter and value contracts.
+Each row occurrence is evaluated independently; missing occurrences are skipped.
+Computed results compare by JSON value, including structured custom values,
+rather than by object identity.
+Errors or invalid result shapes reject the entire event proposal through core's
+transform-failure contract. No partial computed changes are accepted.
+
+Computed transforms run after declared and composed transforms for input, blur,
+submit, `recompute`, collection add/remove/replace/move/sort/duplicate, and events
+listed by the form's named events, declarative reducers or transforms. Host-only
+custom event names must be declared or followed by `recompute`. Computation does
+not run implicitly on owner updates, context updates, restoration, or validate.
+Validation instead recomputes expected values and reports `computed.mismatch` for
+inconsistencies; expression failures make submission unavailable. Controller
+proposal acceptance/rejection remains with the owner. The generated consistency
+validator ID `portable.computed` is reserved within the form scope; collisions
+fail with `compiler.computed-conflict`. Indexed value references to collection
+computations are ordered before their consumers.
+
+Property-keyed collection rows additionally require the declared key property as
+a nonempty unique string. The decoder permits that property without a rendered
+field and emits `submission.row-key` for missing, invalid or duplicate keys.
+This is an additive acceptance contract for explicitly declared row identity;
+all unrelated properties still fail decoding.
+
 ## Authoritative submissions
 
 | Export | Contract |
@@ -93,9 +145,8 @@ submission validation. It cannot suppress required rules. Validator `when`
 conditions remain authoritative business applicability and use core's normal
 value/row/trusted-context semantics. Built-in, custom field, portable behavior,
 and service validators all run through the existing core validation machinery.
-Unsupported computed fields still fail configuration; forged extra derived
-properties fail decoding. A declared derived field needs an authoritative
-validator checking its value, just as other business constraints do.
+Computed fields are checked for consistency; forged extra derived
+properties fail decoding. Computed mismatches are reported as `computed.mismatch` with occurrence paths.
 
 The transport reader rejects nonfinite numbers, nonplain objects, cycles,
 accessors, symbol keys, unsafe keys, sparse arrays and nonenumerable properties.
@@ -133,7 +184,7 @@ The standard revision includes the existing built-in field catalog and bounded
 expression language, ordinary required/length/range/pattern/comparison/collection
 rules, conditional validation, transforms/reducers and localization. Unsupported
 fields or definition versions fail. Resources support localization only; custom
-portable codecs, computed values, and fragment parameters are not supported.
+portable codecs and fragment parameters are not supported.
 The runtime value contract remains core's UI contract. An `initialValue` being
 JSON-safe does not mean it passes a submission schema or business validation.
 
@@ -182,3 +233,87 @@ Next: [choose a renderer](/start/installation).
 - [Four-adapter rendering tests](https://github.com/unic/stages/blob/master/packages/authoring/test/adapters.test.mjs)
 - [Runtime tests](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)
 - [Shared API report](https://github.com/unic/stages/blob/master/contracts/public-api/authoring.api.json)
+
+
+## Durable release and state contract
+
+`PortableRelease` is an additive `stages-portable-release` version-1 envelope.
+Existing `PortableFormDefinition` version-1 JSON is unchanged. Its separate
+`compiler` compatibility token is currently
+`stages.authoring@1.0.0-alpha.0/standard@1`; other tokens fail explicitly.
+`id` is SHA-256 of canonical sorted JSON for every envelope property except `id`.
+It covers definition, host `bindingId`, host `policyId`, predecessor and decision.
+Host IDs must be nonempty, at most 512 characters, and immutable for their contents.
+The library cannot fingerprint callback source, closures, external services, or
+host policy automatically. Updating those requires a new host identity.
+
+`createPortableRelease(definition, options)` asynchronously returns deeply frozen
+JSON. Options require binding/policy IDs; subsequent releases also require
+`previous` and `compatibility: { changes, state, rationale }`. `changes` must match
+`comparePortableReleases(previous, next)` exactly. Classification is conservative:
+node identity/kind/links, field definitions and value descriptors are shape;
+validators, reducers, computed expressions, props, defaults and policy are behavior;
+node presentation, title/theme and localization are presentation; requirements
+and host implementation identity are bindings. Categories may overlap. Schema ID
+must remain stable within a lineage; versions cannot regress. Shape changes require
+a higher schema version and `migrate` or `reset`, never `compatible`.
+
+`loadPortableRelease(release, { bindingId, policyId, ...bindings })` verifies the
+supported envelope/compiler, hash, definition and exact host identities before
+loading. It snapshots caller data before awaiting the digest. It returns a
+`LoadedPortableRelease`, which adds the immutable `release` to `LoadedPortableForm`.
+`createPortableReleaseCache(capacity = 16)` returns an owner-created
+`PortableReleaseCache` with `load` and `clear`. Capacity is an integer from 1 to 64;
+overflow evicts the least-recently-used entry. Every load verifies content integrity
+and exact host IDs before lookup. Standard forms reuse compiled definitions keyed
+by release identity, returning detached schemas, fields, render plans and source
+maps. Dynamic schema factory results are detached too. Definitions and release JSON
+remain deeply immutable. No controller or request state is cached. Definitions
+with field, behavior or service bindings compile freshly on every load: arbitrary
+host closures cannot safely be reused across requests. `clear()` removes completed
+cache entries; concurrent in-flight loads can subsequently populate the cache.
+There is no global library cache. The host may cache approved frozen release JSON
+by content identity as well.
+`serializePortableRelease` sorts keys with a trailing newline; it does not validate.
+These APIs require Web Crypto (available in supported browsers and Node 24).
+Failures throw `TypeError` with `portable.release-*` prefixes; they never publish,
+execute a service, or overwrite a previous release. Successful preparation is not
+a claim that a deployment passed installed consumers or manual product gates.
+
+`savePortableState(loaded, controller.serialize())` returns frozen
+`PortableSavedState`: `{ format: 'stages-portable-state', formatVersion: 1,
+releaseId, state }`. It checks the core envelope/schema against the release and
+retains baseline plus all metadata. It cannot prove that a caller-provided state
+came from that controller, or that values pass business rules.
+
+`migratePortableState(saved, target, migrations?)` returns a new saved envelope.
+Each `PortableStateMigration` supplies verified `from`/`to` releases, a complete
+core-envelope callback, baseline policy, and per-key metadata policies. Exactly
+one outgoing transition must match at each step; `to.previous` must match `from.id`.
+The chain stops only at the target release; cycles and chains over 100 steps fail.
+A target declaring reset cannot consume an old state through migration.
+Callbacks receive independent copies twice; output must be deterministic, JSON-safe
+and match the destination schema. `baseline: preserve` checks exact equality;
+`reset` checks equality to output value; `migrate` accepts an explicitly transformed
+baseline. Metadata `preserve` checks equality, `reset` requires omission, and
+`migrate` allows a changed key. Every source or destination key needs a policy,
+including collectionKeys, activeWizards, touched, visited, revealedValidation and
+extensions. Policies apply at the top-level metadata key; a host migrating
+extensions owns the policies for each nested extension. Unknown keys never disappear
+implicitly. Callback failures propagate; contract failures use `portable.state-*`
+TypeErrors. Input remains untouched. Recreate a controller with the returned core
+state and the target fields/codecs to check runtime metadata and value decoding.
+Neither migration nor restoration replaces authoritative submission validation.
+
+Fragment expansion now applies the same total 1,000-node allocation limit to
+Studio preview and production export. Preview reports
+`compiler.fragment-expansion-limit` and an empty graph on overflow; export retains
+its existing `portable.fragment-expansion` diagnostic. Per-document and expression
+budgets still apply. Native pattern execution cannot be interrupted by an in-process
+timer: server deployments requiring hard synchronous deadlines use the tested
+worker hosting recipe. It retains existing pattern semantics rather than silently
+weakening validation.
+
+Evidence: `packages/authoring/test/releases.test.mjs`, the full Event Launch shared
+journeys, `packages/authoring/test/resources.test.mjs`, the packed consumers in
+`scripts/verify-v1-packages.mjs`, and `scripts/check-portable-performance.mjs`.

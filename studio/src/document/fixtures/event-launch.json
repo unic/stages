@@ -1,0 +1,1031 @@
+{
+  "format": "stages-studio",
+  "formatVersion": 1,
+  "project": {
+    "uid": "event_launch_project",
+    "title": "Event Launch",
+    "defaultLocale": "en-CH"
+  },
+  "fragments": {},
+  "resources": {},
+  "forms": {
+    "event_launch": {
+      "uid": "event_launch",
+      "title": "Event Launch",
+      "runtime": {
+        "schemaId": "portable-event-launch",
+        "schemaVersion": 1
+      },
+      "rootNodeUids": [
+        "launch"
+      ],
+      "nodes": {
+        "launch": {
+          "uid": "launch",
+          "runtimeId": "launch",
+          "kind": "wizard",
+          "stageUids": [
+            "launch_basics",
+            "launch_venue",
+            "launch_streaming",
+            "launch_agenda",
+            "launch_tickets",
+            "launch_compliance",
+            "launch_review"
+          ],
+          "initialStageUid": "launch_basics",
+          "navigation": {
+            "validateCurrent": true,
+            "nonLinear": true
+          }
+        },
+        "launch_basics": {
+          "uid": "launch_basics",
+          "runtimeId": "basics",
+          "kind": "stage",
+          "childUids": [
+            "launch_basics_identity",
+            "launch_basics_schedule",
+            "launch_basics_deliveryMode",
+            "launch_basics_accessModel"
+          ]
+        },
+        "launch_basics_identity": {
+          "uid": "launch_basics_identity",
+          "runtimeId": "identity",
+          "kind": "group",
+          "childUids": [
+            "launch_basics_identity_title",
+            "launch_basics_identity_slug",
+            "launch_basics_identity_description"
+          ]
+        },
+        "launch_basics_identity_title": {
+          "uid": "launch_basics_identity_title",
+          "runtimeId": "title",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Event title",
+            "description": "The public name shown to attendees.",
+            "placeholder": "Product Systems Conference",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": "organization-title"
+          }
+        },
+        "launch_basics_identity_slug": {
+          "uid": "launch_basics_identity_slug",
+          "runtimeId": "slug",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Event URL",
+            "description": "",
+            "placeholder": "product-systems-conf",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_basics_identity_description": {
+          "uid": "launch_basics_identity_description",
+          "runtimeId": "description",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/textarea",
+            "version": 1
+          },
+          "props": {
+            "label": "Description",
+            "description": "Tell attendees what they will learn.",
+            "placeholder": "",
+            "required": true
+          }
+        },
+        "launch_basics_schedule": {
+          "uid": "launch_basics_schedule",
+          "runtimeId": "schedule",
+          "kind": "group",
+          "childUids": [
+            "launch_basics_schedule_startsAt",
+            "launch_basics_schedule_endsAt",
+            "launch_basics_schedule_timezone"
+          ]
+        },
+        "launch_basics_schedule_startsAt": {
+          "uid": "launch_basics_schedule_startsAt",
+          "runtimeId": "startsAt",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Starts",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "datetime-local",
+            "autocomplete": ""
+          }
+        },
+        "launch_basics_schedule_endsAt": {
+          "uid": "launch_basics_schedule_endsAt",
+          "runtimeId": "endsAt",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Ends",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "datetime-local",
+            "autocomplete": ""
+          }
+        },
+        "launch_basics_schedule_timezone": {
+          "uid": "launch_basics_schedule_timezone",
+          "runtimeId": "timezone",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/choice",
+            "version": 1
+          },
+          "props": {
+            "label": "Timezone",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "options": [
+              {
+                "value": "Europe/Zurich",
+                "label": "Zurich (CET/CEST)"
+              },
+              {
+                "value": "Europe/London",
+                "label": "London (GMT/BST)"
+              },
+              {
+                "value": "America/New_York",
+                "label": "New York (ET)"
+              }
+            ]
+          }
+        },
+        "launch_basics_deliveryMode": {
+          "uid": "launch_basics_deliveryMode",
+          "runtimeId": "deliveryMode",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/choice",
+            "version": 1
+          },
+          "props": {
+            "label": "Delivery",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "options": [
+              {
+                "value": "in-person",
+                "label": "In person"
+              },
+              {
+                "value": "virtual",
+                "label": "Virtual"
+              },
+              {
+                "value": "hybrid",
+                "label": "Hybrid"
+              }
+            ]
+          }
+        },
+        "launch_basics_accessModel": {
+          "uid": "launch_basics_accessModel",
+          "runtimeId": "accessModel",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/choice",
+            "version": 1
+          },
+          "props": {
+            "label": "Registration",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "options": [
+              {
+                "value": "free",
+                "label": "Free"
+              },
+              {
+                "value": "paid",
+                "label": "Paid"
+              }
+            ]
+          }
+        },
+        "launch_venue": {
+          "uid": "launch_venue",
+          "runtimeId": "venue",
+          "kind": "stage",
+          "behavior": {
+            "when": {
+              "kind": "binary",
+              "operator": "!==",
+              "left": {
+                "kind": "reference",
+                "scope": "value",
+                "path": [
+                  "launch",
+                  "basics",
+                  "deliveryMode"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "value": "virtual"
+              }
+            }
+          },
+          "childUids": [
+            "launch_venue_name",
+            "launch_venue_address",
+            "launch_venue_capacity",
+            "launch_venue_accessibilityNotes"
+          ]
+        },
+        "launch_venue_name": {
+          "uid": "launch_venue_name",
+          "runtimeId": "name",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Venue name",
+            "description": "",
+            "placeholder": "Kraftwerk",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_venue_address": {
+          "uid": "launch_venue_address",
+          "runtimeId": "address",
+          "kind": "group",
+          "childUids": [
+            "launch_venue_address_street",
+            "launch_venue_address_city",
+            "launch_venue_address_country"
+          ]
+        },
+        "launch_venue_address_street": {
+          "uid": "launch_venue_address_street",
+          "runtimeId": "street",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Street address",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_venue_address_city": {
+          "uid": "launch_venue_address_city",
+          "runtimeId": "city",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "City",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_venue_address_country": {
+          "uid": "launch_venue_address_country",
+          "runtimeId": "country",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/choice",
+            "version": 1
+          },
+          "props": {
+            "label": "Country",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "options": [
+              {
+                "value": "CH",
+                "label": "Switzerland"
+              },
+              {
+                "value": "DE",
+                "label": "Germany"
+              },
+              {
+                "value": "GB",
+                "label": "United Kingdom"
+              }
+            ]
+          }
+        },
+        "launch_venue_capacity": {
+          "uid": "launch_venue_capacity",
+          "runtimeId": "capacity",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/number",
+            "version": 1
+          },
+          "props": {
+            "label": "Venue capacity",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 1,
+            "max": null,
+            "step": null,
+            "suffix": "people"
+          }
+        },
+        "launch_venue_accessibilityNotes": {
+          "uid": "launch_venue_accessibilityNotes",
+          "runtimeId": "accessibilityNotes",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/textarea",
+            "version": 1
+          },
+          "props": {
+            "label": "Accessibility notes",
+            "description": "Share step-free access, seating, captioning, or contact details.",
+            "placeholder": "",
+            "required": false
+          }
+        },
+        "launch_streaming": {
+          "uid": "launch_streaming",
+          "runtimeId": "streaming",
+          "kind": "stage",
+          "behavior": {
+            "when": {
+              "kind": "binary",
+              "operator": "!==",
+              "left": {
+                "kind": "reference",
+                "scope": "value",
+                "path": [
+                  "launch",
+                  "basics",
+                  "deliveryMode"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "value": "in-person"
+              }
+            }
+          },
+          "childUids": [
+            "launch_streaming_platform",
+            "launch_streaming_url",
+            "launch_streaming_recordEvent",
+            "launch_streaming_recordingConsent"
+          ]
+        },
+        "launch_streaming_platform": {
+          "uid": "launch_streaming_platform",
+          "runtimeId": "platform",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/choice",
+            "version": 1
+          },
+          "props": {
+            "label": "Streaming platform",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "options": [
+              {
+                "value": "youtube",
+                "label": "YouTube Live"
+              },
+              {
+                "value": "zoom",
+                "label": "Zoom"
+              },
+              {
+                "value": "other",
+                "label": "Other"
+              }
+            ]
+          }
+        },
+        "launch_streaming_url": {
+          "uid": "launch_streaming_url",
+          "runtimeId": "url",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Attendee stream URL",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "url",
+            "autocomplete": ""
+          }
+        },
+        "launch_streaming_recordEvent": {
+          "uid": "launch_streaming_recordEvent",
+          "runtimeId": "recordEvent",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/checkbox",
+            "version": 1
+          },
+          "props": {
+            "label": "Record this event",
+            "description": "The recording setting is application policy.",
+            "placeholder": "",
+            "required": false
+          }
+        },
+        "launch_streaming_recordingConsent": {
+          "uid": "launch_streaming_recordingConsent",
+          "runtimeId": "recordingConsent",
+          "kind": "field",
+          "behavior": {
+            "when": {
+              "kind": "reference",
+              "scope": "value",
+              "path": [
+                "launch",
+                "streaming",
+                "recordEvent"
+              ]
+            }
+          },
+          "definition": {
+            "key": "event-launch/checkbox",
+            "version": 1
+          },
+          "props": {
+            "label": "All speakers have consented to recording",
+            "description": "",
+            "placeholder": "",
+            "required": true
+          }
+        },
+        "launch_agenda": {
+          "uid": "launch_agenda",
+          "runtimeId": "agenda",
+          "kind": "stage",
+          "childUids": [
+            "launch_agenda_items"
+          ]
+        },
+        "launch_agenda_items": {
+          "uid": "launch_agenda_items",
+          "runtimeId": "items",
+          "kind": "collection",
+          "min": 1,
+          "max": 12,
+          "itemKey": {
+            "kind": "property",
+            "property": "id"
+          },
+          "discriminator": "kind",
+          "variantUids": [
+            "launch_agenda_items_session",
+            "launch_agenda_items_workshop",
+            "launch_agenda_items_break"
+          ]
+        },
+        "launch_agenda_items_session": {
+          "uid": "launch_agenda_items_session",
+          "runtimeId": "session",
+          "kind": "variant",
+          "childUids": [
+            "launch_agenda_items_session_title",
+            "launch_agenda_items_session_speaker",
+            "launch_agenda_items_session_durationMinutes"
+          ]
+        },
+        "launch_agenda_items_workshop": {
+          "uid": "launch_agenda_items_workshop",
+          "runtimeId": "workshop",
+          "kind": "variant",
+          "childUids": [
+            "launch_agenda_items_workshop_title",
+            "launch_agenda_items_workshop_facilitator",
+            "launch_agenda_items_workshop_durationMinutes",
+            "launch_agenda_items_workshop_capacity"
+          ]
+        },
+        "launch_agenda_items_break": {
+          "uid": "launch_agenda_items_break",
+          "runtimeId": "break",
+          "kind": "variant",
+          "childUids": [
+            "launch_agenda_items_break_label",
+            "launch_agenda_items_break_durationMinutes"
+          ]
+        },
+        "launch_agenda_items_session_title": {
+          "uid": "launch_agenda_items_session_title",
+          "runtimeId": "title",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Session title",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_agenda_items_session_speaker": {
+          "uid": "launch_agenda_items_session_speaker",
+          "runtimeId": "speaker",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Speaker",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_agenda_items_session_durationMinutes": {
+          "uid": "launch_agenda_items_session_durationMinutes",
+          "runtimeId": "durationMinutes",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/number",
+            "version": 1
+          },
+          "props": {
+            "label": "Duration",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 5,
+            "max": null,
+            "step": null,
+            "suffix": "minutes"
+          }
+        },
+        "launch_agenda_items_workshop_title": {
+          "uid": "launch_agenda_items_workshop_title",
+          "runtimeId": "title",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Workshop title",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_agenda_items_workshop_facilitator": {
+          "uid": "launch_agenda_items_workshop_facilitator",
+          "runtimeId": "facilitator",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Facilitator",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_agenda_items_workshop_durationMinutes": {
+          "uid": "launch_agenda_items_workshop_durationMinutes",
+          "runtimeId": "durationMinutes",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/number",
+            "version": 1
+          },
+          "props": {
+            "label": "Duration",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 15,
+            "max": null,
+            "step": null,
+            "suffix": "minutes"
+          }
+        },
+        "launch_agenda_items_workshop_capacity": {
+          "uid": "launch_agenda_items_workshop_capacity",
+          "runtimeId": "capacity",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/number",
+            "version": 1
+          },
+          "props": {
+            "label": "Workshop capacity",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 1,
+            "max": null,
+            "step": null,
+            "suffix": "people"
+          }
+        },
+        "launch_agenda_items_break_label": {
+          "uid": "launch_agenda_items_break_label",
+          "runtimeId": "label",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Break label",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_agenda_items_break_durationMinutes": {
+          "uid": "launch_agenda_items_break_durationMinutes",
+          "runtimeId": "durationMinutes",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/number",
+            "version": 1
+          },
+          "props": {
+            "label": "Duration",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 5,
+            "max": null,
+            "step": null,
+            "suffix": "minutes"
+          }
+        },
+        "launch_tickets": {
+          "uid": "launch_tickets",
+          "runtimeId": "tickets",
+          "kind": "stage",
+          "behavior": {
+            "when": {
+              "kind": "binary",
+              "operator": "===",
+              "left": {
+                "kind": "reference",
+                "scope": "value",
+                "path": [
+                  "launch",
+                  "basics",
+                  "accessModel"
+                ]
+              },
+              "right": {
+                "kind": "literal",
+                "value": "paid"
+              }
+            }
+          },
+          "childUids": [
+            "launch_tickets_currency",
+            "launch_tickets_tiers"
+          ]
+        },
+        "launch_tickets_currency": {
+          "uid": "launch_tickets_currency",
+          "runtimeId": "currency",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/choice",
+            "version": 1
+          },
+          "props": {
+            "label": "Currency",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "options": [
+              {
+                "value": "CHF",
+                "label": "Swiss franc (CHF)"
+              },
+              {
+                "value": "EUR",
+                "label": "Euro (EUR)"
+              },
+              {
+                "value": "USD",
+                "label": "US dollar (USD)"
+              }
+            ]
+          }
+        },
+        "launch_tickets_tiers": {
+          "uid": "launch_tickets_tiers",
+          "runtimeId": "tiers",
+          "kind": "collection",
+          "min": 1,
+          "max": 4,
+          "itemKey": {
+            "kind": "property",
+            "property": "id"
+          },
+          "childUids": [
+            "launch_tickets_tiers_name",
+            "launch_tickets_tiers_price",
+            "launch_tickets_tiers_quantity"
+          ]
+        },
+        "launch_tickets_tiers_name": {
+          "uid": "launch_tickets_tiers_name",
+          "runtimeId": "name",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Tier name",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        },
+        "launch_tickets_tiers_price": {
+          "uid": "launch_tickets_tiers_price",
+          "runtimeId": "price",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/money",
+            "version": 1
+          },
+          "props": {
+            "label": "Price",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 0.01,
+            "max": null,
+            "step": 0.01,
+            "suffix": "",
+            "currency": "CHF",
+            "locale": "en-CH"
+          }
+        },
+        "launch_tickets_tiers_quantity": {
+          "uid": "launch_tickets_tiers_quantity",
+          "runtimeId": "quantity",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/number",
+            "version": 1
+          },
+          "props": {
+            "label": "Quantity",
+            "description": "",
+            "placeholder": "",
+            "required": false,
+            "min": 1,
+            "max": null,
+            "step": null,
+            "suffix": "tickets"
+          }
+        },
+        "launch_compliance": {
+          "uid": "launch_compliance",
+          "runtimeId": "compliance",
+          "kind": "stage",
+          "behavior": {
+            "presentWhen": {
+              "kind": "reference",
+              "scope": "context",
+              "path": [
+                "requiresDataProcessingAgreement"
+              ]
+            }
+          },
+          "childUids": [
+            "launch_compliance_dataProcessingAccepted"
+          ]
+        },
+        "launch_compliance_dataProcessingAccepted": {
+          "uid": "launch_compliance_dataProcessingAccepted",
+          "runtimeId": "dataProcessingAccepted",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/checkbox",
+            "version": 1
+          },
+          "props": {
+            "label": "I accept the organization data-processing agreement",
+            "description": "",
+            "placeholder": "",
+            "required": true
+          }
+        },
+        "launch_review": {
+          "uid": "launch_review",
+          "runtimeId": "review",
+          "kind": "stage",
+          "childUids": [
+            "launch_review_termsAccepted",
+            "launch_review_confirmation"
+          ]
+        },
+        "launch_review_termsAccepted": {
+          "uid": "launch_review_termsAccepted",
+          "runtimeId": "termsAccepted",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/checkbox",
+            "version": 1
+          },
+          "props": {
+            "label": "I accept the publishing terms",
+            "description": "",
+            "placeholder": "",
+            "required": true
+          }
+        },
+        "launch_review_confirmation": {
+          "uid": "launch_review_confirmation",
+          "runtimeId": "confirmation",
+          "kind": "field",
+          "definition": {
+            "key": "event-launch/text",
+            "version": 1
+          },
+          "props": {
+            "label": "Confirm the event title",
+            "description": "",
+            "placeholder": "",
+            "required": true,
+            "inputType": "text",
+            "autocomplete": ""
+          }
+        }
+      },
+      "behaviors": [
+        {
+          "key": "event-launch/domain",
+          "version": 1,
+          "config": {}
+        }
+      ],
+      "settings": {},
+      "scenarios": [
+        {
+          "uid": "event_launch_default",
+          "title": "Canonical Event Launch",
+          "context": {
+            "locale": "en-CH",
+            "currency": "CHF",
+            "requiresDataProcessingAgreement": false,
+            "reservedSlugs": [
+              "stages-conf",
+              "design-systems-day",
+              "launch-week"
+            ],
+            "validationDelayMs": 180,
+            "messages": {
+              "slugHelp": "Lowercase letters, numbers, and hyphens. Availability is checked locally for this demo.",
+              "streamHelp": "Use the public attendee URL supplied by your streaming provider.",
+              "confirmationPrefix": "Type the event title exactly:"
+            }
+          },
+          "value": {
+            "launch": {
+              "basics": {
+                "identity": {
+                  "title": "Stages Community Summit",
+                  "slug": "stages-conf",
+                  "description": "A practical day for teams building dependable product workflows."
+                },
+                "schedule": {
+                  "startsAt": "2026-10-15T09:00",
+                  "endsAt": "2026-10-15T17:00",
+                  "timezone": "Europe/Zurich"
+                },
+                "deliveryMode": "hybrid",
+                "accessModel": "paid"
+              },
+              "venue": {
+                "name": "Kraftwerk",
+                "address": {
+                  "street": "Selnaustrasse 25",
+                  "city": "Zurich",
+                  "country": "CH"
+                },
+                "capacity": 240,
+                "accessibilityNotes": "Step-free entrance and reserved seating are available."
+              },
+              "streaming": {
+                "platform": "youtube",
+                "url": "https://example.com/live/stages",
+                "recordEvent": true,
+                "recordingConsent": true
+              },
+              "agenda": {
+                "items": [
+                  {
+                    "id": "agenda-session-1",
+                    "kind": "session",
+                    "title": "Opening keynote",
+                    "speaker": "Ada Lovelace",
+                    "durationMinutes": 45
+                  },
+                  {
+                    "id": "agenda-break-1",
+                    "kind": "break",
+                    "label": "Coffee break",
+                    "durationMinutes": 20
+                  }
+                ]
+              },
+              "tickets": {
+                "currency": "CHF",
+                "tiers": [
+                  {
+                    "id": "ticket-general-1",
+                    "name": "General",
+                    "price": 89,
+                    "quantity": 180
+                  }
+                ]
+              },
+              "compliance": {
+                "dataProcessingAccepted": false
+              },
+              "review": {
+                "termsAccepted": false,
+                "confirmation": ""
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
