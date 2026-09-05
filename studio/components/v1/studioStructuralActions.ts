@@ -157,6 +157,34 @@ export function createStudioStructuralActions({
     const pastedRoots = clipboard.rootUids.map((uid) => uidMap[uid]!);
     dispatch(paste.value, "Paste nodes", pastedRoots.length === 1 ? "Node pasted." : `${pastedRoots.length} nodes pasted.`, pastedRoots);
   };
+  const deleteNodes = (uids: readonly Uid[]) => {
+    const copied = copyStudioNodes(history.present, form.uid, uids);
+    if (!copied.ok) { setStatus(copied.message); return; }
+    dispatch(createStudioCutCommand(copied.value), "Delete nodes", "Selection deleted.", []);
+  };
+  const duplicateNodes = (uids: readonly Uid[]) => {
+    const copied = copyStudioNodes(history.present, form.uid, uids);
+    if (!copied.ok) { setStatus(copied.message); return; }
+    const reserved = new Set<string>();
+    const runtimeIdsByParent = new Map<Uid | null, Set<string>>();
+    const commands: StudioCommand[] = [];
+    const selected: Uid[] = [];
+    for (const uid of [...copied.value.rootUids].reverse()) {
+      const placement = locateStudioNode(form, uid);
+      const subtree = copyStudioNodes(history.present, form.uid, [uid]);
+      const node = form.nodes[uid];
+      if (!placement || !subtree.ok || !node) return;
+      const uidMap = Object.fromEntries(Object.keys(subtree.value.nodes).map((sourceUid) => [sourceUid, nextProjectUid(history.present, sourceUid, reserved)])) as Record<Uid, Uid>;
+      const runtimeIds = runtimeIdsByParent.get(placement.parentUid) ?? new Set<string>();
+      runtimeIdsByParent.set(placement.parentUid, runtimeIds);
+      commands.push({
+        type: "node.duplicate", formUid: form.uid, uid, parentUid: placement.parentUid, index: placement.index + 1, uidMap,
+        ...(node.kind === "block" ? {} : { rootRuntimeId: uniqueSiblingRuntimeId(form, placement.parentUid, `${node.runtimeId}Copy`, runtimeIds) }),
+      });
+      selected.unshift(uidMap[uid]!);
+    }
+    dispatch({ type: "transaction", label: "Duplicate nodes", commands }, "Duplicate nodes", "Selection duplicated.", selected);
+  };
   const groupNodes = (uids: readonly Uid[]) => {
     const placement = uids[0] === undefined ? undefined : locateStudioNode(form, uids[0]);
     if (!placement) { setStatus(uids.length === 0 ? "Select nodes to group." : "The selection cannot be grouped."); return; }
@@ -202,5 +230,5 @@ export function createStudioStructuralActions({
       }));
     }
   };
-  return { moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode };
+  return { deleteNodes, duplicateNodes, moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode };
 }

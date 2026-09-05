@@ -9,6 +9,7 @@ export interface StudioContextMenuPosition {
 }
 
 interface StudioNodeContextMenuProps {
+  readonly items?: readonly StudioInsertMenuItem[];
   readonly node: StudioNode;
   readonly actionUids: readonly Uid[];
   readonly position: StudioContextMenuPosition;
@@ -45,7 +46,7 @@ function MenuItem({ children, disabled = false, onSelect }: {
 }
 
 export function StudioNodeContextMenu({
-  node, actionUids, position, canPaste, onClose, onMove, onGroup, onUngroup, onConvert, onCopy, onCut, onPaste,
+  items = [], node, actionUids, position, canPaste, onClose, onMove, onGroup, onUngroup, onConvert, onCopy, onCut, onPaste,
 }: StudioNodeContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -83,7 +84,7 @@ export function StudioNodeContextMenu({
       className="studio-v1-context-menu"
       role="menu"
       aria-label={`Structure actions for ${node.uid}`}
-      style={{ left, top }}
+      style={{ left, top, maxHeight: `calc(100vh - ${top + 8}px)` }}
       onKeyDown={(event) => {
         if (!["ArrowDown", "ArrowUp", "End", "Home"].includes(event.key)) return;
         const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
@@ -96,6 +97,8 @@ export function StudioNodeContextMenu({
         event.preventDefault();
       }}
     >
+      {items.map((item) => <MenuItem key={item.label} disabled={item.disabled ?? false} onSelect={() => run(item.onSelect)}>{item.label}</MenuItem>)}
+      {items.length > 0 && <hr />}
       <MenuItem disabled={!single} onSelect={() => run(() => onMove("up"))}>Move up <kbd aria-hidden="true">Alt ↑</kbd></MenuItem>
       <MenuItem disabled={!single} onSelect={() => run(() => onMove("down"))}>Move down <kbd aria-hidden="true">Alt ↓</kbd></MenuItem>
       <MenuItem disabled={!single} onSelect={() => run(() => onMove("top"))}>Move to top <kbd aria-hidden="true">Alt Home</kbd></MenuItem>
@@ -152,7 +155,7 @@ export function StudioInsertContextMenu({ position, items, onClose }: StudioInse
       className="studio-v1-context-menu"
       role="menu"
       aria-label="Insert item"
-      style={{ left, top }}
+      style={{ left, top, maxHeight: `calc(100vh - ${top + 8}px)` }}
       onKeyDown={(event) => {
         if (!["ArrowDown", "ArrowUp", "End", "Home"].includes(event.key)) return;
         const menuItems = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];

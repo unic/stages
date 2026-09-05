@@ -645,6 +645,83 @@ describe("StudioEditorPage interactions", () => {
     expect(document.querySelector('[data-outline-uid="field_second"]')).toHaveAttribute("aria-level", "2");
   });
 
+  it("offers contextual field actions for a selection with undo and clipboard preservation", async () => {
+    const user = userEvent.setup();
+    const snapshot = outlineProjectSnapshot();
+    snapshot.project.forms.form_outline.nodes.field_first.validators = [{ kind: "length", min: 2 }];
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([snapshot])} />);
+    await screen.findByText("Local draft loaded");
+    const first = () => document.querySelector('[data-canvas-uid="field_first"]');
+    const second = () => document.querySelector('[data-canvas-uid="field_second"]');
+    await user.click(first());
+    fireEvent.click(second(), { shiftKey: true });
+    fireEvent.contextMenu(second());
+    expect(screen.queryByRole("menuitem", { name: "Add stage" })).toBeNull();
+    await user.click(screen.getByRole("menuitem", { name: "Make required" }));
+    expect(within(first()).getByRole("img", { name: "Validation: 2 validation rules configured" })).toBeTruthy();
+    expect(within(second()).getByRole("img", { name: "Validation: 1 validation rule configured" })).toBeTruthy();
+    fireEvent.contextMenu(second());
+    await user.click(screen.getByRole("menuitem", { name: "Make optional" }));
+    expect(within(first()).getByRole("textbox")).not.toBeRequired();
+    expect(within(first()).getByRole("img", { name: "Validation: 1 validation rule configured" })).toBeTruthy();
+    fireEvent.contextMenu(second());
+    await user.click(screen.getByRole("menuitem", { name: "Disable", exact: true }));
+    expect(within(first()).getByRole("textbox")).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Undo", exact: true }));
+    expect(within(first()).getByRole("textbox")).toBeEnabled();
+    fireEvent.contextMenu(second());
+    await user.click(screen.getByRole("menuitem", { name: "Duplicate", exact: true }));
+    await screen.findByText("Selection duplicated.");
+    expect(document.querySelector('[data-canvas-uid="field_first_copy"]')).toBeTruthy();
+    fireEvent.contextMenu(document.querySelector('[data-canvas-uid="field_first_copy"]'));
+    expect(screen.getByRole("menuitem", { name: "Paste", exact: true })).toBeDisabled();
+    await user.click(screen.getByRole("menuitem", { name: "Delete", exact: true }));
+    expect(document.querySelector('[data-canvas-uid="field_first_copy"]')).toBeNull();
+    expect(first()).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Undo", exact: true }));
+    expect(document.querySelector('[data-canvas-uid="field_first_copy"]')).toBeTruthy();
+  });
+
+  it("offers variant defaults and preserves conditional disabled rules", async () => {
+    const user = userEvent.setup();
+    const snapshot = outlineProjectSnapshot();
+    const form = snapshot.project.forms.form_outline;
+    form.nodes.group_drop = { uid: "group_drop", kind: "collection", runtimeId: "items", discriminator: "kind", variantUids: ["variant_a"], initialVariantUid: "variant_a" };
+    form.nodes.variant_a = { uid: "variant_a", kind: "variant", runtimeId: "a", childUids: [] };
+    form.nodes.field_first.behavior = { disabled: { kind: "literal", value: true } };
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([snapshot])} />);
+    await screen.findByText("Local draft loaded");
+    fireEvent.contextMenu(document.querySelector('[data-canvas-uid="field_first"]'));
+    expect(screen.queryByRole("menuitem", { name: /^(Enable|Disable)$/ })).toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await user.click(screen.getByRole("button", { name: "Layers", exact: true }));
+    fireEvent.contextMenu(document.querySelector('[data-outline-uid="group_drop"]'));
+    await user.click(screen.getByRole("menuitem", { name: "Add variant" }));
+    await screen.findByText("variant added");
+    const variants = document.querySelectorAll('[data-outline-uid="group_drop"] [data-kind="variant"]');
+    expect(variants).toHaveLength(2);
+    fireEvent.contextMenu(variants[1]);
+    await user.click(screen.getByRole("menuitem", { name: "Make initial variant" }));
+    fireEvent.contextMenu(variants[1]);
+    expect(screen.queryByRole("menuitem", { name: "Make initial variant" })).toBeNull();
+  });
+
+  it("adds stages from the outline and offers child insertion on containers", async () => {
+    const user = userEvent.setup();
+    render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);
+    await screen.findByText("Local draft loaded");
+    await user.click(screen.getByRole("button", { name: "Layers", exact: true }));
+    fireEvent.contextMenu(document.querySelector('[data-outline-uid="wizard_journey"]'));
+    expect(screen.queryByRole("menuitem", { name: "Make required" })).toBeNull();
+    await user.click(screen.getByRole("menuitem", { name: "Add stage", exact: true }));
+    await screen.findByText("stage added");
+    expect(document.querySelectorAll('[data-outline-uid="wizard_journey"] [data-kind="stage"]')).toHaveLength(2);
+    fireEvent.contextMenu(document.querySelector('[data-canvas-uid="group_drop"]'));
+    await user.click(screen.getByRole("menuitem", { name: "Add item…" }));
+    await user.click(screen.getByRole("menuitem", { name: "Insert text field", exact: true }));
+    expect(document.querySelector('[data-canvas-uid="group_drop"] input')).toBeTruthy();
+  });
+
   it("shift-selects canvas items, batch edits shared props with undo, and groups the selection", async () => {
     const user = userEvent.setup();
     render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository([outlineProjectSnapshot()])} />);

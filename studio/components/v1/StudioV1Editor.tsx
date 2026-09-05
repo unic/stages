@@ -1774,7 +1774,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     kind: "collection" | "group" | "stage" | "variant" | "variant-collection" | "wizard",
     destination: StudioInsertPlacement = { parentUid: null, index: form.rootNodeUids.length },
   ) => {
-    const selected = selectedNodes.length === 1 ? selectedNodes[0] : undefined;
+    const selected = destination.parentUid === null ? (selectedNodes.length === 1 ? selectedNodes[0] : undefined) : form.nodes[destination.parentUid];
     const identity = nextStructuralIdentity(form, kind === "variant-collection" ? "items" : kind);
     let command;
     let selectedUid = identity.uid;
@@ -1815,7 +1815,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     setHistory(result.history);
     setNavigation((current) => ({
       ...current,
-      workbench: selectStudioUid({ ...current.workbench, expandedUids: new Set([...current.workbench.expandedUids, selectedUid]) }, selectedUid, [...visibleOutlineUids, selectedUid]),
+      workbench: selectStudioUid({ ...current.workbench, expandedUids: new Set([...current.workbench.expandedUids, ...(command.parentUid === null ? [] : [command.parentUid]), selectedUid]) }, selectedUid, [...visibleOutlineUids, selectedUid]),
     }));
     setStatus(`${kind} added`);
   };
@@ -1974,8 +1974,61 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   const {
-    moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
+    deleteNodes, duplicateNodes, moveNode, dropNode, copyNodes, cutNodes, pasteNodes, groupNodes, ungroupNode, convertNode,
   } = createStudioStructuralActions({ history, form, navigation, replaceHistory, setNavigation, setStatus });
+
+  const contextItems = (uid: Uid, uids: readonly Uid[], position: StudioContextMenuPosition): readonly StudioInsertMenuItem[] => {
+    const node = form.nodes[uid];
+    if (!node) return [];
+    const nodes = uids.flatMap((selectedUid) => form.nodes[selectedUid] ? [form.nodes[selectedUid]!] : []);
+    const items: StudioInsertMenuItem[] = [];
+    const add = (label: string, onSelect: () => void) => items.push({ group: "structure", label, onSelect });
+    if (nodes.length === 1) {
+      if (node.kind === "wizard") {
+        add("Add stage", () => insertStructure("stage", { parentUid: uid, index: node.stageUids.length }));
+        add(node.navigation?.nonLinear ? "Use sequential navigation" : "Allow free navigation", () => updateNode(node, { navigation: { ...node.navigation, nonLinear: !node.navigation?.nonLinear } }, "Change wizard navigation"));
+      } else if (node.kind === "collection" && isStudioVariantCollection(node)) {
+        add("Add variant", () => insertStructure("variant", { parentUid: uid, index: node.variantUids.length }));
+      } else if (node.kind === "group" || node.kind === "stage" || node.kind === "variant" || node.kind === "collection") {
+        add("Add item…", () => setCanvasInsertMenu({ ...position, parentUid: uid, index: node.childUids?.length ?? 0 }));
+      }
+      const placement = locateStudioNode(form, uid);
+      const parent = placement?.parentUid ? form.nodes[placement.parentUid] : undefined;
+      if (node.kind === "stage" && parent?.kind === "wizard" && parent.initialStageUid !== uid) {
+        add("Make initial stage", () => updateNode(parent, { initialStageUid: uid }, "Set initial stage"));
+      }
+      if (node.kind === "variant" && parent?.kind === "collection" && isStudioVariantCollection(parent) && parent.initialVariantUid !== uid) {
+        add("Make initial variant", () => updateNode(parent, { initialVariantUid: uid }, "Set initial variant"));
+      }
+      if (node.kind === "fragment") {
+        const fragment = history.present.fragments[node.fragmentUid];
+        if (fragment) add("Detach fragment", () => detachFragment(node, fragment));
+      }
+      const before = insertBeforeByUid.get(uid);
+      if (before) {
+        add("Insert before…", () => setCanvasInsertMenu({ ...position, ...before }));
+        add("Insert after…", () => setCanvasInsertMenu({ ...position, parentUid: before.parentUid, index: before.index + 1 }));
+      }
+    }
+    if (nodes.length > 0 && nodes.every((item) => item.kind === "field")) {
+      const required = nodes.every((item) => item.validators?.some((validator) => validator.kind === "required"));
+      const label = required ? "Make optional" : "Make required";
+      add(label, () => updateBulkSelection(nodes.map((item) => ({ node: item, changes: {
+        validators: required ? item.validators?.filter((validator) => validator.kind !== "required")
+          : item.validators?.some((validator) => validator.kind === "required") ? item.validators : [...(item.validators ?? []), { kind: "required" }],
+      } })), label));
+    }
+    if (nodes.length > 0 && nodes.every((item) => typeof item.behavior?.disabled !== "object")) {
+      const disabled = nodes.every((item) => item.behavior?.disabled === true);
+      const label = disabled ? "Enable" : "Disable";
+      add(label, () => updateBulkSelection(nodes.map((item) => ({ node: item, changes: { behavior: { ...item.behavior, disabled: !disabled } } })), label));
+    }
+    if (nodes.length > 0) {
+      add("Duplicate", () => duplicateNodes(uids));
+      add("Delete", () => deleteNodes(uids));
+    }
+    return items;
+  };
 
   const navigateProblem = (diagnostic: StudioProblem) => {
     const targetUid = diagnostic.entityUid ?? diagnostic.formUid;
@@ -2211,6 +2264,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onActivateForm={(activeFormUid) => setNavigation((current) => ({ ...current, activeFormUid }))}
             onMove={moveNode} onDrop={dropNode} onCopy={copyNodes} onCut={cutNodes} onPaste={pasteNodes}
             onGroup={groupNodes} onUngroup={ungroupNode} onConvert={convertNode}
+            contextItems={contextItems}
             canPaste={navigation.clipboard !== undefined}
           />}
           {drawer === "insert" && <>
@@ -2291,6 +2345,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
               ? navigation.workbench.selectedUids
               : [node.uid];
             return <StudioNodeContextMenu
+              items={contextItems(node.uid, actionUids, canvasContextMenu)}
               node={node} actionUids={actionUids} position={canvasContextMenu}
               canPaste={navigation.clipboard !== undefined} onClose={() => setCanvasContextMenu(undefined)}
               onMove={(direction) => moveNode(node.uid, direction)} onGroup={() => groupNodes(actionUids)}

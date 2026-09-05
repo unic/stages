@@ -12,7 +12,7 @@ import {
   type StudioMoveDirection,
   visibleStudioOutlineUids,
 } from "../../src/editor";
-import { StudioNodeContextMenu, type StudioContextMenuPosition } from "./StudioNodeContextMenu";
+import { StudioNodeContextMenu, type StudioContextMenuPosition, type StudioInsertMenuItem } from "./StudioNodeContextMenu";
 
 function writeStudioDragData(event: DragEvent<HTMLElement>, uid: Uid): void {
   event.dataTransfer.effectAllowed = "move";
@@ -38,11 +38,12 @@ interface StudioOutlineProps {
   readonly onGroup: (uids: readonly Uid[]) => void;
   readonly onUngroup: (uid: Uid) => void;
   readonly onConvert: (uid: Uid, kind: "collection" | "group" | "wizard") => void;
+  readonly contextItems: (uid: Uid, uids: readonly Uid[], position: StudioContextMenuPosition) => readonly StudioInsertMenuItem[];
   readonly canPaste: boolean;
 }
 
 export function StudioOutline({
-  project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup, onConvert, canPaste,
+  project, state, onChange, onActivateForm, onMove, onDrop, onCopy, onCut, onPaste, onGroup, onUngroup, onConvert, canPaste, contextItems,
 }: StudioOutlineProps) {
   const [query, setQuery] = useState("");
   const model = useMemo(() => {
@@ -225,6 +226,7 @@ export function StudioOutline({
         if (node === undefined) return null;
         const actionUids = selectedNodeUids(contextMenu.uid);
         return <StudioNodeContextMenu
+          items={contextItems(node.uid, actionUids, contextMenu)}
           node={node} actionUids={actionUids} position={contextMenu} canPaste={canPaste}
           onClose={() => setContextMenu(undefined)}
           onMove={(direction) => onMove(contextMenu.uid, direction)}
