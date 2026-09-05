@@ -11,3 +11,5 @@ export { definePortableBehaviorBindings } from "./behaviors.js";
 export type { PortableBehaviorBinding, PortableBehaviorBindings, PortableBehaviorReference } from "./behaviors.js";
 export { bindPortableViews } from './fields.js';
 export type { PortableViewFields, PortableViewForm } from './fields.js';
+export { validatePortableSubmission } from './submission.js';
+export type { PortableSubmissionDeployment, PortableSubmissionOptions, PortableSubmissionIdentity, PortableSubmissionResult } from './submission.js';

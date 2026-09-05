@@ -5,8 +5,8 @@ For Studio authors and compiler maintainers. Prerequisite: the
 [portable-form implementation plan](../../docs/V1_PORTABLE_FORM_SUCCESS_PLAN.md).
 
 Document acceptance means a project can be preserved, not that all its behavior
-can execute. The S1 production loader is implemented in `@stages/authoring`; authoritative
-server submission validation remains unimplemented. Direct code-authored core schemas remain
+can execute. The S1 production loader is implemented in `@stages/authoring`; the S3 submission entry point now strictly decodes and validates complete values
+with server-owned bindings and context. Direct code-authored core schemas remain
 supported independently of this document layer.
 
 | Capability | Stored document | Studio editing | Preview | Executable export | Authoritative server |
@@ -122,8 +122,18 @@ The Node semantic consumer installs only core and authoring without those peers.
 [Studio tests](../components/v1/StudioCustomFields.test.tsx) cover insertion,
 export, props, native/application previews and compilation identity.
 
-This does not implement authoritative server decoding, custom bulk-property
+S3 now adds authoritative server decoding. This does not implement custom bulk-property
 editing, full Event Launch parity, or automatic deployment fingerprints. Host-only
 composition requires a distinct schema ID/version and a recorded deployment
 contract; referenced behavior changes also require an explicit compatibility
 choice. See the [public reference](../../docs/content/reference/authoring.mdx).
+
+## S3 submission policy
+
+The same exported contact/custom artifacts run through the installed Node
+submission matrix. All declared values are required and validated regardless of
+UI visibility, disabled state or structural presence. Use validator conditions
+for conditional business applicability. Missing/extra/malformed values fail
+decoding; failed/unavailable services, pending work and cancellation never accept.
+The host supplies an approved revision and exact semantic bindings. Full Event
+Launch parity and durable fingerprints/resource isolation remain S4/S5 work.

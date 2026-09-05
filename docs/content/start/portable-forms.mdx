@@ -47,7 +47,7 @@ and teardown. Definitions are limited to 5 MiB and 1,000 expanded nodes per form
 large regular-expression rules and application services need appropriate host budgets.
 
 This loader uses the UI validation contract. It does not decode untrusted
-submission payloads or make hidden fields authoritative. Authoritative server acceptance remains a later slice.
+submission payloads or make hidden fields authoritative. Use the separate submission entry point below for server acceptance.
 Code-authored forms continue to use core directly, including custom callbacks,
 fields, codecs and renderers, without a portable definition or registry.
 
@@ -119,9 +119,51 @@ semantic bindings before claiming equivalence. Direct code-authored schemas,
 rich values, codecs, closures, custom adapters and schema factories remain
 available through core without this optional package.
 
+## Accept submissions on the server
+
+Resolve an approved artifact and immutable deployment revision in your server
+registry. Pass only the parsed request value to `validatePortableSubmission`;
+context and semantic/service bindings come from the server. Never use the
+request's artifact, validation result, visibility, privileges, or serialized
+controller state as acceptance evidence.
+
+<CheckedSource fixture="docs/examples/portable-submission.ts" region="portable-submission" />
+
+The submission policy is deliberately strict: all declared fields are included
+and required in the value shape, even when hidden, disabled, or structurally
+absent in the UI. Unknown keys are rejected at every object level. Display
+conditions grant no validation exemption. Use explicit validator `when`
+conditions for business applicability, evaluated from values and trusted
+context. A contact form whose hidden company field has an unconditional
+required rule therefore fails submission with an empty company. If that rule
+is conditional business policy, declare the condition on the validator too.
+
+Missing values are not filled from production defaults. Draft strings are not
+coerced to numbers; null is accepted only by a matching custom contract. Choice
+values must match declared options (or the explicit empty string); built-in
+date/time/email values remain strings, with format rules declared as validators.
+The decoded copy is the canonical output. UI events, reducers and transforms
+are not replayed: put authoritative constraints in validators and portable
+behavior bindings, including rules for any host-calculated values. Computed
+portable fields remain unsupported and fail configuration.
+
+Only `accepted` exposes a value. `rejected` distinguishes decoding from business
+validation; `unavailable` covers configuration, execution, timeout and cancellation.
+A service failure cannot accept even if presented as a warning. Services should
+subscribe to `validation.signal.onCancel` and stop their transport work; the
+controller is destroyed on every completed or cancelled request. Run concurrent
+requests with independent context and test failures as well as successes.
+
+This entry point does not accept an already composed controller/schema. Move
+server-relevant hybrid rules into exact portable behavior bindings and include
+their implementation and policy in the host revision. Core's code-authored and
+controlled UI contracts are unchanged.
+
 Next: read the [portable loader reference](/reference/authoring).
 
 ## Evidence
+
+- [Submission matrix, also run from installed tarballs](https://github.com/unic/stages/blob/master/packages/authoring/test/fixtures/packed-submissions.mjs)
 
 - [Public declarations and loader](https://github.com/unic/stages/blob/master/packages/authoring/src/portable.ts)
 - [Contact, bindings and fragment regressions](https://github.com/unic/stages/blob/master/packages/authoring/test/portable.test.mjs)

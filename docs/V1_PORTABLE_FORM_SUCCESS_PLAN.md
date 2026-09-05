@@ -1,6 +1,6 @@
 # Stages v1: portable forms from Studio to production
 
-Status: implementation in progress (S0, S1 and S2 complete), based on a source and runtime review on
+Status: implementation in progress (S0–S3 complete), based on a source and runtime review on
 2026-09-05 at commit `5e2158e`. Package version: `1.0.0-alpha.0`.
 
 Audience: Stages core, adapter, tooling, and Studio maintainers.
@@ -23,8 +23,8 @@ public example, strict type contracts and a packed consumer cover this behavior.
 Release verification also corrected stale Studio browser-test selectors and a
 zero-width Recovery toggle caused by the palette help-button width rule.
 S0 did not claim a production loader or authoritative server validator.
-S1 and S2 are now complete as described below; S3–S5 and the portable beta release gate
-remain open.
+S1–S3 are implemented as described below; S4–S5 and the portable beta release
+gate remain open.
 
 2026-09-05: S1 implementation is complete. The optional
 [`@stages/authoring`](../packages/authoring/README.md) package now owns the shared
@@ -59,9 +59,9 @@ and the browser suite used the already-running Studio server through the existin
 external-server configuration. These were execution-environment retries, with no
 weakened checks. Generated changes to tracked Angular caches were restored.
 
-S2 values/custom components and hybrid composition are implemented below; S3 is next. Authoritative
-submission decoding, full Event Launch portability and the portable beta gate
-remain unimplemented; S1 establishes the runtime loader, not server acceptance.
+S2 values/custom components and hybrid composition and S3 authoritative
+submission decoding are implemented below. Full Event Launch portability and
+the portable beta gate remain unimplemented; S1 establishes the runtime loader, not server acceptance.
 
 2026-09-05: S2 implementation is complete. The additive authoring API separates
 JSON field descriptors, exact-version trusted semantics, and opaque framework
@@ -108,8 +108,51 @@ under full-suite load; it passed focused and full retries without changing its
 5-second limit. Generated Angular cache changes were restored.
 
 S2 does not claim authoritative submission decoding, full Event Launch parity,
-custom bulk-property editing, or automatic deployment fingerprints. S3–S5 and
-the portable beta release gate remain open.
+custom bulk-property editing, or automatic deployment fingerprints. S3 adds the
+submission contract below; S4–S5 and the portable beta release gate remain open.
+
+2026-09-05: S3 implementation adds the public `validatePortableSubmission` entry
+point to `@stages/authoring`. The server supplies an approved definition, immutable
+revision and exact bindings; the request supplies only values. A bounded decoder
+rejects missing/wrong-type/extra values, invalid choices/discriminators, malformed
+objects, sparse arrays and oversized collections before rule execution. Canonical
+values preserve declared primitive/custom contracts without coercion or defaults.
+
+Submission policy includes and validates every declared value independently of
+UI visibility, editability and structural presence. Conditional business
+applicability remains explicit validator `when` behavior. The compiler's complete
+base graph supplies the same rules and custom semantic bindings to a fresh core
+controller; core's UI validation and controlled acceptance contracts are unchanged.
+Accepted results alone expose canonical values. Rejected results distinguish
+shape and business failures; unavailable results distinguish configuration,
+execution, timeout and cancellation. Every result identifies the host revision
+and schema. Service failure never accepts, even at warning severity. Teardown
+cancels outstanding validators and late results cannot alter a completed response.
+
+The contact/custom artifact matrix is shared by workspace and isolated packed
+Node consumers. It covers hidden/disabled/structurally absent fields, explicit
+conditional applicability, localized issues, money precision and custom objects,
+nested groups/wizards/collections, variant paths, malformed transport, forged
+keys, missing bindings, service failures, deadlines, cancellation, late work and
+simultaneous requests. Strict type contracts, a checked server example, the guide,
+normative reference, API report and coverage manifest accompany the additive API.
+
+S3 does not replay UI reducers/transforms, silently project unknown data, derive
+computed fields or accept already composed schemas. Server-relevant hybrid rules
+use portable behavior bindings. Built-in date/time/email values remain strings
+with explicit format validators. Revision assignment is host-owned; automatic
+fingerprints, synchronous resource isolation and full Event Launch parity remain
+S4/S5 work. See the [submission contract](content/reference/authoring.mdx).
+
+S3 verification used Node 24.15.0. `npm run verify:changed -- change` selected
+`npm run release:check:v1` and passed: static quality, documentation/API checks,
+packed runtime/type and rendering consumers (including the submission matrix),
+performance checks, 134 package tests, 323 Studio/Vitest tests plus 10 Studio Node
+tests, Studio/docs/all-example builds, the React lifecycle test and all 42 browser
+journeys. Angular's native build required an outside-sandbox retry. The existing
+1,000-row Studio regression timed out once under full-suite load, then passed
+isolated and full retries without changing its five-second limit or assertions.
+Generated Angular cache changes were restored. S4 is next.
 
 ## 1. Assessment and success criterion
 

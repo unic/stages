@@ -10,10 +10,56 @@
         "packages/authoring/test-d/contract.ts",
         "packages/authoring/test/portable.test.mjs",
         "packages/authoring/test/extensions.test.mjs",
-        "packages/authoring/test/adapters.test.mjs"
+        "packages/authoring/test/adapters.test.mjs",
+        "packages/authoring/test/submission.test.mjs"
       ],
       "defaultReference": "/reference/authoring",
       "exports": [
+        {
+          "symbol": "validatePortableSubmission",
+          "kind": "runtime",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-submission"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableSubmissionDeployment",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-submission"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableSubmissionOptions",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-submission"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableSubmissionIdentity",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-submission"
+          ],
+          "status": "complete"
+        },
+        {
+          "symbol": "PortableSubmissionResult",
+          "kind": "type",
+          "guide": "/start/portable-forms",
+          "examples": [
+            "portable-submission"
+          ],
+          "status": "complete"
+        },
         {
           "symbol": "loadPortableForm",
           "kind": "runtime",

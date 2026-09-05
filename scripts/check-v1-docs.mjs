@@ -936,6 +936,7 @@ assertSameInventory(
 );
 
 const renderedRegions = [
+  { fixture: "docs/examples/portable-submission.ts", region: "portable-submission", page: "start/portable-forms.mdx" },
   { fixture: "docs/examples/portable-custom.tsx", region: "portable-custom", page: "start/portable-forms.mdx" },
   { fixture: "docs/examples/portable.ts", region: "portable-runtime", page: "start/portable-forms.mdx" },
   { fixture: "docs/examples/recipes.ts", region: "server-save-rejection", page: "recipes/server-save-and-rejection.mdx" },

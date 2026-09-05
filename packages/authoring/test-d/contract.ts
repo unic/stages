@@ -39,3 +39,20 @@ const badEmpty: PortableFieldDescriptor = { ...descriptor, emptyValue: new Date(
 // @ts-expect-error semantic bindings do not own framework components
 const badField = definePortableFieldBindings([{ key: 'app/field', version: 1, field: { view: () => null } }]);
 void badKind; void badEmpty; void badField;
+
+import { validatePortableSubmission, type PortableSubmissionDeployment, type PortableSubmissionOptions, type PortableSubmissionResult, type PortableSubmissionIdentity } from '../src/index.js';
+export async function submissionContract(deployment: PortableSubmissionDeployment, input: unknown, options: PortableSubmissionOptions) {
+  const result: PortableSubmissionResult = await validatePortableSubmission(deployment, input, options);
+  const identity: PortableSubmissionIdentity = result.identity;
+  void identity.revision;
+  if (result.status === 'accepted') void result.value;
+  else {
+    // @ts-expect-error unsuccessful submission results cannot expose accepted values
+    void result.value;
+  }
+  // @ts-expect-error the server must supply an approved deployment revision
+  await validatePortableSubmission({ definition: deployment.definition }, input);
+  // @ts-expect-error client context is not an accepted value transport option
+  await validatePortableSubmission(deployment, input, { extensions: { admin: true } });
+  return result;
+}

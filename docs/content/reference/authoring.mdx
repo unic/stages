@@ -64,7 +64,60 @@ The `/studio` compiler accepts `customFields` from `resolvePortableFields`;
 Callbacks in host composition are intentionally not serialized. Deployments must
 record their implementation/configuration and compatibility decision separately;
 content identity and full persistence migration remain S5 work. JSON value
-contracts here are distinct from S3's authoritative submission decoder.
+contracts here supply the shape checks used by authoritative submissions.
+
+## Authoritative submissions
+
+| Export | Contract |
+| --- | --- |
+| `PortableSubmissionDeployment` | Server-owned `definition`, nonblank immutable `revision`, and the same exact semantic/service binding options as the loader. The revision must cover artifact, binding implementations/configuration and acceptance policy. No client-supplied deployment is trusted. |
+| `PortableSubmissionOptions` | Server-owned `context`, optional structural AbortSignal-compatible `signal`, and `timeoutMs` (default 10,000; finite positive number at most 2,147,483,647). No interaction state or extensions are accepted from the request. |
+| `PortableSubmissionIdentity` | `revision`, `schemaId`, `schemaVersion` from the approved deployment, returned for every outcome. Revision assignment and registry lookup are host responsibilities; no automatic fingerprint is claimed. |
+| `PortableSubmissionResult` | `accepted` includes identity, canonical JSON `value` and issues. `rejected` includes identity, `phase: 'decode' | 'validation'`, and issues. `unavailable` includes identity, empty issues and `reason: 'configuration' | 'execution' | 'timeout' | 'cancelled'`. Failed outcomes never expose a value. |
+| `validatePortableSubmission(deployment, input, options?)` | Asynchronously validates a parsed unknown request value using the approved definition. Strict decoding precedes rule execution. Compiles a submission projection, creates fresh core state, awaits full submit validation and destroys that state in `finally`. No browser, renderer, Studio or framework is required. |
+
+Submission inclusion is all declared values; unknown properties are rejected,
+including nested custom objects and inactive-variant keys. Every declared key
+must be present. Groups, wizards and stages each introduce their runtime ID as
+an object segment; collection rows use only the selected discriminator variant.
+Blocks introduce no data. Collections enforce their min/max and a hard maximum
+of 1,000 rows each. Custom arrays are bounded by the total input budget.
+Built-ins use their canonical primitive contracts; choices allow only trimmed,
+nonempty newline-delimited options or the empty string. Dates, times and email
+addresses remain strings: declare format/business validators. No draft parsing,
+implicit defaults, trimming, event dispatch, reducer execution or transform
+replay occurs. Null and empty values retain their explicit descriptor meaning.
+
+All display `when`, `disabled`, and `presentWhen` behavior is removed for
+submission validation. It cannot suppress required rules. Validator `when`
+conditions remain authoritative business applicability and use core's normal
+value/row/trusted-context semantics. Built-in, custom field, portable behavior,
+and service validators all run through the existing core validation machinery.
+Unsupported computed fields still fail configuration; forged extra derived
+properties fail decoding. A declared derived field needs an authoritative
+validator checking its value, just as other business constraints do.
+
+The transport reader rejects nonfinite numbers, nonplain objects, cycles,
+accessors, symbol keys, unsafe keys, sparse arrays and nonenumerable properties.
+It owns a JSON copy and limits work to 10,000 values, depth 64 and a conservative
+1,000,000-byte estimate (six bytes per string/key code unit, plus overhead).
+Decode issues use core `ValidationIssue` shape and occurrence paths, capped at
+100 shape issues. Codes are `submission.non-json`, `submission.limit`,
+`submission.object`, `submission.missing`, `submission.type`, `submission.choice`,
+`submission.array`, `submission.collection-size`, `submission.discriminator`, and
+`submission.unknown-property`. Business issues preserve rule IDs, paths,
+localization and severities. Validation exceptions become unavailable execution,
+not normal business rejection; missing bindings are unavailable configuration.
+
+Service exceptions and malformed outcomes are unavailable execution; explicit
+service failure is rejection even with warning severity. Ordinary non-service
+warnings remain acceptable. Pending or unknown results never accept. Cancellation
+is checked before work and before acceptance; the deadline covers elapsed setup
+and validation time. Timeout/cancellation destroys the controller and signals
+pending validators. Host services must cooperate to stop external work. Timers
+cannot preempt synchronous regex or host callbacks; use deployment review and
+process isolation for synchronous resource limits (the broader S5 gate remains
+open). Accepted output is the decoded copy, with no UI proposals accepted.
 
 ## Format and failure behavior
 
@@ -119,6 +172,9 @@ revision identity in the application until the durable-release slice.
 Next: [choose a renderer](/start/installation).
 
 ## Evidence
+
+- [Submission implementation](https://github.com/unic/stages/blob/master/packages/authoring/src/submission.ts)
+- [Installed submission matrix](https://github.com/unic/stages/blob/master/packages/authoring/test/fixtures/packed-submissions.mjs)
 
 - [Root exports](https://github.com/unic/stages/blob/master/packages/authoring/src/index.ts)
 - [Strict contract fixture](https://github.com/unic/stages/blob/master/packages/authoring/test-d/contract.ts)

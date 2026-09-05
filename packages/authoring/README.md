@@ -58,3 +58,17 @@ reference is not used by installed package consumers. The Knip exception for
 that duplicate dependency declaration preserves this local workspace setup.
 
 For existing 0.x applications, see the [v1 migration guide](https://github.com/unic/stages/blob/master/docs/MIGRATING_TO_V1.md).
+
+## Authoritative submissions
+
+`validatePortableSubmission` accepts a server-owned deployment (`definition`,
+immutable `revision`, exact bindings), an unknown parsed request value and trusted
+context/cancellation options. It strictly decodes all declared values, validates
+through fresh core state, and returns accepted canonical values, rejected input
+or unavailable execution. UI visibility and disabled state do not exempt values;
+conditional business applicability belongs on validators. No coercion, default
+filling or UI transform replay occurs. Service failures never accept.
+
+See the [server guide](../../docs/content/start/portable-forms.mdx),
+[normative contract](../../docs/content/reference/authoring.mdx) and
+[packed submission matrix](test/fixtures/packed-submissions.mjs).
