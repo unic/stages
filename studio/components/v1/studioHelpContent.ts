@@ -8,6 +8,7 @@ interface StudioHelpTopic {
 export const studioHelpTopics: readonly StudioHelpTopic[] = [
   { title: "Getting started", summary: "Build a form by adding questions, arranging them, and trying it out.", fields: [
     ["Design / Inspector", "Select a question on the canvas or in Layers to edit its settings in the Inspector. Select the form in Layers to edit rules for the whole form."],
+    ["Design indicators", "In Design, a light grid and outlines show each item’s boundaries. Small badges show configured validation, transforms (including reducers), localization, and logic. Hover or focus a badge for details. They describe settings on that item, not whether an answer is valid. Preview hides these guides."],
     ["Preview / Test details", "Try filling in your form as a visitor would. Test details opens tools for trying sample data, checking rules, and investigating problems. Preview answers are separate from your saved form design."],
     ["Insert", "Add a field for an answer, content for instructions, or a structure for organizing questions. The plus button between canvas items inserts at that position."],
     ["Desktop / Tablet / Mobile", "Try the canvas at different screen widths. Use Responsive layout to change how a selected item fits each size."],

@@ -1,3 +1,4 @@
+import { StudioDesignFeatures, StudioDesignLegend } from "./StudioDesignFeatures";
 import { StudioHelp } from "./StudioHelp";
 import { StudioChoiceOptionsEditor } from "./StudioChoiceOptionsEditor";
 import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
@@ -82,6 +83,7 @@ import {
 } from "./studioStructuralActions";
 
 const PreviewTestDetailsContext = createContext(false);
+const DesignNodesContext = createContext<StudioFormDocument["nodes"] | undefined>(undefined);
 
 interface StudioV1EditorProps {
   readonly repository?: StudioProjectRepository;
@@ -233,6 +235,8 @@ function PreviewLayout({ node, children, authoring }: {
   readonly children: ReactNode;
   readonly authoring?: AuthoringCanvasBindings;
 }) {
+  const designNodes = useContext(DesignNodesContext);
+  const designNode = designNodes?.[node.uid];
   const selectable = authoring?.selectableUids.has(node.uid) === true;
   const selected = selectable && authoring.selectedUids.includes(node.uid);
   const insertBefore = authoring?.insertBeforeByUid.get(node.uid);
@@ -256,7 +260,8 @@ function PreviewLayout({ node, children, authoring }: {
   };
   return (
     <div
-      className={`studio-v1-preview__layout${selectable ? " studio-v1-authoring-node" : ""}`}
+      className={`studio-v1-preview__layout${designNodes ? " studio-design-node" : ""}${selectable ? " studio-v1-authoring-node" : ""}`}
+      data-design-kind={designNodes ? node.kind : undefined}
       data-authoring-selected={selected || undefined}
       data-drop-position={dropPosition}
       data-canvas-uid={selectable ? node.uid : undefined}
@@ -320,6 +325,7 @@ function PreviewLayout({ node, children, authoring }: {
         onDragStart={(event) => writeCanvasDragData(event, node.uid)}
       >⠿</button>}
       {children}
+      {designNode && <StudioDesignFeatures node={designNode} />}
     </div>
   );
 }
@@ -1060,7 +1066,7 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   } as CSSProperties;
 
   const Surface = variant === "canvas" ? "div" : "form";
-  const formSurface = <PreviewTestDetailsContext.Provider value={showTestDetails}><Surface
+  const formSurface = <DesignNodesContext.Provider value={variant === "canvas" ? form.nodes : undefined}><PreviewTestDetailsContext.Provider value={showTestDetails}><Surface
     className="studio-v1-preview__fields"
     {...(variant === "canvas" ? {} : { noValidate: true, "aria-label": form.title })}
     onSubmit={(event) => { event.preventDefault(); if (variant !== "canvas") void submitPreview(); }}
@@ -1087,10 +1093,11 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
       <Button type="submit" disabled={submitting}>{submitting ? "Validating…" : "Submit"}</Button>
       <p role="status" aria-live="polite">{submitMessage}</p>
     </div>}
-  </Surface></PreviewTestDetailsContext.Provider>;
+  </Surface></PreviewTestDetailsContext.Provider></DesignNodesContext.Provider>;
 
   if (variant === "canvas") return (
     <section ref={previewRef} className="studio-v1-authoring-canvas" style={themeStyle} data-studio-theme="default" aria-label="Interactive form canvas">
+      <StudioDesignLegend />
       {formSurface}
     </section>
   );
