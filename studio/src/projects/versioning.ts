@@ -1,8 +1,9 @@
 import type { JsonValue, StudioFormDocument, StudioProjectDocument, StudioScenario, Uid } from "../document";
 import { inspectJsonSafety, serializeStudioProject, validateStudioProject } from "../document";
 import type { StudioCommand } from "../commands";
-import { compileStudioForm, type CompiledStudioForm, type StudioDiagnostic } from "../compiler";
+import { compileStudioForm, expandStudioFragments, type CompiledStudioForm, type StudioDiagnostic } from "../compiler";
 import type { StudioAsyncServiceBindings, StudioCodecBindings } from "../registry";
+import { studioStructuralContract } from "./structural-contract";
 
 export interface StudioSchemaMigrationBinding {
   readonly id: string;
@@ -243,7 +244,29 @@ export async function prepareStudioRelease(options: PrepareStudioReleaseOptions)
   }
   const acceptedMigrations: StudioSchemaMigrationBinding[] = [];
   if (options.previousRelease !== undefined) for (const form of Object.values(project.forms)) {
-    const previous = options.previousRelease.project.forms[form.uid];
+    const priorProject = options.previousRelease.project;
+    const sameUid = priorProject.forms[form.uid];
+    const lineage = Object.values(priorProject.forms).filter((candidate) => candidate.runtime.schemaId === form.runtime.schemaId);
+    const previous = sameUid?.runtime.schemaId === form.runtime.schemaId ? sameUid : lineage.length === 1 ? lineage[0] : undefined;
+    if (previous === undefined && lineage.length > 1) {
+      diagnostics.push(publicationDiagnostic("publication.ambiguous-schema-lineage", `Schema ${form.runtime.schemaId} matches multiple prior forms; its previous contract cannot be identified uniquely.`, { formUid: form.uid }));
+      continue;
+    }
+    if (previous !== undefined && previous.runtime.schemaVersion === form.runtime.schemaVersion) {
+      const expanded = expandStudioFragments(previous, priorProject.fragments);
+      const before = expanded.diagnostics.length === 0 ? studioStructuralContract(expanded.form) : undefined;
+      const after = studioStructuralContract(compiledForms.get(form.uid)!.expandedForm);
+      if (before === undefined || after === undefined) {
+        diagnostics.push(publicationDiagnostic("publication.structural-contract-unavailable", `Schema ${form.runtime.schemaId} could not be compared with its prior structural contract.`, { formUid: form.uid }));
+      } else {
+        const changed = [...new Set([...before.keys(), ...after.keys()])].filter((path) => before.get(path) !== after.get(path)).sort();
+        if (changed.length > 0) diagnostics.push(publicationDiagnostic(
+          "publication.schema-version-bump-required",
+          `Schema ${form.runtime.schemaId}@${form.runtime.schemaVersion} changed structure at ${changed.join(", ")}. Advance the schema version with explicit migration evidence before preparing a release.`,
+          { formUid: form.uid },
+        ));
+      }
+    }
     const migration = migrationForForm(form, previous, options.migrations ?? [], diagnostics);
     if (migration !== undefined) acceptedMigrations.push(migration);
   }

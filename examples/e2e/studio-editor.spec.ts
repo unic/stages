@@ -6,6 +6,7 @@ test("document-v1 editor completes the first vertical authoring slice", async ({
   await expect(editor).toBeVisible();
   await expect(editor).toHaveAttribute("aria-busy", "false");
 
+  await page.getByRole("button", { name: "Insert", exact: true }).click();
   await page.getByRole("button", { name: "Add text field" }).click();
   const label = page.getByRole("textbox", { name: "Label", exact: true });
   await label.fill("Speaker name");
@@ -32,6 +33,7 @@ test("local projects autosave across reload and recover confirmed deletion", asy
   const saveStatus = page.locator(".studio-v1-toolbar").getByRole("status");
   await expect(editor).toHaveAttribute("aria-busy", "false");
 
+  await page.getByRole("button", { name: "Insert", exact: true }).click();
   await page.getByRole("button", { name: "Add text field" }).click();
   await page.getByRole("textbox", { name: "Label", exact: true }).fill("Recovered field");
   await expect(saveStatus).toContainText("Local draft autosaved", { timeout: 3_000 });
@@ -39,6 +41,7 @@ test("local projects autosave across reload and recover confirmed deletion", asy
   await expect(editor).toHaveAttribute("aria-busy", "false");
   await expect(page.getByRole("textbox", { name: "Recovered field" })).toBeVisible();
 
+  await page.getByRole("button", { name: "Project", exact: true }).click();
   await page.getByRole("button", { name: "Delete project…" }).click();
   await page.getByRole("button", { name: "Confirm delete" }).click();
   await expect(saveStatus).toContainText("Project moved to recovery");
@@ -69,6 +72,7 @@ test("local projects autosave across reload and recover confirmed deletion", asy
   });
   await page.reload();
   await expect(saveStatus).toContainText("quarantined");
+  await page.getByRole("button", { name: "Project", exact: true }).click();
   const corrupt = page.locator(".studio-v1-recovery-list li").filter({ hasText: "corrupt" });
   await expect(corrupt).toBeVisible();
   await expect(corrupt.getByRole("button", { name: "Restore…" })).toHaveCount(0);

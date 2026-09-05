@@ -37,6 +37,7 @@ A release is not created when any of these checks fails:
 - a trusted async-service, value-codec, or extension-codec binding is missing;
 - a named contract scenario is not reported by the configured runner or reports
   failure; or
+- a prior schema identity retains its version after its structural contract changes; or
 - schema lineage regresses, skips a version, lacks exactly one required
   migration or prior-version scenario, or its migration throws, emits unsafe
   JSON, or is nondeterministic for a prior release scenario.
@@ -45,6 +46,32 @@ Named scenarios require an explicit `StudioContractScenarioRunner`. The runner
 receives the validated project and its compiled forms, and must report every
 scenario by form UID and scenario UID. This keeps the gate independent of a
 specific test framework or backend.
+
+## Structural compatibility check
+
+Supply `previousRelease` when preparing a successor release. For a retained
+schema ID and version, the gate compares the expanded form structures and emits
+`publication.schema-version-bump-required` with changed structural locations
+when they differ. This check works without named scenarios. Matching uses the
+existing form UID when possible, then the schema ID, so changing an editor form
+UID does not bypass comparison. An ambiguous prior schema lineage is rejected
+with `publication.ambiguous-schema-lineage`; unavailable structure is rejected
+with `publication.structural-contract-unavailable`.
+
+The inventory includes runtime paths and node kinds, field definition keys and
+versions, collection discriminator properties and variants, row-key properties,
+and structural `presentWhen` expressions. Fragment expansion uses each release's
+own definitions. Editor UIDs, labels, layout, theme, decorative blocks, and
+sibling display order are excluded. Ordinary visibility, validation, reducer,
+and transform changes are not classified by this structural check.
+
+This initial policy conservatively requires a bump for additions as well as
+removals, moves, and incompatible changes. It does not prove semantic equivalence
+of expressions, opaque service or codec implementations, or migrated values.
+Named scenario and binding gates still apply. Without `previousRelease`, no
+historical comparison is possible; a new schema ID starts a separate lineage.
+Complete behavior classification and full saved-envelope migration checks remain
+planned work. No release-manifest or runtime-envelope format changes are made.
 
 ## Schema-version bump workflow
 
@@ -75,4 +102,5 @@ session.
 
 - `studio/src/projects/versioning.ts`
 - `studio/src/projects/versioning.test.ts`
+- `studio/src/projects/structural-contract.ts`
 - `studio/src/commands/engine.ts`

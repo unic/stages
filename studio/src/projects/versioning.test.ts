@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
 import { executeStudioCommand } from "../commands";
-import { toUid, type StudioProjectDocument } from "../document";
+import { toUid, type StudioFieldNode, type StudioGroupNode, type StudioNode, type StudioProjectDocument } from "../document";
 import { STUDIO_PREVIEW_CODEC_BINDINGS } from "../registry";
 import {
   createMemoryVersionRepository,
@@ -134,6 +134,150 @@ describe("Studio versioning and publication", () => {
 
     const staleRevision = await prepareStudioRelease({ project: bumped, projectRevision: 1, previousRelease: previous.value, migrations: [migration], supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, contractRunner: passingRunner, now });
     expect(staleRevision).toMatchObject({ ok: false, diagnostics: expect.arrayContaining([expect.objectContaining({ code: "publication.project-revision-not-newer" })]) });
+  });
+
+  it("rejects an omitted schema-version bump even without named scenarios", async () => {
+    const project = fixture();
+    const previous = await prepareStudioRelease({ project, projectRevision: 1, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    const form = project.forms[formUid]!;
+    const fieldUid = toUid("field_title");
+    const field = form.nodes[fieldUid] as StudioFieldNode;
+    const renamed = { ...project, forms: { [formUid]: { ...form, nodes: { ...form.nodes, [fieldUid]: { ...field, runtimeId: "headline" } } } } };
+    const result = await prepareStudioRelease({ project: renamed, projectRevision: 2, previousRelease: previous.value, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now });
+    expect(result).toMatchObject({ ok: false, diagnostics: expect.arrayContaining([expect.objectContaining({
+      code: "publication.schema-version-bump-required", formUid,
+      message: expect.stringContaining("headline"),
+    })]) });
+    expect(previous.value.project.forms[formUid]?.nodes[fieldUid]).toMatchObject({ runtimeId: "title" });
+  });
+
+  it.each([
+    ["field value contract", { uid: toUid("field_title"), kind: "field", runtimeId: "title", definition: { key: "number", version: 1 }, props: { label: "Amount" } }],
+    ["field/container conversion", { uid: toUid("field_title"), kind: "group", runtimeId: "title", childUids: [] }],
+    ["structural presence", { uid: toUid("field_title"), kind: "field", runtimeId: "title", definition: { key: "text", version: 1 }, props: { label: "Title" }, behavior: { presentWhen: { kind: "reference", scope: "context", path: ["enabled"] } } }],
+  ] satisfies readonly (readonly [string, StudioNode])[])("requires a bump for a changed %s", async (_label, node) => {
+    const project = fixture();
+    const definitions = { text: [1], number: [1] };
+    const options = { supportedDefinitions: definitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now };
+    const previous = await prepareStudioRelease({ ...options, project, projectRevision: 1 });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    const form = project.forms[formUid]!;
+    const result = await prepareStudioRelease({ ...options, project: { ...project, forms: { [formUid]: { ...form, nodes: { ...form.nodes, [node.uid]: node } } } }, projectRevision: 2, previousRelease: previous.value });
+    expect(result).toMatchObject({ ok: false, diagnostics: expect.arrayContaining([expect.objectContaining({ code: "publication.schema-version-bump-required" })]) });
+  });
+
+  it.each(["addition", "removal", "move"] as const)("requires a bump for a field %s", async (change) => {
+    const project = fixture();
+    const options = { supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now };
+    const previous = await prepareStudioRelease({ ...options, project, projectRevision: 1 });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    const form = project.forms[formUid]!;
+    const groupUid = toUid("group_event");
+    const fieldUid = toUid("field_title");
+    const group = form.nodes[groupUid] as StudioGroupNode;
+    const field = form.nodes[fieldUid] as StudioFieldNode;
+    const extraUid = toUid("field_extra");
+    const nodes = change === "addition" ? {
+      ...form.nodes, [groupUid]: { ...group, childUids: [...group.childUids, extraUid] },
+      [extraUid]: { ...field, uid: extraUid, runtimeId: "extra" },
+    } : change === "removal" ? { [groupUid]: { ...group, childUids: [] } }
+      : { ...form.nodes, [groupUid]: { ...group, childUids: [] } };
+    const changed = { ...project, forms: { [formUid]: { ...form, nodes, rootNodeUids: change === "move" ? [groupUid, fieldUid] : form.rootNodeUids } } };
+    expect(await prepareStudioRelease({ ...options, project: changed, projectRevision: 2, previousRelease: previous.value }))
+      .toMatchObject({ ok: false, diagnostics: expect.arrayContaining([expect.objectContaining({ code: "publication.schema-version-bump-required" })]) });
+  });
+
+  it("compares collection shape, discriminator values, and row-key policies", async () => {
+    const project = fixture();
+    const form = project.forms[formUid]!;
+    const collectionUid = toUid("contacts");
+    const variantUid = toUid("person");
+    const collection = { uid: collectionUid, kind: "collection" as const, runtimeId: "contacts", discriminator: "kind", variantUids: [variantUid] };
+    const variant = { uid: variantUid, kind: "variant" as const, runtimeId: "person", childUids: [] };
+    const baseline = { ...project, forms: { [formUid]: { ...form, rootNodeUids: [collectionUid], nodes: { [collectionUid]: collection, [variantUid]: variant } } } };
+    const options = { supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now };
+    const previous = await prepareStudioRelease({ ...options, project: baseline, projectRevision: 1 });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    for (const node of [
+      { ...collection, discriminator: "category" },
+      { ...collection, itemKey: { kind: "property" as const, property: "id" } },
+      { ...variant, runtimeId: "company" },
+    ]) {
+      const changed = { ...baseline, forms: { [formUid]: { ...baseline.forms[formUid]!, nodes: { ...baseline.forms[formUid]!.nodes, [node.uid]: node } } } };
+      expect(await prepareStudioRelease({ ...options, project: changed, projectRevision: 2, previousRelease: previous.value }))
+        .toMatchObject({ ok: false, diagnostics: expect.arrayContaining([expect.objectContaining({ code: "publication.schema-version-bump-required" })]) });
+    }
+  });
+
+  it("compares expanded fragment definitions and follows schema lineage across form UID changes", async () => {
+    const project = fixture();
+    const fragmentUid = toUid("fragment_details");
+    const fieldUid = toUid("field_title");
+    const created = executeStudioCommand(project, {
+      type: "fragment.create", formUid, uids: [fieldUid],
+      fragment: { uid: fragmentUid, title: "Details", version: 1, parameters: [] },
+      instance: { uid: toUid("instance_details"), kind: "fragment", runtimeId: "details", fragmentUid },
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const baseline = created.document;
+    const options = { supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now };
+    const previous = await prepareStudioRelease({ ...options, project: baseline, projectRevision: 1 });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    const replacementUid = toUid("replacement_form");
+    const changedUid = { ...baseline, forms: { [replacementUid]: { ...baseline.forms[formUid]!, uid: replacementUid } } };
+    expect((await prepareStudioRelease({ ...options, project: changedUid, projectRevision: 2, previousRelease: previous.value })).ok).toBe(true);
+    const fragment = baseline.fragments[fragmentUid]!;
+    const changed = { ...changedUid, fragments: { [fragmentUid]: { ...fragment, nodes: { ...fragment.nodes, [fieldUid]: { ...fragment.nodes[fieldUid] as StudioFieldNode, runtimeId: "headline" } } } } };
+    expect(await prepareStudioRelease({ ...options, project: changed, projectRevision: 2, previousRelease: previous.value }))
+      .toMatchObject({ ok: false, diagnostics: expect.arrayContaining([expect.objectContaining({ code: "publication.schema-version-bump-required", formUid: replacementUid })]) });
+  });
+
+  it("accepts a structural rename after an explicit bump and migration evidence", async () => {
+    const project = withScenario();
+    const options = { supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, contractRunner: passingRunner, now };
+    const previous = await prepareStudioRelease({ ...options, project, projectRevision: 1 });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    const migration: StudioSchemaMigrationBinding = {
+      id: "rename-title", formUid, schemaId: "event-launch", fromVersion: 1, toVersion: 2,
+      description: "Rename title to headline.",
+      migrate: (value) => ({ event: { headline: (value as { event: { title: string } }).event.title } }),
+    };
+    const bump = createStudioSchemaVersionBump(project, migration);
+    expect(bump.ok).toBe(true);
+    if (!bump.ok) return;
+    const bumped = executeStudioCommand(project, bump.command);
+    expect(bumped.ok).toBe(true);
+    if (!bumped.ok) return;
+    const form = bumped.document.forms[formUid]!;
+    const uid = toUid("field_title");
+    const renamed = { ...bumped.document, forms: { [formUid]: { ...form, nodes: { ...form.nodes, [uid]: { ...form.nodes[uid] as StudioFieldNode, runtimeId: "headline" } } } } };
+    const result = await prepareStudioRelease({ ...options, project: renamed, projectRevision: 2, previousRelease: previous.value, migrations: [migration] });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.project.forms[formUid]?.scenarios[0]?.value).toEqual({ event: { headline: "Launch" } });
+  });
+
+  it("allows presentation edits and editor UID changes under the same schema identity", async () => {
+    const project = fixture();
+    const previous = await prepareStudioRelease({ project, projectRevision: 1, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now });
+    expect(previous.ok).toBe(true);
+    if (!previous.ok) return;
+    const form = project.forms[formUid]!;
+    const field = form.nodes[toUid("field_title")] as StudioFieldNode;
+    const renamedUid = toUid("new_editor_uid");
+    const changed = { ...project, forms: { [formUid]: { ...form, title: "New title", settings: { theme: { accent: "#123456" } }, nodes: {
+      [toUid("group_event")]: { ...form.nodes[toUid("group_event")] as StudioGroupNode, kind: "group" as const, childUids: [renamedUid] },
+      [renamedUid]: { ...field, uid: renamedUid, props: { label: "Headline" }, presentation: { width: "half" } },
+    } } } };
+    const result = await prepareStudioRelease({ project: changed, projectRevision: 2, previousRelease: previous.value, supportedDefinitions, codecBindings: STUDIO_PREVIEW_CODEC_BINDINGS, now });
+    expect(result.ok).toBe(true);
   });
 
   it("keeps review and publication as ports and enforces channel approval policy", async () => {

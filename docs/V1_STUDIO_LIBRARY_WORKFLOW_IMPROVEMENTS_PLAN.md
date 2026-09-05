@@ -1,6 +1,6 @@
 # Stages v1: Studio and library workflow improvements
 
-Status: implementation started; the first P0 export safety slice is implemented.
+Status: P0 safeguards for F1–F6 are implemented; P1/P2 work remains.
 
 Implementation progress (2026-09-05): F1 schema factories and F2 specialized
 field reducers now reject executable export with
@@ -8,7 +8,7 @@ field reducers now reject executable export with
 Generated built-in reducers now enforce preview's payload types and finite-number
 checks. Committed export regressions cover both rejections and generated-consumer
 event behavior for all six built-ins. Dynamic/custom-reducer generated execution,
-packed-consumer equivalence, and F6 remain pending. See
+and packed-consumer equivalence remain pending. See
 [export behavior and evidence](../studio/docs/IMPORT_AND_EXPORT.md).
 
 F3 progress (2026-09-05): an editor-owned compiler session now reuses equivalent
@@ -32,6 +32,15 @@ inspector. Regressions verify atomic rejection, unchanged expression behavior,
 scenario values and schema version, plus continued label editing. Full semantic
 rename and structural refactor/migration transactions remain P1 work. See
 [the current rename boundary](../studio/docs/decisions/0002-editor-uids-and-runtime-ids.md).
+
+F6 progress (2026-09-05): release preparation compares expanded structural
+contracts against the prior release and rejects same-version changes with
+`publication.schema-version-bump-required`, even without scenarios. Regressions
+cover renamed/added/removed/moved fields, definition changes, collection identity,
+structural presence, fragment edits, and editor UID changes. Presentation-only
+edits pass; a version bump still needs existing migration/scenario evidence.
+Behavioral equivalence and full-envelope migration validation remain P1/P2 work.
+See [publication compatibility checks](../studio/docs/VERSIONING_AND_PUBLICATION.md).
 
 Analysis date: 2026-09-04. Baseline: `feature/version-one-point-zero`, commit `883791a`.
 
