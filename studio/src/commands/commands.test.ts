@@ -1,3 +1,4 @@
+import { stages } from "@stages/core";
 import { describe, expect, it } from "vitest";
 import projectV1 from "../document/fixtures/project-v1.json";
 import {
@@ -36,6 +37,70 @@ function success(project: StudioProjectDocument, command: StudioCommand): Studio
 }
 
 describe("Studio command engine", () => {
+  it("rejects runtime-ID renames atomically instead of leaving dependent expressions and values stale", () => {
+    const reference = { kind: "reference", scope: "value", path: ["event", "title"] } as const;
+    const scenarioValue = { event: { title: "Launch" } };
+    const withScenario = success(project(), { type: "scenario.insert", formUid, index: 0, scenario: { uid: toUid("scenario_launch"), title: "Launch", value: scenarioValue } });
+    const initial = success(withScenario, { type: "node.update", formUid, uid: fieldUid, changes: { derivedProps: { helpText: reference } } });
+    const history = createStudioHistory(initial);
+    const result = dispatchStudioCommand(history, { type: "transaction", label: "Rename", commands: [
+      { type: "project.update", changes: { title: "Should roll back" } },
+      { type: "node.update", formUid, uid: fieldUid, changes: { runtimeId: "headline" } },
+    ] });
+    expect(result).toMatchObject({ ok: false, failure: {
+      code: "command.runtime-id-refactor-required", formUid, entityUid: fieldUid, commandPath: [1],
+    } });
+    expect(result.history).toBe(history);
+    expect(result.history.present).toBe(initial);
+    expect(initial.forms[formUid]?.nodes[fieldUid]).toMatchObject({ runtimeId: "title", derivedProps: { helpText: reference } });
+    expect(initial.forms[formUid]?.runtime.schemaVersion).toBe(1);
+    expect(initial.forms[formUid]?.scenarios[0]?.value).toEqual(scenarioValue);
+    const compiled = compileStudioForm(result.history.present.forms[formUid]!);
+    const controller = stages({ schema: compiled.schemaInput, fields: compiled.fields, value: scenarioValue });
+    try {
+      expect(controller.getSnapshot().nodes[0]).toMatchObject({ nodes: [{ id: "title", props: { helpText: "Launch" } }] });
+    } finally {
+      controller.destroy();
+    }
+    expect(executeStudioCommand(initial, { type: "node.update", formUid, uid: fieldUid, changes: { runtimeId: "title" } }))
+      .toMatchObject({ ok: true, changed: false, document: initial });
+    expect(success(initial, { type: "node.update", formUid, uid: fieldUid, changes: { runtimeId: "title", props: { label: "Headline" } } }).forms[formUid]?.nodes[fieldUid])
+      .toMatchObject({ runtimeId: "title", props: { label: "Headline" } });
+  });
+
+  it("rejects runtime-ID removal and renames even when no local expression references the node", () => {
+    for (const uid of [groupUid, fieldUid]) for (const runtimeId of [undefined, "renamed"]) {
+      expect(executeStudioCommand(project(), { type: "node.update", formUid, uid, changes: { runtimeId } }))
+        .toMatchObject({ ok: false, failure: { code: "command.runtime-id-refactor-required", entityUid: uid } });
+    }
+  });
+
+  it("protects fragment definition IDs and instance runtime-ID overrides", () => {
+    const fragmentUid = toUid("fragment_details");
+    const instanceUid = toUid("instance_details");
+    const initial = success(project(), {
+      type: "fragment.create", formUid, uids: [fieldUid],
+      fragment: { uid: fragmentUid, title: "Details", version: 1, parameters: [] },
+      instance: { uid: instanceUid, kind: "fragment", runtimeId: "details", fragmentUid },
+    });
+    for (const command of [
+      { type: "fragment.node.update", fragmentUid, uid: fieldUid, changes: { runtimeId: "headline" } },
+      { type: "node.update", formUid, uid: instanceUid, changes: { runtimeId: "renamedDetails" } },
+      { type: "node.update", formUid, uid: instanceUid, changes: { overrides: { [fieldUid]: { runtimeId: "headline" } } } },
+    ] satisfies StudioCommand[]) expect(executeStudioCommand(initial, command))
+      .toMatchObject({ ok: false, failure: { code: "command.runtime-id-refactor-required" } });
+    const importedOverride = { ...initial, forms: { ...initial.forms, [formUid]: {
+      ...initial.forms[formUid]!, nodes: { ...initial.forms[formUid]!.nodes, [instanceUid]: {
+        ...initial.forms[formUid]!.nodes[instanceUid]!, overrides: { [fieldUid]: { runtimeId: "headline" } },
+      } },
+    } } } as StudioProjectDocument;
+    expect(executeStudioCommand(importedOverride, { type: "node.update", formUid, uid: instanceUid, changes: { overrides: undefined } }))
+      .toMatchObject({ ok: false, failure: { code: "command.runtime-id-refactor-required" } });
+    const override = success(initial, { type: "node.update", formUid, uid: instanceUid, changes: { overrides: { [fieldUid]: { runtimeId: "title", props: { label: "Headline" } } } } });
+    expect(success(override, { type: "node.update", formUid, uid: instanceUid, changes: { overrides: undefined } }).forms[formUid]?.nodes[instanceUid])
+      .not.toHaveProperty("overrides");
+  });
+
   it("renames a project through a history-compatible document command", () => {
     const initial = project();
     const updated = success(initial, { type: "project.update", changes: { title: "Renamed project" } });

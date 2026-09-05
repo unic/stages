@@ -14,8 +14,11 @@ Select contiguous sibling nodes and choose **Create fragment from selection**.
 Studio moves those subtrees into a versioned definition and replaces them with
 a linked instance that has its own runtime ID. The fragment palette can insert
 additional instances. The linked-fragment inspector supports definition
-renaming, definition-node editing, per-instance field-label overrides, and
-detachment.
+title renaming, per-instance field-label overrides, and detachment. Existing
+instance and definition-node runtime IDs are read-only until the reference and
+value-migration workflow is implemented. Ordinary node updates reject runtime-ID
+changes, including changes to the effective ID through instance overrides, with
+`command.runtime-id-refactor-required`. Label overrides remain supported.
 
 Editing a definition is one immutable history command and affects all linked
 instances. An override belongs only to its instance. Detach allocates new UIDs,

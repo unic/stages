@@ -165,6 +165,7 @@ export type StudioCommandFailureCode =
   | "command.invariant"
   | "command.incompatible-placement"
   | "command.node-not-found"
+  | "command.runtime-id-refactor-required"
   | "command.scenario-not-found"
   | "command.non-contiguous-selection"
   | "command.unresolved-clipboard-dependency"

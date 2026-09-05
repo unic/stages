@@ -37,6 +37,38 @@ function fail(
   return { ok: false, failure: { code, message, commandPath, ...details } };
 }
 
+function runtimeIdUpdateFailure(
+  project: StudioProjectDocument,
+  node: StudioNode,
+  changes: Readonly<Record<string, unknown>>,
+  commandPath: readonly number[],
+  formUid?: Uid,
+): ReturnType<typeof fail> | undefined {
+  let renamed = node.kind !== "block" && Object.hasOwn(changes, "runtimeId")
+    && changes["runtimeId"] !== node.runtimeId;
+  if (node.kind === "fragment" && Object.hasOwn(changes, "overrides")) {
+    const candidate = changes["overrides"];
+    const next = candidate !== null && typeof candidate === "object" && !Array.isArray(candidate)
+      ? candidate as Readonly<Record<Uid, StudioFragmentNodeOverride>>
+      : {};
+    const definition = project.fragments[node.fragmentUid];
+    const uids = new Set([...Object.keys(node.overrides ?? {}), ...Object.keys(next)] as Uid[]);
+    for (const uid of uids) {
+      const source = definition?.nodes[uid];
+      const baseId = source === undefined || source.kind === "block" ? undefined : source.runtimeId;
+      const previousId = node.overrides?.[uid]?.runtimeId ?? baseId;
+      const nextId = next[uid]?.runtimeId ?? baseId;
+      renamed ||= previousId !== nextId;
+    }
+  }
+  return renamed ? fail(
+    "command.runtime-id-refactor-required",
+    "Runtime ID changes require reference refactoring and an explicit value-migration decision. Ordinary node updates cannot rename existing runtime IDs yet.",
+    commandPath,
+    { entityUid: node.uid, ...(formUid === undefined ? {} : { formUid }) },
+  ) : undefined;
+}
+
 function children(node: StudioNode): readonly Uid[] {
   if (node.kind === "wizard") return node.stageUids;
   if (node.kind === "collection") return isStudioVariantCollection(node) ? node.variantUids : node.childUids;
@@ -343,6 +375,8 @@ function executeSingle(
     if (!node) return fail("command.node-not-found", `Fragment node ${command.uid} does not exist.`, commandPath, { entityUid: command.uid });
     const keys = Object.keys(command.changes);
     if (keys.some((key) => !UPDATE_KEYS.has(key))) return fail("command.invalid-update", "Fragment node updates may change editable properties only.", commandPath, { entityUid: command.uid });
+    const renameFailure = runtimeIdUpdateFailure(project, node, command.changes, commandPath);
+    if (renameFailure) return renameFailure;
     const record = { ...node } as unknown as Record<string, unknown>;
     for (const key of keys) command.changes[key] === undefined ? delete record[key] : record[key] = command.changes[key];
     const nextFragment = { ...fragment, nodes: { ...fragment.nodes, [command.uid]: record as unknown as StudioNode } };
@@ -653,6 +687,8 @@ function executeSingle(
     if (keys.length === 0 || keys.every((key) => Object.is((node as unknown as Record<string, unknown>)[key], command.changes[key]))) {
       return { ok: true, document: project, affectedUids: [], changed: false };
     }
+    const renameFailure = runtimeIdUpdateFailure(project, node, command.changes, commandPath, form.uid);
+    if (renameFailure) return renameFailure;
     const nextNodeRecord = { ...node } as unknown as Record<string, unknown>;
     for (const key of keys) {
       if (command.changes[key] === undefined) delete nextNodeRecord[key];

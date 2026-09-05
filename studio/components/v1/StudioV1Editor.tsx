@@ -1213,24 +1213,21 @@ function StructuralInspector({ node, form, onUpdate }: {
   return null;
 }
 
-function FragmentInspector({ instance, fragment, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach }: {
+function FragmentInspector({ instance, fragment, onUpdate, onUpdateFragment, onDetach }: {
   readonly instance: StudioFragmentInstanceNode;
   readonly fragment: StudioFragmentDefinition | undefined;
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
   readonly onUpdateFragment: (fragment: StudioFragmentDefinition, title: string) => void;
-  readonly onUpdateFragmentNode: (fragment: StudioFragmentDefinition, node: StudioNode, changes: Readonly<Record<string, unknown>>) => void;
   readonly onDetach: (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => void;
 }) {
   if (!fragment) return <p role="alert">The linked fragment is missing.</p>;
   return <fieldset className="studio-v1-fragment-inspector">
     <legend>Linked fragment</legend>
     <label className="studio-field"><span>Definition name</span><input className="ui-input" value={fragment.title} onChange={(event) => onUpdateFragment(fragment, event.currentTarget.value)} /></label>
-    <p><small>Version {fragment.version} · edits below update every linked instance.</small></p>
+    <p><small>Version {fragment.version} · label overrides below apply to this instance.</small></p>
+    <p id={`${instance.uid}-definition-id-help`}><small>Definition IDs are read-only until reference refactoring and value migration are supported.</small></p>
     {Object.values(fragment.nodes).map((definitionNode) => <div key={definitionNode.uid}>
-      {definitionNode.kind !== "block" && <label className="studio-field"><span>{nodeDisplayLabel(definitionNode)} definition ID</span><input className="ui-input" value={definitionNode.runtimeId} onChange={(event) => {
-        const runtimeId = event.currentTarget.value;
-        if (runtimeId.length > 0 && isSafeObjectKey(runtimeId)) onUpdateFragmentNode(fragment, definitionNode, { runtimeId });
-      }} /></label>}
+      {definitionNode.kind !== "block" && <label className="studio-field"><span>{nodeDisplayLabel(definitionNode)} definition ID</span><input className="ui-input" value={definitionNode.runtimeId} readOnly aria-describedby={`${instance.uid}-definition-id-help`} /></label>}
       {definitionNode.kind === "field" && <label className="studio-field"><span>Override {nodeDisplayLabel(definitionNode)} label</span><input className="ui-input" value={String(instance.overrides?.[definitionNode.uid]?.props?.["label"] ?? "")} placeholder="Use definition label" onChange={(event) => {
         const label = event.currentTarget.value;
         const current = instance.overrides?.[definitionNode.uid] ?? {};
@@ -1294,22 +1291,16 @@ function nodeTransforms(node: StudioNode): readonly StudioLogicRule[] | undefine
     : undefined;
 }
 
-function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onUpdateFragmentNode, onDetach, onBulkLabel }: {
+function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment, onDetach, onBulkLabel }: {
   readonly nodes: readonly StudioNode[];
   readonly form: StudioFormDocument;
   readonly fragments: StudioProjectDocument["fragments"];
   readonly onUpdate: (node: StudioNode, changes: Readonly<Record<string, unknown>>, label: string, coalesceKey?: string) => void;
   readonly onUpdateFragment: (fragment: StudioFragmentDefinition, title: string) => void;
-  readonly onUpdateFragmentNode: (fragment: StudioFragmentDefinition, node: StudioNode, changes: Readonly<Record<string, unknown>>) => void;
   readonly onDetach: (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => void;
   readonly onBulkLabel: (nodes: readonly StudioFieldNode[], label: string) => void;
 }) {
   const [bulkLabel, setBulkLabel] = useState("");
-  const [runtimeIdDraft, setRuntimeIdDraft] = useState(() => {
-    const selected = nodes[0];
-    return selected?.kind === "block" || selected === undefined ? "" : selected.runtimeId;
-  });
-  const [runtimeIdError, setRuntimeIdError] = useState("");
 
   if (nodes.length === 0) return <p>Select an item in the outline or canvas.</p>;
   if (nodes.length > 1) {
@@ -1335,31 +1326,22 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
       <p><strong>{nodeDisplayLabel(node)}</strong> <small>{node.kind}</small></p>
       {node.kind !== "block" && (
         <label className="studio-field">
-          <span>Runtime ID</span>
+          <span id={`${node.uid}-runtime-id-label`}>Runtime ID</span>
           <input
             className="ui-input"
-            value={runtimeIdDraft}
-            aria-invalid={runtimeIdError.length > 0}
-            aria-describedby={runtimeIdError.length > 0 ? `${node.uid}-runtime-id-error` : undefined}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setRuntimeIdDraft(value);
-              if (value.length === 0 || value.length > 128 || !isSafeObjectKey(value)) {
-                setRuntimeIdError("Runtime ID must be a safe, non-empty identifier of at most 128 characters.");
-                return;
-              }
-              setRuntimeIdError("");
-              onUpdate(node, { runtimeId: value }, "Rename runtime ID", `runtimeId:${node.uid}`);
-            }}
+            value={node.runtimeId}
+            aria-labelledby={`${node.uid}-runtime-id-label`}
+            readOnly
+            aria-describedby={`${node.uid}-runtime-id-help`}
           />
-          {runtimeIdError.length > 0 && <small id={`${node.uid}-runtime-id-error`} role="alert">{runtimeIdError}</small>}
+          <small id={`${node.uid}-runtime-id-help`}>Renaming requires reference updates and a value migration. Existing runtime IDs are read-only until that workflow is available.</small>
         </label>
       )}
       {node.kind === "field" && (
         <FieldInspector node={node} onUpdate={onUpdate} />
       )}
       {node.kind === "block" && <BlockInspector node={node} onUpdate={onUpdate} />}
-      {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onUpdateFragmentNode={onUpdateFragmentNode} onDetach={onDetach} />}
+      {node.kind === "fragment" && <FragmentInspector instance={node} fragment={fragments[node.fragmentUid]} onUpdate={onUpdate} onUpdateFragment={onUpdateFragment} onDetach={onDetach} />}
       <StructuralInspector node={node} form={form} onUpdate={onUpdate} />
       <ExpressionInspector node={node} form={form} onUpdate={onUpdate} />
       {supportsValidators(node) && <StudioLogicEditor
@@ -1917,11 +1899,6 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
   };
 
-  const updateFragmentNode = (fragment: StudioFragmentDefinition, node: StudioNode, changes: Readonly<Record<string, unknown>>) => {
-    const result = dispatchStudioCommand(history, { type: "fragment.node.update", fragmentUid: fragment.uid, uid: node.uid, changes }, { label: "Edit fragment definition" });
-    if (result.ok) setHistory(result.history); else setStatus(result.failure.message);
-  };
-
   const detachFragment = (instance: StudioFragmentInstanceNode, fragment: StudioFragmentDefinition) => {
     const uidMap = Object.fromEntries(Object.keys(fragment.nodes).map((uid) => [uid, nextProjectUid(history.present, `detached_${uid}`)])) as Readonly<Record<Uid, Uid>>;
     const result = dispatchStudioCommand(history, { type: "fragment.detach", formUid: form.uid, uid: instance.uid, uidMap }, { label: `Detach ${fragment.title}` });
@@ -2200,7 +2177,6 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             fragments={history.present.fragments}
             onUpdate={updateNode}
             onUpdateFragment={updateFragment}
-            onUpdateFragmentNode={updateFragmentNode}
             onDetach={detachFragment}
             onBulkLabel={updateBulkLabel}
           />}

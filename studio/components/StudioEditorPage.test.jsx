@@ -440,9 +440,12 @@ describe("StudioEditorPage interactions", () => {
     expect(document.activeElement).toBe(firstItem);
     expect(firstItem).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("textbox", { name: "Label" })).toHaveValue("First field");
-    fireEvent.change(screen.getByRole("textbox", { name: "Runtime ID" }), { target: { value: "renamed" } });
+    const runtimeIdInput = screen.getByRole("textbox", { name: "Runtime ID" });
+    expect(runtimeIdInput).toHaveAttribute("readonly");
+    expect(runtimeIdInput).toHaveAccessibleDescription(/Renaming requires reference updates and a value migration/);
+    await user.type(runtimeIdInput, "renamed");
     expect(firstItem).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("textbox", { name: "Runtime ID" })).toHaveValue("renamed");
+    expect(screen.getByRole("textbox", { name: "Runtime ID" })).toHaveValue("first");
 
     fireEvent.click(secondItem, { ctrlKey: true });
     expect(firstItem).toHaveAttribute("aria-selected", "true");
@@ -604,7 +607,11 @@ describe("StudioEditorPage interactions", () => {
     await openWorkbenchPanel(user, "Insert");
     await user.click(screen.getByRole("button", { name: "Create fragment from selection" }));
     await screen.findByText("Fragment 1 created");
-    expect(screen.getByText(/edits below update every linked instance/)).toBeVisible();
+    const definitionId = screen.getByRole("textbox", { name: "First field definition ID" });
+    expect(definitionId).toHaveAttribute("readonly");
+    expect(definitionId).toHaveAccessibleDescription(/Definition IDs are read-only/);
+    await user.type(definitionId, "renamed");
+    expect(definitionId).toHaveValue("first");
 
     const definitionName = screen.getByRole("textbox", { name: "Definition name" });
     await user.clear(definitionName);
