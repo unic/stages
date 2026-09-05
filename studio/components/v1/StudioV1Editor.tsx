@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowUp, Copy, FlaskConical, History, RotateCcw, Trash2, TriangleAlert, ArrowDownToLine, ArrowUpFromLine, Braces, Eye, FolderOpen, GitBranch, Languages, Layers, LayoutGrid, LockKeyhole, MousePointer2, Plus, Redo2, Save, ShieldCheck, SlidersHorizontal, Undo2, X } from "lucide-react";
+import { STUDIO_DEMO_PROJECTS } from "./studioDemoProjects";
+import { Monitor, Smartphone, Tablet, ArrowDown, ArrowUp, Copy, FlaskConical, History, RotateCcw, Trash2, TriangleAlert, ArrowDownToLine, ArrowUpFromLine, Braces, Eye, FolderOpen, GitBranch, Languages, Layers, LayoutGrid, LockKeyhole, MousePointer2, Plus, Redo2, Save, ShieldCheck, SlidersHorizontal, Undo2, X } from "lucide-react";
 import { Switch as SwitchPrimitive } from "radix-ui";
 import { EditorTooltip, InspectorSection, StudioItemIcon, StudioLayoutControl } from "./StudioInspectorControls";
 import { fieldEvent, formEvent, getAtPath, nodeEvent, type ContainerSnapshot, type DataPath, type RenderNodeSnapshot, type StagesChange, type StagesEvent } from "@stages/core";
@@ -1440,6 +1441,8 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   const [status, setStatus] = useState("Loading local draft…");
   const [loading, setLoading] = useState(true);
   const [surface, setSurface] = useState<"design" | "preview">("design");
+  const [breakpoint, setBreakpoint] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [demoId, setDemoId] = useState<string>(STUDIO_DEMO_PROJECTS[0].id);
   const [drawer, setDrawer] = useState<"insert" | "layers" | "project" | undefined>();
   const [inspectionPropertyPath, setInspectionPropertyPath] = useState<readonly (number | string)[] | undefined>();
   const [projectImportSource, setProjectImportSource] = useState("");
@@ -1974,6 +1977,24 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
     } finally { setLoading(false); }
   };
 
+  const loadDemo = async () => {
+    const demo = STUDIO_DEMO_PROJECTS.find(({ id }) => id === demoId);
+    if (demo === undefined || loading) return;
+    setLoading(true);
+    saveReason.current = "lifecycle";
+    try {
+      autosave.schedule();
+      await autosave.flush();
+      if (lastSaveFailed.current) { setStatus("Could not open the demo because pending changes are not saved."); return; }
+      const snapshot = await repository.save(copyStudioProject(demo.project, projectUidFromRandomId(), demo.project.project.title), null);
+      openSnapshot(snapshot);
+      setStatus(`${demo.project.project.title} opened as a new project`);
+      await refreshRepositoryState();
+    } catch (error: unknown) {
+      setStatus(platformErrorMessage(error, "Could not open the demo."));
+    } finally { setLoading(false); }
+  };
+
   const renameProject = (title: string) => {
     const result = dispatchStudioCommand(history, { type: "project.update", changes: { title } }, { label: "Rename project", coalesceKey: "project.title" });
     if (result.ok) { setHistory(result.history); setStatus("Project renamed; autosave pending"); }
@@ -2064,9 +2085,16 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
   };
 
   return (
-    <main className="studio-v1-editor" data-testid="studio-v1-editor" aria-busy={loading}>
+    <main className="studio-v1-editor" data-testid="studio-v1-editor" data-preview-breakpoint={breakpoint} aria-busy={loading}>
       <header className="studio-v1-toolbar">
         <div><strong>{history.present.project.title}</strong><span data-project-dirty={dirty}>{dirty ? "Unsaved project changes" : "Project saved"}</span><span data-preview-state="session-local">Preview session is separate</span></div>
+        <nav className="studio-v1-demo-picker" aria-label="Demo forms">
+          <label className="studio-sr-only" htmlFor="studio-demo-form">Demo form</label>
+          <select title={STUDIO_DEMO_PROJECTS.find(({ id }) => id === demoId)?.description} id="studio-demo-form" value={demoId} disabled={loading} onChange={(event) => setDemoId(event.currentTarget.value)}>
+            {STUDIO_DEMO_PROJECTS.map((demo) => <option key={demo.id} value={demo.id}>{demo.label}</option>)}
+          </select>
+          <Button size="sm" variant="outline" disabled={loading} onClick={() => void loadDemo()}>Open demo</Button>
+        </nav>
         <nav className="studio-v1-toolbar__drawers" aria-label="Workbench panels">
           {(["project", "layers", "insert"] as const).map((panel) => <Button
             key={panel}
@@ -2079,6 +2107,10 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         <nav className="studio-v1-toolbar__surface" aria-label="Studio mode">
           <Button variant={surface === "design" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "design"} onClick={() => setSurface("design")}><MousePointer2 size={14} aria-hidden="true" />Design</Button>
           <Button variant={surface === "preview" ? "secondary" : "ghost"} size="sm" aria-pressed={surface === "preview"} onClick={() => setSurface("preview")}><Eye size={14} aria-hidden="true" />Preview</Button>
+        </nav>
+        <nav className="studio-v1-toolbar__breakpoints" aria-label="Preview breakpoint">
+          {([{ id: "desktop", label: "Desktop", width: 1024, icon: Monitor }, { id: "tablet", label: "Tablet", width: 768, icon: Tablet }, { id: "mobile", label: "Mobile", width: 390, icon: Smartphone }] as const).map(({ id, label, width, icon: Icon }) =>
+            <Button key={id} size="icon" aria-label={label} variant={breakpoint === id ? "secondary" : "ghost"} aria-pressed={breakpoint === id} title={`${label} · ${width}px`} onClick={() => setBreakpoint(id)}><Icon size={15} aria-hidden="true" /></Button>)}
         </nav>
         <nav className="studio-v1-toolbar__history" aria-label="Document history">
           <EditorTooltip label="Undo"><Button variant="ghost" size="icon" aria-label="Undo" disabled={loading || history.past.length === 0} onClick={() => replaceHistory(undoStudioHistory(history))}><Undo2 size={16} aria-hidden="true" /></Button></EditorTooltip>
@@ -2152,7 +2184,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
         </aside>}
         {surface === "design" ? <>
           <section className="studio-v1-canvas" aria-label="Canvas">
-            <ControlledPreview
+            <ControlledPreview key={`${history.present.project.uid}:${form.uid}`}
               form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources}
               defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem}
               onUpdateScenario={updateScenario} onAddScenario={addScenario} variant="canvas"
@@ -2215,7 +2247,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             onClose={() => setCanvasInsertMenu(undefined)}
           />}
         </> : <div className="studio-v1-preview-workspace">
-          <ControlledPreview form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
+          <ControlledPreview key={`${history.present.project.uid}:${form.uid}`} form={compiled.expandedForm} compiled={compiled} project={history.present.project} resources={history.present.resources} defaultLocale={history.present.project.defaultLocale} onNavigateProblem={navigateProblem} onUpdateScenario={updateScenario} onAddScenario={addScenario} />
         </div>}
       </div>
       <footer className="studio-editor-status"><span className="studio-editor-status__local"><FolderOpen size={12} aria-hidden="true" />Local workspace</span><p role="status" aria-live="polite">{status}</p></footer>

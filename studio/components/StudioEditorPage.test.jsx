@@ -173,6 +173,31 @@ describe("StudioEditorPage interactions", () => {
     unsubscribe();
   });
 
+  it("opens demos as separate projects and switches layouts without resetting answers", async () => {
+    const user = userEvent.setup();
+    const repository = createMemoryProjectRepository();
+    render(<StudioEditorPage documentV1Enabled projectRepository={repository} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Open demo" })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: "Open demo" }));
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /Full name/ })).toHaveValue("Ada Lovelace"));
+    const name = screen.getByRole("textbox", { name: /Full name/ });
+    await user.clear(name);
+    await user.type(name, "Test person");
+    for (const breakpoint of ["Mobile", "Tablet", "Desktop"]) {
+      await user.click(screen.getByRole("button", { name: breakpoint, exact: true }));
+      expect(screen.getByTestId("studio-v1-editor")).toHaveAttribute("data-preview-breakpoint", breakpoint.toLowerCase());
+      expect(name).toHaveValue("Test person");
+    }
+    await user.selectOptions(screen.getByLabelText("Demo form"), "controls");
+    await user.click(screen.getByRole("button", { name: "Open demo" }));
+    await waitFor(() => expect(screen.getByRole("spinbutton", { name: "Tickets" })).toHaveValue(2));
+    const saved = await repository.list();
+    expect(saved.map(({ title }) => title)).toEqual(expect.arrayContaining(["Simple contact", "Registration & preferences"]));
+    await user.click(screen.getByRole("button", { name: "Preview", exact: true }));
+    await user.click(screen.getByRole("button", { name: "Mobile", exact: true }));
+    expect(screen.getByRole("spinbutton", { name: "Tickets" })).toHaveValue(2);
+  });
+
   it("imports live startup state into document v1 behind the feature flag", () => {
     render(<StudioEditorPage documentV1Enabled projectRepository={createMemoryProjectRepository()} />);
     const startup = document.querySelector('[data-studio-startup="document-v1"]');
