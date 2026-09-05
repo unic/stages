@@ -913,6 +913,8 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
   const preview = useStudioPreviewHost(host, input);
   const [validationScope, setValidationScope] = useState<string>("form");
   const [validationPath, setValidationPath] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
   const [validationMessage, setValidationMessage] = useState("Validation has not run.");
   const [savedRuntime, setSavedRuntime] = useState<ReturnType<typeof host.serialize> | undefined>();
   const [runtimePersistenceMessage, setRuntimePersistenceMessage] = useState("No runtime envelope saved.");
@@ -997,8 +999,25 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     });
     setValidationMessage(result.isValid ? "Selected scope is valid." : `${result.visibleIssues.length} visible issue${result.visibleIssues.length === 1 ? "" : "s"}.`);
     if (!result.isValid) requestAnimationFrame(() => { if (previewRef.current) focusFirstVisibleValidationError(previewRef.current); });
+    return result;
+  };
+  const submitPreview = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitMessage("Validating…");
+    try {
+      const result = await validate("form");
+      setSubmitMessage(result.status === "valid"
+        ? "Form is valid. Preview submission succeeded."
+        : result.status === "invalid"
+          ? "Please correct the validation errors and submit again."
+          : "Validation is incomplete. Please try submitting again.");
+    } catch (error) {
+      setSubmitMessage(platformErrorMessage(error, "Validation could not finish. Please try again."));
+    } finally { setSubmitting(false); }
   };
   const resetPreview = () => {
+    setSubmitMessage("");
     const resetValue = scenario?.value ?? createEmptyStudioScenarioValue(form);
     try {
       preview.host.reset({
@@ -1039,7 +1058,12 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
     "--studio-preview-spacing": compiled.renderPlan.theme.spacing,
   } as CSSProperties;
 
-  const formSurface = <PreviewTestDetailsContext.Provider value={showTestDetails}><div className="studio-v1-preview__fields">
+  const Surface = variant === "canvas" ? "div" : "form";
+  const formSurface = <PreviewTestDetailsContext.Provider value={showTestDetails}><Surface
+    className="studio-v1-preview__fields"
+    {...(variant === "canvas" ? {} : { noValidate: true, "aria-label": form.title })}
+    onSubmit={(event) => { event.preventDefault(); if (variant !== "canvas") void submitPreview(); }}
+  >
     {compiled.renderPlan.nodes.map((node) => (
       <PreviewNode
         key={node.uid}
@@ -1049,16 +1073,20 @@ export function ControlledPreview({ form, compiled, onUpdateScenario, onAddScena
         snapshotNodes={preview.snapshot.nodes}
         runtimePath={undefined}
         expressionContext={{ value, context: { locale, ...scenario?.context }, extensions: scenario?.extensions, metadata: { revision: preview.snapshot.revision } }}
-        onInput={(renderNode, nextValue) => preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, {
-          payload: nextValue,
-          source: "adapter",
-        }))}
+        onInput={(renderNode, nextValue) => {
+          setSubmitMessage("");
+          preview.controller.dispatch(fieldEvent("input", renderNode.runtimePath, { payload: nextValue, source: "adapter" }));
+        }}
         onStructureEvent={(event) => preview.controller.dispatch(event)}
         onWizardNavigate={navigateWizard}
         {...(authoring === undefined ? {} : { authoring })}
       />
     ))}
-  </div></PreviewTestDetailsContext.Provider>;
+    {variant !== "canvas" && <div className="studio-preview-submit">
+      <Button type="submit" disabled={submitting}>{submitting ? "Validating…" : "Submit"}</Button>
+      <p role="status" aria-live="polite">{submitMessage}</p>
+    </div>}
+  </Surface></PreviewTestDetailsContext.Provider>;
 
   if (variant === "canvas") return (
     <section ref={previewRef} className="studio-v1-authoring-canvas" style={themeStyle} data-studio-theme="default" aria-label="Interactive form canvas">

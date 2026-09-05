@@ -16,6 +16,27 @@ function renderPreview(form: StudioFormDocument, resources?: StudioResourceCatal
   return result;
 }
 
+describe("Preview submission", () => {
+  it("reveals submit validation without opening test tools and accepts corrected answers", async () => {
+    const demo = STUDIO_DEMO_PROJECTS.find(({ id }) => id === "contact")!;
+    const original = Object.values(demo.project.forms)[0]!;
+    const form = { ...original, scenarios: [original.scenarios[1]!] };
+    render(<ControlledPreview form={form} compiled={compileStudioForm(form)} defaultLocale="en" onUpdateScenario={() => {}} onAddScenario={() => undefined} />);
+    expect(screen.queryByText("Enter your name.")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    const name = screen.getByRole("textbox", { name: /Full name/ });
+    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
+    expect(screen.getByText("Please correct the validation errors and submit again.")).toBeVisible();
+    fireEvent.change(name, { target: { value: "Ada" } });
+    await waitFor(() => expect(name).toHaveValue("Ada"));
+    fireEvent.submit(screen.getByRole("form", { name: form.title }));
+    await waitFor(() => expect(screen.getByText("Form is valid. Preview submission succeeded.")).toBeVisible());
+    expect(name).not.toHaveAttribute("aria-invalid", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Reset to scenario" }));
+    expect(screen.queryByText("Form is valid. Preview submission succeeded.")).toBeNull();
+  });
+});
+
 describe("Studio component gallery", () => {
   it("renders native controls and accepts their typed values", async () => {
     const gallery = STUDIO_DEMO_PROJECTS.find(({ id }) => id === "gallery")!;
