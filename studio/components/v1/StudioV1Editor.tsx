@@ -1429,6 +1429,7 @@ function SelectionInspector({ nodes, form, fragments, onUpdate, onUpdateFragment
       </InspectorSection>}
       {supportsValidators(node) && <InspectorSection title="Validation" icon={ShieldCheck}>
       {supportsValidators(node) && <StudioValidationEditor
+        target={node.kind === "field" ? node.definition.key : node.kind}
         validators={nodeValidators(node)}
         references={expressionReferences(form)}
         ownerLabel={node.kind === "field" ? "field" : "node"}
@@ -2271,6 +2272,7 @@ export function StudioV1Editor({ repository: repositoryProp }: StudioV1EditorPro
             <StudioEventEditor events={form.events} form={form} references={expressionReferences(form)} onChange={updateFormEvents} />
             <StudioLogicEditor kind="transform" rules={form.transforms} form={form} references={expressionReferences(form)} onChange={updateFormTransforms} />
             <StudioValidationEditor
+              target="form"
               validators={form.validators}
               references={expressionReferences(form)}
               ownerLabel="form"

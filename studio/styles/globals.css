@@ -1301,3 +1301,14 @@ button, input, select, textarea { font: inherit; }
 .studio-choice-options__row .ui-button { flex: 0 0 1.5rem; width: 1.5rem; height: 1.8rem; padding: 0; }
 .studio-preview-submit { display: flex; flex: 0 0 100%; flex-wrap: wrap; align-items: center; gap: 0.75rem; border-top: 1px solid var(--studio-preview-border); padding-top: 1rem; margin-top: 0.25rem; }
 .studio-preview-submit p { margin: 0; font-size: 0.8rem; color: var(--studio-preview-muted); }
+
+/* Validation rule authoring */
+.studio-v1-validation-inspector { min-width: 0; }
+.studio-v1-validation-inspector__add { display: grid; gap: 0.55rem; padding: 0.75rem; border-radius: 8px; background: #f7f7fa; }
+.studio-v1-validation-inspector__add .studio-field { margin: 0; }
+.studio-validation-hint { margin: 0; font-size: 0.75rem; line-height: 1.5; color: #666; }
+.studio-v1-inspector fieldset.studio-v1-validator { min-width: 0; margin-top: 1rem; padding: 0.75rem; border: 1px solid var(--studio-panel-border); border-radius: 8px; }
+.studio-v1-inspector fieldset.studio-v1-validator > legend { padding: 0 0.35rem; font-size: 0.8rem; font-weight: 600; }
+.studio-validator-advanced { margin: 0.75rem 0; border-top: 1px solid var(--studio-panel-border); padding-top: 0.65rem; }
+.studio-validator-advanced > summary { cursor: pointer; font-size: 0.75rem; color: #666; }
+.studio-validator-advanced[open] > summary { margin-bottom: 0.75rem; }
